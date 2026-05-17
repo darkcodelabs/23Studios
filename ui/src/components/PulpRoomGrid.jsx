@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
-  Paintbrush, PaintBucket, Square as SquareIcon, Copy, ClipboardPaste, Grid as GridIcon, Hash
+  Paintbrush, PaintBucket, Square as SquareIcon, Copy, ClipboardPaste, Grid as GridIcon, Hash, Image as ImageIcon
 } from 'lucide-react';
 import { rasterizeFrame } from '../lib/pulp_api.js';
+import PulpRoomBackground from './PulpRoomBackground.jsx';
 
 const COLS = 25;
 const ROWS = 15;
@@ -49,16 +50,30 @@ function rectFillGrid(g, x0, y0, x1, y1, value) {
 
 /**
  * Props:
- *   grid          15×25 nested array of tile_id or null
- *   onChange      (newGrid) => void
- *   tiles         tile array
- *   selectedTile  selected tile (or null = erase)
+ *   grid             15×25 nested array of tile_id or null
+ *   onChange         (newGrid) => void
+ *   tiles            tile array
+ *   selectedTile     selected tile (or null = erase)
+ *   projectId?       string — passed to PulpRoomBackground for scene fetch
+ *   roomId?          string — passed to PulpRoomBackground for scene fetch
+ *   sceneCacheKey?   number — bumped to force background re-fetch after edits
+ *   showBackground?  boolean (default true) — toggles the scene layer
  */
-export default function PulpRoomGrid({ grid, onChange, tiles, selectedTile }) {
+export default function PulpRoomGrid({
+  grid,
+  onChange,
+  tiles,
+  selectedTile,
+  projectId,
+  roomId,
+  sceneCacheKey,
+  showBackground = true
+}) {
   const canvasRef = useRef(null);
   const [tool, setTool] = useState('paint');
   const [showGrid, setShowGrid] = useState(true);
   const [showIds, setShowIds] = useState(false);
+  const [bgVisible, setBgVisible] = useState(true);
 
   // Build a tileId -> rasterized canvas (at CELL px) cache.
   const tileCache = useMemo(() => {
@@ -79,13 +94,21 @@ export default function PulpRoomGrid({ grid, onChange, tiles, selectedTile }) {
   const [selRect, setSelRect] = useState(null); // { x0,y0,x1,y1 } in cell coords
   const [, force] = useState(0);
 
+  const bgActive = showBackground && bgVisible && !!projectId && !!roomId;
+
   const repaint = useCallback(() => {
     const c = canvasRef.current;
     if (!c) return;
     const ctx = c.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#0d0f15';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    // When a scene background is showing, keep the canvas transparent so the
+    // <img> behind it bleeds through empty cells. Otherwise paint the usual
+    // dark editor fill.
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    if (!bgActive) {
+      ctx.fillStyle = '#0d0f15';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
 
     // tiles
     for (let y = 0; y < ROWS; y++) {
@@ -150,7 +173,7 @@ export default function PulpRoomGrid({ grid, onChange, tiles, selectedTile }) {
         }
       }
     }
-  }, [grid, tileCache, tool, showGrid, showIds, selRect]);
+  }, [grid, tileCache, tool, showGrid, showIds, selRect, bgActive]);
 
   useEffect(() => { repaint(); }, [repaint]);
 
@@ -298,22 +321,52 @@ export default function PulpRoomGrid({ grid, onChange, tiles, selectedTile }) {
         >
           <Hash className="w-3.5 h-3.5" />
         </button>
+        {showBackground && projectId && roomId ? (
+          <button
+            type="button"
+            onClick={() => setBgVisible((v) => !v)}
+            className={`btn !px-2 !py-1 ${bgVisible ? '!border-accent !text-accent' : ''}`}
+            title="toggle scene background"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+          </button>
+        ) : null}
         <span className="text-[10px] text-ink-500 font-mono ml-2">
           {selectedTile ? `painting ${selectedTile.name}` : 'painting: erase'} · right-click=erase · shift-drag=select
         </span>
       </div>
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_W}
-        height={CANVAS_H}
-        style={{ width: CANVAS_W, height: CANVAS_H, imageRendering: 'pixelated' }}
-        className="border border-ink-600 rounded bg-ink-900 cursor-crosshair select-none"
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={() => { paintRef.current = null; }}
-        onContextMenu={(e) => e.preventDefault()}
-      />
+      <div
+        className="relative border border-ink-600 rounded bg-ink-900 overflow-hidden"
+        style={{ width: CANVAS_W, height: CANVAS_H }}
+      >
+        {showBackground && bgVisible && projectId && roomId ? (
+          <PulpRoomBackground
+            projectId={projectId}
+            roomId={roomId}
+            cacheBust={sceneCacheKey}
+            opacity={0.3}
+          />
+        ) : null}
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_W}
+          height={CANVAS_H}
+          style={{
+            width: CANVAS_W,
+            height: CANVAS_H,
+            imageRendering: 'pixelated',
+            position: 'relative',
+            zIndex: 1,
+            background: 'transparent'
+          }}
+          className="cursor-crosshair select-none"
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={() => { paintRef.current = null; }}
+          onContextMenu={(e) => e.preventDefault()}
+        />
+      </div>
     </div>
   );
 }

@@ -4,8 +4,9 @@ import { useProject } from '../lib/pulp_workspace.js';
 import { pulpApi } from '../lib/pulp_api.js';
 import PulpLauncherCard from '../components/PulpLauncherCard.jsx';
 import PulpAssetImportModal from '../components/PulpAssetImportModal.jsx';
+import PulpSceneBulkImport from '../components/PulpSceneBulkImport.jsx';
 
-const IMPORTABLE = new Set(['tiles', 'sounds', 'songs']);
+const IMPORTABLE = new Set(['tiles', 'sounds', 'songs', 'scenes']);
 
 const SAVE_DEBOUNCE_MS = 400;
 const DEFAULT_CONFIG = { auto_act: true, input_repeat: true, follow_player: false, text_speed: 20 };
@@ -15,7 +16,7 @@ export default function PulpGameTab() {
   const [pulp, setPulp] = useState(null);
   const [savingState, setSavingState] = useState('idle');
   const [err, setErr] = useState(null);
-  const [importKind, setImportKind] = useState(null); // 'tiles' | 'sounds' | 'songs' | null
+  const [importKind, setImportKind] = useState(null); // 'tiles' | 'sounds' | 'songs' | 'scenes' | null
   const debounceRef = useRef(null);
   const pendingRef = useRef({});
 
@@ -118,9 +119,10 @@ export default function PulpGameTab() {
         <section className="space-y-2">
           <h2 className="text-xs uppercase tracking-wide text-ink-400">assets</h2>
           <p className="text-[11px] text-ink-500">import or export individual asset groups. full .pdx is on the left-rail PDX button.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {['tiles', 'rooms', 'sounds', 'songs'].map((k) => {
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {['tiles', 'rooms', 'sounds', 'songs', 'scenes'].map((k) => {
               const canImport = IMPORTABLE.has(k);
+              const importLabel = k === 'scenes' ? 'bulk scenes' : 'import';
               return (
                 <div key={k} className="border border-ink-700 rounded-md p-3 space-y-2 bg-ink-900/40">
                   <div className="font-mono text-xs text-ink-200 capitalize">{k}</div>
@@ -131,7 +133,7 @@ export default function PulpGameTab() {
                       title={canImport ? `import ${k}` : 'Phase 3'}
                       onClick={() => canImport && setImportKind(k)}
                     >
-                      <Upload className="w-3 h-3" /> import
+                      <Upload className="w-3 h-3" /> {importLabel}
                     </button>
                     <button className="btn text-[11px]" disabled title="Phase 3"><Download className="w-3 h-3" /> export</button>
                   </div>
@@ -142,7 +144,7 @@ export default function PulpGameTab() {
         </section>
       </div>
 
-      {importKind ? (
+      {importKind && importKind !== 'scenes' ? (
         <PulpAssetImportModal
           kind={importKind}
           projectId={project.id}
@@ -153,6 +155,14 @@ export default function PulpGameTab() {
             // pages; we just refresh the top-level project here.
             load();
           }}
+        />
+      ) : null}
+
+      {importKind === 'scenes' ? (
+        <PulpSceneBulkImport
+          projectId={project.id}
+          onClose={() => setImportKind(null)}
+          onImported={() => { load(); }}
         />
       ) : null}
     </div>

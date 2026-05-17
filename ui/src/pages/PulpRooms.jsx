@@ -4,6 +4,7 @@ import { Trash2, Plus, Loader2, Save, Sparkles } from 'lucide-react';
 import PulpRoomGrid from '../components/PulpRoomGrid.jsx';
 import PulpTilePalette from '../components/PulpTilePalette.jsx';
 import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
+import PulpSceneControls from '../components/PulpSceneControls.jsx';
 import { pulpApi, newRoom } from '../lib/pulp_api.js';
 
 const SAVE_DEBOUNCE_MS = 400;
@@ -18,8 +19,13 @@ export default function PulpRooms() {
   const [err, setErr] = useState(null);
   const [savingState, setSavingState] = useState('idle');
   const [aiOpen, setAiOpen] = useState(false);
+  const [sceneCacheKey, setSceneCacheKey] = useState(() => Date.now());
   const debounceRef = useRef(null);
   const latestPatchRef = useRef(null);
+
+  const bumpSceneCache = useCallback(() => {
+    setSceneCacheKey(Date.now());
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -119,6 +125,9 @@ export default function PulpRooms() {
             onChange={(g) => updateLocal({ grid: g })}
             tiles={tiles}
             selectedTile={selectedTile}
+            projectId={project.id}
+            roomId={selectedRoom.id}
+            sceneCacheKey={sceneCacheKey}
           />
         )}
       </section>
@@ -144,6 +153,11 @@ export default function PulpRooms() {
 
         {selectedRoom ? (
           <>
+            <PulpSceneControls
+              project={project}
+              room={selectedRoom}
+              onSceneChanged={bumpSceneCache}
+            />
             <div className="border-t border-ink-700 pt-3 space-y-2">
               <Field label="name">
                 <input className="input text-sm" value={selectedRoom.name || ''} onChange={(e) => updateLocal({ name: e.target.value })} />

@@ -6,8 +6,15 @@ import PulpTabRouter from '../components/PulpTabRouter.jsx';
 import PulpAIRail from '../components/PulpAIRail.jsx';
 import PulpAccessoryDrawer from '../components/PulpAccessoryDrawer.jsx';
 import PulpStatusBar from '../components/PulpStatusBar.jsx';
+import PulpWorkflowBar from '../components/PulpWorkflowBar.jsx';
 import { api } from '../lib/api.js';
-import { PulpProjectContext, TAB_IDS, DEFAULT_TAB, tabFromUrl } from '../lib/pulp_workspace.js';
+import {
+  PulpProjectContext, PulpWorkflowContext,
+  TAB_IDS, DEFAULT_TAB, tabFromUrl
+} from '../lib/pulp_workspace.js';
+import { getWorkflow, emptyWorkflow } from '../lib/pulp_workflow_client.js';
+
+const COMPACT_HIDE_KEY = 'pulp:workflow-bar-hidden';
 
 export default function PulpEditor() {
   const { id } = useParams();
@@ -18,6 +25,11 @@ export default function PulpEditor() {
   const [err, setErr] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [drawer, setDrawer] = useState(null);  // 'files' | 'logs' | 'chat' | null
+  const [workflow, setWorkflow] = useState(null);
+  const [compactHidden, setCompactHidden] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage?.getItem(COMPACT_HIDE_KEY) === '1';
+  });
 
   const activeTab = tabFromUrl(searchParams.toString());
 
@@ -40,10 +52,32 @@ export default function PulpEditor() {
     return () => { alive = false; };
   }, [id, navigate]);
 
+  // Load workflow once project is known + cache at editor level.
+  useEffect(() => {
+    if (!project) return;
+    let alive = true;
+    (async () => {
+      try {
+        const r = await getWorkflow(project.id);
+        if (alive) setWorkflow(r?.workflow || emptyWorkflow());
+      } catch (_e) {
+        if (alive) setWorkflow(emptyWorkflow());
+      }
+    })();
+    return () => { alive = false; };
+  }, [project]);
+
   const selectTab = useCallback((tabId) => {
     if (!TAB_IDS.includes(tabId)) tabId = DEFAULT_TAB;
     const next = new URLSearchParams(searchParams);
     next.set('tab', tabId);
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const selectStageFromBar = useCallback((stageId) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'workflow');
+    next.set('stage', stageId);
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -85,31 +119,70 @@ export default function PulpEditor() {
     );
   }
 
+  const activeStageId = searchParams.get('stage') || null;
+  const workflowHasContent = !!workflow && (workflow.stage_order || []).some((sid) => {
+    const s = workflow.stages?.[sid];
+    return s?.input || s?.status === 'in_progress' || s?.status === 'complete';
+  });
+  const showCompactBar = activeTab !== 'workflow' && !!workflow && (workflowHasContent || !compactHidden);
+
+  function hideCompactBar() {
+    setCompactHidden(true);
+    try { window.localStorage?.setItem(COMPACT_HIDE_KEY, '1'); } catch (_e) { /* ignore */ }
+  }
+
   return (
     <PulpProjectContext.Provider value={{ project }}>
-      <div className="h-screen flex flex-col bg-ink-900">
-        <PulpHeaderBar project={project} aiOpen={aiOpen} onToggleAi={() => setAiOpen((v) => !v)} />
+      <PulpWorkflowContext.Provider value={{ workflow, setWorkflow }}>
+        <div className="h-screen flex flex-col bg-ink-900">
+          <PulpHeaderBar project={project} aiOpen={aiOpen} onToggleAi={() => setAiOpen((v) => !v)} />
 
-        <div className="flex-1 min-h-0 flex relative">
-          <PulpLeftRail activeTab={activeTab} onSelectTab={selectTab} onAction={onAction} />
+          <div className="flex-1 min-h-0 flex relative">
+            <PulpLeftRail activeTab={activeTab} onSelectTab={selectTab} onAction={onAction} />
 
-          <main className="flex-1 min-w-0 overflow-hidden bg-ink-900/40">
-            {!project ? (
-              <div className="p-6 text-sm text-ink-400">loading project…</div>
-            ) : (
-              <PulpTabRouter activeTab={activeTab} />
-            )}
-          </main>
+            <main className="flex-1 min-w-0 overflow-hidden bg-ink-900/40 flex flex-col">
+              {!project ? (
+                <div className="p-6 text-sm text-ink-400">loading project…</div>
+              ) : (
+                <>
+                  {showCompactBar ? (
+                    <div className="relative">
+                      <PulpWorkflowBar
+                        workflow={workflow}
+                        activeStageId={activeStageId}
+                        onSelectStage={selectStageFromBar}
+                        compact
+                        collapsible
+                      />
+                      {!workflowHasContent ? (
+                        <button
+                          type="button"
+                          onClick={hideCompactBar}
+                          title="dismiss until workflow has content"
+                          className="absolute right-1 top-1 text-[10px] text-ink-500 hover:text-ink-200 px-1"
+                        >
+                          x
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <PulpTabRouter activeTab={activeTab} onJumpTab={selectTab} />
+                  </div>
+                </>
+              )}
+            </main>
 
-          {aiOpen ? <PulpAIRail activeTab={activeTab} onClose={() => setAiOpen(false)} /> : null}
+            {aiOpen ? <PulpAIRail activeTab={activeTab} onClose={() => setAiOpen(false)} /> : null}
 
-          {drawer ? (
-            <PulpAccessoryDrawer kind={drawer} project={project} onClose={() => setDrawer(null)} />
-          ) : null}
+            {drawer ? (
+              <PulpAccessoryDrawer kind={drawer} project={project} onClose={() => setDrawer(null)} />
+            ) : null}
+          </div>
+
+          <PulpStatusBar activeDrawer={drawer} onOpenDrawer={setDrawer} project={project} />
         </div>
-
-        <PulpStatusBar activeDrawer={drawer} onOpenDrawer={setDrawer} project={project} />
-      </div>
+      </PulpWorkflowContext.Provider>
     </PulpProjectContext.Provider>
   );
 }

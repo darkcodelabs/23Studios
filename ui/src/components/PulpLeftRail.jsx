@@ -1,10 +1,11 @@
 import {
-  Joystick, Type, Map, Grid3x3, Music, Volume2, ScrollText,
+  Compass, Joystick, Type, Map, Grid3x3, Music, Volume2, ScrollText,
   Undo2, Redo2, Save, Play,
   Upload, Download, Package
 } from 'lucide-react';
 
 const TABS = [
+  { id: 'workflow', label: 'workflow', icon: Compass },
   { id: 'game',   label: 'game',   icon: Joystick },
   { id: 'font',   label: 'font',   icon: Type },
   { id: 'room',   label: 'room',   icon: Map },

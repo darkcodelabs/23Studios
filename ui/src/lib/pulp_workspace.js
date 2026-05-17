@@ -9,8 +9,17 @@ export function useProject() {
   return ctx?.project || null;
 }
 
-export const TAB_IDS = ['game', 'font', 'room', 'tile', 'song', 'sound', 'script', 'play', 'export'];
-export const DEFAULT_TAB = 'game';
+// Workflow cache context. PulpEditor populates it so the compact breadcrumb
+// in non-workflow tabs renders without a fetch every time the user changes
+// tabs, and so PulpWorkflow can prime itself from the cache.
+export const PulpWorkflowContext = createContext(null);
+
+export function useWorkflow() {
+  return useContext(PulpWorkflowContext);
+}
+
+export const TAB_IDS = ['workflow', 'game', 'font', 'room', 'tile', 'song', 'sound', 'script', 'play', 'export'];
+export const DEFAULT_TAB = 'workflow';
 
 export function tabFromUrl(search) {
   const params = new URLSearchParams(search || '');
