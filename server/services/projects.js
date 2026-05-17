@@ -54,10 +54,11 @@ function sanitize(p) {
     publisher, developer, build_command, preflight_command,
     captures_dir, created_at, status
   } = p;
+  const game_type = p.game_type === 'pulp' ? 'pulp' : 'sdk';
   return {
     id, name, description, repo, local_path, platform,
     publisher, developer, build_command, preflight_command,
-    captures_dir, created_at, status
+    captures_dir, created_at, status, game_type
   };
 }
 
@@ -94,7 +95,8 @@ function createProject(input) {
       preflight_command: input.preflight_command || '',
       captures_dir: input.captures_dir || '',
       created_at: input.created_at || todayIso(),
-      status: input.status || 'active'
+      status: input.status || 'active',
+      game_type: input.game_type === 'pulp' ? 'pulp' : 'sdk'
     };
     data.projects.push(record);
     await atomicWrite(data);

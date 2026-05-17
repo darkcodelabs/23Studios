@@ -4,10 +4,12 @@ const path = require('path');
 const fs = require('fs');
 
 const ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,63}$/;
+const PULP_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
 const REPO_RE = /^(https?:\/\/[\w.@:/~%-]+\.git|git@[\w.-]+:[\w./~%-]+\.git)$/;
 const SAFE_CMD_RE = /^[A-Za-z0-9 _\-./]+$/;
 const PLATFORMS = new Set(['playdate']);
 const STATUSES = new Set(['active', 'paused', 'archived']);
+const GAME_TYPES = new Set(['sdk', 'pulp']);
 
 function isPlainString(v, max) {
   return typeof v === 'string' && v.length > 0 && v.length <= max;
@@ -66,6 +68,21 @@ function validateStatus(s) {
   return null;
 }
 
+function validateGameType(v) {
+  if (v === undefined || v === null || v === '') return null;
+  if (typeof v !== 'string' || !GAME_TYPES.has(v)) {
+    return `game_type must be one of: ${Array.from(GAME_TYPES).join(', ')}`;
+  }
+  return null;
+}
+
+function validatePulpId(id) {
+  if (typeof id !== 'string' || id.length === 0 || id.length > 64 || !PULP_ID_RE.test(id)) {
+    return 'id must match ^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$';
+  }
+  return null;
+}
+
 function validateProjectCreate(input) {
   const errors = [];
   const push = (e) => { if (e) errors.push(e); };
@@ -76,6 +93,7 @@ function validateProjectCreate(input) {
   push(validateCommand(input.build_command, 'build_command'));
   push(validateCommand(input.preflight_command, 'preflight_command'));
   push(validateStatus(input.status));
+  push(validateGameType(input.game_type));
   if (!isPlainString(input.name, 200)) errors.push('name is required (max 200)');
   if (input.description !== undefined && !isPlainString(input.description, 1000)) {
     errors.push('description must be string up to 1000 chars');
@@ -101,6 +119,7 @@ function validateProjectPatch(input) {
   if (input.build_command !== undefined) push(validateCommand(input.build_command, 'build_command'));
   if (input.preflight_command !== undefined) push(validateCommand(input.preflight_command, 'preflight_command'));
   if (input.status !== undefined) push(validateStatus(input.status));
+  if (input.game_type !== undefined) push(validateGameType(input.game_type));
   if (input.name !== undefined && !isPlainString(input.name, 200)) errors.push('name must be string up to 200');
   if (input.description !== undefined && input.description !== null && !isPlainString(input.description, 1000)) {
     errors.push('description must be string up to 1000 chars');
@@ -137,10 +156,13 @@ module.exports = {
   validatePlatform,
   validateCommand,
   validateStatus,
+  validateGameType,
+  validatePulpId,
   validateProjectCreate,
   validateProjectPatch,
   validateRelativePath,
   isPathInside,
   PLATFORMS,
-  STATUSES
+  STATUSES,
+  GAME_TYPES
 };

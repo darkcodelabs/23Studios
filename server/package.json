@@ -9,6 +9,7 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "ajv": "8.17.1",
     "cookie": "0.6.0",
     "cookie-parser": "1.4.6",
     "cookie-session": "2.1.0",

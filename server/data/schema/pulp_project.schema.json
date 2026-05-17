@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://23studios.local/schema/pulp_project.json",
+  "title": "PulpProject",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "author",
+    "version",
+    "config",
+    "tiles",
+    "rooms",
+    "sounds",
+    "songs",
+    "player",
+    "game_script"
+  ],
+  "properties": {
+    "name": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "author": { "type": "string", "maxLength": 1024 },
+    "version": { "type": "string", "maxLength": 1024 },
+    "config": { "$ref": "#/$defs/Config" },
+    "tiles": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/Tile" }
+    },
+    "rooms": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/Room" }
+    },
+    "sounds": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/Sound" }
+    },
+    "songs": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/Song" }
+    },
+    "player": { "$ref": "#/$defs/Player" },
+    "game_script": { "type": "string", "maxLength": 1024 }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"
+    },
+    "ShortString": { "type": "string", "maxLength": 1024 },
+    "OptionalId": {
+      "type": "string",
+      "pattern": "^([a-zA-Z0-9][a-zA-Z0-9_-]{0,63})?$"
+    },
+    "Config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auto_act", "input_repeat", "follow_player", "text_speed"],
+      "properties": {
+        "auto_act": { "type": "boolean" },
+        "input_repeat": { "type": "boolean" },
+        "follow_player": { "type": "boolean" },
+        "text_speed": { "type": "integer", "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "TileFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pixels"],
+      "properties": {
+        "pixels": {
+          "type": "string",
+          "minLength": 256,
+          "maxLength": 256,
+          "pattern": "^[01]{256}$"
+        }
+      }
+    },
+    "Tile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "type", "solid", "frames", "fps", "script"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "maxLength": 1024 },
+        "type": { "enum": ["world", "sprite", "item", "exit", "player"] },
+        "solid": { "type": "boolean" },
+        "frames": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/TileFrame" }
+        },
+        "fps": { "type": "integer", "minimum": 0, "maximum": 60 },
+        "script": { "type": "string", "maxLength": 1024 }
+      }
+    },
+    "Room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "song", "grid", "script"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "maxLength": 1024 },
+        "song": { "$ref": "#/$defs/OptionalId" },
+        "grid": {
+          "type": "array",
+          "minItems": 15,
+          "maxItems": 15,
+          "items": {
+            "type": "array",
+            "minItems": 25,
+            "maxItems": 25,
+            "items": { "$ref": "#/$defs/OptionalId" }
+          }
+        },
+        "script": { "type": "string", "maxLength": 1024 }
+      }
+    },
+    "SoundEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attack", "decay", "sustain", "release"],
+      "properties": {
+        "attack": { "type": "number", "minimum": 0, "maximum": 10000 },
+        "decay": { "type": "number", "minimum": 0, "maximum": 10000 },
+        "sustain": { "type": "number", "minimum": 0, "maximum": 1 },
+        "release": { "type": "number", "minimum": 0, "maximum": 10000 }
+      }
+    },
+    "Sound": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "waveform",
+        "freq_start",
+        "freq_end",
+        "duration_ms",
+        "envelope"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "maxLength": 1024 },
+        "waveform": { "enum": ["sine", "square", "triangle", "sawtooth", "noise"] },
+        "freq_start": { "type": "number", "minimum": 0, "maximum": 100000 },
+        "freq_end": { "type": "number", "minimum": 0, "maximum": 100000 },
+        "duration_ms": { "type": "integer", "minimum": 0, "maximum": 600000 },
+        "envelope": { "$ref": "#/$defs/SoundEnvelope" }
+      }
+    },
+    "SongNote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["note", "duration", "instrument"],
+      "properties": {
+        "note": { "type": "string", "maxLength": 16 },
+        "duration": { "type": "number", "minimum": 0, "maximum": 64 },
+        "instrument": { "$ref": "#/$defs/OptionalId" }
+      }
+    },
+    "Song": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "bpm", "loop_from", "tracks"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "maxLength": 1024 },
+        "bpm": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "loop_from": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "tracks": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "array",
+            "maxItems": 4096,
+            "items": { "$ref": "#/$defs/SongNote" }
+          }
+        }
+      }
+    },
+    "Player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_tile", "start_room", "start_x", "start_y"],
+      "properties": {
+        "start_tile": { "$ref": "#/$defs/OptionalId" },
+        "start_room": { "$ref": "#/$defs/OptionalId" },
+        "start_x": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "start_y": { "type": "integer", "minimum": 0, "maximum": 14 }
+      }
+    }
+  }
+}

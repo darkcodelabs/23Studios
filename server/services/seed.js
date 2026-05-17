@@ -16,7 +16,8 @@ const HAKCD = {
   preflight_command: './tools/preflight.sh',
   captures_dir: 'build/recordings',
   created_at: '2026-05-17',
-  status: 'active'
+  status: 'active',
+  game_type: 'sdk'
 };
 
 async function seedDefaults() {

@@ -16,6 +16,7 @@ const { apiLimiter } = require('./middleware/rateLimit');
 const authRouter = require('./routes/auth');
 const projectsRouter = require('./routes/projects');
 const filesRouter = require('./routes/files');
+const pulpRouter = require('./routes/pulp');
 const openrouterRouter = require('./routes/openrouter');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
@@ -85,6 +86,7 @@ app.use(csrfErrorHandler);
 
 app.use('/api/projects', projectsRouter);
 app.use('/api/projects', filesRouter);
+app.use('/api/projects', pulpRouter);
 app.use('/api/openrouter', openrouterRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');

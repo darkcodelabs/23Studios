@@ -1,0 +1,297 @@
+'use strict';
+
+const fs = require('fs');
+const fsp = require('fs/promises');
+const path = require('path');
+const Ajv2020 = require('ajv/dist/2020');
+
+const projects = require('./projects');
+const { validatePulpId } = require('./validation');
+
+const SCHEMA_PATH = path.join(__dirname, '..', 'data', 'schema', 'pulp_project.schema.json');
+const SCHEMA = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+
+const ajv = new Ajv2020({
+  allErrors: true,
+  strict: false,
+  removeAdditional: false
+});
+const validateSchema = ajv.compile(SCHEMA);
+
+const PULP_DIR_NAME = 'pulp_data';
+const PROJECT_JSON = 'project.json';
+
+const TOP_LEVEL_PATCHABLE = new Set([
+  'name',
+  'author',
+  'version',
+  'config',
+  'player',
+  'game_script'
+]);
+
+const COLLECTIONS = new Set(['tiles', 'rooms', 'sounds', 'songs']);
+
+// Per-project promise-chain mutex
+const chains = new Map();
+function withLock(projectId, fn) {
+  const prev = chains.get(projectId) || Promise.resolve();
+  const next = prev.then(fn, fn);
+  chains.set(projectId, next.catch(() => {}));
+  return next;
+}
+
+function defaultPulpProject() {
+  return {
+    name: 'Untitled Pulp Game',
+    author: '',
+    version: '0.1.0',
+    config: {
+      auto_act: false,
+      input_repeat: true,
+      follow_player: true,
+      text_speed: 20
+    },
+    tiles: [],
+    rooms: [],
+    sounds: [],
+    songs: [],
+    player: {
+      start_tile: '',
+      start_room: '',
+      start_x: 12,
+      start_y: 7
+    },
+    game_script: ''
+  };
+}
+
+function pulpErr(status, code, detail) {
+  const e = new Error(code);
+  e.status = status;
+  e.code = code;
+  if (detail !== undefined) e.detail = detail;
+  return e;
+}
+
+async function realPathSafe(p) {
+  try { return await fsp.realpath(p); }
+  catch (_e) { return null; }
+}
+
+async function resolvePulpPaths(project) {
+  if (!project) throw pulpErr(404, 'not_found');
+  if (project.game_type !== 'pulp') throw pulpErr(400, 'not_pulp_project');
+  const baseReal = await realPathSafe(project.local_path);
+  if (!baseReal) throw pulpErr(400, 'local_path_missing');
+  let baseStat;
+  try { baseStat = await fsp.lstat(baseReal); }
+  catch (_e) { throw pulpErr(400, 'local_path_missing'); }
+  if (baseStat.isSymbolicLink() || !baseStat.isDirectory()) {
+    throw pulpErr(400, 'local_path_invalid');
+  }
+  const dir = path.join(baseReal, PULP_DIR_NAME);
+  const file = path.join(dir, PROJECT_JSON);
+  return { baseReal, dir, file };
+}
+
+async function ensureDir(dir) {
+  try {
+    const s = await fsp.lstat(dir);
+    if (s.isSymbolicLink()) throw pulpErr(400, 'pulp_dir_symlink');
+    if (!s.isDirectory()) throw pulpErr(500, 'pulp_dir_not_dir');
+  } catch (e) {
+    if (e && e.code === 'ENOENT') {
+      await fsp.mkdir(dir, { recursive: true, mode: 0o700 });
+      return;
+    }
+    if (e && e.status) throw e;
+    throw e;
+  }
+}
+
+async function atomicWriteJson(file, data) {
+  const tmp = file + '.' + process.pid + '.' + Date.now() + '.tmp';
+  await fsp.writeFile(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
+  await fsp.rename(tmp, file);
+}
+
+function runSchema(data) {
+  const ok = validateSchema(data);
+  if (!ok) {
+    const detail = (validateSchema.errors || []).slice(0, 20).map((e) => ({
+      path: e.instancePath || '/',
+      keyword: e.keyword,
+      message: e.message
+    }));
+    throw pulpErr(422, 'schema_invalid', detail);
+  }
+}
+
+function ensureUniqueIds(list, label) {
+  const seen = new Set();
+  for (const item of list) {
+    if (seen.has(item.id)) {
+      throw pulpErr(409, 'duplicate_id', { collection: label, id: item.id });
+    }
+    seen.add(item.id);
+  }
+}
+
+async function readFileOrDefault(file) {
+  try {
+    const raw = await fsp.readFile(file, 'utf8');
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch (_e) { throw pulpErr(500, 'pulp_corrupt'); }
+    // Merge with defaults to backfill any missing top-level field.
+    const merged = { ...defaultPulpProject(), ...parsed };
+    return { project: merged, exists: true };
+  } catch (e) {
+    if (e && e.code === 'ENOENT') {
+      return { project: defaultPulpProject(), exists: false };
+    }
+    if (e && e.status) throw e;
+    throw e;
+  }
+}
+
+async function loadProjectOrThrow(projectId) {
+  const idErr = require('./validation').validateId(projectId);
+  if (idErr) throw pulpErr(400, 'bad_request', idErr);
+  const project = await projects.getProject(projectId);
+  if (!project) throw pulpErr(404, 'not_found');
+  return project;
+}
+
+async function readPulp(projectId) {
+  const project = await loadProjectOrThrow(projectId);
+  const { file } = await resolvePulpPaths(project);
+  const r = await readFileOrDefault(file);
+  return r;
+}
+
+async function writeFullPulp(projectId, body) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    if (!body || typeof body !== 'object') throw pulpErr(400, 'bad_request');
+    runSchema(body);
+    ensureUniqueIds(body.tiles, 'tiles');
+    ensureUniqueIds(body.rooms, 'rooms');
+    ensureUniqueIds(body.sounds, 'sounds');
+    ensureUniqueIds(body.songs, 'songs');
+    await ensureDir(dir);
+    await atomicWriteJson(file, body);
+    return body;
+  });
+}
+
+async function patchPulp(projectId, patch) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw pulpErr(400, 'bad_request');
+    }
+    const { project: cur } = await readFileOrDefault(file);
+    const next = { ...cur };
+    for (const [k, v] of Object.entries(patch)) {
+      if (!TOP_LEVEL_PATCHABLE.has(k)) {
+        throw pulpErr(400, 'field_not_patchable', { field: k });
+      }
+      next[k] = v;
+    }
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return next;
+  });
+}
+
+async function listCollection(projectId, collection) {
+  if (!COLLECTIONS.has(collection)) throw pulpErr(400, 'bad_collection');
+  const { project } = await readPulp(projectId);
+  return project[collection] || [];
+}
+
+async function addCollectionItem(projectId, collection, item) {
+  if (!COLLECTIONS.has(collection)) throw pulpErr(400, 'bad_collection');
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw pulpErr(400, 'bad_request');
+    }
+    const idErr = validatePulpId(item.id);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    const { project: cur } = await readFileOrDefault(file);
+    if ((cur[collection] || []).some((x) => x.id === item.id)) {
+      throw pulpErr(409, 'duplicate_id', { id: item.id });
+    }
+    const next = { ...cur, [collection]: [...(cur[collection] || []), item] };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return item;
+  });
+}
+
+async function patchCollectionItem(projectId, collection, itemId, patch) {
+  if (!COLLECTIONS.has(collection)) throw pulpErr(400, 'bad_collection');
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    const idErr = validatePulpId(itemId);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw pulpErr(400, 'bad_request');
+    }
+    const { project: cur } = await readFileOrDefault(file);
+    const list = cur[collection] || [];
+    const idx = list.findIndex((x) => x.id === itemId);
+    if (idx === -1) throw pulpErr(404, 'item_not_found');
+    const merged = { ...list[idx], ...patch, id: itemId };
+    const nextList = list.slice();
+    nextList[idx] = merged;
+    const next = { ...cur, [collection]: nextList };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return merged;
+  });
+}
+
+async function deleteCollectionItem(projectId, collection, itemId) {
+  if (!COLLECTIONS.has(collection)) throw pulpErr(400, 'bad_collection');
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    const idErr = validatePulpId(itemId);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    const { project: cur } = await readFileOrDefault(file);
+    const list = cur[collection] || [];
+    const idx = list.findIndex((x) => x.id === itemId);
+    if (idx === -1) throw pulpErr(404, 'item_not_found');
+    const nextList = list.slice();
+    nextList.splice(idx, 1);
+    const next = { ...cur, [collection]: nextList };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return true;
+  });
+}
+
+module.exports = {
+  defaultPulpProject,
+  readPulp,
+  writeFullPulp,
+  patchPulp,
+  listCollection,
+  addCollectionItem,
+  patchCollectionItem,
+  deleteCollectionItem,
+  COLLECTIONS,
+  pulpErr
+};
