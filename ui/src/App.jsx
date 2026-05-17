@@ -1,0 +1,82 @@
+import React, { useEffect, useState, useCallback, createContext, useContext } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { api, setCsrfToken } from './lib/api.js';
+
+const AuthCtx = createContext(null);
+export const useAuth = () => useContext(AuthCtx);
+
+function AuthProvider({ children }) {
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const me = await api.get('/api/auth/me');
+      if (me.authenticated) {
+        setCsrfToken(me.csrf_token);
+        setAuthed(true);
+      } else {
+        setAuthed(false);
+      }
+    } catch (_e) {
+      setAuthed(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const login = useCallback(async (password) => {
+    const r = await api.post('/api/auth/login', { password });
+    if (r && r.ok && r.csrf_token) {
+      setCsrfToken(r.csrf_token);
+      setAuthed(true);
+      return true;
+    }
+    return false;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try { await api.post('/api/auth/logout', {}); }
+    catch (_e) { /* ignore */ }
+    setCsrfToken(null);
+    setAuthed(false);
+  }, []);
+
+  return (
+    <AuthCtx.Provider value={{ loading, authed, login, logout, refresh }}>
+      {children}
+    </AuthCtx.Provider>
+  );
+}
+
+function RequireAuth({ children }) {
+  const { loading, authed } = useAuth();
+  const loc = useLocation();
+  if (loading) {
+    return <div className="h-screen w-screen flex items-center justify-center text-ink-400 text-sm">loading…</div>;
+  }
+  if (!authed) return <Navigate to="/login" state={{ from: loc.pathname }} replace />;
+  return children;
+}
+
+import Login from './pages/Login.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Project from './pages/Project.jsx';
+import NotFound from './pages/NotFound.jsx';
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/project/:id/*" element={<RequireAuth><Project /></RequireAuth>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AuthProvider>
+  );
+}

@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { font-feature-settings: "ss01", "cv02"; }
+  ::selection { background: theme('colors.accent'); color: theme('colors.ink.900'); }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border border-ink-600 bg-ink-800 hover:bg-ink-700 text-ink-100 text-sm transition;
+  }
+  .btn-primary {
+    @apply btn border-accent text-ink-900 bg-accent hover:bg-accent/90;
+  }
+  .input {
+    @apply w-full px-3 py-2 rounded-md bg-ink-800 border border-ink-600 focus:border-accent focus:outline-none text-ink-100;
+  }
+  .card {
+    @apply rounded-lg border border-ink-700 bg-ink-800 p-4 hover:border-ink-500 transition;
+  }
+  .pill {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-ink-600 bg-ink-900/40 text-ink-300;
+  }
+}
