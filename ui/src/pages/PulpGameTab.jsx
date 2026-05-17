@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Save, Upload, Download } from 'lucide-react';
 import { useProject } from '../lib/pulp_workspace.js';
@@ -76,7 +77,7 @@ export default function PulpGameTab() {
           <SavingPill state={savingState} />
         </div>
 
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
 
         <section className="grid grid-cols-[260px_1fr] gap-6 items-start">
           <PulpLauncherCard project={project} pulp={pulp} onChange={setPulp} />

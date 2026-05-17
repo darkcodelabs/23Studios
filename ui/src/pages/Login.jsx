@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Loader2 } from 'lucide-react';
@@ -60,7 +61,7 @@ export default function Login() {
           />
         </div>
 
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
 
         <button type="submit" className="btn-primary w-full" disabled={busy || !password}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

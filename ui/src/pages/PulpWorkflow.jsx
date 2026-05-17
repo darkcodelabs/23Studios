@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Compass, Sparkles, Loader2 } from 'lucide-react';
@@ -106,7 +107,7 @@ export default function PulpWorkflow({ onJumpTab }) {
             <div className="p-6 text-sm text-ink-400">no stages defined.</div>
           )
         )}
-        {err ? <div className="px-6 py-2 text-[11px] text-red-300">{err}</div> : null}
+        {err ? <div className="px-6 py-2 text-[11px] text-red-300">{safeErr(err)}</div> : null}
       </div>
     </div>
   );

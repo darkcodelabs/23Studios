@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useEffect, useState } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
 import { api } from '../lib/api.js';
@@ -65,7 +66,7 @@ export default function FileViewer({ projectId, filePath }) {
             <Loader2 className="w-4 h-4 animate-spin" /> loading…
           </div>
         ) : err ? (
-          <div className="p-6 text-sm text-red-400">{err}</div>
+          <div className="p-6 text-sm text-red-400">{safeErr(err)}</div>
         ) : data ? (
           <pre className="p-4 text-xs font-mono text-ink-100 whitespace-pre overflow-x-auto leading-relaxed">
             {data.content}

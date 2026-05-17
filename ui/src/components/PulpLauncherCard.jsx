@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Upload, Sparkles, X } from 'lucide-react';
 import {
@@ -197,7 +198,7 @@ export default function PulpLauncherCard({ project, pulp, onChange }) {
         </div>
       ) : null}
 
-      {err ? <div className="text-[11px] text-red-400">{err}</div> : null}
+      {err ? <div className="text-[11px] text-red-400">{safeErr(err)}</div> : null}
 
       <input
         ref={fileInputRef}

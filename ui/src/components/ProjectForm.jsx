@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { api } from '../lib/api.js';
@@ -110,7 +111,7 @@ export default function ProjectForm({ onClose, onCreated }) {
           <input className="input font-mono" value={form.captures_dir} onChange={up('captures_dir')} placeholder="build/recordings" />
         </Field>
 
-        {err ? <div className="text-xs text-red-400 whitespace-pre-wrap">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400 whitespace-pre-wrap">{safeErr(err)}</div> : null}
 
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" className="btn" onClick={onClose} disabled={busy}>cancel</button>

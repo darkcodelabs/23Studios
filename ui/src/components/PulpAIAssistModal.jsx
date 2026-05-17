@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useEffect, useRef, useState } from 'react';
 import { X, Loader2, Sparkles, Play, Undo2, Check, Trash2 } from 'lucide-react';
 import {
@@ -274,7 +275,7 @@ export default function PulpAIAssistModal({ kind, projectId, context = {}, onAcc
                 disabled={busy}
               />
             ) : null}
-            {err ? <span className="text-xs text-red-400 ml-2 truncate">{err}</span> : null}
+            {err ? <span className="text-xs text-red-400 ml-2 truncate">{safeErr(err)}</span> : null}
           </div>
         </div>
 

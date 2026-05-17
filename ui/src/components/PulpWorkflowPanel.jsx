@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import {
@@ -521,7 +522,7 @@ export default function PulpWorkflowPanel({ stageId, stage, project, workflow, o
 
         {err ? (
           <div className="card !p-3 text-xs text-red-300 border-red-900/60 bg-red-950/30 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" /> {err}
+            <AlertCircle className="w-4 h-4" /> {safeErr(err)}
           </div>
         ) : null}
 

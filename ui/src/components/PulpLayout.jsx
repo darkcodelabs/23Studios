@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useEffect, useState } from 'react';
 import { useParams, Outlet, useNavigate } from 'react-router-dom';
 import Nav from './Nav.jsx';
@@ -34,7 +35,7 @@ export default function PulpLayout() {
         <PulpNav />
         <main className="flex-1 min-w-0 overflow-hidden">
           {err ? (
-            <div className="p-6 text-sm text-red-400">{err}</div>
+            <div className="p-6 text-sm text-red-400">{safeErr(err)}</div>
           ) : !project ? (
             <div className="p-6 text-sm text-ink-400">loading…</div>
           ) : (

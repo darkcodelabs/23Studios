@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, RefreshCw } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
@@ -37,7 +38,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
 
         {projects === null ? (
           <div className="text-ink-400 text-sm">loading…</div>

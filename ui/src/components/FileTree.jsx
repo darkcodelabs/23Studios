@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronRight, ChevronDown, Folder, File as FileIcon, Loader2 } from 'lucide-react';
 import { api } from '../lib/api.js';
@@ -60,7 +61,7 @@ function Node({ projectId, item, parentPath, depth, selectedPath, onSelect }) {
           ))}
         </div>
       ) : null}
-      {err ? <div className="text-[10px] text-red-400 px-2 py-1" style={{ paddingLeft: 8 + (depth + 1) * 12 }}>{err}</div> : null}
+      {err ? <div className="text-[10px] text-red-400 px-2 py-1" style={{ paddingLeft: 8 + (depth + 1) * 12 }}>{safeErr(err)}</div> : null}
     </div>
   );
 }
@@ -82,7 +83,7 @@ export default function FileTree({ projectId, selectedPath, onSelect }) {
     return () => { alive = false; };
   }, [projectId]);
 
-  if (err) return <div className="p-3 text-xs text-red-400">{err}</div>;
+  if (err) return <div className="p-3 text-xs text-red-400">{safeErr(err)}</div>;
   if (!items) return <div className="p-3 text-xs text-ink-400">loading…</div>;
   if (items.length === 0) return <div className="p-3 text-xs text-ink-500">empty</div>;
 

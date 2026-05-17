@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Loader2, Upload, AudioLines, FileMusic, Image as ImageIcon, AlertTriangle, Check } from 'lucide-react';
 import {
@@ -277,7 +278,7 @@ export default function PulpAssetImportModal({ kind, projectId, onClose, onImpor
           </div>
         ) : null}
 
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-ink-700">
           <button type="button" className="btn text-xs" onClick={onClose} disabled={busy}>

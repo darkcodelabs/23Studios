@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Joystick, FileCode2, Loader2 } from 'lucide-react';
@@ -49,7 +50,7 @@ export default function GameTypeToggle({ project, onChange }) {
         title="visual game editor"
       />
       {busy ? <Loader2 className="w-3 h-3 animate-spin text-ink-400 mx-1" /> : null}
-      {err ? <span className="text-red-400 px-1">{err}</span> : null}
+      {err ? <span className="text-red-400 px-1">{safeErr(err)}</span> : null}
     </div>
   );
 }

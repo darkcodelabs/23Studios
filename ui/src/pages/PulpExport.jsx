@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProject } from '../lib/pulp_workspace.js';
 import { Package, Download, Play, Loader2, AlertTriangle } from 'lucide-react';
@@ -167,7 +168,7 @@ export default function PulpExport() {
             <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
             <div>
               <div className="font-mono text-xs uppercase tracking-wider mb-1">build failed</div>
-              <pre className="whitespace-pre-wrap text-xs font-mono">{error}</pre>
+              <pre className="whitespace-pre-wrap text-xs font-mono">{safeErr(error)}</pre>
             </div>
           </div>
         )}

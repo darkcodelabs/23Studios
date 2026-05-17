@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Send, Loader2, AlertCircle } from 'lucide-react';
@@ -203,7 +204,7 @@ export default function ChatPanel({ project, model }) {
 
       {err ? (
         <div className="px-4 py-2 border-t border-red-900/50 bg-red-950/20 text-red-300 text-xs flex items-center gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5" /> {err}
+          <AlertCircle className="w-3.5 h-3.5" /> {safeErr(err)}
         </div>
       ) : null}
 

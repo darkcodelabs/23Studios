@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProject } from '../lib/pulp_workspace.js';
 import { RotateCw, Pause, Play, RefreshCw } from 'lucide-react';
@@ -105,7 +106,7 @@ export default function PulpPlay() {
       <div className="h-full flex flex-col items-center justify-center text-center p-6 text-ink-400 text-sm space-y-2">
         <div className="text-base text-ink-200">no pulp data yet</div>
         <div>go define some tiles, then come back to playtest.</div>
-        {err ? <div className="text-red-400 text-xs">{err}</div> : null}
+        {err ? <div className="text-red-400 text-xs">{safeErr(err)}</div> : null}
       </div>
     );
   }

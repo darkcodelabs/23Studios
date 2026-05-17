@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useEffect, useState } from 'react';
 import { ChevronDown, Cpu } from 'lucide-react';
 import { api } from '../lib/api.js';
@@ -82,7 +83,7 @@ export default function ModelSelector({ value, onChange }) {
           {loading ? (
             <div className="px-3 py-2 text-xs text-ink-400">loading models…</div>
           ) : err ? (
-            <div className="px-3 py-2 text-xs text-red-400">{err}</div>
+            <div className="px-3 py-2 text-xs text-red-400">{safeErr(err)}</div>
           ) : models.length === 0 ? (
             <div className="px-3 py-2 text-xs text-ink-500">no models available (set OPENROUTER_API_KEY)</div>
           ) : models.map((m) => (

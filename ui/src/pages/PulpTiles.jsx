@@ -1,10 +1,14 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProject } from '../lib/pulp_workspace.js';
-import { Save, Trash2, Plus, Loader2, Sparkles } from 'lucide-react';
+import { Trash2, Copy, Sparkles } from 'lucide-react';
 import PulpTileCanvas from '../components/PulpTileCanvas.jsx';
 import PulpFramesStrip from '../components/PulpFramesStrip.jsx';
 import PulpTilePalette from '../components/PulpTilePalette.jsx';
 import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
+import PulpActionBar from '../components/PulpActionBar.jsx';
+import PulpInlineRename from '../components/PulpInlineRename.jsx';
+import PulpPropertyDrawer, { DrawerSection, DrawerField } from '../components/PulpPropertyDrawer.jsx';
 import { pulpApi, newTile, emptyFrame, TILE_TYPES } from '../lib/pulp_api.js';
 
 const SAVE_DEBOUNCE_MS = 400;
@@ -77,6 +81,22 @@ export default function PulpTiles() {
     } catch (e) { setErr(e.detail?.error || 'create failed'); }
   }
 
+  async function onDuplicate() {
+    if (!selected) return;
+    const baseId = `tile_${Date.now().toString(36)}`;
+    const copy = newTile({
+      ...selected,
+      id: baseId,
+      name: `${selected.name || 'tile'} copy`
+    });
+    try {
+      const r = await pulpApi.createTile(project.id, copy);
+      setTiles((prev) => [...prev, r.tile]);
+      setSelectedId(r.tile.id);
+      setFrameIdx(0);
+    } catch (e) { setErr(e.detail?.error || 'duplicate failed'); }
+  }
+
   async function onDelete(tile) {
     if (!tile) return;
     if (!window.confirm(`delete tile "${tile.name || tile.id}"?`)) return;
@@ -90,9 +110,22 @@ export default function PulpTiles() {
   const currentFrame = selected?.frames?.[frameIdx];
   const prevFrame = selected?.frames?.[(frameIdx - 1 + (selected?.frames?.length || 1)) % (selected?.frames?.length || 1)];
 
+  // ----- derived badges -----
+  const tileBadges = (() => {
+    if (!selected) return [];
+    const out = [
+      { label: '16x16', tone: 'neutral' },
+      { label: selected.type || 'world', tone: 'accent' },
+      { label: `${selected.frames?.length || 0} frames`, tone: 'neutral' }
+    ];
+    if (selected.solid) out.push({ label: 'solid', tone: 'warn' });
+    if ((selected.script || '').trim()) out.push({ label: 'script', tone: 'neutral' });
+    return out;
+  })();
+
   return (
-    <div className="h-full grid grid-cols-[260px_1fr_320px]">
-      <aside className="border-r border-ink-700 overflow-y-auto">
+    <div className="h-full flex">
+      <aside className="border-r border-ink-700 overflow-y-auto" style={{ width: 260, flexShrink: 0 }}>
         <PulpTilePalette
           tiles={tiles}
           selectedId={selectedId}
@@ -102,89 +135,136 @@ export default function PulpTiles() {
         />
       </aside>
 
-      <section className="overflow-y-auto p-4 flex flex-col items-center gap-4">
-        {!selected ? (
-          <div className="text-ink-500 text-sm pt-12">no tile selected</div>
-        ) : !currentFrame ? (
-          <div className="text-ink-500 text-sm pt-12">tile has no frames</div>
-        ) : (
-          <>
-            <PulpTileCanvas
-              pixels={currentFrame.pixels}
-              previousPixels={prevFrame ? prevFrame.pixels : null}
-              onChange={(newPixels) => {
-                const nf = (selected.frames || []).slice();
-                nf[frameIdx] = { ...(nf[frameIdx] || emptyFrame()), pixels: newPixels };
-                updateFrames(nf);
-              }}
-            />
-            <div className="flex items-center gap-2">
-              <button
-                className="btn-primary text-xs"
-                title={`generate art for frame ${frameIdx + 1}`}
-                onClick={() => setAiOpen(true)}
-              >
-                <Sparkles className="w-3.5 h-3.5" /> generate art
-              </button>
-              <span className="text-[10px] text-ink-500">frame {frameIdx + 1}/{selected.frames?.length || 1}</span>
-            </div>
-            <PulpFramesStrip
-              frames={selected.frames || []}
-              currentIdx={frameIdx}
-              onSelect={setFrameIdx}
-              onChange={updateFrames}
-              fps={selected.fps || 0}
-              onFpsChange={(fps) => updateLocal({ fps })}
-            />
-          </>
-        )}
-      </section>
-
-      <aside className="border-l border-ink-700 overflow-y-auto p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs uppercase tracking-wide text-ink-400">properties</h3>
-          <div className="text-[10px] text-ink-500 flex items-center gap-1">
-            {savingState === 'saving' ? <><Loader2 className="w-3 h-3 animate-spin" /> saving</> : null}
-            {savingState === 'saved' ? <><Save className="w-3 h-3" /> saved</> : null}
-            {savingState === 'dirty' ? 'edited' : null}
-            {savingState === 'error' ? <span className="text-red-400">error</span> : null}
-          </div>
-        </div>
-
-        {!selected ? (
-          <div className="text-xs text-ink-500">select or create a tile</div>
-        ) : (
-          <>
-            <Field label="id"><input className="input font-mono text-xs" value={selected.id} disabled /></Field>
-            <Field label="name">
-              <input className="input text-sm" value={selected.name || ''} onChange={(e) => updateLocal({ name: e.target.value })} />
-            </Field>
-            <Field label="type">
-              <select className="input text-sm" value={selected.type || 'world'} onChange={(e) => updateLocal({ type: e.target.value })}>
-                {TILE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </Field>
-            <label className="flex items-center gap-2 text-sm text-ink-200">
-              <input type="checkbox" checked={!!selected.solid} onChange={(e) => updateLocal({ solid: e.target.checked })} />
-              solid
-            </label>
-            <Field label="script">
-              <textarea
-                className="input font-mono text-xs"
-                rows={8}
-                value={selected.script || ''}
-                onChange={(e) => updateLocal({ script: e.target.value })}
-                placeholder="-- PulpScript --"
+      <section className="flex-1 flex flex-col min-w-0">
+        <PulpActionBar
+          title={
+            selected ? (
+              <PulpInlineRename
+                value={selected.name || ''}
+                onSubmit={(name) => updateLocal({ name })}
+                saving={savingState}
+                ariaLabel="rename tile"
               />
-            </Field>
-            <button className="btn w-full text-xs text-red-400 border-red-900/60" onClick={() => onDelete(selected)}>
-              <Trash2 className="w-3.5 h-3.5" /> delete tile
-            </button>
-          </>
-        )}
+            ) : (
+              <span className="text-ink-500">no tile selected</span>
+            )
+          }
+          badges={tileBadges}
+          secondary={selected ? [
+            { icon: Copy, label: 'duplicate', onClick: onDuplicate }
+          ] : []}
+          primary={selected ? [
+            {
+              icon: Sparkles, label: 'generate art',
+              onClick: () => setAiOpen(true),
+              title: `generate art for frame ${frameIdx + 1}`
+            }
+          ] : []}
+          destructive={selected ? { icon: Trash2, label: 'delete', onClick: () => onDelete(selected) } : null}
+        />
 
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
-      </aside>
+        <div className="flex-1 flex min-h-0">
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-4 min-w-0">
+            {!selected ? (
+              <div className="text-ink-500 text-sm pt-12">no tile selected</div>
+            ) : !currentFrame ? (
+              <div className="text-ink-500 text-sm pt-12">tile has no frames</div>
+            ) : (
+              <>
+                <PulpTileCanvas
+                  pixels={currentFrame.pixels}
+                  previousPixels={prevFrame ? prevFrame.pixels : null}
+                  onChange={(newPixels) => {
+                    const nf = (selected.frames || []).slice();
+                    nf[frameIdx] = { ...(nf[frameIdx] || emptyFrame()), pixels: newPixels };
+                    updateFrames(nf);
+                  }}
+                />
+                <div className="text-[10px] text-ink-500 font-mono">
+                  frame {frameIdx + 1}/{selected.frames?.length || 1}
+                </div>
+                <div className="w-full max-w-3xl border border-ink-700 rounded-md p-3 bg-ink-900/40">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-[10px] uppercase tracking-wide text-ink-500 font-mono">frames</h4>
+                  </div>
+                  <PulpFramesStrip
+                    frames={selected.frames || []}
+                    currentIdx={frameIdx}
+                    onSelect={setFrameIdx}
+                    onChange={updateFrames}
+                    fps={selected.fps || 0}
+                    onFpsChange={(fps) => updateLocal({ fps })}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <PulpPropertyDrawer
+            storageKey="tiles"
+            defaultOpen={false}
+            title="properties"
+            width={320}
+          >
+            {!selected ? (
+              <div className="text-xs text-ink-500">select or create a tile</div>
+            ) : (
+              <>
+                <DrawerSection title="identity">
+                  <DrawerField label="id">
+                    <input className="input font-mono text-xs" value={selected.id} disabled />
+                  </DrawerField>
+                  <DrawerField label="type">
+                    <select
+                      className="input text-sm"
+                      value={selected.type || 'world'}
+                      onChange={(e) => updateLocal({ type: e.target.value })}
+                    >
+                      {TILE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </DrawerField>
+                  <label className="flex items-center gap-2 text-sm text-ink-200">
+                    <input
+                      type="checkbox"
+                      checked={!!selected.solid}
+                      onChange={(e) => updateLocal({ solid: e.target.checked })}
+                    />
+                    solid
+                  </label>
+                </DrawerSection>
+
+                <DrawerSection title="animation">
+                  <DrawerField label="fps">
+                    <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      className="input text-sm"
+                      value={selected.fps || 0}
+                      onChange={(e) => updateLocal({ fps: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })}
+                    />
+                  </DrawerField>
+                </DrawerSection>
+
+                <DrawerSection title="tile script">
+                  <textarea
+                    className="input font-mono text-xs"
+                    rows={8}
+                    value={selected.script || ''}
+                    onChange={(e) => updateLocal({ script: e.target.value })}
+                    placeholder="-- PulpScript --"
+                  />
+                  <p className="text-[10px] text-ink-500">
+                    edit fuller scripts in the script tab.
+                  </p>
+                </DrawerSection>
+              </>
+            )}
+
+            {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
+          </PulpPropertyDrawer>
+        </div>
+      </section>
 
       {aiOpen && selected ? (
         <PulpAIAssistModal
@@ -207,14 +287,5 @@ export default function PulpTiles() {
         />
       ) : null}
     </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block space-y-1">
-      <span className="block text-[10px] uppercase tracking-wide text-ink-500">{label}</span>
-      {children}
-    </label>
   );
 }

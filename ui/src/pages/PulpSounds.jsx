@@ -1,3 +1,4 @@
+import { safeErr } from '../lib/format_err.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useProject } from '../lib/pulp_workspace.js';
 import { Plus, Trash2, Play, Loader2, Save, Sparkles } from 'lucide-react';
@@ -230,7 +231,7 @@ function SfxEditor({ projectId }) {
             </div>
           </>
         )}
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
       </section>
 
       {aiOpen && selected ? (
@@ -393,7 +394,7 @@ function SongEditor({ projectId }) {
             </div>
           </>
         )}
-        {err ? <div className="text-xs text-red-400">{err}</div> : null}
+        {err ? <div className="text-xs text-red-400">{safeErr(err)}</div> : null}
       </section>
     </div>
   );
