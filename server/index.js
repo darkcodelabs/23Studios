@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
@@ -47,12 +48,24 @@ const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 'loopback');
 
+// Inline boot script: detects code-server's /proxy/<port>/ mount and sets
+// <base href> + window.__APP_BASE__ BEFORE Vite's module scripts execute.
+// Hash is added to CSP so the strict 'script-src' allows just this one inline.
+const PROXY_BOOT_JS =
+  "(function(){var m=location.pathname.match(/^(.*\\/proxy\\/\\d+)(\\/|$)/);" +
+  "var b=m?m[1]+'/':'';if(b){var e=document.createElement('base');" +
+  "e.setAttribute('href',b);document.head.insertBefore(e,document.head.firstChild);}" +
+  "window.__APP_BASE__=m?m[1]:'';})();";
+const PROXY_BOOT_HASH =
+  "'sha256-" + crypto.createHash('sha256').update(PROXY_BOOT_JS).digest('base64') + "'";
+
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
       'default-src': ["'self'"],
-      'script-src': ["'self'"],
+      'script-src': ["'self'", PROXY_BOOT_HASH],
+      'script-src-elem': ["'self'", PROXY_BOOT_HASH],
       'style-src': ["'self'", "'unsafe-inline'"],
       'connect-src': ["'self'", 'ws:', 'wss:'],
       'img-src': ["'self'", 'data:'],
@@ -115,19 +128,19 @@ if (fs.existsSync(PUBLIC_DIR)) {
     }
   }));
 
-  // SPA fallback. Injects <base href> based on the proxy prefix code-server
-  // forwards via X-Forwarded-Prefix (e.g. "/proxy/8090"). Without this, a
-  // request that lands on /proxy/8090 (no trailing slash) makes the browser
-  // resolve `./assets/...` against /proxy/ and 404 on the asset.
+  // SPA fallback. Injects a tiny inline boot script that runs BEFORE Vite's
+  // module scripts execute and sets <base href> + window.__APP_BASE__ to the
+  // code-server proxy mount (e.g. "/proxy/8090/"). This runs in the browser
+  // because code-server's proxy doesn't reliably forward X-Forwarded-Prefix,
+  // and the document URL itself is the source of truth.
   const indexHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  app.get(/^\/(?!api|ws).*/, (req, res) => {
-    let prefix = (req.headers['x-forwarded-prefix'] || '').toString();
-    if (prefix && !/^\/[A-Za-z0-9_\-./]*$/.test(prefix)) prefix = '';
-    if (prefix && !prefix.endsWith('/')) prefix += '/';
-    const base = prefix || './';
-    const html = indexHtml.replace('<head>', `<head><base href="${base}">`);
+  const bootedHtml = indexHtml.replace(
+    '<head>',
+    `<head><script>${PROXY_BOOT_JS}</script>`
+  );
+  app.get(/^\/(?!api|ws).*/, (_req, res) => {
     res.setHeader('Cache-Control', 'no-store, must-revalidate');
-    res.type('html').send(html);
+    res.type('html').send(bootedHtml);
   });
 }
 
