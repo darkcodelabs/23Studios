@@ -17,6 +17,7 @@ const authRouter = require('./routes/auth');
 const projectsRouter = require('./routes/projects');
 const filesRouter = require('./routes/files');
 const openrouterRouter = require('./routes/openrouter');
+const chatWs = require('./routes/chat');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 8090;
@@ -106,6 +107,8 @@ app.use((err, _req, res, _next) => {
 const server = app.listen(PORT, HOST, () => {
   console.log(`[23studios] listening on http://${HOST}:${PORT} (${NODE_ENV})`);
 });
+
+chatWs.install(server);
 
 function shutdown() {
   console.log('[23studios] shutting down');
