@@ -59,10 +59,10 @@ export default function PulpEditor() {
         document.execCommand?.('redo');
         return;
       case 'play':
-        navigate(`/project/${id}/pulp/play`);
+        selectTab('play');
         return;
       case 'pdx':
-        navigate(`/project/${id}/pulp/export`);
+        selectTab('export');
         return;
       case 'export':
         selectTab('game');

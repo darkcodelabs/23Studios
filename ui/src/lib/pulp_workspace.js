@@ -9,7 +9,7 @@ export function useProject() {
   return ctx?.project || null;
 }
 
-export const TAB_IDS = ['game', 'font', 'room', 'tile', 'song', 'sound', 'script'];
+export const TAB_IDS = ['game', 'font', 'room', 'tile', 'song', 'sound', 'script', 'play', 'export'];
 export const DEFAULT_TAB = 'game';
 
 export function tabFromUrl(search) {

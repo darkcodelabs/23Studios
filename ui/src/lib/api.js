@@ -18,7 +18,7 @@ function prefixed(u) {
 }
 
 async function request(method, url, body, opts = {}) {
-  url = prefixed(url);
+  if (!opts.__urlPrefixed) url = prefixed(url);
   const headers = { 'Accept': 'application/json' };
   if (body !== undefined && body !== null && !(body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
@@ -35,9 +35,26 @@ async function request(method, url, body, opts = {}) {
   if (body !== undefined && body !== null) {
     init.body = body instanceof FormData ? body : JSON.stringify(body);
   }
-  const res = await fetch(url, init);
+  let res = await fetch(url, init);
   const ct = res.headers.get('content-type') || '';
-  const isJson = ct.includes('application/json');
+  let isJson = ct.includes('application/json');
+
+  // Stale CSRF: refresh once + replay. Common when the cookie-session rotates
+  // or the user has the tab open across a deploy.
+  if (res.status === 403 && !opts.__csrfRetried) {
+    let detail = null;
+    try { detail = isJson ? await res.clone().json() : null; } catch (_e) { /* ignore */ }
+    if (detail && detail.error === 'invalid_csrf') {
+      try {
+        const me = await fetch(prefixed('/api/auth/me'), { credentials: 'same-origin' }).then(r => r.json());
+        if (me && me.csrf_token) {
+          setCsrfToken(me.csrf_token);
+          return request(method, url, body, { ...opts, __csrfRetried: true, __urlPrefixed: true });
+        }
+      } catch (_e) { /* fall through to throw below */ }
+    }
+  }
+
   if (!res.ok) {
     let detail = null;
     try { detail = isJson ? await res.json() : await res.text(); } catch (_e) { /* ignore */ }

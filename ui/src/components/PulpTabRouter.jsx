@@ -4,6 +4,8 @@ import PulpTiles from '../pages/PulpTiles.jsx';
 import PulpRooms from '../pages/PulpRooms.jsx';
 import PulpScripts from '../pages/PulpScripts.jsx';
 import PulpSounds from '../pages/PulpSounds.jsx';
+import PulpPlay from '../pages/PulpPlay.jsx';
+import PulpExport from '../pages/PulpExport.jsx';
 
 // Song + sound currently share PulpSounds (it has internal SFX/Songs tabs).
 // PulpEditor passes a hint via the `activeTab` prop so the page can default
@@ -19,7 +21,9 @@ const TAB_COMPONENTS = {
   tile:   () => <PulpTiles />,
   song:   () => <SoundOrSong kind="song" />,
   sound:  () => <SoundOrSong kind="sound" />,
-  script: () => <PulpScripts />
+  script: () => <PulpScripts />,
+  play:   () => <PulpPlay />,
+  export: () => <PulpExport />
 };
 
 export default function PulpTabRouter({ activeTab }) {
