@@ -7,7 +7,13 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express = require('express');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
+
+const { requireAuth } = require('./middleware/auth');
+const { csrfProtection, csrfErrorHandler } = require('./middleware/csrf');
+const { apiLimiter } = require('./middleware/rateLimit');
+const authRouter = require('./routes/auth');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 8090;
@@ -52,6 +58,7 @@ app.use(helmet({
 
 app.use(express.json({ limit: '128kb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
+app.use(cookieParser(SESSION_SECRET));
 
 app.use(cookieSession({
   name: 'studio_sess',
@@ -65,6 +72,11 @@ app.use(cookieSession({
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: Date.now() });
 });
+
+app.use('/api', apiLimiter);
+app.use('/api/auth', authRouter);
+app.use('/api', requireAuth, csrfProtection);
+app.use(csrfErrorHandler);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
