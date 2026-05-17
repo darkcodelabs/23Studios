@@ -71,6 +71,8 @@ import PulpTiles from './pages/PulpTiles.jsx';
 import PulpRooms from './pages/PulpRooms.jsx';
 import PulpScripts from './pages/PulpScripts.jsx';
 import PulpSounds from './pages/PulpSounds.jsx';
+import PulpExport from './pages/PulpExport.jsx';
+import PulpPlay from './pages/PulpPlay.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -94,8 +96,8 @@ export default function App() {
           <Route path="rooms" element={<PulpRooms />} />
           <Route path="scripts" element={<PulpScripts />} />
           <Route path="sounds" element={<PulpSounds />} />
-          <Route path="play" element={<PulpComingSoon name="playtest" />} />
-          <Route path="export" element={<PulpComingSoon name="export" />} />
+          <Route path="play" element={<PulpPlay />} />
+          <Route path="export" element={<PulpExport />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
