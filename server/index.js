@@ -14,6 +14,7 @@ const { requireAuth } = require('./middleware/auth');
 const { csrfProtection, csrfErrorHandler } = require('./middleware/csrf');
 const { apiLimiter } = require('./middleware/rateLimit');
 const authRouter = require('./routes/auth');
+const projectsRouter = require('./routes/projects');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 8090;
@@ -77,6 +78,8 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api', requireAuth, csrfProtection);
 app.use(csrfErrorHandler);
+
+app.use('/api/projects', projectsRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
