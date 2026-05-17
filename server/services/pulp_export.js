@@ -528,6 +528,35 @@ async function runExport(job, project, onEvent) {
     log(onEvent, 'WARN: project local_path missing; skipping publish step');
   }
 
+  // Step 9.5: optional smoke test — if HAKCD's gold tools/smoke_test.sh ships
+  // in the host project, shell out to verify the .pdx actually boots in the
+  // Playdate simulator. Non-fatal: a failed smoke test logs a WARN but the
+  // job still completes as 'done' so the user gets the .pdx download.
+  const smokeScript = project.local_path
+    ? path.join(project.local_path, 'tools', 'smoke_test.sh')
+    : null;
+  if (smokeScript && fs.existsSync(smokeScript) && publishedPath) {
+    progress(onEvent, 'smoke', 96, 'running tools/smoke_test.sh');
+    try {
+      const { spawnSync } = require('child_process');
+      const res = spawnSync(smokeScript, [publishedPath, '--allow-skip'], {
+        cwd: project.local_path,
+        shell: false,
+        timeout: 45000,
+        encoding: 'utf8'
+      });
+      if (res.stdout) for (const line of res.stdout.split(/\r?\n/)) if (line) log(onEvent, `[smoke] ${line}`);
+      if (res.stderr) for (const line of res.stderr.split(/\r?\n/)) if (line) log(onEvent, `[smoke!] ${line}`);
+      if (res.status === 0) {
+        log(onEvent, 'smoke_test PASSED');
+      } else {
+        log(onEvent, `WARN: smoke_test exit ${res.status} — pdx may crash on Playdate`);
+      }
+    } catch (e) {
+      log(onEvent, `WARN: smoke_test failed to launch: ${e.message}`);
+    }
+  }
+
   job.pdx_path = outPdx;
   job.published_path = publishedPath;
   job.is_dir = pdxStat.isDirectory();
