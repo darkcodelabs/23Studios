@@ -18,6 +18,7 @@ const projectsRouter = require('./routes/projects');
 const filesRouter = require('./routes/files');
 const openrouterRouter = require('./routes/openrouter');
 const chatWs = require('./routes/chat');
+const { seedDefaults } = require('./services/seed');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 8090;
@@ -109,6 +110,8 @@ const server = app.listen(PORT, HOST, () => {
 });
 
 chatWs.install(server);
+
+seedDefaults().catch((e) => console.error('[seed]', e));
 
 function shutdown() {
   console.log('[23studios] shutting down');
