@@ -81,6 +81,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: Date.now() });
 });
 
+// Silence the favicon 404 — empty 1x1 transparent gif until a real one ships.
+const FAVICON = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+app.get('/favicon.ico', (_req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.type('image/gif').send(FAVICON);
+});
+
 app.use('/api', apiLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api', requireAuth, csrfProtection);
@@ -107,9 +114,20 @@ if (fs.existsSync(PUBLIC_DIR)) {
       }
     }
   }));
-  app.get(/^\/(?!api|ws).*/, (_req, res) => {
+
+  // SPA fallback. Injects <base href> based on the proxy prefix code-server
+  // forwards via X-Forwarded-Prefix (e.g. "/proxy/8090"). Without this, a
+  // request that lands on /proxy/8090 (no trailing slash) makes the browser
+  // resolve `./assets/...` against /proxy/ and 404 on the asset.
+  const indexHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  app.get(/^\/(?!api|ws).*/, (req, res) => {
+    let prefix = (req.headers['x-forwarded-prefix'] || '').toString();
+    if (prefix && !/^\/[A-Za-z0-9_\-./]*$/.test(prefix)) prefix = '';
+    if (prefix && !prefix.endsWith('/')) prefix += '/';
+    const base = prefix || './';
+    const html = indexHtml.replace('<head>', `<head><base href="${base}">`);
     res.setHeader('Cache-Control', 'no-store, must-revalidate');
-    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+    res.type('html').send(html);
   });
 }
 
