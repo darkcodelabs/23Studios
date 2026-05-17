@@ -1,0 +1,3 @@
+on loop do
+  log "tick"
+end

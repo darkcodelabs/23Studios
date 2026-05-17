@@ -1,0 +1,5 @@
+on confirm do
+  sound "sfx"
+  loop "song"
+  stop
+end

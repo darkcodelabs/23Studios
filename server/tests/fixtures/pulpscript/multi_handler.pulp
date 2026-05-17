@@ -1,0 +1,6 @@
+on load do
+  say "init"
+end
+on confirm do
+  say "go"
+end

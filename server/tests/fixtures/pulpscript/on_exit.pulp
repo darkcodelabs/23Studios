@@ -1,0 +1,3 @@
+on exit do
+  say "bye"
+end

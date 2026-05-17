@@ -1,0 +1,3 @@
+on enter do
+  log "entered"
+end

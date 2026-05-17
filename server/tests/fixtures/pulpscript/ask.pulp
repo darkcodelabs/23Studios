@@ -1,0 +1,8 @@
+on confirm do
+  ask "pick one" then
+    option "yes" then
+      say "ok"
+    option "no" then
+      say "fine"
+  end
+end

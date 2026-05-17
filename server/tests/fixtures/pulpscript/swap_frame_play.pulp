@@ -1,0 +1,5 @@
+on confirm do
+  swap "door_open"
+  frame 2
+  play "intro"
+end

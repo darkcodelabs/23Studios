@@ -1,0 +1,3 @@
+on draw do
+  hide
+end

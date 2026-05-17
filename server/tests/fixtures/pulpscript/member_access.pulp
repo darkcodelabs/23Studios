@@ -1,0 +1,4 @@
+on update do
+  x = event.dx
+  y = event.dy
+end

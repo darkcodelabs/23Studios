@@ -1,0 +1,8 @@
+on confirm do
+  menu "choose" then
+    option "start" then
+      say "begin"
+    option "quit" then
+      fin "bye"
+  end
+end

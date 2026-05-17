@@ -1,0 +1,3 @@
+on draw do
+  say "score: {score}"
+end

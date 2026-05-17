@@ -1,0 +1,4 @@
+on load do
+  a = 5
+  b = a
+end

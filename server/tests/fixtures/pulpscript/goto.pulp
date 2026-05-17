@@ -1,0 +1,3 @@
+on confirm do
+  goto 5 7
+end

@@ -1,0 +1,8 @@
+on update do
+  if a == b then log "eq" end
+  if a != b then log "ne" end
+  if a < b then log "lt" end
+  if a > b then log "gt" end
+  if a <= b then log "le" end
+  if a >= b then log "ge" end
+end

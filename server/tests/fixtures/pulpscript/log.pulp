@@ -1,0 +1,3 @@
+on load do
+  log "hello"
+end

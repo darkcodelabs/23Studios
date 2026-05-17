@@ -1,0 +1,3 @@
+on confirm do
+  dump
+end

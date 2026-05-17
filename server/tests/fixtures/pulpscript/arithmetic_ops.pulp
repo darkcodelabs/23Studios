@@ -1,0 +1,6 @@
+on update do
+  a = b + c
+  d = b - c
+  e = b * c
+  f = b / c
+end

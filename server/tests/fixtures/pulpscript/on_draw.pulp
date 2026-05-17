@@ -1,0 +1,3 @@
+on draw do
+  label "HUD" 4 4
+end

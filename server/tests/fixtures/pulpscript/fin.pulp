@@ -1,0 +1,3 @@
+on confirm do
+  fin "done"
+end

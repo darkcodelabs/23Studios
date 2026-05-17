@@ -1,0 +1,5 @@
+on confirm do
+  wait 1 then
+    say "after"
+  end
+end

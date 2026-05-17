@@ -1,0 +1,4 @@
+on update do
+  x++
+  y--
+end

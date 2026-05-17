@@ -1,0 +1,7 @@
+on update do
+  if a == 1 then
+    if b == 2 then
+      say "inner"
+    end
+  end
+end

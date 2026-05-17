@@ -1,0 +1,6 @@
+on enter do
+  listen
+end
+on exit do
+  ignore
+end

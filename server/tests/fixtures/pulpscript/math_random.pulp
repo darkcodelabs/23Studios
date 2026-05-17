@@ -1,0 +1,3 @@
+on update do
+  random 1 10
+end

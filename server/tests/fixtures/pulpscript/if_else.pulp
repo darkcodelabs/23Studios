@@ -1,0 +1,7 @@
+on confirm do
+  if x == 1 then
+    say "one"
+  else
+    say "other"
+  end
+end

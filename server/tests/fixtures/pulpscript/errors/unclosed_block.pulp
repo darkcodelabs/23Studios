@@ -1,0 +1,2 @@
+on confirm do
+  say "hi"

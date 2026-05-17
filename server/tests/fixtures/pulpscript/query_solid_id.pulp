@@ -1,0 +1,4 @@
+on confirm do
+  solid 3 4
+  id 3 4
+end
