@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Loader2, Save, ChevronRight, ChevronDown } from 'lucide-react';
+import { Loader2, Save, ChevronRight, ChevronDown, Sparkles } from 'lucide-react';
+import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
 import { pulpApi } from '../lib/pulp_api.js';
 
 const SAVE_DEBOUNCE_MS = 500;
@@ -26,6 +27,7 @@ export default function PulpScripts() {
   const latestRef = useRef(null);
   const [openTiles, setOpenTiles] = useState(true);
   const [openRooms, setOpenRooms] = useState(true);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -126,6 +128,13 @@ export default function PulpScripts() {
       <section className="flex flex-col min-h-0">
         <div className="px-3 py-2 border-b border-ink-700 flex items-center gap-2 text-xs">
           <span className="text-ink-400 font-mono">{selectedKey}</span>
+          <button
+            className="btn-primary text-[11px] py-1 px-2"
+            onClick={() => setAiOpen(true)}
+            title="generate with ai"
+          >
+            <Sparkles className="w-3 h-3" /> generate with ai
+          </button>
           <div className="flex-1" />
           <div className="text-[10px] text-ink-500 flex items-center gap-1">
             {savingState === 'saving' ? <><Loader2 className="w-3 h-3 animate-spin" /> saving</> : null}
@@ -146,6 +155,24 @@ end"
         />
         {err ? <div className="px-3 py-2 text-xs text-red-400 border-t border-ink-700">{err}</div> : null}
       </section>
+
+      {aiOpen ? (
+        <PulpAIAssistModal
+          kind="script"
+          projectId={project.id}
+          context={(() => {
+            if (selectedKey.startsWith('tile:')) return { scope: 'tile', tile_id: selectedKey.slice(5) };
+            if (selectedKey.startsWith('room:')) return { scope: 'room', room_id: selectedKey.slice(5) };
+            return { scope: 'game' };
+          })()}
+          onClose={() => setAiOpen(false)}
+          onAccept={(result) => {
+            const script = result?.script;
+            if (typeof script !== 'string') return;
+            onEdit(script);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

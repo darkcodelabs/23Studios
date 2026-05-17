@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Save, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Save, Trash2, Plus, Loader2, Sparkles } from 'lucide-react';
 import PulpTileCanvas from '../components/PulpTileCanvas.jsx';
 import PulpFramesStrip from '../components/PulpFramesStrip.jsx';
 import PulpTilePalette from '../components/PulpTilePalette.jsx';
+import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
 import { pulpApi, newTile, emptyFrame, TILE_TYPES } from '../lib/pulp_api.js';
 
 const SAVE_DEBOUNCE_MS = 400;
@@ -15,6 +16,7 @@ export default function PulpTiles() {
   const [frameIdx, setFrameIdx] = useState(0);
   const [savingState, setSavingState] = useState('idle');
   const [err, setErr] = useState(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const debounceRef = useRef(null);
   const latestPatchRef = useRef(null);
 
@@ -116,6 +118,16 @@ export default function PulpTiles() {
                 updateFrames(nf);
               }}
             />
+            <div className="flex items-center gap-2">
+              <button
+                className="btn-primary text-xs"
+                title={`generate art for frame ${frameIdx + 1}`}
+                onClick={() => setAiOpen(true)}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> generate art
+              </button>
+              <span className="text-[10px] text-ink-500">frame {frameIdx + 1}/{selected.frames?.length || 1}</span>
+            </div>
             <PulpFramesStrip
               frames={selected.frames || []}
               currentIdx={frameIdx}
@@ -173,6 +185,27 @@ export default function PulpTiles() {
 
         {err ? <div className="text-xs text-red-400">{err}</div> : null}
       </aside>
+
+      {aiOpen && selected ? (
+        <PulpAIAssistModal
+          kind="tile-art"
+          projectId={project.id}
+          context={{ tile_id: selected.id, frame_idx: frameIdx }}
+          onClose={() => setAiOpen(false)}
+          onAccept={(result) => {
+            // result.pixels is the decoded 16x16 '0'/'1' string (see PulpAIAssistModal)
+            if (!selected) return;
+            const pixels = result?.pixels;
+            if (!pixels || pixels.length !== 256) {
+              setErr('ai art decode failed');
+              return;
+            }
+            const nf = (selected.frames || []).slice();
+            nf[frameIdx] = { ...(nf[frameIdx] || emptyFrame()), pixels };
+            updateFrames(nf);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

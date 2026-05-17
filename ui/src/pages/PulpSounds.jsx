@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Plus, Trash2, Play, Loader2, Save } from 'lucide-react';
+import { Plus, Trash2, Play, Loader2, Save, Sparkles } from 'lucide-react';
+import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
 import { pulpApi, newSound, newSong } from '../lib/pulp_api.js';
 
 const WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
@@ -90,6 +91,7 @@ function SfxEditor({ projectId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [err, setErr] = useState(null);
   const [savingState, setSavingState] = useState('idle');
+  const [aiOpen, setAiOpen] = useState(false);
   const debounceRef = useRef(null);
   const latestRef = useRef(null);
 
@@ -219,6 +221,9 @@ function SfxEditor({ projectId }) {
               <button className="btn-primary text-xs" onClick={() => previewSound(selected)}>
                 <Play className="w-3.5 h-3.5" /> preview
               </button>
+              <button className="btn text-xs" onClick={() => setAiOpen(true)}>
+                <Sparkles className="w-3.5 h-3.5" /> generate sound
+              </button>
               <button className="btn text-xs text-red-400 border-red-900/60 ml-auto" onClick={() => onDelete(selected)}>
                 <Trash2 className="w-3.5 h-3.5" /> delete
               </button>
@@ -227,6 +232,26 @@ function SfxEditor({ projectId }) {
         )}
         {err ? <div className="text-xs text-red-400">{err}</div> : null}
       </section>
+
+      {aiOpen && selected ? (
+        <PulpAIAssistModal
+          kind="sound"
+          projectId={projectId}
+          context={{ sound_id: selected.id }}
+          onClose={() => setAiOpen(false)}
+          onAccept={(result) => {
+            if (!result) return;
+            const patch = {
+              waveform: result.waveform || selected.waveform,
+              freq_start: result.freq_start ?? selected.freq_start,
+              freq_end: result.freq_end ?? selected.freq_end,
+              duration_ms: result.duration_ms ?? selected.duration_ms,
+              envelope: result.envelope || selected.envelope
+            };
+            updateLocal(patch);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

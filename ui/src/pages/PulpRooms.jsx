@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Trash2, Plus, Loader2, Save } from 'lucide-react';
+import { Trash2, Plus, Loader2, Save, Sparkles } from 'lucide-react';
 import PulpRoomGrid from '../components/PulpRoomGrid.jsx';
 import PulpTilePalette from '../components/PulpTilePalette.jsx';
+import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
 import { pulpApi, newRoom } from '../lib/pulp_api.js';
 
 const SAVE_DEBOUNCE_MS = 400;
@@ -16,6 +17,7 @@ export default function PulpRooms() {
   const [selectedTileId, setSelectedTileId] = useState(null);
   const [err, setErr] = useState(null);
   const [savingState, setSavingState] = useState('idle');
+  const [aiOpen, setAiOpen] = useState(false);
   const debounceRef = useRef(null);
   const latestPatchRef = useRef(null);
 
@@ -155,6 +157,14 @@ export default function PulpRooms() {
               <Field label="script">
                 <textarea className="input font-mono text-xs" rows={5} value={selectedRoom.script || ''} onChange={(e) => updateLocal({ script: e.target.value })} />
               </Field>
+              <button
+                className="btn-primary w-full text-xs"
+                onClick={() => setAiOpen(true)}
+                disabled={tiles.length === 0}
+                title={tiles.length === 0 ? 'create tiles first' : 'generate a room layout with ai'}
+              >
+                <Sparkles className="w-3.5 h-3.5" /> generate room layout
+              </button>
               <button className="btn w-full text-xs text-red-400 border-red-900/60" onClick={onDeleteRoom}>
                 <Trash2 className="w-3.5 h-3.5" /> delete room
               </button>
@@ -164,6 +174,27 @@ export default function PulpRooms() {
 
         {err ? <div className="text-xs text-red-400">{err}</div> : null}
       </aside>
+
+      {aiOpen && selectedRoom ? (
+        <PulpAIAssistModal
+          kind="room-layout"
+          projectId={project.id}
+          context={{
+            room_id: selectedRoom.id,
+            available_tile_ids: tiles.map((t) => t.id),
+            tilesById: Object.fromEntries(tiles.map((t) => [t.id, t]))
+          }}
+          onClose={() => setAiOpen(false)}
+          onAccept={(result) => {
+            const grid = result?.grid;
+            if (!Array.isArray(grid) || grid.length !== 15 || !Array.isArray(grid[0]) || grid[0].length !== 25) {
+              setErr('ai room layout: expected 15x25 grid');
+              return;
+            }
+            updateLocal({ grid });
+          }}
+        />
+      ) : null}
     </div>
   );
 }
