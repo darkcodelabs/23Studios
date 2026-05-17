@@ -16,6 +16,7 @@ const { apiLimiter } = require('./middleware/rateLimit');
 const authRouter = require('./routes/auth');
 const projectsRouter = require('./routes/projects');
 const filesRouter = require('./routes/files');
+const openrouterRouter = require('./routes/openrouter');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 8090;
@@ -82,6 +83,7 @@ app.use(csrfErrorHandler);
 
 app.use('/api/projects', projectsRouter);
 app.use('/api/projects', filesRouter);
+app.use('/api/openrouter', openrouterRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
