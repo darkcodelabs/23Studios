@@ -36,6 +36,8 @@ export default function Project() {
   }, [id]);
 
   if (err === 'not_found') return <Navigate to="/dashboard" replace />;
+  // Pulp projects belong in the editor shell; redirect deep-link visits.
+  if (project?.game_type === 'pulp') return <Navigate to={`/project/${id}/edit`} replace />;
 
   return (
     <div className="h-screen flex flex-col">

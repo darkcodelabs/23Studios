@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useProject } from '../lib/pulp_workspace.js';
 import { Package, Download, Play, Loader2, AlertTriangle } from 'lucide-react';
 import { api } from '../lib/api.js';
 
@@ -24,7 +24,7 @@ function StepBadge({ name, active, complete }) {
 }
 
 export default function PulpExport() {
-  const { project } = useOutletContext();
+  const project = useProject();
   const [job, setJob] = useState(null);          // { id, ws_url, download_url }
   const [busy, setBusy] = useState(false);
   const [pct, setPct] = useState(0);

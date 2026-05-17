@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useProject } from '../lib/pulp_workspace.js';
 import { Save, Trash2, Plus, Loader2, Sparkles } from 'lucide-react';
 import PulpTileCanvas from '../components/PulpTileCanvas.jsx';
 import PulpFramesStrip from '../components/PulpFramesStrip.jsx';
@@ -10,7 +10,7 @@ import { pulpApi, newTile, emptyFrame, TILE_TYPES } from '../lib/pulp_api.js';
 const SAVE_DEBOUNCE_MS = 400;
 
 export default function PulpTiles() {
-  const { project } = useOutletContext();
+  const project = useProject();
   const [tiles, setTiles] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [frameIdx, setFrameIdx] = useState(0);

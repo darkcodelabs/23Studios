@@ -9,8 +9,11 @@ const STATUS_COLOR = {
 
 export default function ProjectCard({ project }) {
   const sc = STATUS_COLOR[project.status] || 'text-ink-300';
+  const href = project.game_type === 'pulp'
+    ? `/project/${project.id}/edit`
+    : `/project/${project.id}`;
   return (
-    <Link to={`/project/${project.id}`} className="card group block">
+    <Link to={href} className="card group block">
       <div className="flex items-start gap-3">
         <div className="w-9 h-9 rounded-md bg-ink-900 border border-ink-700 flex items-center justify-center">
           <Gamepad2 className="w-4 h-4 text-accent" />

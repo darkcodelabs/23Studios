@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useProject } from '../lib/pulp_workspace.js';
 import { RotateCw, Pause, Play, RefreshCw } from 'lucide-react';
 import { pulpApi } from '../lib/pulp_api.js';
 import { createInterpreter } from '../lib/pulp_interpreter/index.js';
@@ -11,7 +11,7 @@ const CANVAS_H = 240;
 const DISPLAY_SCALE = 2;
 
 export default function PulpPlay() {
-  const { project } = useOutletContext();
+  const project = useProject();
   const [pulpData, setPulpData] = useState(null);
   const [exists, setExists] = useState(null); // null=loading, true/false
   const [err, setErr] = useState(null);

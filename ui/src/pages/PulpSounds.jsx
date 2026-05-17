@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useProject } from '../lib/pulp_workspace.js';
 import { Plus, Trash2, Play, Loader2, Save, Sparkles } from 'lucide-react';
 import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
 import { pulpApi, newSound, newSong } from '../lib/pulp_api.js';
@@ -61,9 +61,9 @@ function previewSound(spec) {
   osc.stop(now + dur + 0.05);
 }
 
-export default function PulpSounds() {
-  const { project } = useOutletContext();
-  const [tab, setTab] = useState('sfx');
+export default function PulpSounds({ initialTab = 'sfx' } = {}) {
+  const project = useProject();
+  const [tab, setTab] = useState(initialTab);
   return (
     <div className="h-full flex flex-col">
       <div className="border-b border-ink-700 flex items-center gap-1 px-3">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useProject } from '../lib/pulp_workspace.js';
 import { Trash2, Plus, Loader2, Save, Sparkles } from 'lucide-react';
 import PulpRoomGrid from '../components/PulpRoomGrid.jsx';
 import PulpTilePalette from '../components/PulpTilePalette.jsx';
@@ -9,7 +9,7 @@ import { pulpApi, newRoom } from '../lib/pulp_api.js';
 const SAVE_DEBOUNCE_MS = 400;
 
 export default function PulpRooms() {
-  const { project } = useOutletContext();
+  const project = useProject();
   const [rooms, setRooms] = useState([]);
   const [tiles, setTiles] = useState([]);
   const [songs, setSongs] = useState([]);

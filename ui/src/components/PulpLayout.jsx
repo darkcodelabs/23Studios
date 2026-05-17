@@ -3,6 +3,7 @@ import { useParams, Outlet, useNavigate } from 'react-router-dom';
 import Nav from './Nav.jsx';
 import PulpNav from './PulpNav.jsx';
 import { api } from '../lib/api.js';
+import { PulpProjectContext } from '../lib/pulp_workspace.js';
 
 export default function PulpLayout() {
   const { id } = useParams();
@@ -37,7 +38,9 @@ export default function PulpLayout() {
           ) : !project ? (
             <div className="p-6 text-sm text-ink-400">loading…</div>
           ) : (
-            <Outlet context={{ project }} />
+            <PulpProjectContext.Provider value={{ project }}>
+              <Outlet context={{ project }} />
+            </PulpProjectContext.Provider>
           )}
         </main>
       </div>

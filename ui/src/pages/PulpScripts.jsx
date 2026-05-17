@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useProject } from '../lib/pulp_workspace.js';
 import { Loader2, Save, ChevronRight, ChevronDown, Sparkles } from 'lucide-react';
 import PulpAIAssistModal from '../components/PulpAIAssistModal.jsx';
 import { pulpApi } from '../lib/pulp_api.js';
@@ -15,7 +15,7 @@ const SAVE_DEBOUNCE_MS = 500;
 // `on update do ... end` etc.
 
 export default function PulpScripts() {
-  const { project } = useOutletContext();
+  const project = useProject();
   const [pulp, setPulp] = useState(null);
   const [tiles, setTiles] = useState([]);
   const [rooms, setRooms] = useState([]);
