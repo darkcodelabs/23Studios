@@ -49,3 +49,9 @@ pnpm-debug.log*
 *.js.map
 *.d.ts
 !src/**/*.d.ts
+
+# 23 Studios
+server/public/
+server/data/projects.json
+server/data/chat_history/
+.DS_Store
