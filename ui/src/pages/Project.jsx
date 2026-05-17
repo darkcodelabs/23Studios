@@ -6,6 +6,7 @@ import FileTree from '../components/FileTree.jsx';
 import FileViewer from '../components/FileViewer.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import ModelSelector, { CLAUDE_OPTION } from '../components/ModelSelector.jsx';
+import GameTypeToggle from '../components/GameTypeToggle.jsx';
 import { api } from '../lib/api.js';
 
 const TABS = [
@@ -58,11 +59,7 @@ export default function Project() {
             );
           })}
           <div className="flex-1" />
-          {project?.game_type === 'pulp' ? (
-            <Link to={`/project/${project.id}/pulp`} className="btn text-xs">
-              <Gamepad2 className="w-3.5 h-3.5 text-accent" /> pulp editor
-            </Link>
-          ) : null}
+          <GameTypeToggle project={project} onChange={setProject} />
           {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
         </div>
       </div>

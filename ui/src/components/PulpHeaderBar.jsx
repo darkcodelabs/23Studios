@@ -1,6 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Hexagon, Settings, LogOut, Sparkles } from 'lucide-react';
 import { useAuth } from '../App.jsx';
+import GameTypeToggle from './GameTypeToggle.jsx';
 
 export default function PulpHeaderBar({ project, aiOpen, onToggleAi }) {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function PulpHeaderBar({ project, aiOpen, onToggleAi }) {
       </Link>
       <span className="text-ink-500 text-xs">/</span>
       <span className="font-mono text-sm text-ink-200 truncate">{project?.name || project?.id || '…'}</span>
+      <GameTypeToggle project={project} />
       <div className="flex-1" />
       <button
         onClick={onToggleAi}
