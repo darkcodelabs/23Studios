@@ -27,7 +27,8 @@ const TOP_LEVEL_PATCHABLE = new Set([
   'version',
   'config',
   'player',
-  'game_script'
+  'game_script',
+  'workflow_state'
 ]);
 
 const COLLECTIONS = new Set(['tiles', 'rooms', 'sounds', 'songs']);
@@ -262,6 +263,51 @@ async function patchCollectionItem(projectId, collection, itemId, patch) {
   });
 }
 
+// Per-room patchable allow-list. Mirrors the room schema property set;
+// keep in sync with pulp_project.schema.json $defs.Room.properties.
+const ROOM_PATCHABLE = new Set([
+  'name',
+  'song',
+  'grid',
+  'script',
+  'background_image'
+]);
+
+/**
+ * patchRoom(projectId, roomId, patch)
+ * Applies a partial update to a single room. Only fields in ROOM_PATCHABLE
+ * may be modified; id is preserved. Validates against the full schema after
+ * merge and persists atomically under the per-project lock.
+ */
+async function patchRoom(projectId, roomId, patch) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    const idErr = validatePulpId(roomId);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw pulpErr(400, 'bad_request');
+    }
+    for (const k of Object.keys(patch)) {
+      if (!ROOM_PATCHABLE.has(k)) {
+        throw pulpErr(400, 'field_not_patchable', { field: k });
+      }
+    }
+    const { project: cur } = await readFileOrDefault(file);
+    const list = cur.rooms || [];
+    const idx = list.findIndex((x) => x.id === roomId);
+    if (idx === -1) throw pulpErr(404, 'item_not_found');
+    const merged = { ...list[idx], ...patch, id: roomId };
+    const nextList = list.slice();
+    nextList[idx] = merged;
+    const next = { ...cur, rooms: nextList };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return merged;
+  });
+}
+
 async function deleteCollectionItem(projectId, collection, itemId) {
   if (!COLLECTIONS.has(collection)) throw pulpErr(400, 'bad_collection');
   return withLock(projectId, async () => {
@@ -291,7 +337,9 @@ module.exports = {
   listCollection,
   addCollectionItem,
   patchCollectionItem,
+  patchRoom,
   deleteCollectionItem,
   COLLECTIONS,
+  ROOM_PATCHABLE,
   pulpErr
 };

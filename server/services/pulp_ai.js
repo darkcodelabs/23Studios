@@ -242,6 +242,179 @@ async function generateTileArt({ projectId, prompt, model, style }) {
   };
 }
 
+// ---------- Scene art (full-room background) ----------
+
+const SCENE_DIM_DEFAULT = [400, 240];
+
+// Deterministic 1-bit dithered placeholder. Mirrors the spirit of
+// placeholderTilePng but for landscape scenes. Renders a soft ~25% black dot
+// pattern over a white field, with a 30-char prompt label burned in via simple
+// pixel font when present. Pure sharp + raw buffer — no font deps.
+async function placeholderScenePng(prompt, width = 400, height = 240) {
+  const w = Math.max(8, Math.min(2048, width | 0));
+  const h = Math.max(8, Math.min(2048, height | 0));
+  const hash = crypto.createHash('sha256').update(prompt || '').digest();
+  const raw = Buffer.alloc(w * h, 255);
+  // ~25% black dot dither using hashed offsets per row.
+  for (let y = 0; y < h; y++) {
+    const rowSeed = hash[y % hash.length];
+    for (let x = 0; x < w; x++) {
+      // Bayer-ish 4x4 threshold mask + hash perturbation.
+      const bx = x & 3;
+      const by = y & 3;
+      const bayer = [
+        0, 8, 2, 10,
+        12, 4, 14, 6,
+        3, 11, 1, 9,
+        15, 7, 13, 5
+      ][by * 4 + bx];
+      // Aim for ~25% black -> threshold near 4/16.
+      const perturb = ((rowSeed + x * 31) & 0xf);
+      if (((bayer ^ perturb) & 0xf) < 4) {
+        raw[y * w + x] = 0;
+      }
+    }
+  }
+  // 2px black border for "frame".
+  for (let x = 0; x < w; x++) {
+    raw[x] = 0;
+    raw[w + x] = 0;
+    raw[(h - 1) * w + x] = 0;
+    raw[(h - 2) * w + x] = 0;
+  }
+  for (let y = 0; y < h; y++) {
+    raw[y * w] = 0;
+    raw[y * w + 1] = 0;
+    raw[y * w + w - 1] = 0;
+    raw[y * w + w - 2] = 0;
+  }
+  // Render a tiny "prompt[:30]" caption as a hash-derived 3x5 pseudo-font
+  // bar pattern across the top so the placeholder is content-bearing without
+  // shipping a real font. We avoid burning unsafe text in.
+  const label = String(prompt || '').slice(0, 30);
+  if (label.length > 0) {
+    const labelHash = crypto.createHash('sha256').update(label).digest();
+    const stripeH = 5;
+    const stripeY = 4;
+    for (let i = 0; i < Math.min(label.length, 30); i++) {
+      const byte = labelHash[i % labelHash.length];
+      for (let dy = 0; dy < stripeH; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          const xx = 4 + i * 4 + dx;
+          const yy = stripeY + dy;
+          if (xx >= 2 && xx < w - 2 && yy < h) {
+            const bit = (byte >> ((dy * 3 + dx) % 8)) & 1;
+            raw[yy * w + xx] = bit ? 0 : 255;
+          }
+        }
+      }
+    }
+  }
+  return await sharp(raw, { raw: { width: w, height: h, channels: 1 } })
+    .png()
+    .toBuffer();
+}
+
+async function toScenePng(buf, width, height) {
+  const w = Math.max(8, Math.min(2048, (width || SCENE_DIM_DEFAULT[0]) | 0));
+  const h = Math.max(8, Math.min(2048, (height || SCENE_DIM_DEFAULT[1]) | 0));
+  return await sharp(buf)
+    .resize(w, h, { fit: 'cover', position: 'centre' })
+    .greyscale()
+    .threshold(128)
+    .toColourspace('b-w')
+    .png()
+    .toBuffer();
+}
+
+const SCENE_STYLE_LOCK =
+  '1-bit black-and-white isometric pixel art, Atkinson or Bayer dithering ' +
+  'for shading, NO grayscale gradients, NO color, classic dimetric ' +
+  'projection at 30 degrees, thick 2-px black outlines, Mars After Midnight ' +
+  '/ Whitewater Wipeout / International Synapse aesthetic, 5:3 horizontal ' +
+  'aspect ratio for a Playdate (400x240 native, render at higher detail), ' +
+  'background uses light dot-pattern dither (~25% black) for surface ' +
+  'texture. Scene: ';
+
+/**
+ * generateScene({prompt, model, dim})
+ * Returns { pngBuffer, model, prompt, fallback?, dim }
+ * - pngBuffer is a 1-bit (b-w colourspace) PNG already sized to dim.
+ * - Mirrors generateTileArt shape but for landscape scenes.
+ * - Falls back to a deterministic dithered placeholder if OPENROUTER_API_KEY
+ *   is unset or the image call fails.
+ */
+async function generateScene({ prompt, model, dim }) {
+  const cleanPrompt = sanitizePrompt(prompt);
+  if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
+  const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
+  const [dw, dh] = Array.isArray(dim) && dim.length === 2
+    ? [parseInt(dim[0], 10) || SCENE_DIM_DEFAULT[0],
+       parseInt(dim[1], 10) || SCENE_DIM_DEFAULT[1]]
+    : SCENE_DIM_DEFAULT;
+
+  const augmented = SCENE_STYLE_LOCK + cleanPrompt;
+
+  let fallback = false;
+  let imgBuf = null;
+  let usedModel = requestedModel;
+
+  if (!API_KEY) {
+    fallback = true;
+  } else {
+    try {
+      // Try 1792x1024 (landscape) first for DALL-E-3; downsize covers to dim.
+      let size = '1792x1024';
+      // Some non-DALL-E models only accept 1024x1024 — caller can pick model.
+      try {
+        const result = await client().images.generate({
+          model: requestedModel,
+          prompt: augmented,
+          size,
+          n: 1,
+          response_format: 'b64_json'
+        });
+        const item = result && result.data && result.data[0];
+        if (!item) throw new Error('empty image gen response');
+        imgBuf = await decodeImageFromGenResult(item);
+      } catch (e1) {
+        // Retry at 1024x1024 if the wide size was rejected.
+        size = '1024x1024';
+        const result = await client().images.generate({
+          model: requestedModel,
+          prompt: augmented,
+          size,
+          n: 1,
+          response_format: 'b64_json'
+        });
+        const item = result && result.data && result.data[0];
+        if (!item) throw new Error('empty image gen response');
+        imgBuf = await decodeImageFromGenResult(item);
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[pulp_ai] scene gen failed, falling back:',
+        e && (e.code || e.message));
+      fallback = true;
+    }
+  }
+
+  if (fallback) {
+    imgBuf = await placeholderScenePng(augmented, dw, dh);
+    usedModel = 'local-placeholder';
+  }
+
+  const pngBuffer = await toScenePng(imgBuf, dw, dh);
+
+  return {
+    pngBuffer,
+    model: usedModel,
+    prompt: augmented,
+    fallback,
+    dim: [dw, dh]
+  };
+}
+
 // ---------- Claude prompt helpers ----------
 
 function awaitClaude({ projectId, cwd, text }) {
@@ -517,6 +690,7 @@ async function getLog(projectId) {
 
 module.exports = {
   generateTileArt,
+  generateScene,
   generateScript,
   generateRoomLayout,
   generateSound,
@@ -529,6 +703,9 @@ module.exports = {
     parseScriptResponse,
     extractJsonObject,
     placeholderTilePng,
-    deterministicBitsFromPrompt
+    placeholderScenePng,
+    toScenePng,
+    deterministicBitsFromPrompt,
+    SCENE_STYLE_LOCK
   }
 };

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://23studios.local/schema/pulp_workflow_state.json",
+  "title": "PulpWorkflowState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stage_order", "stages"],
+  "properties": {
+    "stage_order": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/StageId" }
+    },
+    "stages": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/Stage" }
+    }
+  },
+  "$defs": {
+    "StageId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "Status": {
+      "enum": ["empty", "in_progress", "complete"]
+    },
+    "AiLogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "role", "content"],
+      "properties": {
+        "ts": { "type": "integer", "minimum": 0 },
+        "role": { "enum": ["user", "assistant", "system"] },
+        "content": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "Stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "input",
+        "output",
+        "requires",
+        "last_updated_ts",
+        "ai_log"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/StageId" },
+        "status": { "$ref": "#/$defs/Status" },
+        "input": { "type": "string", "maxLength": 8000 },
+        "output": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "object" },
+            { "type": "array" }
+          ]
+        },
+        "requires": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/StageId" }
+        },
+        "last_updated_ts": { "type": "integer", "minimum": 0 },
+        "ai_log": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/AiLogEntry" }
+        }
+      }
+    }
+  }
+}

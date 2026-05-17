@@ -42,7 +42,11 @@
       "items": { "$ref": "#/$defs/Song" }
     },
     "player": { "$ref": "#/$defs/Player" },
-    "game_script": { "type": "string", "maxLength": 1024 }
+    "game_script": { "type": "string", "maxLength": 1024 },
+    "workflow_state": {
+      "type": "object",
+      "additionalProperties": true
+    }
   },
   "$defs": {
     "Id": {
@@ -116,7 +120,8 @@
             "items": { "$ref": "#/$defs/OptionalId" }
           }
         },
-        "script": { "type": "string", "maxLength": 1024 }
+        "script": { "type": "string", "maxLength": 1024 },
+        "background_image": { "type": "string", "maxLength": 256 }
       }
     },
     "SoundEnvelope": {
