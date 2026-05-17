@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { FolderTree, MessageSquare, ScrollText } from 'lucide-react';
+import { useParams, Navigate, Link } from 'react-router-dom';
+import { FolderTree, MessageSquare, ScrollText, Gamepad2 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import FileTree from '../components/FileTree.jsx';
 import FileViewer from '../components/FileViewer.jsx';
@@ -56,6 +56,11 @@ export default function Project() {
             );
           })}
           <div className="flex-1" />
+          {project?.game_type === 'pulp' ? (
+            <Link to={`/project/${project.id}/pulp`} className="btn text-xs">
+              <Gamepad2 className="w-3.5 h-3.5 text-accent" /> pulp editor
+            </Link>
+          ) : null}
           {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
         </div>
       </div>

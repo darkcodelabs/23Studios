@@ -25,6 +25,7 @@ export default function ProjectCard({ project }) {
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-ink-400">
             <span className="pill">{project.platform || 'unknown'}</span>
+            {project.game_type ? <span className="pill">{project.game_type}</span> : null}
             {project.developer ? <span className="pill">dev: {project.developer}</span> : null}
             {project.publisher ? <span className="pill">pub: {project.publisher}</span> : null}
           </div>

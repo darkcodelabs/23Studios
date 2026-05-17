@@ -9,6 +9,7 @@ const EMPTY = {
   repo: '',
   local_path: '',
   platform: 'playdate',
+  game_type: 'sdk',
   publisher: '',
   developer: '',
   build_command: '',
@@ -71,10 +72,16 @@ export default function ProjectForm({ onClose, onCreated }) {
         <Field label="local path (must exist + be a git repo)" required>
           <input className="input font-mono" value={form.local_path} onChange={up('local_path')} placeholder="/home/hakcer/projects/..." required />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Field label="platform">
             <select className="input" value={form.platform} onChange={up('platform')}>
               <option value="playdate">playdate</option>
+            </select>
+          </Field>
+          <Field label="game type">
+            <select className="input" value={form.game_type} onChange={up('game_type')}>
+              <option value="sdk">sdk (lua)</option>
+              <option value="pulp">pulp (editor)</option>
             </select>
           </Field>
           <Field label="status">

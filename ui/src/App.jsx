@@ -66,6 +66,19 @@ import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Project from './pages/Project.jsx';
 import NotFound from './pages/NotFound.jsx';
+import PulpLayout from './components/PulpLayout.jsx';
+import PulpTiles from './pages/PulpTiles.jsx';
+import PulpRooms from './pages/PulpRooms.jsx';
+import PulpScripts from './pages/PulpScripts.jsx';
+import PulpSounds from './pages/PulpSounds.jsx';
+
+function PulpComingSoon({ name }) {
+  return (
+    <div className="h-full flex items-center justify-center text-ink-500 text-sm">
+      {name} arrives in Phase 2 Wave 2
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -74,7 +87,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/project/:id/*" element={<RequireAuth><Project /></RequireAuth>} />
+        <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
+        <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
+          <Route index element={<Navigate to="tiles" replace />} />
+          <Route path="tiles" element={<PulpTiles />} />
+          <Route path="rooms" element={<PulpRooms />} />
+          <Route path="scripts" element={<PulpScripts />} />
+          <Route path="sounds" element={<PulpSounds />} />
+          <Route path="play" element={<PulpComingSoon name="playtest" />} />
+          <Route path="export" element={<PulpComingSoon name="export" />} />
+        </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AuthProvider>
