@@ -57,7 +57,8 @@ function rooms.swap_cell(target, new_id)
 end
 
 -- goto x, y [in "room"]
-function pulp.goto(x, y, maybe_room_or_none)
+-- `goto` is a Lua 5.2+ reserved keyword so we attach via bracket access.
+pulp["goto"] = function(x, y, maybe_room_or_none)
   if maybe_room_or_none and type(maybe_room_or_none) == 'string' then
     rooms.set_current(maybe_room_or_none)
   end

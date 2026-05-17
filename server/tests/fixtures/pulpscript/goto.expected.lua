@@ -5,7 +5,7 @@ if not pulp then error("pulp runtime not loaded") end
 
 function game_on_confirm(event)
   pulp.event = event or pulp.event or {}
-  pulp.goto(5, 7)
+  pulp["goto"](5, 7)
 end
 pulp.listen('game', 'confirm', game_on_confirm)
 

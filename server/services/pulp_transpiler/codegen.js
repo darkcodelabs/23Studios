@@ -169,7 +169,8 @@ function emitCall(s, level) {
   if (name === 'goto') {
     // goto x,y [in "room"]
     const parts = args.map(emitExpr);
-    return `${ind}pulp.goto(${parts.join(', ')})`;
+    // `goto` is a reserved keyword in Lua 5.2+ so we must use bracket access.
+    return `${ind}pulp["goto"](${parts.join(', ')})`;
   }
 
   if (name === 'tell') {
