@@ -1,0 +1,18 @@
+{
+  "name": "23studios",
+  "version": "0.1.0",
+  "private": true,
+  "description": "23 Studios: game development production pipeline for DarkCode LLC",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix ui install",
+    "dev": "concurrently -n srv,ui -c blue,magenta \"npm:dev:server\" \"npm:dev:ui\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:ui": "npm --prefix ui run dev",
+    "build": "npm --prefix ui run build && rm -rf server/public && cp -r ui/dist server/public",
+    "start": "npm --prefix server start",
+    "audit": "npm --prefix server audit && npm --prefix ui audit"
+  },
+  "devDependencies": {
+    "concurrently": "8.2.2"
+  }
+}
