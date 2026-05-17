@@ -95,8 +95,20 @@ app.use('/api/openrouter', openrouterRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
-  app.use(express.static(PUBLIC_DIR, { index: false, maxAge: '1h' }));
+  // Hashed Vite assets are immutable; everything else (the rare top-level
+  // file) gets no-cache so a fresh build never gets shadowed by a proxy.
+  app.use(express.static(PUBLIC_DIR, {
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        res.setHeader('Cache-Control', 'no-store, must-revalidate');
+      }
+    }
+  }));
   app.get(/^\/(?!api|ws).*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, must-revalidate');
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
   });
 }
