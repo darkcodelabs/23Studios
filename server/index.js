@@ -19,6 +19,7 @@ const projectsRouter = require('./routes/projects');
 const filesRouter = require('./routes/files');
 const pulpRouter = require('./routes/pulp');
 const pulpAiRouter = require('./routes/pulp_ai');
+const pulpAssetsRouter = require('./routes/pulp_assets');
 const pulpExportRouter = require('./routes/pulp_export');
 const openrouterRouter = require('./routes/openrouter');
 const chatWs = require('./routes/chat');
@@ -110,6 +111,7 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/projects', filesRouter);
 app.use('/api/projects', pulpRouter);
 app.use('/api/projects', pulpAiRouter);
+app.use('/api/projects', pulpAssetsRouter);
 app.use('/api/projects', pulpExportRouter);
 app.use('/api/openrouter', openrouterRouter);
 

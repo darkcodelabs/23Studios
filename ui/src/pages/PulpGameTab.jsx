@@ -2,6 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Save, Upload, Download } from 'lucide-react';
 import { useProject } from '../lib/pulp_workspace.js';
 import { pulpApi } from '../lib/pulp_api.js';
+import PulpLauncherCard from '../components/PulpLauncherCard.jsx';
+import PulpAssetImportModal from '../components/PulpAssetImportModal.jsx';
+
+const IMPORTABLE = new Set(['tiles', 'sounds', 'songs']);
 
 const SAVE_DEBOUNCE_MS = 400;
 const DEFAULT_CONFIG = { auto_act: true, input_repeat: true, follow_player: false, text_speed: 20 };
@@ -11,6 +15,7 @@ export default function PulpGameTab() {
   const [pulp, setPulp] = useState(null);
   const [savingState, setSavingState] = useState('idle');
   const [err, setErr] = useState(null);
+  const [importKind, setImportKind] = useState(null); // 'tiles' | 'sounds' | 'songs' | null
   const debounceRef = useRef(null);
   const pendingRef = useRef({});
 
@@ -72,8 +77,8 @@ export default function PulpGameTab() {
 
         {err ? <div className="text-xs text-red-400">{err}</div> : null}
 
-        <section className="grid grid-cols-[200px_1fr] gap-6 items-start">
-          <LauncherPreview pulp={pulp} project={project} />
+        <section className="grid grid-cols-[260px_1fr] gap-6 items-start">
+          <PulpLauncherCard project={project} pulp={pulp} onChange={setPulp} />
           <div className="space-y-3">
             <Field label="name">
               <input className="input text-sm" value={pulp?.name || ''} onChange={(e) => updateTop({ name: e.target.value })} />
@@ -114,32 +119,42 @@ export default function PulpGameTab() {
           <h2 className="text-xs uppercase tracking-wide text-ink-400">assets</h2>
           <p className="text-[11px] text-ink-500">import or export individual asset groups. full .pdx is on the left-rail PDX button.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {['tiles', 'rooms', 'sounds', 'songs'].map((k) => (
-              <div key={k} className="border border-ink-700 rounded-md p-3 space-y-2 bg-ink-900/40">
-                <div className="font-mono text-xs text-ink-200 capitalize">{k}</div>
-                <div className="flex gap-1">
-                  <button className="btn text-[11px]" disabled title="Phase 3"><Upload className="w-3 h-3" /> import</button>
-                  <button className="btn text-[11px]" disabled title="Phase 3"><Download className="w-3 h-3" /> export</button>
+            {['tiles', 'rooms', 'sounds', 'songs'].map((k) => {
+              const canImport = IMPORTABLE.has(k);
+              return (
+                <div key={k} className="border border-ink-700 rounded-md p-3 space-y-2 bg-ink-900/40">
+                  <div className="font-mono text-xs text-ink-200 capitalize">{k}</div>
+                  <div className="flex gap-1">
+                    <button
+                      className="btn text-[11px]"
+                      disabled={!canImport}
+                      title={canImport ? `import ${k}` : 'Phase 3'}
+                      onClick={() => canImport && setImportKind(k)}
+                    >
+                      <Upload className="w-3 h-3" /> import
+                    </button>
+                    <button className="btn text-[11px]" disabled title="Phase 3"><Download className="w-3 h-3" /> export</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>
-    </div>
-  );
-}
 
-function LauncherPreview({ pulp, project }) {
-  return (
-    <div className="space-y-2">
-      <div className="aspect-[5/3] bg-ink-800 border border-ink-700 rounded-md flex items-center justify-center">
-        <div className="text-center px-3">
-          <div className="font-mono text-sm text-ink-100 truncate">{pulp?.name || project.name}</div>
-          <div className="text-[10px] text-ink-500 mt-1 truncate">{pulp?.author || project.developer || '23 Studios'}</div>
-        </div>
-      </div>
-      <div className="text-[10px] text-ink-500 text-center font-mono">launcher card</div>
+      {importKind ? (
+        <PulpAssetImportModal
+          kind={importKind}
+          projectId={project.id}
+          onClose={() => setImportKind(null)}
+          onImported={() => {
+            // Re-pull the pulp record so any newly-added totals or paths are
+            // reflected upstream. Asset lists are owned by their own per-tab
+            // pages; we just refresh the top-level project here.
+            load();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
