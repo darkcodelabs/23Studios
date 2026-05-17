@@ -14,7 +14,7 @@
 //   6. transpile   — emit per-script Lua files
 //   7. main        — write source/main.lua + pdxinfo
 //   8. pdc         — run Playdate SDK compiler (subprocess, shell:false)
-//   9. publish     — copy pdx into <project.local_path>/build/
+//   9. publish     — copy pdx into <project.local_path>/pulp_build/
 
 const fsp = require('fs/promises');
 const fs = require('fs');
@@ -504,11 +504,12 @@ async function runExport(job, project, onEvent) {
   try { pdxStat = await fsp.stat(outPdx); }
   catch (_e) { throw new Error('pdc finished but output missing: ' + outPdx); }
 
-  // Step 9: publish into project's local_path/build/
+  // Step 9: publish into project's local_path/pulp_build/ (separate from the
+  // host project's own `build/` so a pulp export doesn't shadow an SDK build).
   progress(onEvent, 'publish', 92, 'publishing pdx');
   let publishedPath = null;
   if (project.local_path && fs.existsSync(project.local_path)) {
-    const projBuildDir = path.join(project.local_path, 'build');
+    const projBuildDir = path.join(project.local_path, 'pulp_build');
     try {
       await fsp.mkdir(projBuildDir, { recursive: true });
       const dst = path.join(projBuildDir, `${projectIdSafe}.pdx`);
