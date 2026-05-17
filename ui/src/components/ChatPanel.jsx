@@ -107,7 +107,8 @@ export default function ChatPanel({ project, model }) {
       messages: [...history, { role: 'user', content: text }]
     };
     try {
-      const res = await fetch('/api/openrouter/chat', {
+      const appBase = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+      const res = await fetch(`${appBase}/api/openrouter/chat`, {
         method: 'POST',
         credentials: 'same-origin',
         headers: {

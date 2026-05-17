@@ -9,11 +9,20 @@ const base = (id) => `/api/projects/${id}/pulp`;
 // Raw PUT helper — the shared api client doesn't expose PUT, and the
 // contract for /api/projects/:id/pulp distinguishes PUT (full replace)
 // from PATCH (shallow merge). Mirror api.js semantics (json, CSRF, cookies).
+function appBase() {
+  if (typeof window === 'undefined') return '';
+  if (window.__APP_BASE__ !== undefined) return window.__APP_BASE__;
+  const m = window.location.pathname.match(/^(.*\/proxy\/\d+)(\/|$)/);
+  window.__APP_BASE__ = m ? m[1] : '';
+  return window.__APP_BASE__;
+}
+
 async function rawPut(url, body) {
   const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
   const t = getCsrfToken();
   if (t) headers['x-csrf-token'] = t;
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith('/') ? `${appBase()}${url}` : url;
+  const res = await fetch(fullUrl, {
     method: 'PUT',
     credentials: 'same-origin',
     headers,

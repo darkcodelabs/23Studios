@@ -3,7 +3,22 @@ let csrfToken = null;
 export function setCsrfToken(t) { csrfToken = t || null; }
 export function getCsrfToken() { return csrfToken; }
 
+// Honour code-server's /proxy/<port> prefix (set in main.jsx).
+function getAppBase() {
+  if (typeof window === 'undefined') return '';
+  if (window.__APP_BASE__ !== undefined) return window.__APP_BASE__;
+  const m = window.location.pathname.match(/^(.*\/proxy\/\d+)(\/|$)/);
+  window.__APP_BASE__ = m ? m[1] : '';
+  return window.__APP_BASE__;
+}
+function prefixed(u) {
+  if (typeof u !== 'string' || !u.startsWith('/')) return u;
+  const b = getAppBase();
+  return b ? b + u : u;
+}
+
 async function request(method, url, body, opts = {}) {
+  url = prefixed(url);
   const headers = { 'Accept': 'application/json' };
   if (body !== undefined && body !== null && !(body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';

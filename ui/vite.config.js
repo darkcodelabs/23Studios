@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // Relative base so the SPA works behind code-server's /proxy/<port>/ mount.
+  base: './',
   plugins: [react()],
   server: {
     host: '127.0.0.1',

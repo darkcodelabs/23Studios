@@ -85,7 +85,8 @@ export default function PulpExport() {
     appendLog(`> kicked off export job ${job_id}`);
 
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = `${proto}://${window.location.host}${ws_url}`;
+    const appBase = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+    const url = `${proto}://${window.location.host}${appBase}${ws_url}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
@@ -177,7 +178,9 @@ export default function PulpExport() {
               build succeeded
             </div>
             <a
-              href={doneUrl}
+              href={(typeof window !== 'undefined' && window.__APP_BASE__ && doneUrl?.startsWith('/'))
+                ? `${window.__APP_BASE__}${doneUrl}`
+                : doneUrl}
               download
               className="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-600 text-ink-950 font-mono text-xs uppercase tracking-wider hover:bg-emerald-500 transition"
             >
