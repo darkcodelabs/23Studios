@@ -5,6 +5,7 @@ import Nav from '../components/Nav.jsx';
 import FileTree from '../components/FileTree.jsx';
 import FileViewer from '../components/FileViewer.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
+import ModelSelector, { CLAUDE_OPTION } from '../components/ModelSelector.jsx';
 import { api } from '../lib/api.js';
 
 const TABS = [
@@ -19,6 +20,7 @@ export default function Project() {
   const [err, setErr] = useState(null);
   const [tab, setTab] = useState('files');
   const [selectedPath, setSelectedPath] = useState(null);
+  const [model, setModel] = useState(CLAUDE_OPTION);
 
   useEffect(() => {
     let alive = true;
@@ -53,6 +55,8 @@ export default function Project() {
               </button>
             );
           })}
+          <div className="flex-1" />
+          {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
         </div>
       </div>
 
@@ -69,7 +73,7 @@ export default function Project() {
             </section>
           </div>
         ) : tab === 'chat' ? (
-          <ChatPanel project={project} model={null} />
+          <ChatPanel key={model.id} project={project} model={model} />
         ) : (
           <div className="h-full flex items-center justify-center text-ink-500 text-sm">
             logs panel placeholder
