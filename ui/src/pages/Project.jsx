@@ -4,6 +4,7 @@ import { FolderTree, MessageSquare, ScrollText } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import FileTree from '../components/FileTree.jsx';
 import FileViewer from '../components/FileViewer.jsx';
+import ChatPanel from '../components/ChatPanel.jsx';
 import { api } from '../lib/api.js';
 
 const TABS = [
@@ -68,9 +69,7 @@ export default function Project() {
             </section>
           </div>
         ) : tab === 'chat' ? (
-          <div className="h-full flex items-center justify-center text-ink-500 text-sm">
-            chat panel pending (next commit)
-          </div>
+          <ChatPanel project={project} model={null} />
         ) : (
           <div className="h-full flex items-center justify-center text-ink-500 text-sm">
             logs panel placeholder
