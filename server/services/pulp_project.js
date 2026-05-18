@@ -42,7 +42,8 @@ const CHARACTER_PATCHABLE = new Set([
   'bio',
   'portrait_prompt',
   'portrait_image',
-  'portrait_meta'
+  'portrait_meta',
+  'imagetable'
 ]);
 
 // Per-project promise-chain mutex
@@ -430,7 +431,7 @@ async function createCharacter(projectId, body) {
     }
     // Whitelist incoming fields to schema-known keys.
     const allowed = ['id', 'name', 'role', 'bio',
-      'portrait_prompt', 'portrait_image', 'portrait_meta'];
+      'portrait_prompt', 'portrait_image', 'portrait_meta', 'imagetable'];
     const character = {};
     for (const k of allowed) {
       if (body[k] !== undefined) character[k] = body[k];

@@ -113,11 +113,15 @@ export default function PulpTiles() {
   // ----- derived badges -----
   const tileBadges = (() => {
     if (!selected) return [];
+    const dim = selected.frames?.[0]?.pixels?.length === 256 ? '16x16' : '8x8';
     const out = [
-      { label: '16x16', tone: 'neutral' },
+      { label: dim, tone: 'neutral' },
       { label: selected.type || 'world', tone: 'accent' },
       { label: `${selected.frames?.length || 0} frames`, tone: 'neutral' }
     ];
+    if ((selected.frames?.length || 0) > 1 && (selected.fps || 0) > 0) {
+      out.push({ label: `${selected.fps} fps${selected.loop !== false ? ' loop' : ''}`, tone: 'accent' });
+    }
     if (selected.solid) out.push({ label: 'solid', tone: 'warn' });
     if ((selected.script || '').trim()) out.push({ label: 'script', tone: 'neutral' });
     return out;
@@ -191,9 +195,18 @@ export default function PulpTiles() {
                     frames={selected.frames || []}
                     currentIdx={frameIdx}
                     onSelect={setFrameIdx}
-                    onChange={updateFrames}
-                    fps={selected.fps || 0}
+                    onChange={(nf) => {
+                      // When the user adds a second frame, bump fps to a sane
+                      // default so the animation actually moves.
+                      if (nf.length > 1 && (!selected.fps || selected.fps === 0)) {
+                        updateLocal({ fps: 6 });
+                      }
+                      updateFrames(nf);
+                    }}
+                    fps={selected.fps || 6}
                     onFpsChange={(fps) => updateLocal({ fps })}
+                    loop={selected.loop !== false}
+                    onLoopChange={(lp) => updateLocal({ loop: !!lp })}
                   />
                 </div>
               </>
@@ -237,13 +250,24 @@ export default function PulpTiles() {
                   <DrawerField label="fps">
                     <input
                       type="number"
-                      min={1}
-                      max={60}
+                      min={0}
+                      max={30}
                       className="input text-sm"
                       value={selected.fps || 0}
-                      onChange={(e) => updateLocal({ fps: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })}
+                      onChange={(e) => updateLocal({ fps: Math.max(0, Math.min(30, Number(e.target.value) || 0)) })}
                     />
                   </DrawerField>
+                  <label className="flex items-center gap-2 text-sm text-ink-200">
+                    <input
+                      type="checkbox"
+                      checked={selected.loop !== false}
+                      onChange={(e) => updateLocal({ loop: !!e.target.checked })}
+                    />
+                    loop
+                  </label>
+                  <p className="text-[10px] text-ink-500">
+                    set fps &gt; 0 and add more than one frame to see this tile animate live.
+                  </p>
                 </DrawerSection>
 
                 <DrawerSection title="tile script">

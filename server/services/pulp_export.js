@@ -25,6 +25,7 @@ const { spawn } = require('child_process');
 
 const pulpProject = require('./pulp_project');
 const { transpile } = require('./pulp_transpiler');
+const imagetableBuilder = require('./imagetable_builder');
 
 let sharp = null;
 let sharpLoadError = null;
@@ -346,14 +347,25 @@ function buildGameData(project) {
     version: project.version,
     config: project.config,
     player: project.player,
-    tiles: (project.tiles || []).map((t) => ({
-      id: t.id,
-      name: t.name,
-      type: t.type,
-      solid: !!t.solid,
-      fps: t.fps,
-      frame_count: (t.frames || []).length,
-    })),
+    tiles: (project.tiles || []).map((t) => {
+      const frameCount = (t.frames || []).length;
+      const animated = frameCount > 1;
+      // Per-tile animation contract emitted to Lua:
+      //   fps        — animation speed; 0 / undefined => static
+      //   loop       — boolean; defaults to true
+      //   frame_count, image_kind, image_dim let the Lua runtime pick the
+      //   right loader (`gfx.image.new` vs `gfx.imagetable.new`).
+      return {
+        id: t.id,
+        name: t.name,
+        type: t.type,
+        solid: !!t.solid,
+        fps: Number(t.fps) || 0,
+        loop: t.loop !== false,
+        frame_count: frameCount,
+        image_kind: animated ? 'imagetable' : 'image',
+      };
+    }),
     rooms: (project.rooms || []).map((r) => ({
       id: r.id,
       name: r.name,
@@ -375,6 +387,18 @@ function buildGameData(project) {
       bpm: s.bpm,
       loop_from: s.loop_from,
       tracks: s.tracks,
+    })),
+    characters: (project.characters || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      imagetable: c.imagetable ? {
+        cols: c.imagetable.cols,
+        rows: c.imagetable.rows,
+        frame_w: c.imagetable.frame_w,
+        frame_h: c.imagetable.frame_h,
+        image: c.imagetable.image || null,
+        states: c.imagetable.states || {},
+      } : null,
     })),
   };
 }
@@ -463,6 +487,7 @@ async function runExport(job, project, onEvent) {
   const sourceDir = path.join(stageRoot, 'source');
   const buildDir = path.join(stageRoot, 'build');
   const tilesDir = path.join(sourceDir, 'assets', 'tiles');
+  const charactersDir = path.join(sourceDir, 'assets', 'characters');
   const soundsDir = path.join(sourceDir, 'assets', 'sounds');
   const runtimeDir = path.join(sourceDir, 'runtime');
   const scriptsDir = path.join(sourceDir, 'scripts');
@@ -490,6 +515,7 @@ async function runExport(job, project, onEvent) {
   await fsp.mkdir(sourceDir, { recursive: true });
   await fsp.mkdir(buildDir, { recursive: true });
   await fsp.mkdir(tilesDir, { recursive: true });
+  await fsp.mkdir(charactersDir, { recursive: true });
   await fsp.mkdir(soundsDir, { recursive: true });
   await fsp.mkdir(scriptsDir, { recursive: true });
   await fsp.mkdir(assetsDir, { recursive: true });
@@ -557,6 +583,42 @@ async function runExport(job, project, onEvent) {
     + ` (sharp=${usedSharp})`);
   if (!sharp) {
     log(onEvent, `WARN: sharp not loaded (${sharpLoadError}); used manual PNG encoder fallback`);
+  }
+
+  // Step 5b: render character imagetables (if any).
+  //
+  // For each character with an `imagetable` block + a referenced source PNG
+  // path, copy/re-emit it under assets/characters/<id>-table-<W>-<H>.png so
+  // the Lua runtime can load via `gfx.imagetable.new("assets/characters/<id>")`.
+  // If the character's `imagetable.image` path doesn't exist we skip — the
+  // game_data still references the entry, the Lua runtime is expected to
+  // tolerate a missing sheet (falls back to portrait/no-render).
+  const characters = Array.isArray(project.characters) ? project.characters : [];
+  let renderedCharSheets = 0;
+  for (const c of characters) {
+    if (!c || !safeId(c.id) || !c.imagetable) continue;
+    const it = c.imagetable;
+    const W = it.frame_w | 0;
+    const H = it.frame_h | 0;
+    if (!W || !H) {
+      log(onEvent, `skip character ${c.id} imagetable: invalid frame_w/frame_h`);
+      continue;
+    }
+    const out = path.join(charactersDir, `${c.id}-table-${W}-${H}.png`);
+    const srcPath = it.image ? path.join(project.local_path || '', it.image) : null;
+    try {
+      if (srcPath && fs.existsSync(srcPath)) {
+        await fsp.copyFile(srcPath, out);
+        renderedCharSheets++;
+      } else {
+        log(onEvent, `WARN: character ${c.id} imagetable source missing (${srcPath || 'no path'}); skipping`);
+      }
+    } catch (e) {
+      log(onEvent, `skip character ${c.id} imagetable: ${e.message}`);
+    }
+  }
+  if (characters.length) {
+    log(onEvent, `rendered ${renderedCharSheets} character imagetable(s) of ${characters.length} character(s)`);
   }
 
   // Step 6: emit transpiled scripts

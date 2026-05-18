@@ -20,6 +20,7 @@ require('runtime.pulp_tiles')
 require('runtime.pulp_rooms')
 require('runtime.pulp_sound')
 require('runtime.pulp_player')
+require('runtime.pulp_characters')
 
 -- --------------------------------------------------------------------------
 -- Event dispatch
@@ -315,10 +316,11 @@ end
 -- --------------------------------------------------------------------------
 function M.boot(game_data)
   M._game = game_data or {}
-  if M.tiles  and M.tiles.load  then M.tiles.load(M._game.tiles)   end
-  if M.rooms  and M.rooms.load  then M.rooms.load(M._game.rooms)   end
-  if M.sounds and M.sounds.load then M.sounds.load(M._game.sounds) end
-  if M.songs  and M.songs.load  then M.songs.load(M._game.songs)   end
+  if M.tiles      and M.tiles.load      then M.tiles.load(M._game.tiles)           end
+  if M.rooms      and M.rooms.load      then M.rooms.load(M._game.rooms)           end
+  if M.sounds     and M.sounds.load     then M.sounds.load(M._game.sounds)         end
+  if M.songs      and M.songs.load      then M.songs.load(M._game.songs)           end
+  if M.characters and M.characters.load then M.characters.load(M._game.characters) end
   if M._game.config then
     for k, v in pairs(M._game.config) do M.config[k] = v end
   end

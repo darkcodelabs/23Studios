@@ -3,9 +3,18 @@
 // per-tick painting reduces to drawImage calls.
 //
 // Canvas is logical 400x240, scaled up by the host (PulpPlay sets ctx scale
-// via CSS / explicit width). Each room cell is 16x16, grid is 25x15.
+// via CSS / explicit width). Each room cell is CELL px (8 or 16), grid is
+// 25x15 cells.
+//
+// Animation: each tile carries `fps` and `loop`. The renderer walks frames
+// at `(now - tileStart) * fps / 1000` and caches the last-rendered frame
+// index per tile id so per-cell draws are cheap drawImage calls.
+//
+// Characters w/ `imagetable` + active `state` animate via the imagetable
+// rows (row = state, count = frames in that state). Characters are
+// optional — when present, runtime.characters keys map to character ids
+// and characters[id].state names the active row.
 
-const CELL = 16;
 const ROOM_W = 25;
 const ROOM_H = 15;
 const DIALOG_H = 60;
@@ -13,17 +22,40 @@ const DIALOG_H = 60;
 const COLOR_OFF = '#0a1f12'; // background; Pulp green-on-black aesthetic
 const COLOR_ON  = '#9dffce';
 
-export function createRenderer(canvas, runtime, opts = {}) {
+function detectCell(runtime) {
+  // Look at first tile frame; 64 chars -> 8x8, 256 chars -> 16x16.
+  for (const id of Object.keys(runtime.tiles)) {
+    const t = runtime.tiles[id];
+    const f = t && Array.isArray(t.frames) ? t.frames[0] : null;
+    if (f && typeof f.pixels === 'string') {
+      if (f.pixels.length === 256) return 16;
+      if (f.pixels.length === 64) return 8;
+    }
+  }
+  return 16;
+}
+
+export function createRenderer(canvas, runtime) {
   const ctx = canvas.getContext('2d', { alpha: false });
   ctx.imageSmoothingEnabled = false;
 
+  const CELL = detectCell(runtime);
+
   // Pre-rasterize every frame of every tile.
   const cache = Object.create(null); // tileId -> [HTMLCanvasElement per frame]
+  // Per-tile animation start timestamp.
+  const tileStart = Object.create(null);
+  // Cached last frame index per tile id; avoids recomputing inside the
+  // grid loop when many cells share a tile id.
+  const lastIdx = Object.create(null);
+  let lastNow = -1;
+
   rasterizeAll();
 
   function rasterizeAll() {
     for (const id of Object.keys(runtime.tiles)) {
       cache[id] = (runtime.tiles[id].frames || []).map(rasterFrame);
+      tileStart[id] = performance.now();
     }
   }
 
@@ -33,29 +65,72 @@ export function createRenderer(canvas, runtime, opts = {}) {
     c.height = CELL;
     const fc = c.getContext('2d');
     const px = (frame && frame.pixels) || '';
-    for (let y = 0; y < CELL; y++) {
-      for (let x = 0; x < CELL; x++) {
-        const ch = px.charCodeAt(y * CELL + x);
+    // Frame may be 64 chars (8x8) or 256 chars (16x16). Sample only what's
+    // available; if a frame's stride doesn't match CELL, fall back to its
+    // own stride and draw centered.
+    const stride = px.length === 64 ? 8 : (px.length === 256 ? 16 : CELL);
+    const offX = Math.max(0, (CELL - stride) >> 1);
+    const offY = Math.max(0, (CELL - stride) >> 1);
+    for (let y = 0; y < stride; y++) {
+      for (let x = 0; x < stride; x++) {
+        const ch = px.charCodeAt(y * stride + x);
         if (ch === 49 /* '1' */) {
           fc.fillStyle = COLOR_ON;
-          fc.fillRect(x, y, 1, 1);
+          fc.fillRect(offX + x, offY + y, 1, 1);
         }
       }
     }
     return c;
   }
 
-  function pickFrame(tileId, fallbackIdx) {
+  // Resolve the active frame index for a tile id based on now + tile fps/loop.
+  // Caches the result per (tileId,now) so repeated draws of the same tile in
+  // a single paint() pass don't recompute.
+  function frameIndexFor(tileId, now) {
+    const tile = runtime.tiles[tileId];
     const frames = cache[tileId];
-    if (!frames || frames.length === 0) return null;
-    const t = runtime.tiles[tileId];
-    let idx = (t && t._runtimeFrame != null) ? t._runtimeFrame : (fallbackIdx | 0);
-    if (idx < 0) idx = 0;
-    idx %= frames.length;
-    return frames[idx];
+    if (!tile || !frames || frames.length === 0) return 0;
+
+    // Runtime override via `frame` command sticks.
+    if (tile._runtimeFrame != null) {
+      let i = tile._runtimeFrame | 0;
+      if (i < 0) i = 0;
+      return i % frames.length;
+    }
+    if (frames.length === 1) return 0;
+    const fps = Number(tile.fps) > 0 ? Number(tile.fps) : 0;
+    if (!fps) return 0;
+
+    if (now !== lastNow) {
+      // New paint pass — clear cache.
+      for (const k in lastIdx) delete lastIdx[k];
+      lastNow = now;
+    }
+    if (lastIdx[tileId] !== undefined) return lastIdx[tileId];
+
+    if (tileStart[tileId] == null) tileStart[tileId] = now;
+    const elapsed = now - tileStart[tileId];
+    const raw = Math.floor(elapsed * fps / 1000);
+    const loop = tile.loop !== false; // default true
+    let idx;
+    if (loop) {
+      idx = ((raw % frames.length) + frames.length) % frames.length;
+    } else {
+      idx = raw >= frames.length ? frames.length - 1 : Math.max(0, raw);
+    }
+    lastIdx[tileId] = idx;
+    return idx;
   }
 
-  function paint(frameTick) {
+  function getCanvasForFrame(tileId, idx) {
+    const frames = cache[tileId];
+    if (!frames || frames.length === 0) return null;
+    return frames[((idx % frames.length) + frames.length) % frames.length];
+  }
+
+  function paint(_frameTick) {
+    const now = performance.now();
+
     // Clear.
     ctx.fillStyle = COLOR_OFF;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -69,13 +144,8 @@ export function createRenderer(canvas, runtime, opts = {}) {
         for (let x = 0; x < ROOM_W; x++) {
           const tid = row[x];
           if (!tid) continue;
-          // Animate world tiles by fps if set.
-          const tile = runtime.tiles[tid];
-          let idx = 0;
-          if (tile && tile.fps > 0 && tile.frames && tile.frames.length > 1) {
-            idx = Math.floor(frameTick * tile.fps / 20) % tile.frames.length;
-          }
-          const img = pickFrame(tid, idx);
+          const idx = frameIndexFor(tid, now);
+          const img = getCanvasForFrame(tid, idx);
           if (img) ctx.drawImage(img, x * CELL, y * CELL);
         }
       }
@@ -84,12 +154,8 @@ export function createRenderer(canvas, runtime, opts = {}) {
     // Player.
     const p = runtime.player;
     if (p && p.tile_id && cache[p.tile_id]) {
-      const playerTile = runtime.tiles[p.tile_id];
-      let pIdx = 0;
-      if (playerTile && playerTile.fps > 0 && playerTile.frames && playerTile.frames.length > 1) {
-        pIdx = Math.floor(frameTick * playerTile.fps / 20) % playerTile.frames.length;
-      }
-      const img = pickFrame(p.tile_id, pIdx);
+      const pIdx = frameIndexFor(p.tile_id, now);
+      const img = getCanvasForFrame(p.tile_id, pIdx);
       if (img) ctx.drawImage(img, p.x * CELL, p.y * CELL);
     } else if (p) {
       // No player tile defined — draw a small fallback square so the player is visible.
@@ -136,7 +202,14 @@ export function createRenderer(canvas, runtime, opts = {}) {
     if (line) ctx.fillText(line, x, cy);
   }
 
-  return { paint, rerasterize: rasterizeAll };
+  function rerasterize() {
+    for (const k in cache) delete cache[k];
+    for (const k in tileStart) delete tileStart[k];
+    for (const k in lastIdx) delete lastIdx[k];
+    rasterizeAll();
+  }
+
+  return { paint, rerasterize };
 }
 
-export const RENDER_CONSTANTS = { CELL, ROOM_W, ROOM_H, DIALOG_H };
+export const RENDER_CONSTANTS = { ROOM_W, ROOM_H, DIALOG_H };

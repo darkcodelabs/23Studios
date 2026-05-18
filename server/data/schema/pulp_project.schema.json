@@ -104,7 +104,36 @@
           "items": { "$ref": "#/$defs/TileFrame" }
         },
         "fps": { "type": "integer", "minimum": 0, "maximum": 60 },
+        "loop": { "type": "boolean" },
         "script": { "type": "string", "maxLength": 1024 }
+      }
+    },
+    "ImagetableState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row", "count"],
+      "properties": {
+        "row": { "type": "integer", "minimum": 0, "maximum": 63 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "fps": { "type": "integer", "minimum": 1, "maximum": 30 },
+        "loop": { "type": "boolean" }
+      }
+    },
+    "Imagetable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cols", "rows", "frame_w", "frame_h"],
+      "properties": {
+        "cols": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "rows": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "frame_w": { "type": "integer", "minimum": 8, "maximum": 512 },
+        "frame_h": { "type": "integer", "minimum": 8, "maximum": 512 },
+        "image": { "type": "string", "maxLength": 256 },
+        "states": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/ImagetableState" },
+          "maxProperties": 32
+        }
       }
     },
     "Room": {
@@ -260,7 +289,8 @@
         "bio": { "type": "string", "maxLength": 4096 },
         "portrait_prompt": { "type": "string", "maxLength": 4096 },
         "portrait_image": { "type": "string", "maxLength": 256 },
-        "portrait_meta": { "$ref": "#/$defs/PortraitMeta" }
+        "portrait_meta": { "$ref": "#/$defs/PortraitMeta" },
+        "imagetable": { "$ref": "#/$defs/Imagetable" }
       }
     }
   }
