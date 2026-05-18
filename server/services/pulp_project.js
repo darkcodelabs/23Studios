@@ -356,7 +356,9 @@ const ROOM_PATCHABLE = new Set([
   'grid',
   'script',
   'background_image',
-  'scene_meta'
+  'scene_meta',
+  'bgm_file',
+  'bgm_track_id'
 ]);
 
 /**

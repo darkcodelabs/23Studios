@@ -348,6 +348,7 @@ function startAutopilot({ projectId, pitch, model, onEvent }) {
     { id: 'tile_burst',     label: 'generate tile art', kind: 'asset' },
     { id: 'scene_burst',    label: 'generate scenes',   kind: 'asset' },
     { id: 'sound_burst',    label: 'generate sounds',   kind: 'asset' },
+    { id: 'music_assign',   label: 'assign per-scene music', kind: 'asset' },
     { id: 'scripts',        label: 'scripts',        kind: 'workflow' },
     { id: 'playtest',       label: 'playtest',       kind: 'workflow' }
   ];
@@ -418,6 +419,8 @@ function startAutopilot({ projectId, pitch, model, onEvent }) {
           await runSceneBurst({ projectId, worldOut, model: job.model, emit, job });
         } else if (phase.id === 'sound_burst') {
           await runSoundBurst({ projectId, emit, job });
+        } else if (phase.id === 'music_assign') {
+          await runMusicAssign({ projectId, emit, job });
         }
       }
 
@@ -622,6 +625,79 @@ async function runSoundBurst({ projectId, emit, job }) {
     } catch (e) {
       emit('log', { text: `sound ${s.id}: ${humanErr(e)}` });
     }
+  }
+}
+
+// Per-scene music: render tracker tracks (if a library source exists) and
+// PATCH each room with a bgm_file assignment. LOCAL DEV ONLY — tracker
+// modules from keygenmusic.tk are not redistributable; pdx_export copies
+// the WAVs into source/sounds/ for local play.
+async function runMusicAssign({ projectId, emit, job }) {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const projectsSvc = require('./projects');
+    const musicLib = require('./music_library');
+
+    const project = await projectsSvc.getProject(projectId);
+    if (!project || !project.local_path) {
+      emit('log', { text: 'music_assign: no local_path, skipping' });
+      return;
+    }
+    const { project: pulpFile } = await pulp.readPulp(projectId);
+    const rooms = (pulpFile && Array.isArray(pulpFile.rooms)) ? pulpFile.rooms : [];
+    if (rooms.length === 0) {
+      emit('log', { text: 'music_assign: no rooms, skipping' });
+      return;
+    }
+
+    const destDir = path.join(project.local_path, 'pulp_data', 'scene_music');
+    const sourceDir = process.env.MUSIC_SOURCE_DIR
+      || '/home/hakcer/projects/personal/hakcd/tools/keygenmusic_scraper/downloads/keygenmusic';
+    if (!fs.existsSync(sourceDir)) {
+      emit('log', { text: `music_assign: source dir missing (${sourceDir}); skipping` });
+      return;
+    }
+    emit('log', { text: `music_assign: seeding library from ${sourceDir} into ${destDir}` });
+
+    // Cap library size to the room count (× 1.5 for variety) so we don't
+    // render every track for projects with few rooms.
+    const limit = Math.max(rooms.length + 5, 6);
+    const r = await musicLib.seedLocalLibrary({ destDir, sourceDir, limit });
+    emit('log', { text: `music_assign: library has ${r.manifest.length} tracks (${r.errors.length} errors)` });
+
+    if (r.manifest.length === 0) {
+      emit('log', { text: 'music_assign: no library tracks rendered, skipping assignment' });
+      return;
+    }
+
+    // Round-robin with avoidance across rooms.
+    const used = new Set();
+    for (const room of rooms) {
+      if (job.cancelled) break;
+      const pick = musicLib.pickForScene({ library: r.manifest, scene: room, used });
+      if (!pick.trackId) continue;
+      used.add(pick.trackId);
+      const track = r.manifest.find((t) => t.id === pick.trackId);
+      const wavRel = path.relative(path.join(project.local_path, 'pulp_data'), track.wav);
+      // bgm_file is stored as "sounds/<id>.wav" — pdx_export copies the WAV
+      // into source/sounds/ and emits the audio_manager.play_music call.
+      const bgmFile = 'sounds/' + path.basename(track.wav);
+      try {
+        await pulp.patchRoom(projectId, room.id, {
+          bgm_file: bgmFile,
+          bgm_track_id: track.id
+        });
+        emit('asset', {
+          kind: 'bgm', room_id: room.id,
+          track_id: track.id, wav: wavRel
+        });
+      } catch (e) {
+        emit('log', { text: `music_assign: room ${room.id} patch failed: ${humanErr(e)}` });
+      }
+    }
+  } catch (e) {
+    emit('log', { text: `music_assign failed (non-fatal): ${humanErr(e)}` });
   }
 }
 

@@ -647,8 +647,38 @@ async function runExport(job, project, onEvent) {
   for (const t of trans.tiles) {
     await fsp.writeFile(path.join(scriptsDir, `tile_${t.id}.lua`), t.lua);
   }
+  // Index project rooms by id so we can append per-scene music hooks.
+  const roomById = new Map();
+  for (const pr of (project.rooms || [])) {
+    if (pr && pr.id) roomById.set(pr.id, pr);
+  }
+  // Walk the per-scene music dir if present and copy assigned WAVs into
+  // source/sounds/<basename>. Lua hook below resolves the file via
+  // audio_manager.play_music("sounds/<basename-without-ext>").
+  const sceneMusicSrc = path.join(project.local_path || '', 'pulp_data', 'scene_music');
+  if (project.local_path && fs.existsSync(sceneMusicSrc)) {
+    let copied = 0;
+    for (const f of fs.readdirSync(sceneMusicSrc)) {
+      if (!/\.wav$/i.test(f)) continue;
+      try {
+        await fsp.copyFile(path.join(sceneMusicSrc, f), path.join(soundsDir, f));
+        copied++;
+      } catch (e) { log(onEvent, `skip scene music ${f}: ${e.message}`); }
+    }
+    if (copied) log(onEvent, `copied ${copied} per-scene music wav(s)`);
+  }
   for (const r of trans.rooms) {
-    await fsp.writeFile(path.join(scriptsDir, `room_${r.id}.lua`), r.lua);
+    let lua = r.lua;
+    const proom = roomById.get(r.id);
+    if (proom && typeof proom.bgm_file === 'string' && proom.bgm_file.trim()) {
+      // bgm_file is a relative path like "sounds/<track>.wav". Strip ext +
+      // sounds/ prefix for Playdate's loader (expects path w/o extension).
+      const noExt = proom.bgm_file.replace(/\.wav$/i, '').replace(/^sounds\//, '');
+      // Prepend a one-shot enter hook. Idempotent: skipped by audio_manager
+      // if the track is already playing.
+      lua = `if audio_manager and audio_manager.play_music then audio_manager.play_music("sounds/${noExt}") end\n` + lua;
+    }
+    await fsp.writeFile(path.join(scriptsDir, `room_${r.id}.lua`), lua);
   }
 
   // Step 7: write main.lua + pdxinfo
