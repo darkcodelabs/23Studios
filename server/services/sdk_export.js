@@ -27,9 +27,45 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const projects = require('./projects');
+const assembly = require('./sdk_prompt_assembly');
 
 const RUNTIME_DIR = path.join(__dirname, 'sdk_runtime_lua');
 const ROOT_BUILD_DIR = path.join(os.tmpdir(), '23studios_sdk_build');
+
+// Run the section-16 QA checklist against the staged build + sdk data.
+// Returns { pass: bool, failures: [{check, where, detail}] }. Does NOT
+// throw — caller decides whether to gate pdc on the result.
+function runQaChecklist(stageDir, project, sdkData) {
+  const failures = [];
+  const scenes = Array.isArray(sdkData && sdkData.scenes) ? sdkData.scenes : [];
+  for (const check of (assembly.QA_CHECKS || [])) {
+    if (check.scope === 'scene') {
+      for (const s of scenes) {
+        try {
+          const detail = check.run(s, sdkData, project);
+          if (detail) failures.push({ check: check.id,
+                                       where: 'scene:' + (s && s.id),
+                                       detail });
+        } catch (e) {
+          failures.push({ check: check.id,
+                          where: 'scene:' + (s && s.id),
+                          detail: 'check threw: ' + e.message });
+        }
+      }
+    } else if (check.scope === 'project') {
+      try {
+        const detail = check.run(sdkData, project, stageDir);
+        if (detail) failures.push({ check: check.id,
+                                     where: 'project',
+                                     detail });
+      } catch (e) {
+        failures.push({ check: check.id, where: 'project',
+                        detail: 'check threw: ' + e.message });
+      }
+    }
+  }
+  return { pass: failures.length === 0, failures };
+}
 
 const _jobs = new Map();
 
@@ -296,6 +332,37 @@ async function startExport({ projectId, onEvent }) {
       progress(onEvent, 'pdxinfo', 70, 'writing pdxinfo');
       await fsp.writeFile(path.join(sourceDir, 'pdxinfo'), buildPdxInfo(project, jobId));
 
+      // Launcher assets (card.png 350x155, icon.png 32x32, launchImage.png
+      // 400x240, optional animation.txt). pdxinfo's imagePath=launcher
+      // already points here. Copy whatever the autopilot's launcher stage
+      // produced; missing files surface as QA failures below, not silent.
+      const launcherSrc = path.join(project.local_path, 'sdk_data', 'launcher');
+      const launcherDst = path.join(sourceDir, 'launcher');
+      await fsp.mkdir(launcherDst, { recursive: true });
+      if (fs.existsSync(launcherSrc)) {
+        for (const f of fs.readdirSync(launcherSrc)) {
+          if (/\.(png|gif|txt)$/i.test(f)) {
+            await fsp.copyFile(path.join(launcherSrc, f),
+                               path.join(launcherDst, f));
+          }
+        }
+      }
+
+      progress(onEvent, 'qa', 75, 'running section-16 QA checklist');
+      const qa = runQaChecklist(stageRoot, project, sdkData);
+      for (const f of qa.failures) {
+        log(onEvent, `[qa] ${f.check} @ ${f.where}: ${f.detail}`);
+      }
+      if (!qa.pass) {
+        const summary = qa.failures.slice(0, 12)
+          .map((f) => `- ${f.check} @ ${f.where}: ${f.detail}`).join('\n');
+        const more = qa.failures.length > 12
+          ? `\n... and ${qa.failures.length - 12} more` : '';
+        throw new Error('QA checklist failed (' + qa.failures.length
+          + ' issues):\n' + summary + more);
+      }
+      log(onEvent, '[qa] all checks passed');
+
       progress(onEvent, 'pdc', 80, 'invoking pdc');
       const pdcBin = findPdc();
       if (!pdcBin) throw new Error('pdc not found — set PLAYDATE_SDK_PATH');
@@ -397,5 +464,6 @@ module.exports = {
   startExport,
   getJob,
   getJobsByProject,
-  _internals: { buildGameDataLua, buildPdxInfo, findPdc, runPdc }
+  runQaChecklist,
+  _internals: { buildGameDataLua, buildPdxInfo, findPdc, runPdc, runQaChecklist }
 };
