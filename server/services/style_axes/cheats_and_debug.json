@@ -1,0 +1,20 @@
+{
+  "id": "cheats_and_debug",
+  "display_name": "Cheats and debug",
+  "description": "Hidden inputs and dev shortcuts. Tone must match the game (a horror game's debug menu reads different from a comedy's). Picked LAST — depends on everything.",
+  "prompt_template": "Given the full set of prior picks:\n{prior_picks}\n\nGenerate {count} cheat/debug option sets. Each set is a coherent collection of 3-6 secret combos PLUS 2-4 debug menu items. Match the game's tone — match the dialog and visual style.\n\ncheats: each entry has\n  - combo: string ('up,up,down,down,a,b' or 'crank_full_clockwise_3x')\n  - effect: string ('invincibility', 'skip_to_scene_5', etc)\n  - mode: enum: debug_only | release_easter_egg | secret_ending_trigger\n\ndebug_menu_items: each entry has\n  - title: short string (system menu item title)\n  - action: string function name ('reset_save', 'skip_scene', 'fps_overlay')\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the cheats/debug option below per the user feedback. Adjust mode flags so release_easter_egg combos fit the game's tone.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "cheats": "array of {combo, effect, mode}",
+    "debug_menu_items": "array of {title, action}",
+    "preview_prompt": "string"
+  },
+  "option_count": 3,
+  "preview_kind": "text",
+  "preview_renderer": "render_cheat_list",
+  "storage_key": "asset_library/styles/cheats_and_debug/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "launcher"]
+}

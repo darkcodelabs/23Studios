@@ -1,0 +1,26 @@
+{
+  "id": "transition_style",
+  "display_name": "Scene transition style",
+  "description": "How the game moves between scenes. scene_manager wraps scene changes in the chosen transition.",
+  "prompt_template": "Given this animation pick:\n{prior_picks.animation_style}\n\nGenerate {count} transition style options covering:\n- Visual technique: cut | fade_to_black | fade_to_white | mosaic_disrupt | dither_sweep | vcr_glitch | iris_in_out | slide_directional\n- Duration: instant | fast (200ms) | normal (500ms) | slow (1000ms)\n- Audio behavior: silent | music_continues | music_ducks | music_swap | sfx_swoosh\n- Loading mask: black_screen | scene_preview | character_portrait | custom_image\n\nlua_implementation should be a self-contained Lua snippet showing how to perform the transition (called from scene_manager).\nuses_setMosaic: true if technique includes mosaic_disrupt\nuses_setInverted: true if technique=fade_to_white via inverted display\nuses_stencil_image: true if iris_in_out (requires gfx.setStencilImage)\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the transition option below per the user feedback. Keep duration_ms aligned with the duration enum and update lua_implementation accordingly.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "technique": "enum: cut | fade_to_black | fade_to_white | mosaic_disrupt | dither_sweep | vcr_glitch | iris_in_out | slide_directional",
+    "duration_ms": "int",
+    "audio_behavior": "enum: silent | music_continues | music_ducks | music_swap | sfx_swoosh",
+    "loading_mask": "enum: black_screen | scene_preview | character_portrait | custom_image",
+    "lua_implementation": "string — Lua snippet",
+    "uses_setMosaic": "bool",
+    "uses_setInverted": "bool",
+    "uses_stencil_image": "bool",
+    "preview_prompt": "string"
+  },
+  "option_count": 4,
+  "preview_kind": "lua_snippet",
+  "preview_renderer": "render_transition_snippet",
+  "storage_key": "asset_library/styles/transition_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua"]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "audio_style",
+  "display_name": "Audio style",
+  "description": "The sonic palette and mix philosophy.",
+  "prompt_template": "Given this style guide:\n{style_guide}\n\nGenerate {count} audio style options covering:\n- Music palette: chiptune (square+triangle) | tracker (mod/xm) | ambient_drone | jazz | textural | found_sound | silence_with_sfx_only\n- SFX palette: synth_only (no samples) | sample_only | mixed\n- Mix philosophy: music_driven | sfx_driven | atmospheric (low everything) | dynamic (ducks during dialog)\n- Reactive sound: minimal | moderate | heavy\n- Effects chain: dry | light_reverb (delay line) | heavy_processing (bitcrusher+filter+overdrive)\n- default_synth_shapes: array of playdate.sound waveform constants used by default (kWaveSquare, kWaveSine, kWaveTriangle, kWaveSawtooth, kWaveNoise, kWavePOPhase, kWavePOVOSIM, kWavePOSample)\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the audio option below per the user feedback. Keep default_synth_shapes consistent with music_palette.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "music_palette": "enum: chiptune | tracker | ambient_drone | jazz | textural | found_sound | silence_with_sfx_only",
+    "sfx_palette": "enum: synth_only | sample_only | mixed",
+    "mix_philosophy": "enum: music_driven | sfx_driven | atmospheric | dynamic",
+    "reactive_intensity": "enum: minimal | moderate | heavy",
+    "effects_chain": "enum: dry | light_reverb | heavy_processing",
+    "default_synth_shapes": "array of strings (kWave* constants)",
+    "preview_prompt": "string — text description for the preview (audio isn't visual)"
+  },
+  "option_count": 4,
+  "preview_kind": "text",
+  "preview_renderer": "render_audio_palette_text",
+  "storage_key": "asset_library/styles/audio_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["sfx", "music"]
+}

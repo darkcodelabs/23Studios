@@ -1,0 +1,23 @@
+{
+  "id": "hud_style",
+  "display_name": "HUD style",
+  "description": "On-screen information display during gameplay. HUD area must be left clear in generated backgrounds.",
+  "prompt_template": "Given this gameplay pick:\n{prior_picks.gameplay_style}\n\nGenerate {count} HUD options covering:\n- Presence: always_on | contextual | minimal | none\n- Position: top_strip | bottom_strip | corners | floating | edge_indicators\n- Info density: minimal (just one number) | moderate | dense\n- Visual treatment: text_only | icons_plus_text | sprites_only | dithered_panels\n- shows: array of strings naming what's displayed ('score', 'time', 'health', 'inventory_count', etc)\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the HUD option below per the user feedback. Ensure the picked position doesn't conflict with the dialog_style portrait position.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "presence": "enum: always_on | contextual | minimal | none",
+    "position": "enum: top_strip | bottom_strip | corners | floating | edge_indicators",
+    "density": "enum: minimal | moderate | dense",
+    "treatment": "enum: text_only | icons_plus_text | sprites_only | dithered_panels",
+    "shows": "array of strings",
+    "preview_prompt": "string"
+  },
+  "option_count": 4,
+  "preview_kind": "image",
+  "preview_renderer": "render_hud_mockup",
+  "storage_key": "asset_library/styles/hud_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "scene_bursts"]
+}

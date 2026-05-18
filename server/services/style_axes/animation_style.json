@@ -1,0 +1,26 @@
+{
+  "id": "animation_style",
+  "display_name": "Animation style",
+  "description": "Timing and feel of all in-game motion.",
+  "prompt_template": "Given these prior picks:\n  gameplay_style: {prior_picks.gameplay_style}\n  character_style: {prior_picks.character_style}\n\nGenerate {count} animation style options covering:\n- Frame timing: snappy (100ms) | normal (150ms) | slow (250ms) | variable\n- Easing default: linear | inOutCubic | outQuad | inOutBack | custom\n- Transition style: cut | crossfade | dither_sweep | mosaic | vcr_pause | slide\n- Idle behavior: still | breathe | fidget | look_around | ambient\n- Hit reaction: shake | freeze_frame | invert_flash | scale_pop\n\nuses_setOffset_for_shake: true if hit_reaction=shake (triggers playdate.display.setOffset)\nuses_setMosaic_for_transitions: true if transition=mosaic\nuses_vcrPauseFilterImage: true if transition=vcr_pause (asset must exist)\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the animation option below per the user feedback. Keep the boolean flags consistent with the chosen techniques.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "default_frame_ms": "int",
+    "default_easing": "enum: linear | inOutCubic | outQuad | inOutBack | custom",
+    "transition": "enum: cut | crossfade | dither_sweep | mosaic | vcr_pause | slide",
+    "idle_behavior": "enum: still | breathe | fidget | look_around | ambient",
+    "hit_reaction": "enum: shake | freeze_frame | invert_flash | scale_pop",
+    "uses_setOffset_for_shake": "bool",
+    "uses_setMosaic_for_transitions": "bool",
+    "uses_vcrPauseFilterImage": "bool",
+    "preview_lua_template": "string — a short self-contained Lua snippet that renders this style for the lua_snippet preview kind"
+  },
+  "option_count": 4,
+  "preview_kind": "lua_snippet",
+  "preview_renderer": "render_animation_loop",
+  "storage_key": "asset_library/styles/animation_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "scene_bursts"]
+}

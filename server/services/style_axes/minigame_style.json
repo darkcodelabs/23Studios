@@ -1,0 +1,24 @@
+{
+  "id": "minigame_style",
+  "display_name": "Minigame style",
+  "description": "Interaction patterns used for puzzle/skill segments. Multiple can be picked per project. Defaults pull from the 11 recipes in server/data/minigame_recipes.seed.json — custom recipes only when none fit.",
+  "prompt_template": "Given this style guide:\n{style_guide}\nAnd these prior picks:\n{prior_picks}\n\nGenerate {count} minigame options. PREFER existing recipes from the seed catalog when they fit the style guide. Each option must use at least one of: crank, accelerometer, sprite collision, timing window.\n\nExisting recipes (set recipe_kit_id to one of these and leave custom_recipe_spec null):\n- crank_lockpick\n- tilt_maze\n- rhythm_crank\n- dialog_wheel\n- character_creator_crank\n- conveyor_sort\n- wave_defense\n- code_lock_combo\n- memory_recall\n- top_down_explore\n- side_scroll_platform\n\nIf and only if no existing recipe fits, set recipe_kit_id='custom' and supply a full custom_recipe_spec (premise, features_used, controls, state, sample_structure) matching the recipe shape used in minigame_recipes.seed.json.\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the minigame option below per the user feedback. Prefer swapping to a different existing recipe; only emit a custom recipe if none fit.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "recipe_kit_id": "string — one of: crank_lockpick, tilt_maze, rhythm_crank, dialog_wheel, character_creator_crank, conveyor_sort, wave_defense, code_lock_combo, memory_recall, top_down_explore, side_scroll_platform, or 'custom'",
+    "custom_recipe_spec": "object | null — only when recipe_kit_id='custom'",
+    "difficulty_curve": "enum: linear | stepped | adaptive",
+    "failure_handling": "enum: restart | retry_with_easier | drop_and_continue",
+    "scoring": "enum: binary | tiered | continuous",
+    "estimated_session_seconds": "int",
+    "preview_prompt": "string"
+  },
+  "option_count": 5,
+  "preview_kind": "image",
+  "preview_renderer": "render_minigame_mockup",
+  "storage_key": "asset_library/styles/minigame_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["story", "scene_lua"]
+}

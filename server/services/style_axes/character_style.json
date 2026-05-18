@@ -1,0 +1,25 @@
+{
+  "id": "character_style",
+  "display_name": "Character style",
+  "description": "How characters are drawn, animated, and treated visually.",
+  "prompt_template": "Given this style guide:\n{style_guide}\nAnd this gameplay style:\n{prior_picks.gameplay_style}\n\nGenerate {count} distinct character style options covering:\n- Silhouette type: chunky | slim | geometric | organic | abstract | mascot\n- Portrait treatment: floating_head | half_body | full_body | no_portrait\n- Animation: 1-frame static, 2-frame breathe, 4-frame walk, 8-frame walk, custom\n- Detail level: minimal (eyes only) | moderate | detailed (clothing, accessories)\n- Dither style for face: atkinson | bayer_4x4 | bayer_8x8 | line | none\n\nMatch sprite_dimensions to the gameplay sprite_size_recommendation when possible.\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the character option below per the user feedback. Keep sprite + portrait dims within Playdate limits (sprite ≥ 16x16, portrait ≤ 200x200).",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "silhouette": "enum: chunky | slim | geometric | organic | abstract | mascot",
+    "portrait_treatment": "enum: floating_head | half_body | full_body | no_portrait",
+    "walk_cycle_frames": "int (1, 2, 4, 8, or custom)",
+    "detail_level": "enum: minimal | moderate | detailed",
+    "face_dither": "enum: atkinson | bayer_4x4 | bayer_8x8 | line | none",
+    "sprite_dimensions": { "w": "int", "h": "int" },
+    "portrait_dimensions": { "w": "int", "h": "int" },
+    "preview_prompt": "string"
+  },
+  "option_count": 5,
+  "preview_kind": "image",
+  "preview_renderer": "render_character_sheet",
+  "storage_key": "asset_library/styles/character_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["characters", "portrait_bursts"]
+}
