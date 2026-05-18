@@ -51,7 +51,8 @@
     "workflow_state": {
       "type": "object",
       "additionalProperties": true
-    }
+    },
+    "tile_dim": { "enum": [8, 16] }
   },
   "$defs": {
     "Id": {
@@ -81,9 +82,9 @@
       "properties": {
         "pixels": {
           "type": "string",
-          "minLength": 256,
+          "minLength": 64,
           "maxLength": 256,
-          "pattern": "^[01]{256}$"
+          "pattern": "^([01]{64}|[01]{256})$"
         }
       }
     },

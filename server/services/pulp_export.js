@@ -113,21 +113,31 @@ function toLuaModule(data) {
 
 // ----- PNG generation -----------------------------------------------------
 //
-// Generates a 16x16 1-bit (black/white) PNG from the 256-character "01"
-// pixel string used by the Pulp tile schema. "1" -> black, "0" -> white.
-// Prefers sharp for proper PNG output; falls back to a hand-rolled encoder.
+// Generates a 1-bit (black/white) PNG from the "01" pixel string used by the
+// Pulp tile schema. "1" -> black, "0" -> white. Tile dim is inferred from
+// pixel string length (64 -> 8x8, 256 -> 16x16) so the same encoder handles
+// both the canonical 8x8 Pulp tiles and legacy 16x16 SDK tiles.
+//
+// Prefers sharp for proper PNG output; falls back to a hand-rolled encoder
+// (16x16 only — manual encoder hard-codes 1-bit greyscale at 16 px).
 
 const PNG_FALLBACK_USED = { flag: false };
 
+function tileDimForPixels(pixels) {
+  if (typeof pixels !== 'string') return null;
+  if (pixels.length === 256 && /^[01]{256}$/.test(pixels)) return 16;
+  if (pixels.length === 64 && /^[01]{64}$/.test(pixels)) return 8;
+  return null;
+}
+
 async function renderTilePng(pixels, outPath) {
-  if (typeof pixels !== 'string' || pixels.length !== 256 || !/^[01]{256}$/.test(pixels)) {
-    throw new Error('invalid tile pixels');
-  }
+  const dim = tileDimForPixels(pixels);
+  if (!dim) throw new Error('invalid tile pixels');
 
   if (sharp) {
-    // Build raw RGBA buffer (16x16, 4 bytes/px).
-    const buf = Buffer.alloc(16 * 16 * 4);
-    for (let i = 0; i < 256; i++) {
+    const N = dim * dim;
+    const buf = Buffer.alloc(N * 4);
+    for (let i = 0; i < N; i++) {
       const v = pixels.charCodeAt(i) === 49 /* '1' */ ? 0 : 255;
       const off = i * 4;
       buf[off] = v;
@@ -135,15 +145,67 @@ async function renderTilePng(pixels, outPath) {
       buf[off + 2] = v;
       buf[off + 3] = 255;
     }
-    await sharp(buf, { raw: { width: 16, height: 16, channels: 4 } })
+    await sharp(buf, { raw: { width: dim, height: dim, channels: 4 } })
       .png()
       .toFile(outPath);
-    return { used_sharp: true };
+    return { used_sharp: true, dim };
+  }
+
+  if (dim !== 16) {
+    // The hand-rolled encoder is hard-coded for 16x16; if sharp is missing
+    // and we have an 8x8 tile we can't safely fall back. This is a build-
+    // time failure rather than silent corruption.
+    throw new Error('no sharp + non-16 tile dim: cannot encode');
   }
 
   PNG_FALLBACK_USED.flag = true;
   await fsp.writeFile(outPath, encodePngManual(pixels));
-  return { used_sharp: false };
+  return { used_sharp: false, dim };
+}
+
+/**
+ * renderTileTablePng(frames, dim, outPath)
+ *   Spec Section 8 / Fix #2: write per-tile multi-frame images as a single
+ *   `<id>-table-<W>-<H>.png` sprite sheet so pdc auto-detects cells from
+ *   the filename. Cells are laid out left-to-right, top-to-bottom across
+ *   a single horizontal strip.
+ */
+async function renderTileTablePng(frames, dim, outPath) {
+  if (!sharp) {
+    throw new Error('no sharp: cannot encode sprite table');
+  }
+  if (!Array.isArray(frames) || frames.length === 0) {
+    throw new Error('empty frames');
+  }
+  const count = frames.length;
+  const W = dim * count;
+  const H = dim;
+  const out = Buffer.alloc(W * H * 4);
+  // Pre-fill alpha = 255 for the whole sheet.
+  for (let i = 3; i < out.length; i += 4) out[i] = 255;
+  for (let fi = 0; fi < count; fi++) {
+    const pixels = frames[fi] && frames[fi].pixels;
+    const fd = tileDimForPixels(pixels);
+    if (fd !== dim) {
+      throw new Error(`frame ${fi} dim mismatch: expected ${dim}, got ${fd}`);
+    }
+    const xOff = fi * dim;
+    for (let y = 0; y < dim; y++) {
+      for (let x = 0; x < dim; x++) {
+        const sIdx = y * dim + x;
+        const v = pixels.charCodeAt(sIdx) === 49 ? 0 : 255;
+        const dIdx = (y * W + (xOff + x)) * 4;
+        out[dIdx] = v;
+        out[dIdx + 1] = v;
+        out[dIdx + 2] = v;
+        out[dIdx + 3] = 255;
+      }
+    }
+  }
+  await sharp(out, { raw: { width: W, height: H, channels: 4 } })
+    .png()
+    .toFile(outPath);
+  return { used_sharp: true, dim, count, sheet_dim: [W, H] };
 }
 
 // CRC32 (RFC 1952) and a minimal 1-bit greyscale (color type 0) PNG encoder.
@@ -442,27 +504,57 @@ async function runExport(job, project, onEvent) {
   await fsp.writeFile(path.join(assetsDir, 'game_data.lua'), toLuaModule(gameData));
 
   // Step 5: render tile frames
+  //
+  // Spec Section 8 / Fix #2: multi-frame tiles emit a single
+  //   <id>-table-<W>-<H>.png  sprite sheet so pdc recognizes them.
+  // Single-frame tiles emit  <id>__0.png  for backward compat with the
+  // runtime loader's existing per-frame fallback path.
   progress(onEvent, 'tiles', 45, 'rendering tile frames');
   let usedSharp = !!sharp;
   let renderedFrames = 0;
+  let renderedTables = 0;
   let skippedFrames = 0;
   for (const t of project.tiles || []) {
     if (!safeId(t.id)) continue;
     const frames = Array.isArray(t.frames) ? t.frames : [];
-    for (let i = 0; i < frames.length; i++) {
-      const frame = frames[i];
-      const out = path.join(tilesDir, `${t.id}__${i}.png`);
-      try {
-        const r = await renderTilePng(frame.pixels, out);
-        if (!r.used_sharp) usedSharp = false;
-        renderedFrames++;
-      } catch (e) {
-        skippedFrames++;
-        log(onEvent, `skip tile ${t.id} frame ${i}: ${e.message}`);
+    if (frames.length === 0) continue;
+
+    if (frames.length > 1) {
+      // Sprite-table emit (canonical Playdate sheet naming).
+      const dim = tileDimForPixels(frames[0] && frames[0].pixels);
+      if (!dim) {
+        skippedFrames += frames.length;
+        log(onEvent, `skip tile ${t.id}: invalid pixels for frame 0`);
+        continue;
       }
+      const out = path.join(tilesDir, `${t.id}-table-${dim}-${dim}.png`);
+      try {
+        const r = await renderTileTablePng(frames, dim, out);
+        if (!r.used_sharp) usedSharp = false;
+        renderedFrames += frames.length;
+        renderedTables++;
+      } catch (e) {
+        skippedFrames += frames.length;
+        log(onEvent, `skip tile ${t.id} table: ${e.message}`);
+      }
+      continue;
+    }
+
+    // Single-frame path.
+    const frame = frames[0];
+    const out = path.join(tilesDir, `${t.id}__0.png`);
+    try {
+      const r = await renderTilePng(frame.pixels, out);
+      if (!r.used_sharp) usedSharp = false;
+      renderedFrames++;
+    } catch (e) {
+      skippedFrames++;
+      log(onEvent, `skip tile ${t.id} frame 0: ${e.message}`);
     }
   }
-  log(onEvent, `rendered ${renderedFrames} tile frame(s)${skippedFrames ? `, skipped ${skippedFrames}` : ''} (sharp=${usedSharp})`);
+  log(onEvent, `rendered ${renderedFrames} tile frame(s) across ${renderedTables} sprite-table(s)`
+    + (skippedFrames ? `, skipped ${skippedFrames}` : '')
+    + ` (sharp=${usedSharp})`);
   if (!sharp) {
     log(onEvent, `WARN: sharp not loaded (${sharpLoadError}); used manual PNG encoder fallback`);
   }
@@ -619,6 +711,9 @@ module.exports = {
     toLuaModule,
     buildGameData,
     findPdc,
+    tileDimForPixels,
+    renderTilePng,
+    renderTileTablePng,
     sharpAvailable: () => !!sharp,
     fallbackUsed: () => PNG_FALLBACK_USED.flag,
   },

@@ -28,7 +28,8 @@ const TOP_LEVEL_PATCHABLE = new Set([
   'config',
   'player',
   'game_script',
-  'workflow_state'
+  'workflow_state',
+  'tile_dim'
 ]);
 
 const COLLECTIONS = new Set(['tiles', 'rooms', 'sounds', 'songs']);
@@ -54,6 +55,11 @@ function withLock(projectId, fn) {
 }
 
 function defaultPulpProject() {
+  // Per spec Section 3.1 + 6.1: Pulp tiles are 8x8 (canonical). New pulp
+  // projects default to tile_dim=8. Legacy on-disk project.json files lack
+  // the field entirely — the schema treats `tile_dim` as optional and the
+  // TileFrame schema accepts pixel strings of either 64 or 256 chars, so a
+  // legacy 16x16 project keeps validating without auto-migration.
   return {
     name: 'Untitled Pulp Game',
     author: '',
@@ -64,6 +70,7 @@ function defaultPulpProject() {
       follow_player: true,
       text_speed: 20
     },
+    tile_dim: 8,
     tiles: [],
     rooms: [],
     sounds: [],
@@ -76,6 +83,40 @@ function defaultPulpProject() {
     },
     game_script: ''
   };
+}
+
+/**
+ * pixelsLenForDim(dim) -> int
+ * 8x8 -> 64, 16x16 -> 256. Anything else throws.
+ */
+function pixelsLenForDim(dim) {
+  if (dim === 8) return 64;
+  if (dim === 16) return 256;
+  const e = new Error('bad_tile_dim');
+  e.code = 'bad_tile_dim';
+  throw e;
+}
+
+/**
+ * resolveTileDim(project) -> 8 | 16
+ * Single source of truth for "what tile size does THIS project use?".
+ * - Explicit project.tile_dim wins (8 or 16).
+ * - Otherwise infer from the first tile frame's pixel length (legacy).
+ * - Otherwise default to 8 (per spec; new pulp projects are 8x8).
+ */
+function resolveTileDim(project) {
+  if (project && (project.tile_dim === 8 || project.tile_dim === 16)) {
+    return project.tile_dim;
+  }
+  const tiles = (project && Array.isArray(project.tiles)) ? project.tiles : [];
+  for (const t of tiles) {
+    const f = t && Array.isArray(t.frames) ? t.frames[0] : null;
+    if (f && typeof f.pixels === 'string') {
+      if (f.pixels.length === 256) return 16;
+      if (f.pixels.length === 64) return 8;
+    }
+  }
+  return 8;
 }
 
 function pulpErr(status, code, detail) {
@@ -150,6 +191,34 @@ function ensureUniqueIds(list, label) {
   }
 }
 
+/**
+ * ensureTileFramesMatchDim(project)
+ * If project.tile_dim is set explicitly, every tile frame's pixels MUST be
+ * the matching length (64 for dim=8, 256 for dim=16). If tile_dim is absent,
+ * we accept ANY length the schema accepts (mixed projects are tolerated for
+ * legacy on-disk data, but a write that mixes 64- and 256-char frames will
+ * trip this only when tile_dim has been declared).
+ */
+function ensureTileFramesMatchDim(project) {
+  if (!project || (project.tile_dim !== 8 && project.tile_dim !== 16)) return;
+  const expected = pixelsLenForDim(project.tile_dim);
+  const tiles = Array.isArray(project.tiles) ? project.tiles : [];
+  for (const t of tiles) {
+    const frames = Array.isArray(t && t.frames) ? t.frames : [];
+    for (let i = 0; i < frames.length; i++) {
+      const f = frames[i];
+      if (!f || typeof f.pixels !== 'string' || f.pixels.length !== expected) {
+        throw pulpErr(422, 'tile_pixels_dim_mismatch', {
+          tile_id: t && t.id,
+          frame_index: i,
+          expected,
+          actual: f && typeof f.pixels === 'string' ? f.pixels.length : null
+        });
+      }
+    }
+  }
+}
+
 async function readFileOrDefault(file) {
   try {
     const raw = await fsp.readFile(file, 'utf8');
@@ -193,6 +262,7 @@ async function writeFullPulp(projectId, body) {
     ensureUniqueIds(body.rooms, 'rooms');
     ensureUniqueIds(body.sounds, 'sounds');
     ensureUniqueIds(body.songs, 'songs');
+    ensureTileFramesMatchDim(body);
     await ensureDir(dir);
     await atomicWriteJson(file, body);
     return body;
@@ -215,6 +285,7 @@ async function patchPulp(projectId, patch) {
       next[k] = v;
     }
     runSchema(next);
+    ensureTileFramesMatchDim(next);
     await ensureDir(dir);
     await atomicWriteJson(file, next);
     return next;
@@ -243,6 +314,7 @@ async function addCollectionItem(projectId, collection, item) {
     }
     const next = { ...cur, [collection]: [...(cur[collection] || []), item] };
     runSchema(next);
+    if (collection === 'tiles') ensureTileFramesMatchDim(next);
     await ensureDir(dir);
     await atomicWriteJson(file, next);
     return item;
@@ -268,6 +340,7 @@ async function patchCollectionItem(projectId, collection, itemId, patch) {
     nextList[idx] = merged;
     const next = { ...cur, [collection]: nextList };
     runSchema(next);
+    if (collection === 'tiles') ensureTileFramesMatchDim(next);
     await ensureDir(dir);
     await atomicWriteJson(file, next);
     return merged;
@@ -447,6 +520,8 @@ async function deleteCollectionItem(projectId, collection, itemId) {
 
 module.exports = {
   defaultPulpProject,
+  resolveTileDim,
+  pixelsLenForDim,
   readPulp,
   writeFullPulp,
   patchPulp,

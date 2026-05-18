@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const sharp = require('sharp');
 
 const projects = require('./projects');
+const dither = require('./dither');
 
 // ----- Errors -----
 
@@ -23,6 +24,17 @@ function assetErr(status, code, detail) {
 const PULP_DIR_NAME = 'pulp_data';
 const LAUNCHER_CARD_FILENAME = 'launcher_card.png';
 const LAUNCHER_CARD_DIM = [350, 155];
+const LAUNCHER_ICON_FILENAME = 'launcher_icon.png';
+const LAUNCHER_ICON_DIM = [32, 32];
+const LAUNCH_IMAGE_FILENAME = 'launch_image.png';
+const LAUNCH_IMAGE_DIM = [400, 240];
+
+// Spec Section 7: tiles default to Bayer 4x4 ordered dither (preserves crisp
+// edges at 8x8 / 16x16; Floyd-Steinberg destroys tile readability).
+const TILE_DITHER_DEFAULT = 'bayer4';
+// Spec Section 5: minimum recommended sprite source size is 32x32; smaller
+// inputs are accepted but flagged.
+const MIN_SPRITE_SOURCE_PX = 32;
 
 async function loadProjectOrThrow(projectId) {
   const project = await projects.getProject(projectId);
@@ -118,45 +130,106 @@ function makeUploadedId(prefix, baseName) {
 
 // ----- Tile conversion -----
 
-const TILE_PIXEL_COUNT = 256;
+function pixelCountForDim(dim) {
+  if (dim === 8) return 64;
+  if (dim === 16) return 256;
+  throw assetErr(400, 'bad_tile_dim');
+}
+
+function normalizeTileDim(v) {
+  // Accept 8 / 16 / "8" / "16". Anything else falls back to 8 (spec default
+  // for pulp; SDK call-sites must pass tileDim:16 explicitly).
+  if (v === 8 || v === '8') return 8;
+  if (v === 16 || v === '16') return 16;
+  return 8;
+}
+
+function normalizeTileDither(v) {
+  if (typeof v === 'string' && dither.isValidAlgo(v)) return v;
+  return TILE_DITHER_DEFAULT;
+}
 
 /**
- * convertPngToTileFrame(buffer) -> Promise<256-char string of '0'/'1'>
- * - sharp resize 16x16 kernel:'nearest' -> greyscale -> threshold > 127.
- * - Alpha == 0 always maps to '0'.
+ * convertPngToTileFrameEx(buffer, opts?) -> Promise<{ pixels, src_dim }>
+ *   opts.tileDim  8 (default) | 16
+ *   opts.dither   any dither.isValidAlgo() name (default 'bayer4')
+ *
+ * Pipeline:
+ *   1. sharp probe (capture pre-resize w/h for the legibility warning)
+ *   2. sharp resize -> nearest -> greyscale -> raw
+ *   3. dither.<algo>() to 1-bit
+ *   4. emit "0"/"1" string of length 64 or 256; alpha 0 always maps to '0'
  */
-async function convertPngToTileFrame(buffer) {
+async function convertPngToTileFrameEx(buffer, opts) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     throw assetErr(400, 'empty_file');
   }
+  const tileDim = normalizeTileDim(opts && opts.tileDim);
+  const algo = normalizeTileDither(opts && opts.dither);
+  const N = pixelCountForDim(tileDim);
+
+  // Probe pre-resize dims (best-effort; failures don't block conversion).
+  let srcDim = [0, 0];
+  try {
+    const meta = await sharp(buffer).metadata();
+    if (meta && Number.isInteger(meta.width) && Number.isInteger(meta.height)) {
+      srcDim = [meta.width, meta.height];
+    }
+  } catch (_e) { /* keep [0,0] */ }
+
+  // Pull greyscale + alpha (separate channel so we can preserve alpha=0
+  // pixels through the dither).
   const { data, info } = await sharp(buffer)
-    .resize(16, 16, { kernel: 'nearest', fit: 'fill' })
+    .resize(tileDim, tileDim, { kernel: 'nearest', fit: 'fill' })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
-  if (info.width !== 16 || info.height !== 16) {
+  if (info.width !== tileDim || info.height !== tileDim) {
     throw assetErr(400, 'bad_image');
   }
-  const channels = info.channels; // 4 (RGBA) after ensureAlpha
-  if (channels < 3) {
-    throw assetErr(400, 'bad_image');
-  }
-  const out = new Array(TILE_PIXEL_COUNT);
-  for (let i = 0; i < TILE_PIXEL_COUNT; i++) {
+  const channels = info.channels; // 4 after ensureAlpha
+  if (channels < 3) throw assetErr(400, 'bad_image');
+
+  // Build a greyscale buffer + an alpha mask for the dither step. We feed
+  // the dither pure luma; for alpha-0 pixels we override to '0' after.
+  const gray = new Uint8Array(N);
+  const alpha = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
     const off = i * channels;
     const r = data[off];
     const g = data[off + 1];
     const b = data[off + 2];
     const a = channels >= 4 ? data[off + 3] : 255;
-    if (a === 0) { out[i] = '0'; continue; }
-    // Rec. 601 luma; treat ">127" as "on" (black-on tile pixel).
-    // Contract: "threshold > 127 = '1'". Lower luminance == darker == on.
-    // We invert so "dark pixel" -> '1'.
-    const luma = (0.299 * r + 0.587 * g + 0.114 * b);
-    const darkness = 255 - luma;
-    out[i] = darkness > 127 ? '1' : '0';
+    // Rec.601 luma.
+    gray[i] = (0.299 * r + 0.587 * g + 0.114 * b) | 0;
+    alpha[i] = a;
   }
-  return out.join('');
+
+  const dithered = dither.dither(algo, gray, tileDim, tileDim, 128);
+
+  const out = new Array(N);
+  for (let i = 0; i < N; i++) {
+    if (alpha[i] === 0) { out[i] = '0'; continue; }
+    // dither returns 0 (black) or 255 (white). Pulp "1" = on/black pixel.
+    out[i] = dithered[i] === 0 ? '1' : '0';
+  }
+  return { pixels: out.join(''), src_dim: srcDim };
+}
+
+/**
+ * convertPngToTileFrame(buffer, opts?) -> Promise<string>
+ *
+ * Legacy facade preserved for Wave-1/2 callers (e.g. pulp_autopilot). Returns
+ * just the pixel string. New callers should prefer convertPngToTileFrameEx
+ * which also returns src_dim for the legibility warning.
+ *
+ * Default behavior changed in this revision: pulp tile frames are now 8x8
+ * with Bayer 4x4 dither per spec. Pass opts.tileDim=16 to keep the SDK
+ * tile size for callers that still want it.
+ */
+async function convertPngToTileFrame(buffer, opts) {
+  const r = await convertPngToTileFrameEx(buffer, opts);
+  return r.pixels;
 }
 
 // ----- Sound spec inference -----
@@ -296,6 +369,102 @@ async function inferSoundSpec(buffer, filename) {
   };
 }
 
+// ----- Audio normalize (44.1 kHz mono PCM s16le) -----
+//
+// Spec Section 2.7: Playdate audio runs at 44,100 Hz. We pipe imports through
+// `ffmpeg -ar 44100 -ac 1 -acodec pcm_s16le` so on-disk samples match the
+// hardware. If ffmpeg is not on PATH (or fails), we log a warning and accept
+// the original buffer as-is — never block the upload on a missing dep.
+
+const PLAYDATE_SAMPLE_RATE = 44100;
+let _ffmpegProbed = false;
+let _ffmpegOk = false;
+
+function probeFfmpeg() {
+  if (_ffmpegProbed) return _ffmpegOk;
+  _ffmpegProbed = true;
+  try {
+    const which = require('child_process').spawnSync(
+      process.platform === 'win32' ? 'where' : 'which',
+      ['ffmpeg'],
+      { shell: false, stdio: ['ignore', 'pipe', 'ignore'], timeout: 1500 }
+    );
+    _ffmpegOk = which && which.status === 0
+      && typeof which.stdout !== 'undefined'
+      && which.stdout.toString().trim().length > 0;
+  } catch (_e) {
+    _ffmpegOk = false;
+  }
+  return _ffmpegOk;
+}
+
+/**
+ * normalizeAudioBuffer(buffer, originalName) -> Promise<{ buffer, normalized, sample_rate, warning? }>
+ *
+ * If ffmpeg is on PATH, transcodes to 44.1 kHz mono PCM s16le WAV and returns
+ * the converted buffer. Otherwise returns the input untouched with a warning.
+ */
+async function normalizeAudioBuffer(buffer, originalName) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw assetErr(400, 'empty_file');
+  }
+  if (!probeFfmpeg()) {
+    return {
+      buffer,
+      normalized: false,
+      sample_rate: null,
+      warning: 'ffmpeg_unavailable — kept original sample rate'
+    };
+  }
+  const os = require('os');
+  const tag = `${process.pid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const inExt = (() => {
+    const m = /\.([a-z0-9]{1,8})$/i.exec(originalName || '');
+    return m ? '.' + m[1].toLowerCase() : '.bin';
+  })();
+  const tmpIn = path.join(os.tmpdir(), `pulp_audio_in_${tag}${inExt}`);
+  const tmpOut = path.join(os.tmpdir(), `pulp_audio_out_${tag}.wav`);
+  try {
+    await fsp.writeFile(tmpIn, buffer, { mode: 0o600 });
+    const ok = await new Promise((resolve) => {
+      const child = spawn('ffmpeg', [
+        '-y',
+        '-loglevel', 'error',
+        '-i', tmpIn,
+        '-ar', String(PLAYDATE_SAMPLE_RATE),
+        '-ac', '1',
+        '-acodec', 'pcm_s16le',
+        tmpOut
+      ], { shell: false, stdio: ['ignore', 'ignore', 'pipe'] });
+      let done = false;
+      const finish = (v) => { if (done) return; done = true; resolve(v); };
+      const timer = setTimeout(() => {
+        try { child.kill('SIGKILL'); } catch (_e) { /* noop */ }
+        finish(false);
+      }, 8000);
+      child.on('error', () => { clearTimeout(timer); finish(false); });
+      child.on('close', (code) => { clearTimeout(timer); finish(code === 0); });
+    });
+    if (!ok) {
+      return {
+        buffer,
+        normalized: false,
+        sample_rate: null,
+        warning: 'ffmpeg_failed — kept original sample rate'
+      };
+    }
+    const out = await fsp.readFile(tmpOut);
+    return {
+      buffer: out,
+      normalized: true,
+      sample_rate: PLAYDATE_SAMPLE_RATE
+    };
+  } finally {
+    fsp.unlink(tmpIn).catch(() => {});
+    fsp.unlink(tmpOut).catch(() => {});
+  }
+}
+
 // ----- Launcher card -----
 
 /**
@@ -330,26 +499,118 @@ async function saveLauncherCard(projectId, pngBuffer) {
   });
 }
 
+// ----- Launcher icon (32x32) + launch image (400x240) -----
+//
+// Spec Section 2.6 / Fix #5: SDK launcher expects icon.png (32x32) and
+// launchImage.png (400x240, no alpha). Same upload / generate / GET shape as
+// launcher-card, just two more files. Set-and-forget — no reprocess needed.
+
+function getLauncherIconPath(project) {
+  if (!project || !project.local_path) return null;
+  return path.join(project.local_path, PULP_DIR_NAME, LAUNCHER_ICON_FILENAME);
+}
+
+function getLaunchImagePath(project) {
+  if (!project || !project.local_path) return null;
+  return path.join(project.local_path, PULP_DIR_NAME, LAUNCH_IMAGE_FILENAME);
+}
+
+async function convertLauncherIcon(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw assetErr(400, 'empty_file');
+  }
+  const [w, h] = LAUNCHER_ICON_DIM;
+  // 32x32 icon: keep alpha so the list-view background shows through, but
+  // threshold the colour channel so we end up 1-bit.
+  const pngBuffer = await sharp(buffer)
+    .resize(w, h, { fit: 'cover', position: 'centre', kernel: 'nearest' })
+    .greyscale()
+    .threshold(128)
+    .png()
+    .toBuffer();
+  return { pngBuffer, dim: [w, h] };
+}
+
+async function convertLaunchImage(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw assetErr(400, 'empty_file');
+  }
+  const [w, h] = LAUNCH_IMAGE_DIM;
+  // Launch image must NOT have alpha per spec (loading screen).
+  const pngBuffer = await sharp(buffer)
+    .resize(w, h, { fit: 'cover', position: 'centre' })
+    .greyscale()
+    .threshold(128)
+    .toColourspace('b-w')
+    .removeAlpha()
+    .png()
+    .toBuffer();
+  return { pngBuffer, dim: [w, h] };
+}
+
+async function saveLauncherIcon(projectId, pngBuffer) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const dir = await pulpDirFor(project);
+    const file = path.join(dir, LAUNCHER_ICON_FILENAME);
+    const tmp = file + '.' + process.pid + '.' + Date.now() + '.tmp';
+    await fsp.writeFile(tmp, pngBuffer, { mode: 0o600 });
+    await fsp.rename(tmp, file);
+    return { file, size_bytes: pngBuffer.length };
+  });
+}
+
+async function saveLaunchImage(projectId, pngBuffer) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const dir = await pulpDirFor(project);
+    const file = path.join(dir, LAUNCH_IMAGE_FILENAME);
+    const tmp = file + '.' + process.pid + '.' + Date.now() + '.tmp';
+    await fsp.writeFile(tmp, pngBuffer, { mode: 0o600 });
+    await fsp.rename(tmp, file);
+    return { file, size_bytes: pngBuffer.length };
+  });
+}
+
 // ----- Multi-file tile import (no disk persistence here) -----
 
-async function buildTileFromFile({ buffer, originalName, type, solid }) {
+async function buildTileFromFile({ buffer, originalName, type, solid, tileDim, dither: ditherAlgo }) {
   const id = makeUploadedId('uploaded_', originalName);
-  const frame = await convertPngToTileFrame(buffer);
-  return {
+  const { pixels, src_dim } = await convertPngToTileFrameEx(buffer, {
+    tileDim,
+    dither: ditherAlgo
+  });
+  const tile = {
     id,
     name: stripExtension(originalName).slice(0, 1024) || 'tile',
     type,
     solid: !!solid,
-    frames: [{ pixels: frame }],
+    frames: [{ pixels }],
     fps: 0,
     script: ''
   };
+  // Spec Section 5: warn (don't fail) when source asset is smaller than the
+  // 32x32 minimum recommended sprite size.
+  const warnings = [];
+  if (Array.isArray(src_dim) && src_dim.length === 2
+      && src_dim[0] > 0 && src_dim[1] > 0
+      && (src_dim[0] < MIN_SPRITE_SOURCE_PX || src_dim[1] < MIN_SPRITE_SOURCE_PX)) {
+    warnings.push(
+      `undersized_source — recommend >=${MIN_SPRITE_SOURCE_PX}x${MIN_SPRITE_SOURCE_PX} `
+      + `for legibility (got ${src_dim[0]}x${src_dim[1]})`
+    );
+  }
+  return { tile, warnings, src_dim };
 }
 
 async function buildSoundFromFile({ buffer, originalName }) {
   const id = makeUploadedId('uploaded_', originalName);
-  const spec = await inferSoundSpec(buffer, originalName);
-  return {
+  // Spec Section 2.7 / Fix #3: normalize to 44.1 kHz mono PCM s16le before
+  // probing. Duration inference reads the normalized header so we get the
+  // post-conversion duration too.
+  const norm = await normalizeAudioBuffer(buffer, originalName);
+  const spec = await inferSoundSpec(norm.buffer, originalName);
+  const sound = {
     id,
     name: stripExtension(originalName).slice(0, 1024) || 'sound',
     waveform: spec.waveform,
@@ -358,6 +619,9 @@ async function buildSoundFromFile({ buffer, originalName }) {
     duration_ms: spec.duration_ms,
     envelope: spec.envelope
   };
+  const warnings = [];
+  if (norm.warning) warnings.push(norm.warning);
+  return { sound, warnings, normalized: norm.normalized, sample_rate: norm.sample_rate };
 }
 
 // ----- Validation helpers (callers pass parsed body field strings) -----
@@ -379,16 +643,34 @@ module.exports = {
   loadProjectOrThrow,
   pulpDirFor,
   getLauncherCardPath,
+  getLauncherIconPath,
+  getLaunchImagePath,
   convertPngToTileFrame,
+  convertPngToTileFrameEx,
   inferSoundSpec,
+  normalizeAudioBuffer,
   convertLauncherCard,
+  convertLauncherIcon,
+  convertLaunchImage,
   saveLauncherCard,
+  saveLauncherIcon,
+  saveLaunchImage,
   buildTileFromFile,
   buildSoundFromFile,
   rejectUnsafeFilename,
   normalizeTileType,
   normalizeSolidFlag,
+  normalizeTileDim,
+  normalizeTileDither,
+  probeFfmpeg,
   assetErr,
+  TILE_DITHER_DEFAULT,
+  MIN_SPRITE_SOURCE_PX,
+  PLAYDATE_SAMPLE_RATE,
   LAUNCHER_CARD_FILENAME,
-  LAUNCHER_CARD_DIM
+  LAUNCHER_CARD_DIM,
+  LAUNCHER_ICON_FILENAME,
+  LAUNCHER_ICON_DIM,
+  LAUNCH_IMAGE_FILENAME,
+  LAUNCH_IMAGE_DIM
 };

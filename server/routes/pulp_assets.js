@@ -106,8 +106,13 @@ router.post(
 
       const type = assets.normalizeTileType(req.body && req.body.type);
       const solid = assets.normalizeSolidFlag(req.body && req.body.solid);
+      // Spec Section 6.1: caller may pass tileDim=8 (pulp default) or 16
+      // (SDK) via form field. Anything else falls back to 8.
+      const tileDim = (req.body && (req.body.tileDim || req.body.tile_dim));
+      const ditherAlgo = req.body && req.body.dither;
 
       const tiles = [];
+      const warnings = [];
       const skipped = [];
       const seenIds = new Set();
 
@@ -121,18 +126,24 @@ router.post(
           continue;
         }
         try {
-          const tile = await assets.buildTileFromFile({
+          const built = await assets.buildTileFromFile({
             buffer: f.buffer,
             originalName: f.originalname,
             type,
-            solid
+            solid,
+            tileDim,
+            dither: ditherAlgo
           });
+          const tile = built.tile;
           if (seenIds.has(tile.id)) {
             skipped.push({ filename: f.originalname, reason: 'duplicate_id' });
             continue;
           }
           seenIds.add(tile.id);
           tiles.push(tile);
+          for (const w of built.warnings || []) {
+            warnings.push({ filename: f.originalname, warning: w });
+          }
         } catch (e) {
           const code = (e && e.code) || 'conversion_failed';
           // eslint-disable-next-line no-console
@@ -141,7 +152,7 @@ router.post(
         }
       }
 
-      res.json({ tiles, skipped });
+      res.json({ tiles, skipped, warnings });
     } catch (e) { sendErr(res, e); }
   }
 );
@@ -161,6 +172,7 @@ router.post(
       }
 
       const sounds = [];
+      const warnings = [];
       const skipped = [];
       const seenIds = new Set();
 
@@ -174,16 +186,20 @@ router.post(
           continue;
         }
         try {
-          const sound = await assets.buildSoundFromFile({
+          const built = await assets.buildSoundFromFile({
             buffer: f.buffer,
             originalName: f.originalname
           });
+          const sound = built.sound;
           if (seenIds.has(sound.id)) {
             skipped.push({ filename: f.originalname, reason: 'duplicate_id' });
             continue;
           }
           seenIds.add(sound.id);
           sounds.push(sound);
+          for (const w of built.warnings || []) {
+            warnings.push({ filename: f.originalname, warning: w });
+          }
         } catch (e) {
           const code = (e && e.code) || 'conversion_failed';
           // eslint-disable-next-line no-console
@@ -192,7 +208,7 @@ router.post(
         }
       }
 
-      res.json({ sounds, skipped });
+      res.json({ sounds, skipped, warnings });
     } catch (e) { sendErr(res, e); }
   }
 );
@@ -289,6 +305,201 @@ router.post(
 
       res.json({
         url: `/api/projects/${encodeURIComponent(req.params.id)}/pulp/launcher-card`,
+        size_bytes,
+        dim
+      });
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
+// ===== POST /launcher-icon (upload) =====
+//
+// Spec Section 2.6 / Fix #5: 32x32 1-bit icon for the Playdate launcher list
+// view. Mirrors launcher-card upload shape exactly.
+
+router.post(
+  '/:id/pulp/launcher-icon',
+  wrapMulter(cardUpload),
+  async (req, res) => {
+    try {
+      const f = req.file;
+      if (!f) return res.status(400).json({ error: 'no_file' });
+      const reason = checkImage(f);
+      if (reason) return res.status(400).json({ error: reason });
+
+      const { pngBuffer, dim } = await assets.convertLauncherIcon(f.buffer);
+      const { size_bytes } = await assets.saveLauncherIcon(req.params.id, pngBuffer);
+
+      // eslint-disable-next-line no-console
+      console.log('[pulp_assets] launcher-icon', f.originalname, f.size, '->', size_bytes);
+
+      res.json({
+        url: `/api/projects/${encodeURIComponent(req.params.id)}/pulp/launcher-icon`,
+        size_bytes,
+        dim
+      });
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
+// ===== GET /launcher-icon =====
+
+router.get('/:id/pulp/launcher-icon', async (req, res) => {
+  try {
+    const project = await assets.loadProjectOrThrow(req.params.id);
+    const file = assets.getLauncherIconPath(project);
+    if (!file) return res.status(404).json({ error: 'not_found' });
+
+    let stat;
+    try { stat = await fsp.stat(file); }
+    catch (e) {
+      if (e && e.code === 'ENOENT') return res.status(404).json({ error: 'not_found' });
+      throw e;
+    }
+    if (!stat.isFile()) return res.status(404).json({ error: 'not_found' });
+
+    const buf = await fsp.readFile(file);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', buf.length);
+    res.status(200).end(buf);
+  } catch (e) { sendErr(res, e); }
+});
+
+// ===== POST /launcher-icon/generate =====
+
+router.post(
+  '/:id/pulp/launcher-icon/generate',
+  express.json({ limit: '32kb' }),
+  async (req, res) => {
+    try {
+      const body = (req.body && typeof req.body === 'object') ? req.body : {};
+      const prompt = typeof body.prompt === 'string' ? body.prompt : '';
+      const model = typeof body.model === 'string' ? body.model : '';
+      if (!prompt.trim()) {
+        return res.status(400).json({ error: 'bad_request', detail: 'prompt required' });
+      }
+
+      const iconPrompt =
+        'Playdate launcher icon, 32x32 1-bit black-and-white pixel art, '
+        + 'bold silhouette, no text, must be recognizable at tiny size. '
+        + `Subject: ${prompt.trim()}`;
+
+      // Generate at SDK size (16x16 base output upscales OK, but pass tileDim:16
+      // so the pulp_ai tile pipeline returns a higher-fidelity base for the
+      // 32x32 cover-resize below).
+      const gen = await pulpAi.generateTileArt({
+        projectId: req.params.id,
+        prompt: iconPrompt,
+        model,
+        tileDim: 16
+      });
+
+      const baseBuf = Buffer.from(gen.image_base64, 'base64');
+      const { pngBuffer, dim } = await assets.convertLauncherIcon(baseBuf);
+      const { size_bytes } = await assets.saveLauncherIcon(req.params.id, pngBuffer);
+
+      // eslint-disable-next-line no-console
+      console.log('[pulp_assets] launcher-icon generate model=' + (gen.model || '?')
+        + ' fallback=' + !!gen.fallback + ' size=' + size_bytes);
+
+      res.json({
+        url: `/api/projects/${encodeURIComponent(req.params.id)}/pulp/launcher-icon`,
+        size_bytes,
+        dim
+      });
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
+// ===== POST /launch-image (upload) =====
+//
+// Spec Section 2.6: 400x240 loading screen, no alpha.
+
+router.post(
+  '/:id/pulp/launch-image',
+  wrapMulter(cardUpload),
+  async (req, res) => {
+    try {
+      const f = req.file;
+      if (!f) return res.status(400).json({ error: 'no_file' });
+      const reason = checkImage(f);
+      if (reason) return res.status(400).json({ error: reason });
+
+      const { pngBuffer, dim } = await assets.convertLaunchImage(f.buffer);
+      const { size_bytes } = await assets.saveLaunchImage(req.params.id, pngBuffer);
+
+      // eslint-disable-next-line no-console
+      console.log('[pulp_assets] launch-image', f.originalname, f.size, '->', size_bytes);
+
+      res.json({
+        url: `/api/projects/${encodeURIComponent(req.params.id)}/pulp/launch-image`,
+        size_bytes,
+        dim
+      });
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
+// ===== GET /launch-image =====
+
+router.get('/:id/pulp/launch-image', async (req, res) => {
+  try {
+    const project = await assets.loadProjectOrThrow(req.params.id);
+    const file = assets.getLaunchImagePath(project);
+    if (!file) return res.status(404).json({ error: 'not_found' });
+
+    let stat;
+    try { stat = await fsp.stat(file); }
+    catch (e) {
+      if (e && e.code === 'ENOENT') return res.status(404).json({ error: 'not_found' });
+      throw e;
+    }
+    if (!stat.isFile()) return res.status(404).json({ error: 'not_found' });
+
+    const buf = await fsp.readFile(file);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Length', buf.length);
+    res.status(200).end(buf);
+  } catch (e) { sendErr(res, e); }
+});
+
+// ===== POST /launch-image/generate =====
+
+router.post(
+  '/:id/pulp/launch-image/generate',
+  express.json({ limit: '32kb' }),
+  async (req, res) => {
+    try {
+      const body = (req.body && typeof req.body === 'object') ? req.body : {};
+      const prompt = typeof body.prompt === 'string' ? body.prompt : '';
+      const model = typeof body.model === 'string' ? body.model : '';
+      if (!prompt.trim()) {
+        return res.status(400).json({ error: 'bad_request', detail: 'prompt required' });
+      }
+
+      // Use the scene generator — launch image is a 400x240 landscape, same
+      // dim as a scene background. Bayer dither for legibility at the boot
+      // screen.
+      const gen = await pulpAi.generateScene({
+        prompt:
+          'Playdate launch screen, 400x240 1-bit black-and-white pixel art, '
+          + 'bold central subject, no text. '
+          + `Subject: ${prompt.trim()}`,
+        model,
+        dim: assets.LAUNCH_IMAGE_DIM
+      });
+
+      const { pngBuffer, dim } = await assets.convertLaunchImage(gen.pngBuffer);
+      const { size_bytes } = await assets.saveLaunchImage(req.params.id, pngBuffer);
+
+      // eslint-disable-next-line no-console
+      console.log('[pulp_assets] launch-image generate model=' + (gen.model || '?')
+        + ' fallback=' + !!gen.fallback + ' size=' + size_bytes);
+
+      res.json({
+        url: `/api/projects/${encodeURIComponent(req.params.id)}/pulp/launch-image`,
         size_bytes,
         dim
       });

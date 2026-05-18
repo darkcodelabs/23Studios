@@ -96,6 +96,8 @@ function readOpts(req) {
     contrast: src.contrast,
     brightness: src.brightness,
     fit: src.fit,
+    // Fix #6: caller may pass preset='body' to get a 64x96 sprite default.
+    preset: src.preset,
     dim
   };
 }

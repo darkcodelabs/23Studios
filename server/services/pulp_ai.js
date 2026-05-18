@@ -194,24 +194,37 @@ async function decodeImageFromGenResult(item) {
   throw new Error('no image data in response');
 }
 
-async function to1bit16x16Png(buf) {
+async function to1bitTilePng(buf, dim) {
+  const d = (dim === 8 || dim === 16) ? dim : 8;
+  // Pre-blur slightly before downscale so the threshold isn't dominated by
+  // a single source pixel — that's the Bayer-style intent for small tiles.
   return await sharp(buf)
-    .resize(16, 16, { kernel: 'nearest' })
+    .resize(d, d, { kernel: 'nearest' })
     .threshold(128)
     .toColourspace('b-w')
     .png()
     .toBuffer();
 }
 
-async function generateTileArt({ projectId, prompt, model, style }) {
+// Legacy alias retained in case external callers/tests still want a fixed
+// 16x16 output. Not currently used internally.
+async function to1bit16x16Png(buf) {
+  return to1bitTilePng(buf, 16);
+}
+
+async function generateTileArt({ projectId, prompt, model, style, tileDim }) {
   const project = await loadProjectOrThrow(projectId);
   const cleanPrompt = sanitizePrompt(prompt);
   if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
   const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
   const cleanStyle = sanitizePrompt(style);
+  // Pulp tiles are canonically 8x8 (spec Section 3.1). SDK callers can pass
+  // tileDim:16. Anything else falls back to 8.
+  const dim = (tileDim === 16) ? 16 : 8;
 
-  const augmented = '1-bit pixel art, 16x16 pixels, pure black on pure white background, '
+  const augmented = `1-bit pixel art, ${dim}x${dim} pixels, pure black on pure white background, `
     + 'thick black outlines, suitable for a Playdate game tile. '
+    + 'Use Bayer 4x4 ordered dithering for any shading (NO Floyd-Steinberg, NO grayscale, NO color). '
     + (cleanStyle ? `Style: ${cleanStyle}. ` : '')
     + `Subject: ${cleanPrompt}`;
 
@@ -252,7 +265,7 @@ async function generateTileArt({ projectId, prompt, model, style }) {
     usedModel = 'local-placeholder';
   }
 
-  const finalPng = await to1bit16x16Png(imgBuf);
+  const finalPng = await to1bitTilePng(imgBuf, dim);
   const b64 = finalPng.toString('base64');
 
   await logGeneration(project, {
@@ -440,13 +453,16 @@ async function generateScene({ prompt, model, dim }) {
 
 const PORTRAIT_DIM_DEFAULT = [64, 64];
 const PORTRAIT_DIM_MIN = 32;
-const PORTRAIT_DIM_MAX = 128;
+// Bumped from 128 to 256 to accommodate the body-sprite preset (64x96) and
+// other multi-frame character sheets; kept in sync with pulp_portraits.
+const PORTRAIT_DIM_MAX = 256;
 
 const PORTRAIT_STYLE_LOCK =
   '1-bit pure black-and-white pixel art portrait, head-and-shoulders or bust ' +
-  'composition, Atkinson dither shading only. NO grayscale, NO color, NO ' +
-  'anti-aliasing. Thick 2-px black outlines. Mars After Midnight / ' +
-  'Whitewater Wipeout aesthetic. Square aspect, fills the frame. Subject ' +
+  'composition, Bayer 4x4 ordered dither shading only (NO Floyd-Steinberg, ' +
+  'NO Atkinson — faces need crisp legibility at 64x64). NO grayscale, NO ' +
+  'color, NO anti-aliasing. Thick 2-px black outlines. Mars After Midnight ' +
+  '/ Whitewater Wipeout aesthetic. Square aspect, fills the frame. Subject ' +
   'reads at small resolution. Subject: ';
 
 function clampPortraitDim(v, fallback) {
@@ -842,6 +858,8 @@ module.exports = {
     placeholderScenePng,
     toScenePng,
     toPortraitPng,
+    to1bitTilePng,
+    to1bit16x16Png,
     deterministicBitsFromPrompt,
     SCENE_STYLE_LOCK,
     PORTRAIT_STYLE_LOCK

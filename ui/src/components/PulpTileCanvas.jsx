@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   Pencil, Eraser, PaintBucket, Minus, Square as SquareIcon,
   FlipHorizontal, FlipVertical, RotateCw, Layers
 } from 'lucide-react';
-import { pixelsToArray, arrayToPixels } from '../lib/pulp_api.js';
+import { pixelsToArray, arrayToPixels, dimForPixels } from '../lib/pulp_api.js';
 
-const SIZE = 16;
-const SCALE = 24; // px per pixel
-const CANVAS_PX = SIZE * SCALE; // 384
+// Editor canvas is a fixed ~384px square so the toolbar layout doesn't shift
+// when a project switches between 8x8 and 16x16 tiles. Scale per pixel is
+// chosen so SIZE * SCALE == CANVAS_PX regardless of dim.
+const CANVAS_PX = 384;
 
 const TOOLS = [
   { id: 'pencil', label: 'pencil', icon: Pencil },
@@ -17,11 +18,11 @@ const TOOLS = [
   { id: 'rect', label: 'rect', icon: SquareIcon }
 ];
 
-// --- pure helpers on Uint8Array(256) ---
+// --- pure helpers parameterized on SIZE (8 or 16) ---
 
 function clone(arr) { return new Uint8Array(arr); }
 
-function bucketFill(arr, x, y, target, value) {
+function bucketFill(arr, x, y, target, value, SIZE) {
   if (target === value) return arr;
   const out = clone(arr);
   const stack = [[x, y]];
@@ -36,7 +37,7 @@ function bucketFill(arr, x, y, target, value) {
   return out;
 }
 
-function drawLine(arr, x0, y0, x1, y1, value) {
+function drawLine(arr, x0, y0, x1, y1, value, SIZE) {
   const out = clone(arr);
   let dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
   let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
@@ -52,7 +53,7 @@ function drawLine(arr, x0, y0, x1, y1, value) {
   return out;
 }
 
-function drawRect(arr, x0, y0, x1, y1, value) {
+function drawRect(arr, x0, y0, x1, y1, value, SIZE) {
   let out = clone(arr);
   const xa = Math.min(x0, x1), xb = Math.max(x0, x1);
   const ya = Math.min(y0, y1), yb = Math.max(y0, y1);
@@ -67,23 +68,23 @@ function drawRect(arr, x0, y0, x1, y1, value) {
   return out;
 }
 
-function flipH(arr) {
-  const out = new Uint8Array(256);
+function flipH(arr, SIZE) {
+  const out = new Uint8Array(SIZE * SIZE);
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) out[y * SIZE + (SIZE - 1 - x)] = arr[y * SIZE + x];
   }
   return out;
 }
-function flipV(arr) {
-  const out = new Uint8Array(256);
+function flipV(arr, SIZE) {
+  const out = new Uint8Array(SIZE * SIZE);
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) out[(SIZE - 1 - y) * SIZE + x] = arr[y * SIZE + x];
   }
   return out;
 }
-function rotate90(arr) {
+function rotate90(arr, SIZE) {
   // clockwise
-  const out = new Uint8Array(256);
+  const out = new Uint8Array(SIZE * SIZE);
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) out[x * SIZE + (SIZE - 1 - y)] = arr[y * SIZE + x];
   }
@@ -92,17 +93,26 @@ function rotate90(arr) {
 
 /**
  * Props:
- *   pixels       string(256)
+ *   pixels       string of 64 (8x8) or 256 (16x16) "0"/"1" chars
  *   onChange     (newPixels) => void
- *   previousPixels?  string(256) — optional onion-skin frame
+ *   previousPixels?  optional onion-skin frame (same dim as `pixels`)
+ *   tileDim?     8 | 16 — explicit override; otherwise inferred from pixels
  */
-export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
+export default function PulpTileCanvas({ pixels, onChange, previousPixels, tileDim }) {
   const canvasRef = useRef(null);
   const [tool, setTool] = useState('pencil');
   const [onion, setOnion] = useState(false);
 
+  // Tile dim source of truth: explicit prop wins, otherwise infer from the
+  // pixel string. Default 8 (new pulp canonical).
+  const SIZE = useMemo(() => {
+    if (tileDim === 8 || tileDim === 16) return tileDim;
+    return dimForPixels(pixels);
+  }, [tileDim, pixels]);
+  const SCALE = CANVAS_PX / SIZE; // 8 -> 48px/px, 16 -> 24px/px
+
   // committed arr drives the persistent pixel state
-  const arr = pixelsToArray(pixels);
+  const arr = pixelsToArray(pixels, SIZE);
 
   // preview state for line/rect drag
   const dragRef = useRef(null); // { startX, startY, value, lastX, lastY, snapshot }
@@ -120,7 +130,7 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
 
     // onion skin layer
     if (onion && previousPixels) {
-      const prev = pixelsToArray(previousPixels);
+      const prev = pixelsToArray(previousPixels, SIZE);
       ctx.globalAlpha = 0.2;
       ctx.fillStyle = '#9dffce';
       for (let y = 0; y < SIZE; y++) {
@@ -136,9 +146,9 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
     const drag = dragRef.current;
     if (drag && (tool === 'line' || tool === 'rect')) {
       if (tool === 'line') {
-        displayArr = drawLine(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value);
+        displayArr = drawLine(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value, SIZE);
       } else {
-        displayArr = drawRect(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value);
+        displayArr = drawRect(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value, SIZE);
       }
     }
     ctx.fillStyle = '#9dffce';
@@ -158,16 +168,17 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
       ctx.beginPath();
       ctx.moveTo(0, p); ctx.lineTo(CANVAS_PX, p); ctx.stroke();
     }
-    // chunkier 8px guide
+    // chunkier guide every quarter (4 on 8x8, 8 on 16x16)
+    const guideStep = Math.max(1, SIZE / 2);
     ctx.strokeStyle = 'rgba(157,255,206,0.18)';
-    for (let i = 0; i <= SIZE; i += 8) {
+    for (let i = 0; i <= SIZE; i += guideStep) {
       const p = i * SCALE + 0.5;
       ctx.beginPath();
       ctx.moveTo(p, 0); ctx.lineTo(p, CANVAS_PX); ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(0, p); ctx.lineTo(CANVAS_PX, p); ctx.stroke();
     }
-  }, [arr, onion, previousPixels, tool]);
+  }, [arr, onion, previousPixels, tool, SIZE, SCALE]);
 
   useEffect(() => { repaint(); }, [repaint]);
 
@@ -179,7 +190,7 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
   }
 
   function commit(newArr) {
-    onChange(arrayToPixels(newArr));
+    onChange(arrayToPixels(newArr, SIZE));
   }
 
   function onMouseDown(e) {
@@ -190,7 +201,7 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
 
     if (tool === 'bucket') {
       const target = arr[y * SIZE + x];
-      commit(bucketFill(arr, x, y, target, value));
+      commit(bucketFill(arr, x, y, target, value, SIZE));
       return;
     }
     if (tool === 'line' || tool === 'rect') {
@@ -229,9 +240,9 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
     const drag = dragRef.current;
     if (!drag) return;
     if (tool === 'line') {
-      commit(drawLine(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value));
+      commit(drawLine(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value, SIZE));
     } else if (tool === 'rect') {
-      commit(drawRect(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value));
+      commit(drawRect(drag.snapshot, drag.startX, drag.startY, drag.lastX, drag.lastY, drag.value, SIZE));
     }
     dragRef.current = null;
     force((n) => n + 1);
@@ -248,7 +259,7 @@ export default function PulpTileCanvas({ pixels, onChange, previousPixels }) {
   }
 
   function transform(fn) {
-    commit(fn(arr));
+    commit(fn(arr, SIZE));
   }
 
   return (

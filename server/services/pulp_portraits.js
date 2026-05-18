@@ -42,13 +42,33 @@ const PULP_DIR_NAME = 'pulp_data';
 const PORTRAITS_DIR_NAME = 'portraits';
 const PORTRAIT_DIM_DEFAULT = [64, 64];
 const PORTRAIT_DIM_MIN = 32;
-const PORTRAIT_DIM_MAX = 128;
+// Bump the upper bound so the HAKCD body sprite preset (64x96) fits without
+// asking callers to override clampDim. The biggest legitimate Playdate
+// character sprite anyone actually ships is ~128x128, so 256 leaves headroom
+// for the body sprite + future 96x128 / 128x128 variants.
+const PORTRAIT_DIM_MAX = 256;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
+
+// Fix #6: documented presets. Callers pass preset:'body' to get a 5-frame
+// 64x96 HAKCD-style body sprite (default 'portrait' = 64x64 square bust).
+const PORTRAIT_PRESETS = Object.freeze({
+  portrait: { dim: [64, 64] },
+  body: { dim: [64, 96] }
+});
+
+function normalizePreset(v) {
+  if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(PORTRAIT_PRESETS, v)) {
+    return v;
+  }
+  return 'portrait';
+}
 
 const VALID_DITHER = new Set(['atkinson', 'floyd', 'bayer4', 'ordered8', 'threshold']);
 const VALID_FIT = new Set(['cover', 'contain', 'fill']);
+// Spec Section 7 / Fix #4: portraits default to Bayer 4x4 (face legibility
+// at 64x64 is destroyed by Atkinson/Floyd error diffusion).
 const DEFAULT_OPTS = Object.freeze({
-  dither: 'atkinson',
+  dither: 'bayer4',
   threshold: 128,
   contrast: 1.0,
   brightness: 0,
@@ -74,12 +94,15 @@ function clampDim(v, fallback) {
   return Math.max(PORTRAIT_DIM_MIN, Math.min(PORTRAIT_DIM_MAX, n));
 }
 
-function normalizeDim(raw) {
+function normalizeDim(raw, presetDim) {
   if (Array.isArray(raw) && raw.length === 2) {
     return [
-      clampDim(raw[0], PORTRAIT_DIM_DEFAULT[0]),
-      clampDim(raw[1], PORTRAIT_DIM_DEFAULT[1])
+      clampDim(raw[0], (presetDim && presetDim[0]) || PORTRAIT_DIM_DEFAULT[0]),
+      clampDim(raw[1], (presetDim && presetDim[1]) || PORTRAIT_DIM_DEFAULT[1])
     ];
+  }
+  if (Array.isArray(presetDim) && presetDim.length === 2) {
+    return [...presetDim];
   }
   return [...PORTRAIT_DIM_DEFAULT];
 }
@@ -109,7 +132,12 @@ function normalizeOpts(input) {
   if (typeof raw.fit === 'string' && VALID_FIT.has(raw.fit)) {
     out.fit = raw.fit;
   }
-  out.dim = normalizeDim(raw.dim);
+  // Fix #6: preset selects a default dim when caller doesn't pass an
+  // explicit dim. preset='body' -> [64, 96]; preset='portrait' -> [64, 64].
+  const preset = normalizePreset(raw.preset);
+  const presetDim = PORTRAIT_PRESETS[preset].dim;
+  out.preset = preset;
+  out.dim = normalizeDim(raw.dim, presetDim);
   return out;
 }
 
@@ -442,6 +470,8 @@ module.exports = {
   VALID_DITHER,
   VALID_FIT,
   DEFAULT_OPTS,
+  PORTRAIT_PRESETS,
+  normalizePreset,
   loadProjectOrThrow,
   pulpDirFor,
   portraitsDirFor,

@@ -76,12 +76,18 @@ export default function PulpRoomGrid({
   const [bgVisible, setBgVisible] = useState(true);
 
   // Build a tileId -> rasterized canvas (at CELL px) cache.
+  // Tile dim is inferred from each tile's pixel-string length: 64 -> 8x8
+  // (new pulp default), 256 -> 16x16 (legacy / SDK). Empty tiles fall back
+  // to the existing 16x16 placeholder so legacy projects render the same.
   const tileCache = useMemo(() => {
     const m = new Map();
     for (const t of tiles || []) {
       const pixels = t.frames && t.frames[0] ? t.frames[0].pixels : '0'.repeat(256);
-      // CELL/16 px per source pixel — use floor(CELL/16) for crisp pixels
-      const scale = Math.max(1, Math.floor(CELL / 16));
+      const tileDim = pixels.length === 64 ? 8 : 16;
+      // CELL px per cell, regardless of source tile dim. rasterizeFrame
+      // returns a canvas at (tileDim * scale) — pick the integer scale
+      // closest to CELL/tileDim so pixels stay crisp.
+      const scale = Math.max(1, Math.floor(CELL / tileDim));
       const c = rasterizeFrame(pixels, scale);
       m.set(t.id, c);
     }

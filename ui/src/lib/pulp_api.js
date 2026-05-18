@@ -77,34 +77,60 @@ export const pulpApi = {
 
 export const TILE_TYPES = ['world', 'sprite', 'item', 'exit', 'player'];
 
-export function emptyPixels() {
-  // 16x16 = 256 chars of '0'
-  return '0'.repeat(256);
+// Pulp tiles are canonically 8x8 (spec Section 3.1); SDK callers can pass
+// dim=16 explicitly. These helpers accept an optional `dim` so existing
+// 16x16 legacy projects continue to render without an opt-in flag.
+
+export function pixelCountForDim(dim) {
+  if (dim === 8) return 64;
+  if (dim === 16) return 256;
+  return 64;
 }
 
-export function pixelsToArray(pix) {
-  const u = new Uint8Array(256);
-  const s = (pix || '').padEnd(256, '0').slice(0, 256);
-  for (let i = 0; i < 256; i++) u[i] = s.charCodeAt(i) === 49 ? 1 : 0;
+/** Default to 8x8 (64-char) for new pulp projects. Legacy callers can pass dim=16. */
+export function emptyPixels(dim = 8) {
+  return '0'.repeat(pixelCountForDim(dim));
+}
+
+/**
+ * Detect the tile dim from a pixel string. 64-char -> 8, 256-char -> 16.
+ * Falls back to 8 (the new canonical default) when ambiguous.
+ */
+export function dimForPixels(pix) {
+  if (typeof pix === 'string') {
+    if (pix.length === 256) return 16;
+    if (pix.length === 64) return 8;
+  }
+  return 8;
+}
+
+export function pixelsToArray(pix, dim) {
+  const d = dim || dimForPixels(pix);
+  const N = pixelCountForDim(d);
+  const u = new Uint8Array(N);
+  const s = (pix || '').padEnd(N, '0').slice(0, N);
+  for (let i = 0; i < N; i++) u[i] = s.charCodeAt(i) === 49 ? 1 : 0;
   return u;
 }
 
-export function arrayToPixels(arr) {
+export function arrayToPixels(arr, dim) {
+  const d = dim || (arr && arr.length === 64 ? 8 : 16);
+  const N = pixelCountForDim(d);
   let s = '';
-  for (let i = 0; i < 256; i++) s += arr[i] ? '1' : '0';
+  for (let i = 0; i < N; i++) s += arr[i] ? '1' : '0';
   return s;
 }
 
-export function emptyFrame() {
-  return { pixels: emptyPixels() };
+export function emptyFrame(dim = 8) {
+  return { pixels: emptyPixels(dim) };
 }
 
-export function newTile(partial = {}) {
+export function newTile(partial = {}, dim = 8) {
   return {
     name: 'untitled',
     type: 'world',
     solid: false,
-    frames: [emptyFrame()],
+    frames: [emptyFrame(dim)],
     fps: 6,
     script: '',
     ...partial
@@ -149,21 +175,23 @@ export function newSong(partial = {}) {
 }
 
 // Rasterize a tile frame into an offscreen canvas, scale = pixels per cell.
-// Returns an HTMLCanvasElement.
+// Returns an HTMLCanvasElement. Dim is inferred from pixel-string length so
+// 8x8 (new pulp default) and 16x16 (legacy / SDK) both render correctly.
 export function rasterizeFrame(pixels, scale = 1, on = '#9dffce', off = 'transparent') {
+  const dim = dimForPixels(pixels);
   const c = document.createElement('canvas');
-  c.width = 16 * scale;
-  c.height = 16 * scale;
+  c.width = dim * scale;
+  c.height = dim * scale;
   const ctx = c.getContext('2d');
   if (off !== 'transparent') {
     ctx.fillStyle = off;
     ctx.fillRect(0, 0, c.width, c.height);
   }
   ctx.fillStyle = on;
-  const arr = pixelsToArray(pixels);
-  for (let y = 0; y < 16; y++) {
-    for (let x = 0; x < 16; x++) {
-      if (arr[y * 16 + x]) ctx.fillRect(x * scale, y * scale, scale, scale);
+  const arr = pixelsToArray(pixels, dim);
+  for (let y = 0; y < dim; y++) {
+    for (let x = 0; x < dim; x++) {
+      if (arr[y * dim + x]) ctx.fillRect(x * scale, y * scale, scale, scale);
     }
   }
   return c;
