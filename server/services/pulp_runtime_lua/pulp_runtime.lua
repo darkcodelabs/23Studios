@@ -21,6 +21,7 @@ require('runtime.pulp_rooms')
 require('runtime.pulp_sound')
 require('runtime.pulp_player')
 require('runtime.pulp_characters')
+require('runtime.audio_manager')
 
 -- --------------------------------------------------------------------------
 -- Event dispatch

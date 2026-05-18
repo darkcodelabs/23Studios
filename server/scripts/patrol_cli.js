@@ -17,10 +17,11 @@ require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const patrol = require('../services/pulp_patrol');
 
 function parseArgs(argv) {
-  const out = { projectId: '', regen: false, kinds: null };
+  const out = { projectId: '', regen: false, kinds: null, force: false };
   for (const a of argv) {
     if (!out.projectId && !a.startsWith('-')) { out.projectId = a; continue; }
     if (a === '--regen') { out.regen = true; continue; }
+    if (a === '--force') { out.force = true; continue; }
     if (a.startsWith('--kind=')) {
       out.kinds = a.slice(7).split(',').map((s) => s.trim()).filter(Boolean);
       continue;
@@ -73,9 +74,10 @@ async function main() {
     return;
   }
 
-  process.stdout.write(`[patrol] regenerating ${r.issues.length} issues...\n`);
+  process.stdout.write(`[patrol] regenerating ${r.issues.length} issues${args.force ? ' (FORCE all)' : ''}...\n`);
   const result = await patrol.regenAll(args.projectId, {
     kinds: args.kinds || undefined,
+    force: args.force,
     concurrency: 4,
     onProgress: (ev) => {
       if (ev.stage === 'plan') {

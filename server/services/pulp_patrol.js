@@ -76,9 +76,10 @@ function buildProjectContext(project, projectFile) {
  * issues[].suggested_prompt: ready-to-use prompt (already includes
  *   STRICT_1BIT_PROMPT_SUFFIX)
  */
-async function patrolProject(projectId) {
+async function patrolProject(projectId, opts = {}) {
   const project = await loadProjectOrThrow(projectId);
   const { project: projectFile } = await pulp.readPulp(projectId);
+  const forceAll = !!opts.force;
 
   const tiles = Array.isArray(projectFile.tiles) ? projectFile.tiles : [];
   const rooms = Array.isArray(projectFile.rooms) ? projectFile.rooms : [];
@@ -108,12 +109,12 @@ async function patrolProject(projectId) {
       continue;
     }
     const ph = validator.isPlaceholderPixels(f.pixels);
-    if (ph.placeholder) {
-      tilesPlaceholder++;
+    if (ph.placeholder || forceAll) {
+      if (ph.placeholder) tilesPlaceholder++;
       issues.push({
         kind: 'tile',
         id: t.id,
-        problem: 'placeholder:' + ph.reason,
+        problem: ph.placeholder ? ('placeholder:' + ph.reason) : 'force_regen',
         suggested_prompt: spec.promptForAsset({
           kind: 'tile',
           name: t.name || t.id,
@@ -206,8 +207,10 @@ async function regenAll(projectId, opts = {}) {
   const concurrency = Math.max(1, Math.min(8, opts.concurrency || DEFAULT_CONCURRENCY));
   const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : () => {};
 
-  // Re-patrol to get the live punch list.
-  const { summary: beforeSummary, issues } = await patrolProject(projectId);
+  // Re-patrol to get the live punch list. Pass opts.force through so callers
+  // can force every tile/scene/character through regen even when validator
+  // doesn't flag them (useful after a prompt-engineering pass).
+  const { summary: beforeSummary, issues } = await patrolProject(projectId, { force: !!opts.force });
   const work = kindsFilter ? issues.filter((i) => kindsFilter.has(i.kind)) : issues;
 
   onProgress({ stage: 'plan', current: 0, total: work.length, summary: beforeSummary });

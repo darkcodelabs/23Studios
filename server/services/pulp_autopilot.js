@@ -582,6 +582,29 @@ async function runSceneBurst({ projectId, worldOut, model, emit, job }) {
 }
 
 async function runSoundBurst({ projectId, emit, job }) {
+  // Drop in HAKCD's 6 baseline procedural SFX first (click/select/deny/
+  // kombo_hit/alert/coin) as real WAVs under pulp_data/sfx_baseline/.
+  // Zero-cost, deterministic, always works. Claude-synthesized specs run
+  // afterward to supplement.
+  try {
+    const sfxSynth = require('./sfx_synth');
+    const projects = require('./projects');
+    const p = await projects.getProject(projectId);
+    if (p && p.local_path) {
+      const path = require('path');
+      const sfxDir = path.join(p.local_path, 'pulp_data', 'sfx_baseline');
+      const baseline = sfxSynth.generateBaseline({ destDir: sfxDir });
+      const names = Object.keys(baseline);
+      emit('log', { text: `sfx_baseline: ${names.length} procedural WAVs (${names.join(', ')}) -> ${sfxDir}` });
+      for (const name of names) {
+        emit('asset', { kind: 'sfx_baseline', id: name,
+                        ms: baseline[name].ms, bytes: baseline[name].bytes });
+      }
+    }
+  } catch (e) {
+    emit('log', { text: `sfx_baseline failed (non-fatal): ${e && e.message || e}` });
+  }
+
   emit('log', { text: `sound_burst: ${DEFAULT_SOUND_PROMPTS.length} sfx queued` });
   // Run sounds sequentially (each calls Claude — keep it serial per project).
   for (const s of DEFAULT_SOUND_PROMPTS) {
