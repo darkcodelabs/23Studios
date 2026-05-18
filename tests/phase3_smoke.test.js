@@ -60,6 +60,29 @@ async function main() {
   assert(block.includes('ACTIVE STYLE PICKS'), 'formatActivePicks emits picks block');
   assert(block.includes('top_down'), 'pick fields included');
 
+  // scene_lua augment must describe the stack-based scene_manager API
+  const augText = assembly.STAGE_AUGMENTS.scene_lua;
+  assert(/scene_manager\.push/.test(augText), 'scene_lua augment documents .push');
+  assert(/scene_manager\.replace/.test(augText), 'scene_lua augment documents .replace');
+  assert(/scene_manager\.pop/.test(augText), 'scene_lua augment documents .pop');
+  assert(/exit\(\)[\s\S]*BEFORE[\s\S]*init/i.test(augText), 'scene_lua augment documents exit-before-init');
+  assert(/NO dt parameter/i.test(augText), 'scene_lua augment forbids dt param');
+
+  // buildSceneLuaFromFeatures must emit stack-compatible Lua
+  const luaSrc = assembly.buildSceneLuaFromFeatures({
+    id: 'warehouse_01', mechanic_kit: 'crank_lockpick',
+    exits: [{ to_scene: 'warehouse_02', label: 'next', spawn_target: 'door_north' }]
+  }, [], '');
+  assert(/function Scene_warehouse_01:update\(\)/.test(luaSrc), 'emitter: update() takes NO dt');
+  assert(!/function Scene_warehouse_01:update\(dt\)/.test(luaSrc), 'emitter: no :update(dt) anywhere');
+  assert(/scene_manager\.replace\(next_scene/.test(luaSrc), 'emitter: transition uses scene_manager.replace');
+  assert(/local exits = \{\s*\["next"\]/.test(luaSrc), 'emitter: exits table populated from scene.exits');
+  assert(/chrome_theme\.draw_overlay/.test(luaSrc), 'emitter: draw() calls chrome_theme.draw_overlay');
+  assert(/Phase 3 stack-based scene_manager/.test(luaSrc), 'emitter: header documents contract');
+
+  const luaEmpty = assembly.buildSceneLuaFromFeatures({ id: 'simple_room' }, [], '');
+  assert(/no static exits declared/.test(luaEmpty), 'emitter: empty exits handled');
+
   console.log('# late_add module');
   const lateAdd = require('../server/services/late_add');
   assert(typeof lateAdd.addScene === 'function', 'addScene exported');
