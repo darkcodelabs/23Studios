@@ -65,12 +65,23 @@ const FIELD_GUIDANCE = {
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
 // Returns intake object with all DEFAULTS applied and any missing keys filled
-// with the default value. Leaves user-provided values alone.
+// with the default value. Leaves user-provided non-empty values alone, but
+// substitutes the default for empty enum strings + zero numbers so the
+// pipeline never sees an invalid value.
 function normalizeIntake(input) {
   const out = clone(DEFAULTS);
   if (!input || typeof input !== 'object') return out;
+  const enumKeys = new Set(['genre', 'format', 'crank_usage', 'audio_direction', 'save_state']);
+  const numberKeys = new Set(['scene_count', 'minigame_count', 'playtime_target_min']);
   for (const k of Object.keys(DEFAULTS)) {
     if (input[k] === undefined || input[k] === null) continue;
+    if (enumKeys.has(k) && (typeof input[k] !== 'string' || input[k].trim() === '')) continue;
+    if (numberKeys.has(k)) {
+      const n = Number(input[k]);
+      if (!Number.isFinite(n) || n <= 0) continue;
+      out[k] = n;
+      continue;
+    }
     out[k] = input[k];
   }
   // pitch is required; carry through verbatim.
@@ -129,9 +140,32 @@ function askClaude({ projectId, cwd }, prompt, system = '') {
   });
 }
 
-// Patches the intake in-place with LLM inferences for blank fields. Returns
-// { intake, fields_inferred: number, fields_provided: number } summary.
-async function inferMissingFields({ intake, claudeCtx }) {
+// Patches the intake in-place with LLM inferences for blank fields.
+//
+// Supports two calling conventions:
+//   inferMissingFields(intake, { claudeFn, claudeCtx, returnSummary })
+//   inferMissingFields({ intake, claudeFn, claudeCtx })
+//
+// claudeFn(prompt, opts) -> string is the preferred injection point for tests.
+// claudeCtx is the production path (spawns claude.sendMessage subprocess).
+//
+// Returns the filled intake object by default. If `returnSummary` is true (or
+// the kwarg form is used), returns { intake, fields_inferred, fields_provided }.
+async function inferMissingFields(arg1, arg2) {
+  let intake; let claudeFn = null; let claudeCtx = null; let returnSummary = false;
+  if (arg1 && typeof arg1 === 'object' && ('intake' in arg1)) {
+    intake = arg1.intake;
+    claudeFn = arg1.claudeFn || null;
+    claudeCtx = arg1.claudeCtx || null;
+    returnSummary = true;
+  } else {
+    intake = arg1;
+    const opts = arg2 || {};
+    claudeFn = opts.claudeFn || null;
+    claudeCtx = opts.claudeCtx || null;
+    returnSummary = !!opts.returnSummary;
+  }
+
   const normalized = normalizeIntake(intake);
   const blanks = listBlankFields(normalized);
   const totalUserFields = Object.keys(DEFAULTS).length + 1; // +pitch
@@ -144,7 +178,9 @@ async function inferMissingFields({ intake, claudeCtx }) {
   }
 
   if (blanks.length === 0) {
-    return { intake: normalized, fields_inferred: 0, fields_provided: providedCount, totalUserFields };
+    return returnSummary
+      ? { intake: normalized, fields_inferred: 0, fields_provided: providedCount, totalUserFields }
+      : normalized;
   }
 
   const fieldDocs = blanks.map((k) => `  - ${k}: ${FIELD_GUIDANCE[k] || ''}`).join('\n');
@@ -182,8 +218,15 @@ async function inferMissingFields({ intake, claudeCtx }) {
 
   let inferred = null;
   try {
-    const raw = await askClaude(claudeCtx, prompt, sys);
-    inferred = safeParseJson(raw);
+    let raw;
+    if (typeof claudeFn === 'function') {
+      raw = await claudeFn(prompt, { system: sys });
+    } else if (claudeCtx) {
+      raw = await askClaude(claudeCtx, prompt, sys);
+    } else {
+      raw = null;
+    }
+    inferred = raw ? safeParseJson(raw) : null;
   } catch (e) {
     // Inference failure is non-fatal: defaults already in place.
     inferred = null;
@@ -209,7 +252,9 @@ async function inferMissingFields({ intake, claudeCtx }) {
     }
   }
 
-  return { intake: normalized, fields_inferred: inferredCount, fields_provided: providedCount, totalUserFields };
+  return returnSummary
+    ? { intake: normalized, fields_inferred: inferredCount, fields_provided: providedCount, totalUserFields }
+    : normalized;
 }
 
 // --- YAML serialization (hand-rolled, scoped to this schema) --------------
@@ -298,7 +343,10 @@ function refsBlock(arr, fallback = 'to be discovered') {
   return arr.filter(Boolean).join('; ');
 }
 
-function renderStoryBible(intake, projectName) {
+function renderStoryBible(intake, projectNameOrOpts) {
+  const projectName = (projectNameOrOpts && typeof projectNameOrOpts === 'object')
+    ? (projectNameOrOpts.projectName || '')
+    : (projectNameOrOpts || '');
   const i = intake;
   const visualAnchor = [
     i.protagonist_archetype || 'unnamed archetype',
