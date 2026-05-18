@@ -1,5 +1,35 @@
 # 23studios — Claude Code Instructions
 
+## Session coordination rules (mandatory)
+
+Before starting any work in this repo, run:
+  ps -ef | grep -E "anthropic.claude-code" | grep -v grep
+
+If other claude sessions are running with cwd anywhere under this repo, DO NOT begin work on shared branches. Either:
+1. Work on a session-specific branch named claude-<session-uuid-short>/<task>, or
+2. Coordinate with the other session first (the orchestrator will handle this), or
+3. Stand down.
+
+Before any commit, check that no other process is mid-write to the index:
+  ls .git/index.lock 2>/dev/null
+
+If present and no process holds it, remove it. If present and a process holds it, wait.
+
+After any commit, immediately push to origin so other sessions can see the work:
+  git push origin <branch>
+
+If you cannot push (no remote yet, network issue), stop and report. Do not pile up local commits.
+
+Never check out a branch another session is committing to. Use git fetch + log to read its state instead.
+
+When you finish a unit of work, print exactly:
+SESSION TASK COMPLETE - SAFE TO CLOSE
+This is the signal for the orchestrator to dismiss the session.
+
+A local pre-commit hook (`.git/hooks/pre-commit`) enforces a per-repo commit lock. The hook is not version-controlled — re-install from the recipe in this file if you clone fresh.
+
+---
+
 23studios is a Playdate game-authoring platform. SDK (Lua + pdc) projects only — the Pulp path is legacy but still supported. The active build is **Phase 3: Style-Driven Authoring System + Asset Library + Late-Add Operations**, layered on top of the existing 9-stage SDK autopilot.
 
 ## Sources of truth

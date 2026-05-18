@@ -1,0 +1,5 @@
+{
+  "//": "Hints for the Claude Code VSCode extension. These keys are NOT YET implemented by the extension as of 2026-05; left here so they activate automatically when the upstream extension ships single-session enforcement. See https://github.com/anthropics/claude-code/issues — open issue if missing.",
+  "anthropic.claude-code.workspaceMode": "single-session",
+  "anthropic.claude-code.warnOnConcurrentSessions": true
+}
