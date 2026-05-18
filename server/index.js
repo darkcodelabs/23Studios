@@ -23,6 +23,7 @@ const pulpAssetsRouter = require('./routes/pulp_assets');
 const pulpScenesRouter = require('./routes/pulp_scenes');
 const pulpExportRouter = require('./routes/pulp_export');
 const pulpWorkflowRouter = require('./routes/pulp_workflow');
+const pulpAutopilotRouter = require('./routes/pulp_autopilot');
 const openrouterRouter = require('./routes/openrouter');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
@@ -117,6 +118,7 @@ app.use('/api/projects', pulpAssetsRouter);
 app.use('/api/projects', pulpScenesRouter);
 app.use('/api/projects', pulpExportRouter);
 app.use('/api/projects', pulpWorkflowRouter);
+app.use('/api/projects', pulpAutopilotRouter);
 app.use('/api/openrouter', openrouterRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');

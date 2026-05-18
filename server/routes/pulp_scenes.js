@@ -74,6 +74,30 @@ function buildSceneUrl(projectId, rid) {
     + '/pulp/rooms/' + encodeURIComponent(rid) + '/scene';
 }
 
+// Pulls dither opts out of either multipart form fields or a JSON body.
+// scenes.normalizeOpts() handles validation + clamping; we just forward.
+function readOpts(req) {
+  const src = (req.body && typeof req.body === 'object') ? req.body : {};
+  return {
+    dither: src.dither,
+    threshold: src.threshold,
+    contrast: src.contrast,
+    brightness: src.brightness,
+    fit: src.fit
+  };
+}
+
+const MIME_BY_EXT = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.tif': 'image/tiff',
+  '.tiff': 'image/tiff'
+};
+
 // ===== POST /:id/pulp/rooms/:rid/scene  (upload) =====
 
 router.post(
@@ -91,39 +115,114 @@ router.post(
       const reason = checkImage(f);
       if (reason) return res.status(400).json({ error: reason });
 
-      const { pngBuffer, dim } = await scenes.convertScene(f.buffer);
+      const opts = readOpts(req);
+      const origExt = scenes.safeOrigExt(f.originalname) || '.png';
+
+      const { pngBuffer, dim, srcDim, opts: normalizedOpts } =
+        await scenes.convertScene(f.buffer, opts);
+
+      const scene_meta = {
+        ...normalizedOpts,
+        src_dim: srcDim,
+        src_ext: origExt,
+        processed_at_ts: Date.now()
+      };
+
       const persisted = await scenes.saveSceneAndPatchRoom(
-        req.params.id, safeRid, pngBuffer
+        req.params.id, safeRid, pngBuffer, scene_meta,
+        { buffer: f.buffer, ext: origExt }
       );
 
       // eslint-disable-next-line no-console
       console.log('[pulp_scenes] upload', req.params.id, safeRid,
-        f.size, '->', persisted.size_bytes);
+        'alg=' + normalizedOpts.dither,
+        'dim=' + dim.join('x'),
+        'in=' + f.size + 'B',
+        'out=' + persisted.size_bytes + 'B');
 
       res.json({
         url: buildSceneUrl(req.params.id, safeRid),
         size_bytes: persisted.size_bytes,
-        dim
+        dim,
+        scene_meta
       });
     } catch (e) { sendErr(res, e); }
   }
 );
 
 // ===== GET /:id/pulp/rooms/:rid/scene  (binary PNG) =====
+//
+// Adds a weak ETag derived from the file mtime so browsers can revalidate
+// cleanly after a reprocess. Cache-Control stays `no-cache` (the client must
+// revalidate every load, but a 304 short-circuits the body transfer).
 
 router.get('/:id/pulp/rooms/:rid/scene', async (req, res) => {
   try {
     const safeRid = safeRidOrSend(req, res);
     if (!safeRid) return;
     const project = await scenes.loadProjectOrThrow(req.params.id);
-    const buf = await scenes.readScenePng(project, safeRid);
-    if (!buf) return res.status(404).json({ error: 'not_found' });
+    const got = await scenes.readScenePng(project, safeRid);
+    if (!got) return res.status(404).json({ error: 'not_found' });
+    const { buf, mtimeMs } = got;
+    const etag = 'W/"' + Math.floor(mtimeMs).toString(36) + '-' + buf.length.toString(36) + '"';
     res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      res.status(304).end();
+      return;
+    }
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Length', buf.length);
     res.status(200).end(buf);
   } catch (e) { sendErr(res, e); }
 });
+
+// ===== GET /:id/pulp/rooms/:rid/scene/original =====
+
+router.get('/:id/pulp/rooms/:rid/scene/original', async (req, res) => {
+  try {
+    const safeRid = safeRidOrSend(req, res);
+    if (!safeRid) return;
+    const project = await scenes.loadProjectOrThrow(req.params.id);
+    const got = await scenes.readSceneOriginal(project, safeRid);
+    if (!got) return res.status(404).json({ error: 'not_found' });
+    const mime = MIME_BY_EXT[got.ext] || 'application/octet-stream';
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Length', got.buf.length);
+    res.status(200).end(got.buf);
+  } catch (e) { sendErr(res, e); }
+});
+
+// ===== POST /:id/pulp/rooms/:rid/scene/reprocess =====
+
+router.post(
+  '/:id/pulp/rooms/:rid/scene/reprocess',
+  express.json({ limit: '8kb' }),
+  async (req, res) => {
+    try {
+      const safeRid = safeRidOrSend(req, res);
+      if (!safeRid) return;
+      await scenes.loadProjectOrThrow(req.params.id);
+
+      const opts = readOpts(req);
+      const out = await scenes.reprocessScene(req.params.id, safeRid, opts);
+
+      // eslint-disable-next-line no-console
+      console.log('[pulp_scenes] reprocess', req.params.id, safeRid,
+        'alg=' + out.scene_meta.dither,
+        'dim=' + out.dim.join('x'),
+        'out=' + out.size_bytes + 'B');
+
+      res.json({
+        url: buildSceneUrl(req.params.id, safeRid),
+        size_bytes: out.size_bytes,
+        dim: out.dim,
+        scene_meta: out.scene_meta
+      });
+    } catch (e) { sendErr(res, e); }
+  }
+);
 
 // ===== POST /:id/pulp/rooms/:rid/scene/generate =====
 
@@ -145,25 +244,29 @@ router.post(
         return res.status(400).json({ error: 'bad_request', detail: 'prompt required' });
       }
 
+      const opts = readOpts(req);
       const out = await scenes.generateAndSaveScene({
         projectId: req.params.id,
         safeRid,
         prompt,
-        model
+        model,
+        opts
       });
 
       // eslint-disable-next-line no-console
       console.log('[pulp_scenes] generate', req.params.id, safeRid,
         'model=' + (out.model || '?'),
+        'alg=' + (out.scene_meta && out.scene_meta.dither),
         'fallback=' + !!out.fallback,
-        'size=' + out.size_bytes);
+        'out=' + out.size_bytes + 'B');
 
       const resp = {
         url: buildSceneUrl(req.params.id, safeRid),
         size_bytes: out.size_bytes,
         dim: out.dim,
         prompt: out.prompt,
-        model: out.model
+        model: out.model,
+        scene_meta: out.scene_meta
       };
       if (out.fallback) resp.fallback = true;
       res.json(resp);
@@ -185,6 +288,9 @@ router.post(
         return res.status(400).json({ error: 'no_files' });
       }
       const mode = (req.body && req.body.mode === 'manual') ? 'manual' : 'auto';
+
+      // Read shared opts once — applies to every file in this batch.
+      const sharedOpts = readOpts(req);
 
       // Need the current room id list for heuristics.
       const { project: state } = await pulp.readPulp(req.params.id);
@@ -239,15 +345,25 @@ router.post(
         }
 
         try {
-          const { pngBuffer, dim } = await scenes.convertScene(f.buffer);
+          const origExt = scenes.safeOrigExt(filename) || '.png';
+          const { pngBuffer, dim, srcDim, opts: normalizedOpts } =
+            await scenes.convertScene(f.buffer, sharedOpts);
+          const scene_meta = {
+            ...normalizedOpts,
+            src_dim: srcDim,
+            src_ext: origExt,
+            processed_at_ts: Date.now()
+          };
           const persisted = await scenes.saveSceneAndPatchRoom(
-            req.params.id, safeRid, pngBuffer
+            req.params.id, safeRid, pngBuffer, scene_meta,
+            { buffer: f.buffer, ext: origExt }
           );
           assigned.push({
             room_id: safeRid,
             path: persisted.rel,
             dim,
-            size_bytes: persisted.size_bytes
+            size_bytes: persisted.size_bytes,
+            scene_meta
           });
         } catch (e) {
           const code = (e && e.code) || 'conversion_failed';

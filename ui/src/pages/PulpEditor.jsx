@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import PulpHeaderBar from '../components/PulpHeaderBar.jsx';
+import PulpAutopilotButton from '../components/PulpAutopilotButton.jsx';
 import PulpLeftRail from '../components/PulpLeftRail.jsx';
 import PulpTabRouter from '../components/PulpTabRouter.jsx';
 import PulpAIRail from '../components/PulpAIRail.jsx';
@@ -135,7 +136,15 @@ export default function PulpEditor() {
     <PulpProjectContext.Provider value={{ project }}>
       <PulpWorkflowContext.Provider value={{ workflow, setWorkflow }}>
         <div className="h-screen flex flex-col bg-ink-900">
-          <PulpHeaderBar project={project} aiOpen={aiOpen} onToggleAi={() => setAiOpen((v) => !v)} />
+          <div className="relative">
+            <PulpHeaderBar project={project} aiOpen={aiOpen} onToggleAi={() => setAiOpen((v) => !v)} />
+            {project ? (
+              <div className="absolute top-1.5 right-[8.5rem] z-10">
+                {/* small rocket → opens the autopilot modal */}
+                <PulpAutopilotButton project={project} variant="icon" />
+              </div>
+            ) : null}
+          </div>
 
           <div className="flex-1 min-h-0 flex relative">
             <PulpLeftRail activeTab={activeTab} onSelectTab={selectTab} onAction={onAction} />

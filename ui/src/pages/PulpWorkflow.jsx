@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Compass, Sparkles, Loader2 } from 'lucide-react';
 import PulpWorkflowBar from '../components/PulpWorkflowBar.jsx';
 import PulpWorkflowPanel from '../components/PulpWorkflowPanel.jsx';
+import PulpAutopilotButton from '../components/PulpAutopilotButton.jsx';
 import {
   PulpWorkflowContext,
   useProject
@@ -89,9 +90,17 @@ export default function PulpWorkflow({ onJumpTab }) {
       />
       <div className="flex-1 min-h-0">
         {empty && !activeStageId ? (
-          <Hero onStart={() => selectStage('brainstorm')} />
+          <Hero
+            project={project}
+            onManual={() => selectStage('brainstorm')}
+            onAutopilotDone={refresh}
+          />
         ) : empty ? (
-          <Hero onStart={() => selectStage(order[0] || 'brainstorm')} />
+          <Hero
+            project={project}
+            onManual={() => selectStage(order[0] || 'brainstorm')}
+            onAutopilotDone={refresh}
+          />
         ) : (
           activeStageId ? (
             <PulpWorkflowPanel
@@ -113,7 +122,7 @@ export default function PulpWorkflow({ onJumpTab }) {
   );
 }
 
-function Hero({ onStart }) {
+function Hero({ project, onManual, onAutopilotDone }) {
   return (
     <div className="h-full grid place-items-center">
       <div className="max-w-md text-center space-y-3">
@@ -122,12 +131,20 @@ function Hero({ onStart }) {
         </div>
         <h2 className="text-xl text-ink-50 font-mono">Start the workflow</h2>
         <p className="text-sm text-ink-300">
-          A guided 10-stage flow takes you from a one-line pitch to a playable Pulp game.
-          Each stage can be filled by you or generated with AI.
+          Skip the manual flow — type one sentence and we'll generate the entire
+          pulp pipeline: stages, tiles, scenes, sounds, and scripts.
         </p>
-        <button type="button" onClick={onStart} className="btn-primary mt-2">
-          <Sparkles className="w-4 h-4" /> Begin with Brainstorm
-        </button>
+        <div className="flex flex-col items-center gap-2">
+          <PulpAutopilotButton
+            project={project}
+            variant="hero"
+            label="PRESS GO — generate the whole thing"
+            onDone={onAutopilotDone}
+          />
+          <button type="button" onClick={onManual} className="btn mt-1 text-xs">
+            <Sparkles className="w-3.5 h-3.5" /> or begin manually with Brainstorm
+          </button>
+        </div>
       </div>
     </div>
   );

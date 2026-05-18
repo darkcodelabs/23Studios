@@ -121,7 +121,27 @@
           }
         },
         "script": { "type": "string", "maxLength": 1024 },
-        "background_image": { "type": "string", "maxLength": 256 }
+        "background_image": { "type": "string", "maxLength": 256 },
+        "scene_meta": { "$ref": "#/$defs/SceneMeta" }
+      }
+    },
+    "SceneMeta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "dither": { "enum": ["atkinson", "floyd", "bayer4", "ordered8", "threshold"] },
+        "threshold": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "contrast": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
+        "brightness": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "fit": { "enum": ["cover", "contain", "fill"] },
+        "src_dim": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "integer", "minimum": 0, "maximum": 32768 }
+        },
+        "src_ext": { "type": "string", "maxLength": 16 },
+        "processed_at_ts": { "type": "integer", "minimum": 0 }
       }
     },
     "SoundEnvelope": {

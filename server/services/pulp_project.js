@@ -270,7 +270,8 @@ const ROOM_PATCHABLE = new Set([
   'song',
   'grid',
   'script',
-  'background_image'
+  'background_image',
+  'scene_meta'
 ]);
 
 /**
