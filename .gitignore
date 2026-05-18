@@ -54,4 +54,8 @@ pnpm-debug.log*
 server/public/
 server/data/projects.json
 server/data/chat_history/
+# Stray data dir created when server runs from server/ as CWD: env-relative
+# ./server/data resolves to server/server/data. Holds live projects, not
+# checked in.
+server/server/
 .DS_Store

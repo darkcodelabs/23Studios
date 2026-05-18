@@ -11,6 +11,8 @@ const sharp = require('sharp');
 const claude = require('./claude');
 const projects = require('./projects');
 const pulp = require('./pulp_project');
+const playdateSpec = require('./playdate_spec');
+const playdateValidator = require('./playdate_validator');
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -236,11 +238,29 @@ async function decodeImageFromGenResult(item) {
 
 async function to1bitTilePng(buf, dim) {
   const d = (dim === 8 || dim === 16) ? dim : 8;
-  // Pre-blur slightly before downscale so the threshold isn't dominated by
-  // a single source pixel — that's the Bayer-style intent for small tiles.
-  return await sharp(buf)
-    .resize(d, d, { kernel: 'nearest' })
-    .threshold(128)
+  // Pipeline: normalize histogram (stretch contrast to full 0..255) → linear
+  // brighten (push mid-tones up so dark subjects don't collapse to black) →
+  // lanczos3 downscale (area-averaging) → greyscale raw → Bayer-4 dither.
+  // Why each step:
+  //  - normalize: AI outputs often have crushed blacks; stretching restores
+  //    detail before the 64×→tile downsample washes it out.
+  //  - linear(1.0, 25): adds +25 luma so a coin silhouette that's 80% black
+  //    becomes ~60% black → Bayer-4 produces a recognizable icon instead of
+  //    saturating to all-black after threshold.
+  //  - lanczos3 cover: nearest picks one source pixel, lanczos averages a
+  //    receptive field → preserves silhouette legibility at tiny sizes.
+  //  - bayer4: ordered dither retains mid-tones at 16x16 where threshold(128)
+  //    would saturate to all-black on dense subjects.
+  const ditherMod = require('./dither');
+  const greyRaw = await sharp(buf)
+    .normalize()
+    .linear(1.0, 25)
+    .resize(d, d, { kernel: 'lanczos3', fit: 'cover', position: 'centre' })
+    .greyscale()
+    .raw()
+    .toBuffer();
+  const out = ditherMod.bayer4(greyRaw, d, d, 128);
+  return await sharp(Buffer.from(out), { raw: { width: d, height: d, channels: 1 } })
     .toColourspace('b-w')
     .png()
     .toBuffer();
@@ -257,24 +277,34 @@ async function generateTileArt({ projectId, prompt, model, style, tileDim }) {
   const cleanPrompt = sanitizePrompt(prompt);
   if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
   const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
-  const cleanStyle = sanitizePrompt(style);
   // Pulp tiles are canonically 8x8 (spec Section 3.1). SDK callers can pass
   // tileDim:16. Anything else falls back to 8.
   const dim = (tileDim === 16) ? 16 : 8;
 
-  const augmented = `1-bit pixel art, ${dim}x${dim} pixels, pure black on pure white background, `
-    + 'thick black outlines, suitable for a Playdate game tile. '
-    + 'Use Bayer 4x4 ordered dithering for any shading (NO Floyd-Steinberg, NO grayscale, NO color). '
-    + (cleanStyle ? `Style: ${cleanStyle}. ` : '')
-    + `Subject: ${cleanPrompt}`;
+  if (!API_KEY) {
+    throw aiErr(503, 'openrouter_unavailable',
+      'OPENROUTER_API_KEY missing — refusing to ship procedural placeholder art');
+  }
 
-  let fallback = false;
+  // Always funnel through playdate_spec so STRICT_1BIT_PROMPT_SUFFIX is
+  // appended. Callers can still pass raw subject text via `prompt`; we wrap
+  // it as a single-name asset.
+  const buildPrompt = (retry) => playdateSpec.promptForAsset({
+    kind: 'tile',
+    name: cleanPrompt,
+    type: '',
+    projectContext: { tile_dim: dim, description: sanitizePrompt(style) },
+    retry
+  });
+
+  const expected = { w: dim, h: dim };
+  let lastErr = null;
   let imgBuf = null;
   let usedModel = requestedModel;
+  let finalPng = null;
 
-  if (!API_KEY) {
-    fallback = true;
-  } else {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const augmented = buildPrompt(attempt > 0);
     try {
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
@@ -282,33 +312,35 @@ async function generateTileArt({ projectId, prompt, model, style, tileDim }) {
         sizeHint: 'square 1024x1024, sharp 1-bit pixel art'
       });
       usedModel = `openrouter:${requestedModel}`;
+      finalPng = await to1bitTilePng(imgBuf, dim);
+      const v = await playdateValidator.validate1bitPng(finalPng, expected);
+      if (v.ok) { lastErr = null; break; }
+      lastErr = aiErr(502, 'validation_failed_1bit', v.reason);
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[pulp_ai] tile image gen failed, falling back:', e && (e.code || e.message));
-      fallback = true;
+      lastErr = e;
     }
   }
-
-  if (fallback) {
-    imgBuf = await placeholderTilePng(augmented);
-    usedModel = 'local-placeholder';
+  if (lastErr) {
+    // eslint-disable-next-line no-console
+    console.error('[pulp_ai] tile art failed validation after retry:',
+      lastErr && (lastErr.code || lastErr.message));
+    throw lastErr;
   }
 
-  const finalPng = await to1bitTilePng(imgBuf, dim);
   const b64 = finalPng.toString('base64');
 
   await logGeneration(project, {
     kind: 'tile-art',
     prompt: cleanPrompt,
     model: usedModel,
-    fallback
+    fallback: false
   });
 
   return {
     image_base64: b64,
     model: usedModel,
     prompt: cleanPrompt,
-    fallback
+    fallback: false
   };
 }
 
@@ -423,15 +455,31 @@ async function generateScene({ prompt, model, dim }) {
        parseInt(dim[1], 10) || SCENE_DIM_DEFAULT[1]]
     : SCENE_DIM_DEFAULT;
 
-  const augmented = SCENE_STYLE_LOCK + cleanPrompt;
+  if (!API_KEY) {
+    throw aiErr(503, 'openrouter_unavailable',
+      'OPENROUTER_API_KEY missing — refusing to ship procedural placeholder art');
+  }
 
-  let fallback = false;
+  // If the caller already passed a spec-built prompt (it'll contain the
+  // STRICT_1BIT_PROMPT_SUFFIX marker), use it as-is. Otherwise wrap it
+  // through promptForAsset so the suffix is guaranteed.
+  const looksFullyBuilt = cleanPrompt.includes('STRICT 1-BIT RULES');
+  const buildPrompt = (retry) => looksFullyBuilt
+    ? (retry ? cleanPrompt + '\n' + playdateSpec.RETRY_1BIT_SUFFIX : cleanPrompt)
+    : playdateSpec.promptForAsset({
+        kind: 'scene',
+        name: cleanPrompt,
+        type: 'background',
+        retry
+      });
+
   let imgBuf = null;
   let usedModel = requestedModel;
+  let pngBuffer = null;
+  let lastErr = null;
 
-  if (!API_KEY) {
-    fallback = true;
-  } else {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const augmented = buildPrompt(attempt > 0);
     try {
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
@@ -439,25 +487,26 @@ async function generateScene({ prompt, model, dim }) {
         sizeHint: 'landscape 1792x1024 (5:3 aspect), Playdate 400x240 native target'
       });
       usedModel = `openrouter:${requestedModel}`;
+      pngBuffer = await toScenePng(imgBuf, dw, dh);
+      const v = await playdateValidator.validate1bitPng(pngBuffer, { w: dw, h: dh });
+      if (v.ok) { lastErr = null; break; }
+      lastErr = aiErr(502, 'validation_failed_1bit', v.reason);
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[pulp_ai] scene gen failed, falling back:', e && (e.code || e.message));
-      fallback = true;
+      lastErr = e;
     }
   }
-
-  if (fallback) {
-    imgBuf = await placeholderScenePng(augmented, dw, dh);
-    usedModel = 'local-placeholder';
+  if (lastErr) {
+    // eslint-disable-next-line no-console
+    console.error('[pulp_ai] scene failed validation after retry:',
+      lastErr && (lastErr.code || lastErr.message));
+    throw lastErr;
   }
-
-  const pngBuffer = await toScenePng(imgBuf, dw, dh);
 
   return {
     pngBuffer,
     model: usedModel,
-    prompt: augmented,
-    fallback,
+    prompt: cleanPrompt,
+    fallback: false,
     dim: [dw, dh]
   };
 }
@@ -523,15 +572,28 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
        clampPortraitDim(dim[1], PORTRAIT_DIM_DEFAULT[1])]
     : PORTRAIT_DIM_DEFAULT;
 
-  const augmented = PORTRAIT_STYLE_LOCK + cleanPrompt;
+  if (!API_KEY) {
+    throw aiErr(503, 'openrouter_unavailable',
+      'OPENROUTER_API_KEY missing — refusing to ship procedural placeholder art');
+  }
 
-  let fallback = false;
+  const looksFullyBuilt = cleanPrompt.includes('STRICT 1-BIT RULES');
+  const buildPrompt = (retry) => looksFullyBuilt
+    ? (retry ? cleanPrompt + '\n' + playdateSpec.RETRY_1BIT_SUFFIX : cleanPrompt)
+    : playdateSpec.promptForAsset({
+        kind: 'portrait',
+        name: cleanPrompt,
+        type: '',
+        retry
+      });
+
   let imgBuf = null;
   let usedModel = requestedModel;
+  let pngBuffer = null;
+  let lastErr = null;
 
-  if (!API_KEY) {
-    fallback = true;
-  } else {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const augmented = buildPrompt(attempt > 0);
     try {
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
@@ -539,27 +601,26 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
         sizeHint: 'square 1024x1024, head-and-shoulders portrait, 1-bit dithered'
       });
       usedModel = `openrouter:${requestedModel}`;
+      pngBuffer = await toPortraitPng(imgBuf, dw, dh);
+      const v = await playdateValidator.validate1bitPng(pngBuffer, { w: dw, h: dh });
+      if (v.ok) { lastErr = null; break; }
+      lastErr = aiErr(502, 'validation_failed_1bit', v.reason);
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('[pulp_ai] portrait gen failed, falling back:', e && (e.code || e.message));
-      fallback = true;
+      lastErr = e;
     }
   }
-
-  if (fallback) {
-    // Re-use the scene placeholder; it produces a deterministic 1-bit
-    // dithered field that the downstream pipeline will re-dither to spec.
-    imgBuf = await placeholderScenePng(augmented, Math.max(64, dw), Math.max(64, dh));
-    usedModel = 'local-placeholder';
+  if (lastErr) {
+    // eslint-disable-next-line no-console
+    console.error('[pulp_ai] portrait failed validation after retry:',
+      lastErr && (lastErr.code || lastErr.message));
+    throw lastErr;
   }
-
-  const pngBuffer = await toPortraitPng(imgBuf, dw, dh);
 
   return {
     pngBuffer,
     model: usedModel,
-    prompt: augmented,
-    fallback,
+    prompt: cleanPrompt,
+    fallback: false,
     dim: [dw, dh]
   };
 }

@@ -467,10 +467,13 @@ async function runTileBurst({ projectId, charactersOut, model, emit, job }) {
     const prompt = (c && (c.portrait_prompt || c.bio || c.name)) || 'a mysterious character';
     portraitTasks.push(async () => {
       if (job.cancelled) throw aErr(499, 'cancelled');
-      // Ensure a Character record exists (idempotent — patch if it already does).
-      try {
-        const existing = await pulp.getCharacter(projectId, idHint);
-        if (!existing) {
+      // Ensure a Character record exists (idempotent). pulp.getCharacter throws
+      // 404 'item_not_found' when missing — that's expected; create then.
+      let existing = null;
+      try { existing = await pulp.getCharacter(projectId, idHint); }
+      catch (e) { if (e && (e.code === 'item_not_found' || e.status === 404)) existing = null; else { emit('log', { text: `character ${idHint}: ${humanErr(e)}` }); return null; } }
+      if (!existing) {
+        try {
           await pulp.createCharacter(projectId, {
             id: idHint,
             name: c.name || idHint,
@@ -478,10 +481,10 @@ async function runTileBurst({ projectId, charactersOut, model, emit, job }) {
             bio: (c.bio || '').slice(0, 1000),
             portrait_prompt: prompt.slice(0, 1000)
           });
+        } catch (e) {
+          emit('log', { text: `character ${idHint} create: ${humanErr(e)}` });
+          return null;
         }
-      } catch (e) {
-        emit('log', { text: `character ${idHint}: ${humanErr(e)}` });
-        return null;
       }
       try {
         await portraits.generateAndSavePortrait({

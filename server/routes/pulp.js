@@ -3,6 +3,7 @@
 const express = require('express');
 
 const pulp = require('../services/pulp_project');
+const patrol = require('../services/pulp_patrol');
 
 const router = express.Router({ mergeParams: true });
 
@@ -82,5 +83,73 @@ for (const [seg, key] of Object.entries(COLLECTION_ROUTE)) {
     } catch (e) { sendErr(res, e); }
   });
 }
+
+// ----- Patrol: read-only scan -----
+// POST so it stays inside the CSRF wall (csrfProtection rejects GET-style
+// mutations only on POST/PUT/PATCH/DELETE; using POST keeps the pattern
+// consistent with other AI-side endpoints and lets us add a payload later).
+router.post('/:id/pulp/patrol', async (req, res) => {
+  try {
+    const r = await patrol.patrolProject(req.params.id);
+    res.json(r);
+  } catch (e) { sendErr(res, e); }
+});
+
+// ----- Patrol: regen all issues, SSE progress -----
+router.post('/:id/pulp/patrol/regen', async (req, res) => {
+  const projectId = req.params.id;
+  const body = req.body || {};
+  const kinds = Array.isArray(body.kinds) ? body.kinds.filter(
+    (k) => k === 'tile' || k === 'scene' || k === 'character'
+  ) : null;
+  const concurrency = Number.isInteger(body.concurrency)
+    ? Math.max(1, Math.min(8, body.concurrency)) : 4;
+
+  res.status(200);
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+  let closed = false;
+  const heartbeat = setInterval(() => {
+    if (closed) return;
+    try { res.write(`: heartbeat ${Date.now()}\n\n`); } catch (_e) { /* ignore */ }
+  }, 15000);
+  if (heartbeat.unref) heartbeat.unref();
+
+  function safeWrite(event, data) {
+    if (closed) return;
+    try {
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    } catch (_e) { /* ignore write-after-close */ }
+  }
+  function finish() {
+    if (closed) return;
+    closed = true;
+    clearInterval(heartbeat);
+    try { res.end(); } catch (_e) { /* ignore */ }
+  }
+
+  req.on('close', () => { closed = true; clearInterval(heartbeat); });
+
+  try {
+    const result = await patrol.regenAll(projectId, {
+      kinds: kinds && kinds.length ? kinds : undefined,
+      concurrency,
+      onProgress: (ev) => safeWrite(ev.stage || 'progress', ev)
+    });
+    safeWrite('done', result);
+  } catch (e) {
+    safeWrite('error', {
+      code: e && e.code || 'server_error',
+      message: e && e.message || 'unknown',
+      detail: e && e.detail || undefined
+    });
+  } finally {
+    finish();
+  }
+});
 
 module.exports = router;
