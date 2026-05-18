@@ -141,14 +141,27 @@
   --bg-elev:  #1d2026;
   --hairline: #262932;
 }
-/* Playdate — warm brown-black surfaces, Panic yellow accent. Reads like
- * the device LCD on its plastic shell. Devforum.play.date chrome pairs
- * #FFC500 with very dark warm neutrals; we mirror that on a dark canvas. */
+/* Playdate — LIGHT theme matching devforum.play.date (Discourse w/ violet
+ * accent on near-white surfaces). This is the only light theme; surface
+ * + text + ring overrides further down flip the otherwise-dark app.
+ * Hex values picked from a screenshot of devforum.play.date by eye:
+ *   page bg     #ffffff
+ *   card bg     #f3f0fc (lavender wash on the welcome card)
+ *   panel bg    #ffffff (sidebar)
+ *   hairline    #e6e3f0 (cool gray border)
+ *   text body   #1a1a25 (near-black)
+ *   text muted  #565669
+ *   accent      #7b5ce7 (the welcome heading + Sign Up button)
+ */
 :root[data-theme="playdate"] {
-  --bg-base:  #1a1407;
-  --bg-panel: #221a09;
-  --bg-elev:  #2c220c;
-  --hairline: #3a2e10;
+  --bg-base:  #ffffff;
+  --bg-panel: #f3f0fc;
+  --bg-elev:  #ffffff;
+  --hairline: #e6e3f0;
+  --text-strong: #1a1a25;
+  --text-body:   #2a2a35;
+  --text-muted:  #565669;
+  --text-faint:  #8a8a99;
 }
 /* default green theme: no overrides, lets tailwind ink-900/800/700 win */
 
@@ -195,3 +208,37 @@
 :root[data-theme="blood"]    .ring-ink-800,
 :root[data-theme="mono"]     .ring-ink-800,
 :root[data-theme="playdate"] .ring-ink-800 { --tw-ring-color: var(--hairline); }
+
+/* ---------------- PLAYDATE LIGHT-MODE TEXT FLIP ----------------
+ * The other 6 themes are dark — text-ink-100 / text-ink-200 stay light
+ * because the canvas is dark. Playdate is light, so the same text
+ * utility classes need to invert to near-black for legibility. Repaints
+ * every common text shade + the placeholder-ink-500 utility.
+ */
+:root[data-theme="playdate"] .text-ink-50,
+:root[data-theme="playdate"] .text-ink-100,
+:root[data-theme="playdate"] .text-ink-200 { color: var(--text-strong); }
+
+:root[data-theme="playdate"] .text-ink-300 { color: var(--text-body); }
+
+:root[data-theme="playdate"] .text-ink-400,
+:root[data-theme="playdate"] .text-ink-500 { color: var(--text-muted); }
+
+:root[data-theme="playdate"] .text-ink-600,
+:root[data-theme="playdate"] .text-ink-700 { color: var(--text-faint); }
+
+:root[data-theme="playdate"] .placeholder-ink-500::placeholder { color: var(--text-faint); }
+
+/* Hover-tint utility classes on the ghost btn need a light-mode pair too.
+ * Default hover:bg-ink-800/60 reads as 'darken' on dark themes; on the
+ * Playdate light theme we want a SUBTLE lavender wash instead. */
+:root[data-theme="playdate"] .btn:hover { background-color: rgba(123, 92, 231, 0.08); color: var(--text-strong); }
+:root[data-theme="playdate"] .btn-icon:hover { background-color: rgba(123, 92, 231, 0.08); color: var(--text-strong); }
+
+/* Card / panel hairline ring needs a soft lavender tone on light bg. */
+:root[data-theme="playdate"] .card { background-color: var(--bg-elev); }
+
+/* Border directive for SHELL borders (border-ink-700/60 etc) — repaint
+ * to the lavender hairline so cards still have a visible edge. */
+:root[data-theme="playdate"] .border-ink-700,
+:root[data-theme="playdate"] .border-ink-700\/60 { border-color: var(--hairline); }

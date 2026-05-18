@@ -13,11 +13,11 @@ export const THEMES = [
   { id: 'ice',      name: 'Ice Blue',       hex: '#7cd3ff', rgb: '124 211 255' },
   { id: 'mono',     name: 'Monochrome',     hex: '#e3e6ec', rgb: '227 230 236' },
   { id: 'blood',    name: 'Blood Red',      hex: '#ff5454', rgb: '255 84 84' },
-  // Pulled from Panic's Playdate device shell (devforum.play.date chrome
-  // uses this yellow on dark warm-black). Accent = canonical Playdate
-  // yellow #FFC500; surfaces overridden in index.css to a warm brown-
-  // black so the accent reads like the device LCD on its plastic body.
-  { id: 'playdate', name: 'Playdate',       hex: '#FFC500', rgb: '255 197 0' }
+  // Pulled directly from devforum.play.date — Discourse light theme with
+  // a violet accent on near-white surfaces. This is the ONLY light theme
+  // in the picker; surface + text overrides in index.css flip the dark-
+  // default app to a bright Playdate-dev-forum look.
+  { id: 'playdate', name: 'Playdate',       hex: '#7b5ce7', rgb: '123 92 231' }
 ];
 
 const STORAGE_KEY = 'studio:theme';
