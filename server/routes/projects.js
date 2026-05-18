@@ -86,7 +86,7 @@ router.post('/quick', async (req, res, next) => {
       preflight_command: '',
       captures_dir: '',
       status: 'active',
-      game_type: 'pulp'
+      game_type: 'sdk'
     };
     const errors = validateProjectCreate(input);
     if (errors.length) {

@@ -97,4 +97,70 @@ router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
   tar.stderr.on('data', (b) => { /* swallow tar warnings */ void b; });
 });
 
+// GET /api/projects/:id/sdk/build/latest -> the most recent done export job
+router.get('/:id/sdk/build/latest', (req, res) => {
+  const jobs = sdkExport.getJobsByProject(req.params.id);
+  const done = jobs.filter((j) => j.status === 'done')
+    .sort((a, b) => (b.started_at || 0) - (a.started_at || 0));
+  if (done.length === 0) return res.status(404).json({ error: 'no_build' });
+  const j = done[0];
+  res.json({
+    job_id: j.id,
+    status: j.status,
+    out_pdx: j.out_pdx,
+    started_at: j.started_at,
+    download_url: `/api/projects/${req.params.id}/sdk/export/jobs/${j.id}/download`
+  });
+});
+
+// POST /api/projects/:id/sdk/simulator -> spawn local Playdate Simulator
+// against the latest built .pdx. Detects the SDK install + display.
+router.post('/:id/sdk/simulator', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    const { spawn } = require('child_process');
+
+    const jobs = sdkExport.getJobsByProject(req.params.id);
+    const done = jobs.filter((j) => j.status === 'done')
+      .sort((a, b) => (b.started_at || 0) - (a.started_at || 0));
+    if (done.length === 0) {
+      return res.status(409).json({ error: 'no_build',
+        detail: 'no completed export to launch — run /sdk/export first' });
+    }
+    const outPdx = done[0].out_pdx;
+    if (!outPdx || !fs.existsSync(outPdx)) {
+      return res.status(404).json({ error: 'pdx_missing', detail: outPdx });
+    }
+
+    // Resolve simulator binary. Try SDK install paths, then macOS open.
+    const sdkRoot = process.env.PLAYDATE_SDK_PATH
+      || path.join(os.homedir(), 'Developer', 'PlaydateSDK')
+      || '/opt/PlaydateSDK';
+    const candidates = [
+      path.join(sdkRoot, 'bin', 'PlaydateSimulator'),
+      '/Applications/Playdate Simulator.app/Contents/MacOS/Playdate Simulator',
+      '/opt/PlaydateSDK/bin/PlaydateSimulator'
+    ];
+    const simBin = candidates.find((c) => fs.existsSync(c));
+    if (!simBin) {
+      return res.status(501).json({ error: 'simulator_not_installed',
+        detail: 'set PLAYDATE_SDK_PATH or install the Playdate SDK' });
+    }
+
+    // On headless Linux (no DISPLAY), spawning the simulator will fail. Detect
+    // + report rather than fork into the void.
+    if (process.platform === 'linux' && !process.env.DISPLAY) {
+      return res.status(503).json({ error: 'no_display',
+        detail: 'simulator needs an X display (DISPLAY env var)',
+        bin: simBin, pdx: outPdx });
+    }
+
+    const child = spawn(simBin, [outPdx], { detached: true, stdio: 'ignore' });
+    child.unref();
+    res.json({ launched: true, pid: child.pid, bin: simBin, pdx: outPdx });
+  } catch (e) { sendErr(res, e); }
+});
+
 module.exports = router;

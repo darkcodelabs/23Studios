@@ -184,6 +184,9 @@ async function startExport({ projectId, onEvent }) {
       if (fs.existsSync(mainSrc)) {
         await fsp.rename(mainSrc, path.join(sourceDir, 'main.lua'));
       }
+      // README under concepts/ is documentation, not pdc-friendly. Strip it.
+      const conceptReadme = path.join(runtimeDir, 'concepts', 'README.md');
+      if (fs.existsSync(conceptReadme)) await fsp.unlink(conceptReadme);
 
       const sdkData = await readSdkData(project);
 
