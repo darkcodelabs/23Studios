@@ -28,6 +28,12 @@ This is the signal for the orchestrator to dismiss the session.
 
 A local pre-commit hook (`.git/hooks/pre-commit`) enforces a per-repo commit lock. The hook is not version-controlled — re-install from the recipe in this file if you clone fresh.
 
+## Spec drift captured
+
+- **Phase 5 `claude --prompt-file` flag does NOT exist.** The Phase 5 iteration spec at `docs/23studios_phase5_iteration_loop.md` (Stage 3) calls for `claude --print --prompt-file <tempfile>`. The shipped CLI has no `--prompt-file`. Pipe prompts via stdin instead — see the comment at the top of `server/services/claude.js` for the exact subprocess shape.
+- **Minigame recipes are a single seed JSON, not a directory.** Phase 4 spec at Stage 1.4 says write to `server/services/minigame_recipes/haxheadroom.json`. Actual pattern is appending to `server/data/minigame_recipes.seed.json`. Stick with the seed-JSON pattern unless a deliberate refactor lands.
+- **`lockpicking_minigame.png` is actually `lockpicking_minigme.png`** in the user's HAKCD asset directory (typo in source filename, missing the 'a'). Treat as-is, do not rename — references in scripts/configs use the typo'd path.
+
 ---
 
 23studios is a Playdate game-authoring platform. SDK (Lua + pdc) projects only — the Pulp path is legacy but still supported. The active build is **Phase 3: Style-Driven Authoring System + Asset Library + Late-Add Operations**, layered on top of the existing 9-stage SDK autopilot.

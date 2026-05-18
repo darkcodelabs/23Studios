@@ -1,5 +1,34 @@
 'use strict';
 
+// Claude Code subprocess wrapper.
+//
+// Phase 5 iteration loop will reuse this module via a new `spawnClaudeCode`
+// export that wraps the same `claude -p` subprocess pattern below. Notable
+// spec drift from docs/23studios_phase5_iteration_loop.md (May 2026):
+//
+//   The spec calls for `claude --print --prompt-file <tempfile>` but the
+//   shipped CLI does NOT have a --prompt-file flag. Instead, prompts are
+//   piped via stdin, exactly as `sendMessage` already does at line ~111
+//   below. Phase 5's spawnClaudeCode should follow this stdin pattern:
+//
+//     cat $tempfile | claude --print --model opus \
+//         --max-budget-usd 5 \
+//         --allowed-tools "Read,Edit,Write,Bash,Glob,Grep"
+//
+//   ...which in Node becomes:
+//
+//     spawn('claude', [
+//       '-p', '--model', 'opus',
+//       '--max-budget-usd', '5',
+//       '--allowed-tools', 'Read,Edit,Write,Bash,Glob,Grep'
+//     ], { cwd: projectSourceRoot, stdio: ['pipe','pipe','pipe'] });
+//     proc.stdin.write(systemPrompt + '\n\n---\n\n' + userPrompt);
+//     proc.stdin.end();
+//
+//   The existing sendMessage() below is per-project chat (continued context).
+//   spawnClaudeCode for iteration_engine will be one-shot (no --continue),
+//   which is why a new function rather than reuse is appropriate.
+
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
