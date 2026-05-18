@@ -44,6 +44,32 @@ function ensureDirs(localPath) {
   return root;
 }
 
+// Load the project's story bible (sdk_data/story_bible.md) if present. The
+// bible is prepended to EVERY Claude prompt so generated content stays in
+// world. Truncated to 16k chars to keep prompts under context cap.
+function readStoryBible(localPath) {
+  const fp = path.join(localPath, SDK_DATA_REL, 'story_bible.md');
+  if (!fs.existsSync(fp)) return null;
+  const raw = fs.readFileSync(fp, 'utf8');
+  // Cap aggressively so each Claude call has room for stage-specific prompt
+  // + accumulated prior-stage outputs. The bible itself rarely exceeds 20k.
+  return raw.length > 16000 ? raw.slice(0, 16000) + '\n\n[... bible truncated to 16k chars ...]' : raw;
+}
+
+function bibleSystem(storyBible) {
+  if (!storyBible) return '';
+  return [
+    '=== STORY BIBLE (authoritative game world — every response MUST stay in-world) ===',
+    storyBible,
+    '=== END STORY BIBLE ===',
+    '',
+    'You are generating content for the game described in the bible above.',
+    'Names, setting, characters, factions, antagonists, year, geography —',
+    'all of it must match. Do NOT invent new years, new mentors, new',
+    'antagonists, new factions. Bible is canon.'
+  ].join('\n');
+}
+
 async function readSdk(localPath) {
   const fp = path.join(localPath, SDK_DATA_REL, 'project.json');
   if (!fs.existsSync(fp)) return { scenes: [], characters: [], startup_scene: null };
@@ -92,15 +118,21 @@ function safeParseJson(text) {
   return null;
 }
 
-async function runBrainstorm({ pitch, claudeCtx }) {
+async function runBrainstorm({ pitch, claudeCtx, storyBible }) {
+  const sys = [
+    'You are a Playdate game design consultant. Keep it punchy and concrete.',
+    bibleSystem(storyBible)
+  ].filter(Boolean).join('\n\n');
   const text = await askClaude(claudeCtx,
-    'Pitch: ' + pitch + '\n\nFlesh out a one-page brainstorm. Genre, hooks, audience, vibe. Plain text, no markdown.',
-    'You are a Playdate game design consultant. Keep it punchy and concrete.'
+    'Pitch: ' + pitch + '\n\nFlesh out a one-page brainstorm tied to the story bible above. Genre, hooks, audience, vibe. Plain text, no markdown.',
+    sys
   );
   return { text };
 }
 
-async function runStoryAndScenes({ pitch, brainstorm, claudeCtx }) {
+async function runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible }) {
+  const sys = ['You output STRICT JSON only. No prose outside the JSON block.',
+               bibleSystem(storyBible)].filter(Boolean).join('\n\n');
   const text = await askClaude(claudeCtx,
 `Pitch: ${pitch}
 
@@ -120,15 +152,17 @@ Output a JSON object with this shape (no markdown, no commentary):
   ]
 }
 
-Generate 5-10 scenes total. Include a title scene first, then 4-9 gameplay scenes. Backgrounds are EMPTY environments only — no characters visible in any scene PNG.`,
-    'You output STRICT JSON only. No prose outside the JSON block.'
+Generate 5-10 scenes total. Include a title scene first, then 4-9 gameplay scenes. Backgrounds are EMPTY environments only — no characters visible in any scene PNG. Scene ids + names + descriptions MUST come from the story bible's act breakdown.`,
+    sys
   );
   const parsed = safeParseJson(text);
   if (!parsed) throw new Error('story stage: JSON parse failed');
   return parsed;
 }
 
-async function runCharacters({ pitch, story, claudeCtx }) {
+async function runCharacters({ pitch, story, claudeCtx, storyBible }) {
+  const sys = ['You output STRICT JSON only.',
+               bibleSystem(storyBible)].filter(Boolean).join('\n\n');
   const text = await askClaude(claudeCtx,
 `Pitch: ${pitch}
 Story outline: ${story.outline}
@@ -147,8 +181,8 @@ Output STRICT JSON only:
   ]
 }
 
-Generate 3-6 characters. Include a protagonist.`,
-    'You output STRICT JSON only.'
+Generate 3-6 characters. The protagonist + antagonist + mentor MUST match the bible's named cast — do not invent new ones. You may add 1-2 supporting NPCs.`,
+    sys
   );
   const parsed = safeParseJson(text);
   if (!parsed) throw new Error('characters stage: JSON parse failed');
@@ -354,20 +388,26 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       }
       const sdkRoot = ensureDirs(project.local_path);
       const sdk = await readSdk(project.local_path);
+      const storyBible = readStoryBible(project.local_path);
+      if (storyBible) {
+        ev('log', { text: `story_bible.md loaded (${storyBible.length} chars) — every stage will receive it as system context` });
+      } else {
+        ev('log', { text: 'no story_bible.md; running in open-prompt mode' });
+      }
 
       // Bake static project context for prompts.
       const ctx = { project_name: project.name, theme: '', description: pitch };
       const claudeCtx = { projectId: project.id, cwd: project.local_path };
 
       ev('phase', { id: 'brainstorm' });
-      const brainstorm = await runBrainstorm({ pitch, claudeCtx });
+      const brainstorm = await runBrainstorm({ pitch, claudeCtx, storyBible });
       sdk.brainstorm = brainstorm.text;
       await writeSdk(project.local_path, sdk);
       ev('log', { text: 'brainstorm: ' + brainstorm.text.slice(0, 200) + '...' });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'story' });
-      const story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx });
+      const story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible });
       sdk.outline = story.outline;
       sdk.startup_scene = story.startup_scene || (story.scenes && story.scenes[0] && story.scenes[0].id);
       sdk.scenes = story.scenes || [];
@@ -376,7 +416,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       job.summary.stages_complete++;
 
       ev('phase', { id: 'characters' });
-      const chars = await runCharacters({ pitch, story, claudeCtx });
+      const chars = await runCharacters({ pitch, story, claudeCtx, storyBible });
       sdk.characters = chars.characters || [];
       await writeSdk(project.local_path, sdk);
       ev('log', { text: 'characters: ' + sdk.characters.length });
