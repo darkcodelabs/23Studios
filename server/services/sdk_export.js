@@ -60,6 +60,13 @@ async function copyDir(src, dst) {
   }
 }
 
+function whichBin(name) {
+  return new Promise((resolve) => {
+    const r = require('child_process').spawnSync('which', [name], { encoding: 'utf8' });
+    resolve(r.status === 0 && r.stdout ? r.stdout.trim() : null);
+  });
+}
+
 function findPdc() {
   const candidates = [
     process.env.PLAYDATE_SDK_PATH && path.join(process.env.PLAYDATE_SDK_PATH, 'bin', 'pdc'),
@@ -238,11 +245,52 @@ async function startExport({ projectId, onEvent }) {
       }
       const musicSrc = path.join(project.local_path, 'sdk_data', 'scene_music');
       if (fs.existsSync(musicSrc)) {
+        // BLOAT FIX: previously copied EVERY rendered library track (~25
+        // tracker WAVs × 5-25 MB each = 240+ MB). Only copy WAVs that a
+        // scene actually references via its bgm_file. Compress each to
+        // MP3 96kbps mono via ffmpeg before copying — pdc accepts MP3
+        // natively + size drops ~85%.
+        const referenced = new Set();
+        for (const s of (sdkData.scenes || [])) {
+          if (s && typeof s.bgm_file === 'string') {
+            const base = path.basename(s.bgm_file).replace(/\.(wav|mp3|aiff)$/i, '');
+            referenced.add(base);
+          }
+          // Scenes are also referenced by `<scene_id>.wav` directly (the
+          // autopilot's music phase renames the assigned track to match).
+          if (s && s.id) referenced.add(s.id);
+        }
+
+        const ffmpegBin = await whichBin('ffmpeg');
+        let copied = 0, compressed = 0, skipped = 0;
         for (const f of fs.readdirSync(musicSrc)) {
-          if (/\.wav$/i.test(f)) {
-            await fsp.copyFile(path.join(musicSrc, f), path.join(soundsDir, f));
+          if (!/\.wav$/i.test(f)) continue;
+          const stem = f.replace(/\.wav$/i, '');
+          if (!referenced.has(stem)) { skipped++; continue; }
+          const src = path.join(musicSrc, f);
+          const destMp3 = path.join(soundsDir, stem + '.mp3');
+          if (ffmpegBin) {
+            try {
+              await new Promise((resolve, reject) => {
+                const ff = spawn(ffmpegBin, ['-y', '-loglevel', 'error',
+                  '-i', src, '-ac', '1', '-ar', '44100', '-b:a', '96k', destMp3],
+                  { shell: false });
+                let err = '';
+                ff.stderr.on('data', (b) => { err += b.toString(); });
+                ff.on('close', (code) => code === 0 ? resolve() : reject(new Error('ffmpeg ' + code + ': ' + err.slice(0,200))));
+              });
+              compressed++;
+            } catch (e) {
+              log(onEvent, `music compress fail ${f}: ${e.message}; copying raw wav`);
+              await fsp.copyFile(src, path.join(soundsDir, f));
+              copied++;
+            }
+          } else {
+            await fsp.copyFile(src, path.join(soundsDir, f));
+            copied++;
           }
         }
+        log(onEvent, `music: ${compressed} compressed mp3 + ${copied} raw wav + ${skipped} skipped (unused library)`);
       }
 
       progress(onEvent, 'pdxinfo', 70, 'writing pdxinfo');

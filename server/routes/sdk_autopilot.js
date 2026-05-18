@@ -79,9 +79,10 @@ router.get('/:id/sdk/export/jobs/:jobId', (req, res) => {
 });
 
 // GET /api/projects/:id/sdk/export/jobs/:jobId/download
-// Serves the .pdx as a tarball. Prefers a pre-built tarball on disk
-// (cached, supports HTTP Range, plays nice with reverse proxies that cap
-// streaming durations). Falls back to live `tar cf -` streaming.
+// Serves the .pdx as a ZIP (the format the Playdate sideloader expects).
+// Cached at /tmp/<id>.pdx.zip; rebuilt only when the pdx directory mtime
+// is newer than the cache. Served as a static file so HTTP Range works
+// (resumable through reverse proxies + browser shows real progress bar).
 router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
   const j = sdkExport.getJob(req.params.jobId);
   if (!j) return res.status(404).end();
@@ -89,19 +90,14 @@ router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
     if (j.status === 'failed') return res.status(500).json({ error: 'export_failed', detail: j.error });
     return res.status(202).json({ status: j.status });
   }
-  const { spawn } = require('child_process');
   const path = require('path');
   const fs = require('fs');
   const outPdx = j.out_pdx;
   if (!outPdx || !fs.existsSync(outPdx)) return res.status(404).end();
 
-  // Find or build a static tar cache to avoid streaming through a reverse
-  // proxy that may cap idle time / drop the connection mid-stream.
-  const cacheDir = '/tmp';
-  const baseName = `${req.params.id}.pdx.tar`;
-  const cachePath = path.join(cacheDir, baseName);
+  const baseName = `${req.params.id}.pdx.zip`;
+  const cachePath = path.join('/tmp', baseName);
 
-  // If the cache is older than the pdx OR missing, rebuild it.
   let cacheValid = false;
   try {
     if (fs.existsSync(cachePath)) {
@@ -112,33 +108,21 @@ router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
   } catch (_e) { cacheValid = false; }
 
   if (!cacheValid) {
-    try {
-      // Synchronous tar to ensure cache exists before serving. For a 250MB
-      // .pdx this takes ~2-3s; acceptable for the first hit, and the
-      // Range-capable static serve makes all subsequent fetches fast +
-      // resumable.
-      const { spawnSync } = require('child_process');
-      const r = spawnSync('tar', ['cf', cachePath, '-C', path.dirname(outPdx), path.basename(outPdx)],
-                          { shell: false });
-      if (r.status !== 0) {
-        console.error('[sdk download] tar build failed:', r.stderr && r.stderr.toString());
-        // Fall back to live stream.
-        res.setHeader('Content-Type', 'application/x-tar');
-        res.setHeader('Content-Disposition', `attachment; filename="${baseName}"`);
-        const tar = spawn('tar', ['cf', '-', '-C', path.dirname(outPdx), path.basename(outPdx)], { shell: false });
-        tar.stdout.pipe(res);
-        tar.stderr.on('data', (b) => { void b; });
-        return;
-      }
-    } catch (e) {
-      return res.status(500).json({ error: 'tar_build_failed', detail: e.message });
+    // Delete stale cache so the zip is clean.
+    try { fs.unlinkSync(cachePath); } catch (_e) { /* */ }
+    const { spawnSync } = require('child_process');
+    // -r recursive, -q quiet, -0 store-no-compression (audio + images are
+    // already compressed; the .pdz Lua bundles are tiny — zip's deflate
+    // wins ~5% on those but spends 5x the time. Store = fast cache builds.)
+    const r = spawnSync('zip', ['-r', '-q', '-0', cachePath, path.basename(outPdx)],
+                        { shell: false, cwd: path.dirname(outPdx) });
+    if (r.status !== 0) {
+      const detail = (r.stderr && r.stderr.toString()) || ('zip exit ' + r.status);
+      return res.status(500).json({ error: 'zip_build_failed', detail });
     }
   }
 
-  // Serve as static file via express.sendFile so Range + Content-Length are
-  // honored. Set headers explicitly BEFORE sendFile — the options.headers
-  // option doesn't always land through some Express/Helmet stacks.
-  res.setHeader('Content-Type', 'application/x-tar');
+  res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="${baseName}"`);
   res.setHeader('Cache-Control', 'private, max-age=300');
   res.sendFile(cachePath);
@@ -167,10 +151,14 @@ router.get('/:id/sdk/build/status', (req, res) => {
   };
   if (out.has_build) {
     out.download_url = `/api/projects/${req.params.id}/sdk/export/jobs/${j.id}/download`;
-    // Cached tar size hint so the UI can show "Download (278 MB)".
-    const cachePath = require('path').join('/tmp', `${req.params.id}.pdx.tar`);
+    // Cached zip size hint so the UI can show "Download (30 MB)".
+    const cachePath = require('path').join('/tmp', `${req.params.id}.pdx.zip`);
     try {
-      if (fs.existsSync(cachePath)) out.cached_tar_bytes = fs.statSync(cachePath).size;
+      if (fs.existsSync(cachePath)) {
+        out.cached_zip_bytes = fs.statSync(cachePath).size;
+        // Back-compat key the UI used before — keep both for now.
+        out.cached_tar_bytes = out.cached_zip_bytes;
+      }
     } catch (_e) { /* */ }
   }
   res.json(out);

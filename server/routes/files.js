@@ -131,4 +131,51 @@ router.get('/:id/file', async (req, res, next) => {
   }
 });
 
+// GET /api/projects/:id/file/raw?path=... — stream the raw file bytes.
+// Used by the FileViewer image preview path so PNGs/JPGs render inline.
+// Mirrors /file's safety checks (path resolution, EXCLUDED_NAMES, symlinks,
+// MAX_FILE_BYTES) but only allows image content types.
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.ico']);
+const MIME_BY_EXT = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon'
+};
+
+router.get('/:id/file/raw', async (req, res, next) => {
+  try {
+    const idErr = validateId(req.params.id);
+    if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
+    const project = await projects.getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: 'not_found' });
+
+    const r = await resolveSafe(project, req.query.path || '');
+    if (r.error) return res.status(r.status).json({ error: 'bad_request', detail: r.error });
+
+    const abs = r.abs;
+    const baseName = path.basename(abs);
+    if (EXCLUDED_NAMES.has(baseName)) return res.status(403).json({ error: 'forbidden' });
+    const relParts = path.relative(r.base, abs).split(path.sep);
+    if (relParts.some((p) => EXCLUDED_NAMES.has(p))) {
+      return res.status(403).json({ error: 'forbidden' });
+    }
+
+    const stat = await fsp.lstat(abs);
+    if (stat.isSymbolicLink()) return res.status(403).json({ error: 'forbidden' });
+    if (!stat.isFile()) return res.status(400).json({ error: 'not_a_file' });
+    if (stat.size > MAX_FILE_BYTES) return res.status(413).json({ error: 'file_too_large', max: MAX_FILE_BYTES });
+
+    const ext = path.extname(abs).toLowerCase();
+    if (!IMAGE_EXTS.has(ext)) return res.status(415).json({ error: 'not_image' });
+
+    res.setHeader('Content-Type', MIME_BY_EXT[ext] || 'application/octet-stream');
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    require('fs').createReadStream(abs).pipe(res);
+  } catch (e) {
+    if (e && e.code === 'ENOENT') return res.status(404).json({ error: 'not_found' });
+    next(e);
+  }
+});
+
 module.exports = router;
