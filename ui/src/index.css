@@ -97,3 +97,84 @@
   .scrollbar-thin::-webkit-scrollbar-thumb { background: theme('colors.ink.700'); border-radius: 6px; }
   .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 }
+
+/* ---------------- THEME SURFACE OVERRIDES ----------------
+ * Each theme overrides the canonical ink shades used as backgrounds
+ * across the app (bg-ink-900 page bg, bg-ink-800 panels, bg-ink-700
+ * elev, ring-ink-800 hairlines). Tailwind utility classes still
+ * resolve normally; these higher-specificity rules paint over them
+ * when [data-theme="X"] is set on <html>.
+ *
+ * Keep the shifts tasteful: surface stays dark for legibility, accent
+ * stays themed via --accent-rgb, hairlines tinted lightly so the
+ * theme reads but the chrome doesn't fight content.
+ */
+:root[data-theme="amber"] {
+  --bg-base:  #1a140a;
+  --bg-panel: #241b0e;
+  --bg-elev:  #2f2412;
+  --hairline: #3a2c16;
+}
+:root[data-theme="magenta"] {
+  --bg-base:  #1a0d18;
+  --bg-panel: #221024;
+  --bg-elev:  #2c1531;
+  --hairline: #3a1d40;
+}
+:root[data-theme="ice"] {
+  --bg-base:  #0a1420;
+  --bg-panel: #0e1c2a;
+  --bg-elev:  #122435;
+  --hairline: #1a3047;
+}
+:root[data-theme="blood"] {
+  --bg-base:  #1a0c0c;
+  --bg-panel: #220f0f;
+  --bg-elev:  #2d1414;
+  --hairline: #3d1a1a;
+}
+:root[data-theme="mono"] {
+  --bg-base:  #0e0f12;
+  --bg-panel: #16181d;
+  --bg-elev:  #1d2026;
+  --hairline: #262932;
+}
+/* default green theme: no overrides, lets tailwind ink-900/800/700 win */
+
+/* Surface paint. Any element with the canonical bg- or ring- ink class
+ * is re-painted via the theme variables. Specificity wins over the
+ * generated utility classes because of the :root prefix. */
+:root[data-theme="amber"]   .bg-ink-900,
+:root[data-theme="magenta"] .bg-ink-900,
+:root[data-theme="ice"]     .bg-ink-900,
+:root[data-theme="blood"]   .bg-ink-900,
+:root[data-theme="mono"]    .bg-ink-900,
+:root[data-theme="amber"]   body,
+:root[data-theme="magenta"] body,
+:root[data-theme="ice"]     body,
+:root[data-theme="blood"]   body,
+:root[data-theme="mono"]    body { background-color: var(--bg-base); }
+
+:root[data-theme="amber"]   .bg-ink-800,
+:root[data-theme="magenta"] .bg-ink-800,
+:root[data-theme="ice"]     .bg-ink-800,
+:root[data-theme="blood"]   .bg-ink-800,
+:root[data-theme="mono"]    .bg-ink-800 { background-color: var(--bg-panel); }
+
+:root[data-theme="amber"]   .bg-ink-700,
+:root[data-theme="magenta"] .bg-ink-700,
+:root[data-theme="ice"]     .bg-ink-700,
+:root[data-theme="blood"]   .bg-ink-700,
+:root[data-theme="mono"]    .bg-ink-700 { background-color: var(--bg-elev); }
+
+:root[data-theme="amber"]   .border-ink-800,
+:root[data-theme="magenta"] .border-ink-800,
+:root[data-theme="ice"]     .border-ink-800,
+:root[data-theme="blood"]   .border-ink-800,
+:root[data-theme="mono"]    .border-ink-800 { border-color: var(--hairline); }
+
+:root[data-theme="amber"]   .ring-ink-800,
+:root[data-theme="magenta"] .ring-ink-800,
+:root[data-theme="ice"]     .ring-ink-800,
+:root[data-theme="blood"]   .ring-ink-800,
+:root[data-theme="mono"]    .ring-ink-800 { --tw-ring-color: var(--hairline); }
