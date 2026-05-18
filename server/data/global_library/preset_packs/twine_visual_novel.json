@@ -1,0 +1,198 @@
+{
+  "id": "twine_visual_novel",
+  "display_name": "Twine Visual Novel",
+  "description": "Dialog-driven branching story. Static backgrounds, character portraits, choice routes. 80 Days + VA-11 HALL-A.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Choice-driven story",
+      "spec": {
+        "name": "Choice-driven story",
+        "session_target_min": 30,
+        "scene_density": "story_heavy",
+        "tension_curve": "freeform",
+        "time_pressure": "never",
+        "recommended_minigame_count": 2,
+        "recommended_dialog_scene_count": 30,
+        "preview_prompt": "30-minute branching story, 4-5 choice points per session"
+      }
+    },
+    "gameplay_style": {
+      "name": "Fixed-screen visual novel",
+      "spec": {
+        "name": "Fixed-screen visual novel",
+        "camera": "fixed_screen",
+        "movement": "click_to_move",
+        "scale": "single_screen",
+        "rationale": "Static backgrounds; player advances through dialog and picks choices",
+        "references": ["80 Days", "VA-11 HALL-A", "Disco Elysium"],
+        "sprite_size_recommendation": { "w": 0, "h": 0 },
+        "tile_size_recommendation": { "w": 0, "h": 0 },
+        "preview_prompt": "1-bit static scene with character portrait + text below"
+      }
+    },
+    "character_style": {
+      "name": "Detailed half-body",
+      "spec": {
+        "name": "Detailed half-body",
+        "silhouette": "organic",
+        "portrait_treatment": "half_body",
+        "walk_cycle_frames": 1,
+        "detail_level": "detailed",
+        "face_dither": "atkinson",
+        "sprite_dimensions": { "w": 0, "h": 0 },
+        "portrait_dimensions": { "w": 120, "h": 200 },
+        "preview_prompt": "1-bit half-body detailed character, Atkinson dither on face"
+      }
+    },
+    "minigame_style": {
+      "name": "Dialog wheel",
+      "spec": {
+        "name": "Dialog wheel",
+        "recipe_kit_id": "dialog_wheel",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "linear",
+        "failure_handling": "drop_and_continue",
+        "scoring": "tiered",
+        "estimated_session_seconds": 30,
+        "preview_prompt": "radial dialog wheel with 6 choice options"
+      }
+    },
+    "menu_style": {
+      "name": "Vertical text choices",
+      "spec": {
+        "name": "Vertical text choices",
+        "layout": "vertical_list",
+        "selection_input": "dpad",
+        "visual_treatment": "text_only",
+        "confirm_pattern": "A_to_select",
+        "uses_gridview": false,
+        "uses_crank": false,
+        "nine_slice_panel": true,
+        "preview_prompt": "list of 4 dialog choices"
+      }
+    },
+    "dialog_style": {
+      "name": "Full-screen portrait + text",
+      "spec": {
+        "name": "Full-screen portrait + text",
+        "text_speed": "normal",
+        "portrait_position": "bottom_right",
+        "portrait_kind": "expression_set",
+        "box_style": "full_width_bottom",
+        "choice_display": "radial_wheel",
+        "advance_input": "A",
+        "font": "custom_serif",
+        "uses_nine_slice": true,
+        "uses_blip_synth": false,
+        "preview_prompt": "large portrait right, text box bottom, serif font"
+      }
+    },
+    "animation_style": {
+      "name": "Crossfade between scenes",
+      "spec": {
+        "name": "Crossfade between scenes",
+        "default_frame_ms": 150,
+        "default_easing": "inOutCubic",
+        "transition": "crossfade",
+        "idle_behavior": "still",
+        "hit_reaction": "freeze_frame",
+        "uses_setOffset_for_shake": false,
+        "uses_setMosaic_for_transitions": false,
+        "uses_vcrPauseFilterImage": false,
+        "preview_lua_template": "-- crossfade via dither over 500ms"
+      }
+    },
+    "transition_style": {
+      "name": "Fade to black",
+      "spec": {
+        "name": "Fade to black",
+        "technique": "fade_to_black",
+        "duration_ms": 500,
+        "audio_behavior": "music_swap",
+        "loading_mask": "black_screen",
+        "lua_implementation": "scene_transition.start_fade(target_id, spawn_pos, on_complete)",
+        "uses_setMosaic": false,
+        "uses_setInverted": false,
+        "uses_stencil_image": false,
+        "preview_prompt": "screen fades to black between scenes"
+      }
+    },
+    "hud_style": {
+      "name": "None — pure novel",
+      "spec": {
+        "name": "None — pure novel",
+        "presence": "none",
+        "position": "top_strip",
+        "density": "minimal",
+        "treatment": "text_only",
+        "shows": [],
+        "preview_prompt": "clean screen, no overlay"
+      }
+    },
+    "audio_style": {
+      "name": "Ambient bar music",
+      "spec": {
+        "name": "Ambient bar music",
+        "music_palette": "ambient_drone",
+        "sfx_palette": "sample_only",
+        "mix_philosophy": "atmospheric",
+        "reactive_intensity": "minimal",
+        "effects_chain": "light_reverb",
+        "default_synth_shapes": ["kWaveSine"],
+        "preview_prompt": "low-fi piano loop with rain ambience"
+      }
+    },
+    "save_style": {
+      "name": "Every choice auto-save",
+      "spec": {
+        "name": "Every choice auto-save",
+        "trigger": "every_scene_change",
+        "slot_count": 3,
+        "saves_screenshot": true,
+        "indicator": "brief_text",
+        "scenes_with_save_points": [],
+        "lua_implementation": "playdate.datastore.write(state, 'slot_'..slot)"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Backlog + Skip + Save",
+      "spec": {
+        "name": "Backlog + Skip + Save",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Backlog", "action_or_options": "fn_open_backlog" },
+          { "slot": 2, "kind": "checkmark", "title": "Skip Read", "action_or_options": false },
+          { "slot": 3, "kind": "action", "title": "Save", "action_or_options": "fn_save_slot" }
+        ],
+        "pause_image_intent": "Chapter title card",
+        "pause_image_prompt": "1-bit chapter title card, ornate frame, 400x240 left half",
+        "lock_behavior": "save_and_pause",
+        "auto_lock_disabled_scenes": []
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Alt endings",
+      "spec": {
+        "name": "Alt endings",
+        "kind": "alt_endings",
+        "tracking": "named_set",
+        "reward": "ending_change",
+        "hint": "none",
+        "estimated_count": 5,
+        "spawn_pattern": "narrative_gated",
+        "preview_prompt": "credits card with ending number"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Scene jump + dev menu",
+      "spec": {
+        "name": "Scene jump + dev menu",
+        "cheats": [],
+        "debug_menu_items": [
+          { "title": "Jump to scene", "action": "jump_to_scene" },
+          { "title": "Unlock all routes", "action": "unlock_all_routes" }
+        ],
+        "preview_prompt": "scene picker dropdown"
+      }
+    }
+  }
+}

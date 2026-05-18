@@ -1,0 +1,200 @@
+{
+  "id": "1bit_horror",
+  "display_name": "1-bit Horror",
+  "description": "Tight first-person dungeon, fixed screens, mosaic transitions, sample-based screams. Resident Evil 1 + Lone Survivor.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Tense escalation",
+      "spec": {
+        "name": "Tense escalation",
+        "session_target_min": 60,
+        "scene_density": "balanced",
+        "tension_curve": "rising",
+        "time_pressure": "contextual",
+        "recommended_minigame_count": 4,
+        "recommended_dialog_scene_count": 6,
+        "preview_prompt": "slow corridor exploration punctuated by reactive setpieces"
+      }
+    },
+    "gameplay_style": {
+      "name": "Fixed-screen first-person",
+      "spec": {
+        "name": "Fixed-screen first-person",
+        "camera": "first_person",
+        "movement": "grid",
+        "scale": "single_screen",
+        "rationale": "Discrete tile-to-tile movement maximizes dread between transitions",
+        "references": ["Lone Survivor", "Anatomy", "Eldritch Hexen"],
+        "sprite_size_recommendation": { "w": 96, "h": 96 },
+        "tile_size_recommendation": { "w": 32, "h": 32 },
+        "preview_prompt": "1-bit first-person corridor, doorway ahead, single light source"
+      }
+    },
+    "character_style": {
+      "name": "No portrait, hand only",
+      "spec": {
+        "name": "No portrait, hand only",
+        "silhouette": "minimal",
+        "portrait_treatment": "no_portrait",
+        "walk_cycle_frames": 1,
+        "detail_level": "minimal",
+        "face_dither": "none",
+        "sprite_dimensions": { "w": 0, "h": 0 },
+        "portrait_dimensions": { "w": 0, "h": 0 },
+        "preview_prompt": "1-bit gloved hand reaching into frame, no face visible"
+      }
+    },
+    "minigame_style": {
+      "name": "Code lock combo",
+      "spec": {
+        "name": "Code lock combo",
+        "recipe_kit_id": "code_lock_combo",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "stepped",
+        "failure_handling": "restart",
+        "scoring": "binary",
+        "estimated_session_seconds": 90,
+        "preview_prompt": "close-up of 4-dial padlock, single dial highlighted"
+      }
+    },
+    "menu_style": {
+      "name": "Sparse inventory grid",
+      "spec": {
+        "name": "Sparse inventory grid",
+        "layout": "grid",
+        "selection_input": "dpad",
+        "visual_treatment": "icon_plus_text",
+        "confirm_pattern": "A_held",
+        "uses_gridview": true,
+        "uses_crank": false,
+        "nine_slice_panel": false,
+        "preview_prompt": "4x3 grid of item icons, single highlighted slot"
+      }
+    },
+    "dialog_style": {
+      "name": "Centered overlay, no portrait",
+      "spec": {
+        "name": "Centered overlay, no portrait",
+        "text_speed": "slow",
+        "portrait_position": "none",
+        "portrait_kind": "static",
+        "box_style": "no_box",
+        "choice_display": "vertical_list",
+        "advance_input": "A",
+        "font": "custom_serif",
+        "uses_nine_slice": false,
+        "uses_blip_synth": false,
+        "preview_prompt": "centered serif text overlay, no box, slow fade-in"
+      }
+    },
+    "animation_style": {
+      "name": "Slow mosaic horror",
+      "spec": {
+        "name": "Slow mosaic horror",
+        "default_frame_ms": 250,
+        "default_easing": "inOutCubic",
+        "transition": "mosaic",
+        "idle_behavior": "still",
+        "hit_reaction": "invert_flash",
+        "uses_setOffset_for_shake": true,
+        "uses_setMosaic_for_transitions": true,
+        "uses_vcrPauseFilterImage": false,
+        "preview_lua_template": "playdate.display.setMosaic(2,2); playdate.display.setInverted(true)"
+      }
+    },
+    "transition_style": {
+      "name": "Mosaic disrupt",
+      "spec": {
+        "name": "Mosaic disrupt",
+        "technique": "mosaic_disrupt",
+        "duration_ms": 1000,
+        "audio_behavior": "music_swap",
+        "loading_mask": "black_screen",
+        "lua_implementation": "playdate.display.setMosaic(3,3); playdate.timer.performAfterDelay(800, function() playdate.display.setMosaic(0,0) end)",
+        "uses_setMosaic": true,
+        "uses_setInverted": false,
+        "uses_stencil_image": false,
+        "preview_prompt": "screen breaks into mosaic blocks during transition"
+      }
+    },
+    "hud_style": {
+      "name": "None — diegetic only",
+      "spec": {
+        "name": "None — diegetic only",
+        "presence": "none",
+        "position": "top_strip",
+        "density": "minimal",
+        "treatment": "text_only",
+        "shows": [],
+        "preview_prompt": "blank screen, no overlay"
+      }
+    },
+    "audio_style": {
+      "name": "Ambient drone + sample SFX",
+      "spec": {
+        "name": "Ambient drone + sample SFX",
+        "music_palette": "ambient_drone",
+        "sfx_palette": "sample_only",
+        "mix_philosophy": "atmospheric",
+        "reactive_intensity": "heavy",
+        "effects_chain": "heavy_processing",
+        "default_synth_shapes": ["kWaveSine", "kWaveNoise"],
+        "preview_prompt": "low sine drone with reverbed footsteps and occasional distant noise"
+      }
+    },
+    "save_style": {
+      "name": "Manual typewriter save",
+      "spec": {
+        "name": "Manual typewriter save",
+        "trigger": "manual_save_points",
+        "slot_count": 3,
+        "saves_screenshot": true,
+        "indicator": "animated_icon",
+        "scenes_with_save_points": [],
+        "lua_implementation": "playdate.datastore.write(state, 'slot_'..slot)"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Map + Inventory + Quit",
+      "spec": {
+        "name": "Map + Inventory + Quit",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Map", "action_or_options": "fn_open_map" },
+          { "slot": 2, "kind": "action", "title": "Inventory", "action_or_options": "fn_open_inventory" },
+          { "slot": 3, "kind": "action", "title": "Quit", "action_or_options": "fn_quit_to_title" }
+        ],
+        "pause_image_intent": "Door silhouette on black field with single light beam",
+        "pause_image_prompt": "1-bit closed door silhouette, single shaft of light, 400x240 left half",
+        "lock_behavior": "save_and_pause",
+        "auto_lock_disabled_scenes": []
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Hidden lore tapes",
+      "spec": {
+        "name": "Hidden lore tapes",
+        "kind": "lore_fragments",
+        "tracking": "named_set",
+        "reward": "alt_endings",
+        "hint": "audio_cue",
+        "estimated_count": 8,
+        "spawn_pattern": "narrative_gated",
+        "preview_prompt": "small cassette tape sprite half-hidden behind decor"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Crank combos + dev menu",
+      "spec": {
+        "name": "Crank combos + dev menu",
+        "cheats": [
+          { "combo": "crank_full_clockwise_5x", "effect": "reveal_map", "mode": "secret_ending_trigger" }
+        ],
+        "debug_menu_items": [
+          { "title": "Spawn item", "action": "spawn_item" },
+          { "title": "Skip scare", "action": "skip_scare" }
+        ],
+        "preview_prompt": "stark monospace debug readout"
+      }
+    }
+  }
+}

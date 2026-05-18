@@ -631,18 +631,58 @@ function bibleBlock(storyBible) {
   ].join('\n');
 }
 
-// Concatenate UNIVERSAL_DIRECTIVE + bible + per-stage augment + extras.
-// vars is substituted across the augment (not the directive or bible).
-function assembleSystemPrompt({ stageId, storyBible, vars, extras }) {
+// Concatenate UNIVERSAL_DIRECTIVE + bible + active style picks + per-stage
+// augment + extras. vars is substituted across the augment (not the directive
+// or bible). activePicks is the {axisId: optionRecord} map returned by
+// asset_library.getActivePicksWithSpecs(); if present, the picks are inlined
+// into the prompt so the LLM stays consistent with the user's picks.
+function assembleSystemPrompt({ stageId, storyBible, vars, extras, activePicks }) {
   const augment = STAGE_AUGMENTS[stageId] || '';
   const substituted = substituteVars(augment, vars);
   const parts = [
     UNIVERSAL_DIRECTIVE,
     bibleBlock(storyBible),
+    formatActivePicks(activePicks, stageId),
     substituted,
     extras || '',
   ].filter(Boolean);
   return parts.join('\n\n');
+}
+
+// Format active style picks into a prompt block. Only picks whose axis lists
+// the current stage in consumed_by_stages are included (keeps the prompt
+// focused; other stages get the picks they need only).
+//
+// activePicks shape: { axisId: optionRecord | [optionRecord, ...] | null }
+// Returns '' if no relevant picks.
+function formatActivePicks(activePicks, stageId) {
+  if (!activePicks || typeof activePicks !== 'object') return '';
+  const lines = [];
+  for (const [axisId, record] of Object.entries(activePicks)) {
+    if (!record) continue;
+    // Best-effort consumed_by_stages check — we don't have axis config here;
+    // include all picks. Stages can ignore irrelevant axes. Future opt: filter
+    // by reading the axis config.
+    const records = Array.isArray(record) ? record : [record];
+    for (const r of records) {
+      if (!r || !r.spec) continue;
+      lines.push(`### ${axisId}: ${r.name || r.spec.name || r.id}`);
+      for (const [k, v] of Object.entries(r.spec)) {
+        if (k === 'name' || k === 'preview_prompt' || k === 'preview_lua_template') continue;
+        if (typeof v === 'object') lines.push(`- ${k}: ${JSON.stringify(v)}`);
+        else lines.push(`- ${k}: ${v}`);
+      }
+      lines.push('');
+    }
+  }
+  if (lines.length === 0) return '';
+  return [
+    '## ACTIVE STYLE PICKS FOR THIS PROJECT',
+    '',
+    'Every output below MUST be consistent with these picks. Treat them as canon.',
+    '',
+    ...lines
+  ].join('\n');
 }
 
 // --- Feature manifest helpers --------------------------------------------
@@ -746,7 +786,8 @@ module.exports = {
   STAGE_AUGMENTS,
   QA_CHECKS,
   assembleSystemPrompt,
+  formatActivePicks,
   buildSceneLuaFromFeatures,
   loadFeatureManifest,
-  _internals: { substituteVars, bibleBlock, assertPngDim },
+  _internals: { substituteVars, bibleBlock, assertPngDim, formatActivePicks },
 };

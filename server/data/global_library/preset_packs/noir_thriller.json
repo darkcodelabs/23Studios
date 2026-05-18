@@ -1,0 +1,201 @@
+{
+  "id": "noir_thriller",
+  "display_name": "Noir Thriller",
+  "description": "Hard-boiled detective. Crank-driven evidence boards, half-tone dither, rain-soaked portraits, gravelly typeface.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Slow burn investigation",
+      "spec": {
+        "name": "Slow burn investigation",
+        "session_target_min": 45,
+        "scene_density": "story_heavy",
+        "tension_curve": "rising",
+        "time_pressure": "contextual",
+        "recommended_minigame_count": 6,
+        "recommended_dialog_scene_count": 15,
+        "preview_prompt": "investigation paced like a noir film — long talk scenes, occasional time-bound action"
+      }
+    },
+    "gameplay_style": {
+      "name": "Top-down photographer with crank focus",
+      "spec": {
+        "name": "Top-down photographer with crank focus",
+        "camera": "top_down",
+        "movement": "free_2d",
+        "scale": "single_screen",
+        "rationale": "Player walks scenes; crank pulls focus on evidence (photographic metaphor)",
+        "references": ["Return of the Obra Dinn", "Disco Elysium"],
+        "sprite_size_recommendation": { "w": 12, "h": 28 },
+        "tile_size_recommendation": { "w": 16, "h": 16 },
+        "preview_prompt": "1-bit top-down 1953 Detroit hotel room, rain on windows, hero in trenchcoat"
+      }
+    },
+    "character_style": {
+      "name": "Rain-soaked drifter",
+      "spec": {
+        "name": "Rain-soaked drifter",
+        "silhouette": "slim",
+        "portrait_treatment": "half_body",
+        "walk_cycle_frames": 4,
+        "detail_level": "detailed",
+        "face_dither": "atkinson",
+        "sprite_dimensions": { "w": 12, "h": 28 },
+        "portrait_dimensions": { "w": 80, "h": 80 },
+        "preview_prompt": "1-bit hooded drifter, rain streaks, Atkinson dither on face"
+      }
+    },
+    "minigame_style": {
+      "name": "Evidence-board lockpick",
+      "spec": {
+        "name": "Evidence-board lockpick",
+        "recipe_kit_id": "crank_lockpick",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "stepped",
+        "failure_handling": "restart",
+        "scoring": "binary",
+        "estimated_session_seconds": 60,
+        "preview_prompt": "close-up of corkboard with photos pinned, crank tension indicator"
+      }
+    },
+    "menu_style": {
+      "name": "Half-width text panel",
+      "spec": {
+        "name": "Half-width text panel",
+        "layout": "vertical_list",
+        "selection_input": "both",
+        "visual_treatment": "text_only",
+        "confirm_pattern": "A_to_select",
+        "uses_gridview": false,
+        "uses_crank": true,
+        "nine_slice_panel": true,
+        "preview_prompt": "half-width nine-slice panel right side, typewriter font"
+      }
+    },
+    "dialog_style": {
+      "name": "Bottom-left portrait, slow type",
+      "spec": {
+        "name": "Bottom-left portrait, slow type",
+        "text_speed": "slow",
+        "portrait_position": "bottom_left",
+        "portrait_kind": "expression_set",
+        "box_style": "full_width_bottom",
+        "choice_display": "vertical_list",
+        "advance_input": "A_or_crank",
+        "font": "custom_handwritten",
+        "uses_nine_slice": true,
+        "uses_blip_synth": true,
+        "preview_prompt": "bottom dialog box, 80x80 portrait left, handwritten font, slow reveal"
+      }
+    },
+    "animation_style": {
+      "name": "Slow with VCR transitions",
+      "spec": {
+        "name": "Slow with VCR transitions",
+        "default_frame_ms": 250,
+        "default_easing": "inOutCubic",
+        "transition": "vcr_pause",
+        "idle_behavior": "fidget",
+        "hit_reaction": "freeze_frame",
+        "uses_setOffset_for_shake": false,
+        "uses_setMosaic_for_transitions": false,
+        "uses_vcrPauseFilterImage": true,
+        "preview_lua_template": "playdate.graphics.setStencilImage(vcrPauseFilter); playdate.graphics.fillRect(0,0,400,240)"
+      }
+    },
+    "transition_style": {
+      "name": "VCR glitch",
+      "spec": {
+        "name": "VCR glitch",
+        "technique": "vcr_glitch",
+        "duration_ms": 1000,
+        "audio_behavior": "music_ducks",
+        "loading_mask": "scene_preview",
+        "lua_implementation": "scene_transition.start_vcr(target_id, spawn_pos, on_complete)",
+        "uses_setMosaic": true,
+        "uses_setInverted": false,
+        "uses_stencil_image": true,
+        "preview_prompt": "VHS-style horizontal scanline glitch wiping scene out"
+      }
+    },
+    "hud_style": {
+      "name": "Edge indicators only",
+      "spec": {
+        "name": "Edge indicators only",
+        "presence": "contextual",
+        "position": "edge_indicators",
+        "density": "minimal",
+        "treatment": "dithered_panels",
+        "shows": ["evidence_count"],
+        "preview_prompt": "small dithered panel top-right with evidence counter"
+      }
+    },
+    "audio_style": {
+      "name": "Jazz + sample SFX",
+      "spec": {
+        "name": "Jazz + sample SFX",
+        "music_palette": "jazz",
+        "sfx_palette": "sample_only",
+        "mix_philosophy": "atmospheric",
+        "reactive_intensity": "minimal",
+        "effects_chain": "light_reverb",
+        "default_synth_shapes": [],
+        "preview_prompt": "muted upright bass + brushed snare loop with rain ambience"
+      }
+    },
+    "save_style": {
+      "name": "Every scene change",
+      "spec": {
+        "name": "Every scene change",
+        "trigger": "every_scene_change",
+        "slot_count": 1,
+        "saves_screenshot": false,
+        "indicator": "brief_text",
+        "scenes_with_save_points": [],
+        "lua_implementation": "playdate.datastore.write(state, 'save')"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Case file + skip + notebook",
+      "spec": {
+        "name": "Case file + skip + notebook",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Case File", "action_or_options": "fn_open_casefile" },
+          { "slot": 2, "kind": "action", "title": "Notebook", "action_or_options": "fn_open_notebook" },
+          { "slot": 3, "kind": "action", "title": "Skip Scene", "action_or_options": "fn_skip_scene" }
+        ],
+        "pause_image_intent": "Detective's notebook page with current clue list",
+        "pause_image_prompt": "1-bit lined notebook page, handwritten clues, left side of 400x240",
+        "lock_behavior": "save_and_pause",
+        "auto_lock_disabled_scenes": ["lockpick", "rooftop_chase"]
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Photo unlocks",
+      "spec": {
+        "name": "Photo unlocks",
+        "kind": "photo_mode_unlocks",
+        "tracking": "named_set",
+        "reward": "alt_endings",
+        "hint": "audio_cue",
+        "estimated_count": 10,
+        "spawn_pattern": "narrative_gated",
+        "preview_prompt": "small camera-shutter icon when photographable object is near"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Subtle press combos + dev menu",
+      "spec": {
+        "name": "Subtle press combos + dev menu",
+        "cheats": [
+          { "combo": "crank_full_clockwise_3x", "effect": "reveal_all_evidence", "mode": "secret_ending_trigger" },
+          { "combo": "b,b,b,a,crank_ccw_full", "effect": "skip_to_chapter_end", "mode": "debug_only" }
+        ],
+        "debug_menu_items": [
+          { "title": "Show hitboxes", "action": "show_hitboxes" },
+          { "title": "Skip dialog", "action": "skip_dialog" }
+        ],
+        "preview_prompt": "tiny typewriter readout of unlocked debug actions"
+      }
+    }
+  }
+}

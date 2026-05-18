@@ -1,0 +1,201 @@
+{
+  "id": "classic_adventure",
+  "display_name": "Classic Adventure",
+  "description": "Top-down explore, dialog-heavy, item gating, save points. Zelda + LucasArts adventure DNA.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Episodic exploration",
+      "spec": {
+        "name": "Episodic exploration",
+        "session_target_min": 30,
+        "scene_density": "balanced",
+        "tension_curve": "episodic_waves",
+        "time_pressure": "never",
+        "recommended_minigame_count": 5,
+        "recommended_dialog_scene_count": 12,
+        "preview_prompt": "Two 15-minute sessions per night; gentle rise, no rush"
+      }
+    },
+    "gameplay_style": {
+      "name": "Top-down room explorer",
+      "spec": {
+        "name": "Top-down room explorer",
+        "camera": "top_down",
+        "movement": "free_2d",
+        "scale": "room",
+        "rationale": "Room-by-room exploration with door transitions; standard adventure-game framing",
+        "references": ["The Legend of Zelda", "Hyper Light Drifter", "Tunic"],
+        "sprite_size_recommendation": { "w": 16, "h": 24 },
+        "tile_size_recommendation": { "w": 16, "h": 16 },
+        "preview_prompt": "top-down 1-bit Playdate scene, single room, doorways visible, hero sprite center"
+      }
+    },
+    "character_style": {
+      "name": "Chunky pixel hero",
+      "spec": {
+        "name": "Chunky pixel hero",
+        "silhouette": "chunky",
+        "portrait_treatment": "half_body",
+        "walk_cycle_frames": 4,
+        "detail_level": "moderate",
+        "face_dither": "atkinson",
+        "sprite_dimensions": { "w": 16, "h": 24 },
+        "portrait_dimensions": { "w": 64, "h": 64 },
+        "preview_prompt": "1-bit chunky pixel hero sprite, hooded silhouette, 16x24"
+      }
+    },
+    "minigame_style": {
+      "name": "Lockpick + memory pair",
+      "spec": {
+        "name": "Lockpick + memory pair",
+        "recipe_kit_id": "crank_lockpick",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "stepped",
+        "failure_handling": "retry_with_easier",
+        "scoring": "binary",
+        "estimated_session_seconds": 45,
+        "preview_prompt": "lockpick close-up, crank dial visible, 5 pins"
+      }
+    },
+    "menu_style": {
+      "name": "Vertical text list",
+      "spec": {
+        "name": "Vertical text list",
+        "layout": "vertical_list",
+        "selection_input": "dpad",
+        "visual_treatment": "text_only",
+        "confirm_pattern": "A_to_select",
+        "uses_gridview": false,
+        "uses_crank": false,
+        "nine_slice_panel": true,
+        "preview_prompt": "vertical menu list with nine-slice panel, hero portrait left"
+      }
+    },
+    "dialog_style": {
+      "name": "Half-portrait bottom box",
+      "spec": {
+        "name": "Half-portrait bottom box",
+        "text_speed": "normal",
+        "portrait_position": "bottom_left",
+        "portrait_kind": "2_frame_talk_loop",
+        "box_style": "full_width_bottom",
+        "choice_display": "vertical_list",
+        "advance_input": "A",
+        "font": "system",
+        "uses_nine_slice": true,
+        "uses_blip_synth": true,
+        "preview_prompt": "dialog box bottom of screen, portrait left, 2 lines of text"
+      }
+    },
+    "animation_style": {
+      "name": "Snappy with crossfade",
+      "spec": {
+        "name": "Snappy with crossfade",
+        "default_frame_ms": 100,
+        "default_easing": "outQuad",
+        "transition": "crossfade",
+        "idle_behavior": "breathe",
+        "hit_reaction": "shake",
+        "uses_setOffset_for_shake": true,
+        "uses_setMosaic_for_transitions": false,
+        "uses_vcrPauseFilterImage": false,
+        "preview_lua_template": "playdate.display.setOffset(math.random(-2,2), math.random(-2,2))"
+      }
+    },
+    "transition_style": {
+      "name": "Dither sweep",
+      "spec": {
+        "name": "Dither sweep",
+        "technique": "dither_sweep",
+        "duration_ms": 500,
+        "audio_behavior": "music_continues",
+        "loading_mask": "black_screen",
+        "lua_implementation": "scene_transition.start(target_id, spawn_pos, on_complete)",
+        "uses_setMosaic": false,
+        "uses_setInverted": false,
+        "uses_stencil_image": false,
+        "preview_prompt": "dither pattern wiping across the screen"
+      }
+    },
+    "hud_style": {
+      "name": "Bottom strip with icons",
+      "spec": {
+        "name": "Bottom strip with icons",
+        "presence": "always_on",
+        "position": "bottom_strip",
+        "density": "minimal",
+        "treatment": "icons_plus_text",
+        "shows": ["health", "inventory_count"],
+        "preview_prompt": "bottom strip with hearts + key count"
+      }
+    },
+    "audio_style": {
+      "name": "Chiptune + synth SFX",
+      "spec": {
+        "name": "Chiptune + synth SFX",
+        "music_palette": "chiptune",
+        "sfx_palette": "synth_only",
+        "mix_philosophy": "music_driven",
+        "reactive_intensity": "moderate",
+        "effects_chain": "light_reverb",
+        "default_synth_shapes": ["kWaveSquare", "kWaveTriangle"],
+        "preview_prompt": "square-wave melody loop with triangle bass, light delay"
+      }
+    },
+    "save_style": {
+      "name": "Manual save points",
+      "spec": {
+        "name": "Manual save points",
+        "trigger": "manual_save_points",
+        "slot_count": 3,
+        "saves_screenshot": true,
+        "indicator": "animated_icon",
+        "scenes_with_save_points": [],
+        "lua_implementation": "playdate.datastore.write(state, 'slot_'..slot); playdate.datastore.writeImage(playdate.graphics.getDisplayImage(), 'slot_'..slot..'_thumb')"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Restart + Sound + Reset",
+      "spec": {
+        "name": "Restart + Sound + Reset",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Restart", "action_or_options": "fn_restart" },
+          { "slot": 2, "kind": "checkmark", "title": "Sound", "action_or_options": true },
+          { "slot": 3, "kind": "action", "title": "Reset Save", "action_or_options": "fn_reset_save" }
+        ],
+        "pause_image_intent": "Hero portrait with current quest title overlaid",
+        "pause_image_prompt": "1-bit hero portrait left side of 400x240, quest name typeset right",
+        "lock_behavior": "save_and_pause",
+        "auto_lock_disabled_scenes": []
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Lore fragments",
+      "spec": {
+        "name": "Lore fragments",
+        "kind": "lore_fragments",
+        "tracking": "total_count",
+        "reward": "ending_change",
+        "hint": "subtle_visual",
+        "estimated_count": 12,
+        "spawn_pattern": "one_per_scene_optional",
+        "preview_prompt": "small parchment sprite tucked behind decor"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Classic Konami + dev menu",
+      "spec": {
+        "name": "Classic Konami + dev menu",
+        "cheats": [
+          { "combo": "up,up,down,down,left,right,left,right,b,a", "effect": "all_items", "mode": "release_easter_egg" }
+        ],
+        "debug_menu_items": [
+          { "title": "FPS", "action": "fps_overlay" },
+          { "title": "Skip scene", "action": "skip_scene" },
+          { "title": "Reset save", "action": "reset_save" }
+        ],
+        "preview_prompt": "ASCII menu listing debug actions"
+      }
+    }
+  }
+}
