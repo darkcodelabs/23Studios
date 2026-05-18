@@ -1,0 +1,22 @@
+{
+  "id": "hardware_menu_style",
+  "display_name": "Hardware menu (system menu + pause image)",
+  "description": "What appears in the Playdate system menu (max 3 items) and the pause image alongside it. Consumed by the launcher stage.",
+  "prompt_template": "Given prior picks (especially gameplay and save styles):\n{prior_picks}\n\nGenerate {count} system menu setups. Each setup is a complete spec for the 3 menu item slots plus a pause image direction.\n\nPause image is shown on the LEFT 200px of the 400x240 screen while the system menu is open on the right. Plan composition with that constraint.\n\nmenu_items: array of exactly 1, 2, or 3 entries. Each has:\n  - slot: 1, 2, or 3\n  - kind: action | checkmark | options\n  - title: short string (≤20 chars)\n  - action_or_options: for action a callback function name (string); for checkmark the initial bool; for options an array of strings\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the hardware menu option below per the user feedback. Stay within 3 menu items; keep slot numbers unique.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "menu_items": "array of {slot, kind, title, action_or_options}",
+    "pause_image_intent": "string — what shows on the left 200px next to the system menu",
+    "pause_image_prompt": "string — image gen prompt for the pause image (1-bit, ~200x240 effective)",
+    "lock_behavior": "enum: save_and_pause | save_only | nothing",
+    "auto_lock_disabled_scenes": "array of scene ids that should call playdate.setAutoLockDisabled(true)"
+  },
+  "option_count": 3,
+  "preview_kind": "image",
+  "preview_renderer": "render_pause_screen",
+  "storage_key": "asset_library/styles/hardware_menu_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "launcher"]
+}

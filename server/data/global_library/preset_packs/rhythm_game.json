@@ -1,0 +1,200 @@
+{
+  "id": "rhythm_game",
+  "display_name": "Rhythm Game",
+  "description": "Crank-driven beatmap. Sample music, timing windows, scoring, hit reactions. Crypt of the NecroDancer + Hatsune Miku.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Short song reps",
+      "spec": {
+        "name": "Short song reps",
+        "session_target_min": 5,
+        "scene_density": "dense_minigames",
+        "tension_curve": "rising",
+        "time_pressure": "omnipresent",
+        "recommended_minigame_count": 12,
+        "recommended_dialog_scene_count": 3,
+        "preview_prompt": "5-minute play loop, song-then-result, repeat"
+      }
+    },
+    "gameplay_style": {
+      "name": "Fixed-screen beatmap",
+      "spec": {
+        "name": "Fixed-screen beatmap",
+        "camera": "fixed_screen",
+        "movement": "on_rails",
+        "scale": "single_screen",
+        "rationale": "Single screen of incoming beats; player input is the only motion",
+        "references": ["Patapon", "Crypt of the NecroDancer"],
+        "sprite_size_recommendation": { "w": 32, "h": 32 },
+        "tile_size_recommendation": { "w": 32, "h": 32 },
+        "preview_prompt": "1-bit beat lanes scrolling toward player from top"
+      }
+    },
+    "character_style": {
+      "name": "Mascot dancer",
+      "spec": {
+        "name": "Mascot dancer",
+        "silhouette": "mascot",
+        "portrait_treatment": "no_portrait",
+        "walk_cycle_frames": 8,
+        "detail_level": "minimal",
+        "face_dither": "none",
+        "sprite_dimensions": { "w": 32, "h": 32 },
+        "portrait_dimensions": { "w": 0, "h": 0 },
+        "preview_prompt": "1-bit dancing mascot sprite, 8 bounce frames"
+      }
+    },
+    "minigame_style": {
+      "name": "Rhythm crank",
+      "spec": {
+        "name": "Rhythm crank",
+        "recipe_kit_id": "rhythm_crank",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "adaptive",
+        "failure_handling": "drop_and_continue",
+        "scoring": "continuous",
+        "estimated_session_seconds": 120,
+        "preview_prompt": "crank dial overlay with timing window indicator"
+      }
+    },
+    "menu_style": {
+      "name": "Horizontal song strip",
+      "spec": {
+        "name": "Horizontal song strip",
+        "layout": "horizontal_strip",
+        "selection_input": "crank",
+        "visual_treatment": "image_cards",
+        "confirm_pattern": "A_to_select",
+        "uses_gridview": false,
+        "uses_crank": true,
+        "nine_slice_panel": false,
+        "preview_prompt": "horizontal strip of song cards, crank scrolls"
+      }
+    },
+    "dialog_style": {
+      "name": "Minimal banners",
+      "spec": {
+        "name": "Minimal banners",
+        "text_speed": "fast",
+        "portrait_position": "none",
+        "portrait_kind": "static",
+        "box_style": "no_box",
+        "choice_display": "horizontal_list",
+        "advance_input": "A",
+        "font": "custom_pixel",
+        "uses_nine_slice": false,
+        "uses_blip_synth": false,
+        "preview_prompt": "small banner top: 'GO!'"
+      }
+    },
+    "animation_style": {
+      "name": "Snappy with beat shake",
+      "spec": {
+        "name": "Snappy with beat shake",
+        "default_frame_ms": 100,
+        "default_easing": "linear",
+        "transition": "cut",
+        "idle_behavior": "breathe",
+        "hit_reaction": "shake",
+        "uses_setOffset_for_shake": true,
+        "uses_setMosaic_for_transitions": false,
+        "uses_vcrPauseFilterImage": false,
+        "preview_lua_template": "playdate.display.setOffset(0, beat_offset)"
+      }
+    },
+    "transition_style": {
+      "name": "Instant cut",
+      "spec": {
+        "name": "Instant cut",
+        "technique": "cut",
+        "duration_ms": 0,
+        "audio_behavior": "music_swap",
+        "loading_mask": "black_screen",
+        "lua_implementation": "scene_manager.replace(target_scene, args)",
+        "uses_setMosaic": false,
+        "uses_setInverted": false,
+        "uses_stencil_image": false,
+        "preview_prompt": "instant cut to new scene"
+      }
+    },
+    "hud_style": {
+      "name": "Top combo + bottom timing",
+      "spec": {
+        "name": "Top combo + bottom timing",
+        "presence": "always_on",
+        "position": "top_strip",
+        "density": "moderate",
+        "treatment": "text_only",
+        "shows": ["score", "combo", "accuracy"],
+        "preview_prompt": "top strip 'SCORE 12340 x32 PERFECT'"
+      }
+    },
+    "audio_style": {
+      "name": "Tracker + heavy SFX",
+      "spec": {
+        "name": "Tracker + heavy SFX",
+        "music_palette": "tracker",
+        "sfx_palette": "synth_only",
+        "mix_philosophy": "music_driven",
+        "reactive_intensity": "heavy",
+        "effects_chain": "dry",
+        "default_synth_shapes": ["kWaveSquare", "kWaveTriangle", "kWaveNoise"],
+        "preview_prompt": ".xm tracker module with kicks/snares synthesized for each hit"
+      }
+    },
+    "save_style": {
+      "name": "High score only",
+      "spec": {
+        "name": "High score only",
+        "trigger": "every_scene_change",
+        "slot_count": 1,
+        "saves_screenshot": false,
+        "indicator": "none",
+        "scenes_with_save_points": [],
+        "lua_implementation": "playdate.datastore.write({high_scores=scores}, 'save')"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Practice + Calibrate + Reset",
+      "spec": {
+        "name": "Practice + Calibrate + Reset",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Practice", "action_or_options": "fn_practice_mode" },
+          { "slot": 2, "kind": "action", "title": "Calibrate", "action_or_options": "fn_calibrate_audio" },
+          { "slot": 3, "kind": "action", "title": "Reset scores", "action_or_options": "fn_reset_scores" }
+        ],
+        "pause_image_intent": "Album-cover-style art for current song",
+        "pause_image_prompt": "1-bit album cover art for current song, 400x240 left half",
+        "lock_behavior": "save_only",
+        "auto_lock_disabled_scenes": ["song_play"]
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Hidden bonus stages",
+      "spec": {
+        "name": "Hidden bonus stages",
+        "kind": "achievements",
+        "tracking": "named_set",
+        "reward": "gameplay_unlock",
+        "hint": "on_screen_marker",
+        "estimated_count": 6,
+        "spawn_pattern": "score_gated",
+        "preview_prompt": "small star icon on song select for full-combo'd songs"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Crank combos for unlocks",
+      "spec": {
+        "name": "Crank combos for unlocks",
+        "cheats": [
+          { "combo": "crank_full_clockwise_3x", "effect": "unlock_all_songs", "mode": "debug_only" }
+        ],
+        "debug_menu_items": [
+          { "title": "Audio delay", "action": "tune_audio_offset" },
+          { "title": "Show beat grid", "action": "show_beats" }
+        ],
+        "preview_prompt": "audio-offset slider"
+      }
+    }
+  }
+}

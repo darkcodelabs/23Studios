@@ -1,0 +1,25 @@
+{
+  "id": "menu_style",
+  "display_name": "Menu style",
+  "description": "How in-game menus and navigation work.",
+  "prompt_template": "Given this style guide:\n{style_guide}\nAnd this gameplay style:\n{prior_picks.gameplay_style}\n\nGenerate {count} menu options covering:\n- Layout: vertical_list | horizontal_strip | grid | radial | paged_cards | parallax_scroll\n- Selection input: dpad | crank | both\n- Visual treatment: text_only | icon_plus_text | image_cards | sprite_sheets\n- Confirm pattern: A_to_select | A_held | A_then_confirm | dpad_right_to_advance\n- uses_gridview: true if layout=grid (triggers playdate.ui.gridview)\n- uses_crank: true if selection_input includes crank (requires CoreLibs/ui/crankIndicator check)\n- nine_slice_panel: true if menu has a styled background panel\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the menu option below per the user feedback. Keep uses_gridview/uses_crank/nine_slice_panel flags consistent with layout + selection_input.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "layout": "enum: vertical_list | horizontal_strip | grid | radial | paged_cards | parallax_scroll",
+    "selection_input": "enum: dpad | crank | both",
+    "visual_treatment": "enum: text_only | icon_plus_text | image_cards | sprite_sheets",
+    "confirm_pattern": "enum: A_to_select | A_held | A_then_confirm | dpad_right_to_advance",
+    "uses_gridview": "bool",
+    "uses_crank": "bool",
+    "nine_slice_panel": "bool",
+    "preview_prompt": "string"
+  },
+  "option_count": 5,
+  "preview_kind": "image",
+  "preview_renderer": "render_menu_mockup",
+  "storage_key": "asset_library/styles/menu_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "launcher"]
+}

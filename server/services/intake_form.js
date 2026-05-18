@@ -425,6 +425,203 @@ async function writeStoryBible(localPath, md) {
   return fp;
 }
 
+// ----------------------------------------------------------------------------
+// Phase 3: map intake fields → seed defaults for the 14 style axes
+// ----------------------------------------------------------------------------
+//
+// IntakeForm.jsx stays as the front door. Composer v2 walks the 14 axes for
+// refinement *after* intake completes. mapIntakeToAxisDefaults seeds the
+// per-axis defaults so users who only fill the intake form get sane picks
+// without ever opening the picker. Plays nice with the preset pack
+// importer — these defaults override pack defaults when both are present.
+//
+// Mapping (per CLAUDE.md):
+//   intake.genre      → gameplay_style, pacing_style, audio_style defaults
+//   intake.format     → gameplay_style.camera + scale
+//   intake.protagonist_archetype → character_style
+//   intake.crank_usage → crank_required flag on relevant axes
+//   intake.audio_direction → audio_style.music_palette
+//   intake.save_state → save_style.trigger
+
+function mapGenreToAudio(genre) {
+  switch (genre) {
+    case 'rhythm': return 'tracker';
+    case 'horror': return 'ambient_drone';
+    case 'narrative': return 'jazz';
+    case 'sim':
+    case 'life-sim': return 'textural';
+    case 'sports':
+    case 'action': return 'chiptune';
+    case 'puzzle':
+    case 'adventure':
+    case 'toy':
+    case 'other':
+    default: return 'chiptune';
+  }
+}
+
+function mapGenreToTensionCurve(genre) {
+  switch (genre) {
+    case 'horror':
+    case 'action': return 'rising';
+    case 'rhythm': return 'episodic_waves';
+    case 'narrative':
+    case 'adventure': return 'episodic_waves';
+    case 'sim':
+    case 'life-sim':
+    case 'toy': return 'flat';
+    default: return 'episodic_waves';
+  }
+}
+
+function mapFormatToCamera(format) {
+  switch (format) {
+    case 'scene_based': return 'top_down';
+    case 'hub_world': return 'top_down';
+    case 'linear': return 'side_scroll';
+    case 'roguelike': return 'top_down';
+    case 'endless': return 'fixed_screen';
+    default: return 'top_down';
+  }
+}
+
+function mapFormatToScale(format) {
+  switch (format) {
+    case 'scene_based': return 'room';
+    case 'hub_world': return 'world_map';
+    case 'linear': return 'single_screen';
+    case 'roguelike': return 'world_map';
+    case 'endless': return 'single_screen';
+    default: return 'single_screen';
+  }
+}
+
+function mapArchetypeToSilhouette(archetype) {
+  switch (archetype) {
+    case 'drifter':
+    case 'agent': return 'slim';
+    case 'kid':
+    case 'courier': return 'chunky';
+    case 'exile':
+    case 'ghost': return 'organic';
+    case 'fixer':
+    case 'archivist': return 'slim';
+    default: return 'slim';
+  }
+}
+
+function mapSaveStateToTrigger(saveState) {
+  switch (saveState) {
+    case 'none': return 'gameWillTerminate_only';
+    case 'light': return 'every_scene_change';
+    case 'full': return 'hybrid';
+    case 'slots': return 'manual_save_points';
+    default: return 'every_scene_change';
+  }
+}
+
+function mapAudioDirectionToPalette(audioDirection) {
+  switch (audioDirection) {
+    case 'synth': return 'chiptune';
+    case 'tracker': return 'tracker';
+    case 'samples': return 'sample_only';
+    case 'ambient': return 'ambient_drone';
+    case 'silent': return 'silence_with_sfx_only';
+    default: return 'chiptune';
+  }
+}
+
+/**
+ * Convert a normalized intake form into seed Option specs for each axis.
+ * Returns { axisId: { name, spec } } — callers can hand this to
+ * asset_library.importPresetPackAndPick-like flow or write directly via
+ * style_axis.pickOption after persisting.
+ *
+ * Note: this only seeds axes where intake provides clear signal. Axes not
+ * present must be picked through the normal generate/pick flow.
+ */
+function mapIntakeToAxisDefaults(intake) {
+  const i = normalizeIntake(intake || {});
+  const out = {};
+
+  out.pacing_style = {
+    name: `${i.playtime_target_min}min ${i.format}`,
+    spec: {
+      name: `${i.playtime_target_min}min ${i.format}`,
+      session_target_min: i.playtime_target_min,
+      scene_density: i.scene_count >= 8 ? 'balanced' : 'sparse_exploration',
+      tension_curve: mapGenreToTensionCurve(i.genre),
+      time_pressure: i.genre === 'horror' || i.genre === 'rhythm' ? 'contextual' : 'never',
+      recommended_minigame_count: i.minigame_count,
+      recommended_dialog_scene_count: Math.max(2, Math.floor(i.scene_count / 2)),
+      preview_prompt: `${i.playtime_target_min}-minute ${i.genre} session in ${i.format} format`
+    }
+  };
+
+  out.gameplay_style = {
+    name: `${i.format} ${mapFormatToCamera(i.format)}`,
+    spec: {
+      name: `${i.format} ${mapFormatToCamera(i.format)}`,
+      camera: mapFormatToCamera(i.format),
+      movement: i.format === 'roguelike' ? 'grid' : 'free_2d',
+      scale: mapFormatToScale(i.format),
+      rationale: `Seeded from intake: ${i.genre} / ${i.format}`,
+      references: i.gameplay_refs || [],
+      sprite_size_recommendation: { w: 16, h: 24 },
+      tile_size_recommendation: { w: 16, h: 16 },
+      preview_prompt: `1-bit Playdate ${mapFormatToCamera(i.format)} ${i.format} scene, ${i.setting_vibe || i.genre}`
+    }
+  };
+
+  if (i.protagonist_archetype) {
+    out.character_style = {
+      name: `${i.protagonist_archetype} hero`,
+      spec: {
+        name: i.protagonist_name ? `${i.protagonist_name} (${i.protagonist_archetype})` : `${i.protagonist_archetype} hero`,
+        silhouette: mapArchetypeToSilhouette(i.protagonist_archetype),
+        portrait_treatment: 'half_body',
+        walk_cycle_frames: 4,
+        detail_level: 'moderate',
+        face_dither: 'atkinson',
+        sprite_dimensions: { w: 16, h: 24 },
+        portrait_dimensions: { w: 64, h: 64 },
+        preview_prompt: `1-bit ${mapArchetypeToSilhouette(i.protagonist_archetype)} ${i.protagonist_archetype} sprite, ${i.setting_vibe || ''}`
+      }
+    };
+  }
+
+  out.audio_style = {
+    name: `${mapAudioDirectionToPalette(i.audio_direction)}`,
+    spec: {
+      name: `${mapAudioDirectionToPalette(i.audio_direction)}`,
+      music_palette: mapAudioDirectionToPalette(i.audio_direction),
+      sfx_palette: i.audio_direction === 'samples' ? 'sample_only' : (i.audio_direction === 'silent' ? 'synth_only' : 'mixed'),
+      mix_philosophy: i.genre === 'horror' ? 'atmospheric' : 'music_driven',
+      reactive_intensity: 'moderate',
+      effects_chain: i.genre === 'horror' ? 'heavy_processing' : 'light_reverb',
+      default_synth_shapes: ['kWaveSquare', 'kWaveTriangle'],
+      preview_prompt: `${mapAudioDirectionToPalette(i.audio_direction)} palette for ${i.genre}`
+    }
+  };
+
+  out.save_style = {
+    name: `${i.save_state} save`,
+    spec: {
+      name: `${i.save_state} save`,
+      trigger: mapSaveStateToTrigger(i.save_state),
+      slot_count: i.save_state === 'slots' ? 3 : 1,
+      saves_screenshot: i.save_state === 'slots' || i.save_state === 'full',
+      indicator: i.save_state === 'none' ? 'none' : 'brief_text',
+      scenes_with_save_points: [],
+      lua_implementation: i.save_state === 'slots'
+        ? "playdate.datastore.write(state, 'slot_'..slot)"
+        : "playdate.datastore.write(state, 'save')"
+    }
+  };
+
+  return out;
+}
+
 module.exports = {
   DEFAULTS,
   GENRES,
@@ -439,5 +636,6 @@ module.exports = {
   renderIntakeYaml,
   renderStoryBible,
   writeIntake,
-  writeStoryBible
+  writeStoryBible,
+  mapIntakeToAxisDefaults
 };

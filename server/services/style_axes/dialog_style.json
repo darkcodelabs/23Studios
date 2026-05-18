@@ -1,0 +1,27 @@
+{
+  "id": "dialog_style",
+  "display_name": "Dialog style",
+  "description": "How character speech is presented. Consumed by both scene_lua (in-scene dialog) and the standalone NPC dialog tool.",
+  "prompt_template": "Given these prior picks:\n  menu_style: {prior_picks.menu_style}\n  character_style: {prior_picks.character_style}\n\nGenerate {count} dialog style options covering:\n- Text speed: instant | fast (1ch/frame) | normal (1ch/2 frames) | slow (1ch/4 frames) | variable\n- Portrait position: bottom_left | bottom_right | top_left | top_right | none\n- Portrait kind: static | 2_frame_talk_loop | expression_set\n- Box style: full_width_bottom | half_width | nine_slice_panel | no_box (overlay)\n- Choice display: vertical_list | horizontal_list | radial_wheel | gridview\n- Advance input: A | crank | A_or_crank | auto_after_delay\n- Font: system | custom_pixel | custom_serif | custom_handwritten\n- uses_blip_synth: true plays a playdate.sound.synth note per character\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the dialog option below per the user feedback. Keep uses_nine_slice consistent with box_style.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "text_speed": "enum: instant | fast | normal | slow | variable",
+    "portrait_position": "enum: bottom_left | bottom_right | top_left | top_right | none",
+    "portrait_kind": "enum: static | 2_frame_talk_loop | expression_set",
+    "box_style": "enum: full_width_bottom | half_width | nine_slice_panel | no_box",
+    "choice_display": "enum: vertical_list | horizontal_list | radial_wheel | gridview",
+    "advance_input": "enum: A | crank | A_or_crank | auto_after_delay",
+    "font": "string (system | custom_pixel | custom_serif | custom_handwritten or custom font name)",
+    "uses_nine_slice": "bool",
+    "uses_blip_synth": "bool",
+    "preview_prompt": "string"
+  },
+  "option_count": 5,
+  "preview_kind": "image",
+  "preview_renderer": "render_dialog_mockup",
+  "storage_key": "asset_library/styles/dialog_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "npc_dialog_tool"]
+}

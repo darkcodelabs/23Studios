@@ -1,0 +1,23 @@
+{
+  "id": "save_style",
+  "display_name": "Save behavior",
+  "description": "When and how progress is preserved.",
+  "prompt_template": "Given this pacing pick:\n{prior_picks.pacing_style}\n\nGenerate {count} save behavior options covering:\n- Save trigger: gameWillTerminate_only | every_scene_change | every_minute | manual_save_points | hybrid\n- Slot count: 1 (always overwrite) | 3 | named_slots\n- What is saved: state_only | state_plus_screenshot (uses datastore.writeImage) | full_replay\n- Save indicator: none | brief_text | animated_icon | sound\n- scenes_with_save_points: array of scene ids if trigger=manual_save_points (else empty)\n- lua_implementation: brief Lua snippet showing the save call pattern\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the save behavior option below per the user feedback. Keep saves_screenshot consistent with 'what is saved' field.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "trigger": "enum: gameWillTerminate_only | every_scene_change | every_minute | manual_save_points | hybrid",
+    "slot_count": "int (1, 3, or null for named_slots)",
+    "saves_screenshot": "bool",
+    "indicator": "enum: none | brief_text | animated_icon | sound",
+    "scenes_with_save_points": "array of strings",
+    "lua_implementation": "string — Lua snippet"
+  },
+  "option_count": 3,
+  "preview_kind": "text",
+  "preview_renderer": "render_save_flow",
+  "storage_key": "asset_library/styles/save_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["scene_lua", "launcher"]
+}

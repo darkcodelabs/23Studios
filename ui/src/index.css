@@ -141,42 +141,129 @@
   --bg-elev:  #1d2026;
   --hairline: #262932;
 }
+/* Playdate — LIGHT theme matching devforum.play.date (Discourse w/ violet
+ * accent on near-white surfaces). This is the only light theme; surface
+ * + text + ring overrides further down flip the otherwise-dark app.
+ * Hex values picked from a screenshot of devforum.play.date by eye:
+ *   page bg     #ffffff
+ *   card bg     #f3f0fc (lavender wash on the welcome card)
+ *   panel bg    #ffffff (sidebar)
+ *   hairline    #e6e3f0 (cool gray border)
+ *   text body   #1a1a25 (near-black)
+ *   text muted  #565669
+ *   accent      #7b5ce7 (the welcome heading + Sign Up button)
+ */
+:root[data-theme="playdate"] {
+  --bg-base:  #ffffff;
+  --bg-panel: #f3f0fc;
+  --bg-elev:  #ffffff;
+  --hairline: #e6e3f0;
+  --text-strong: #1a1a25;
+  --text-body:   #2a2a35;
+  --text-muted:  #565669;
+  --text-faint:  #8a8a99;
+}
 /* default green theme: no overrides, lets tailwind ink-900/800/700 win */
 
 /* Surface paint. Any element with the canonical bg- or ring- ink class
  * is re-painted via the theme variables. Specificity wins over the
  * generated utility classes because of the :root prefix. */
-:root[data-theme="amber"]   .bg-ink-900,
-:root[data-theme="magenta"] .bg-ink-900,
-:root[data-theme="ice"]     .bg-ink-900,
-:root[data-theme="blood"]   .bg-ink-900,
-:root[data-theme="mono"]    .bg-ink-900,
-:root[data-theme="amber"]   body,
-:root[data-theme="magenta"] body,
-:root[data-theme="ice"]     body,
-:root[data-theme="blood"]   body,
-:root[data-theme="mono"]    body { background-color: var(--bg-base); }
+:root[data-theme="amber"]    .bg-ink-900,
+:root[data-theme="magenta"]  .bg-ink-900,
+:root[data-theme="ice"]      .bg-ink-900,
+:root[data-theme="blood"]    .bg-ink-900,
+:root[data-theme="mono"]     .bg-ink-900,
+:root[data-theme="playdate"] .bg-ink-900,
+:root[data-theme="amber"]    body,
+:root[data-theme="magenta"]  body,
+:root[data-theme="ice"]      body,
+:root[data-theme="blood"]    body,
+:root[data-theme="mono"]     body,
+:root[data-theme="playdate"] body { background-color: var(--bg-base); }
 
-:root[data-theme="amber"]   .bg-ink-800,
-:root[data-theme="magenta"] .bg-ink-800,
-:root[data-theme="ice"]     .bg-ink-800,
-:root[data-theme="blood"]   .bg-ink-800,
-:root[data-theme="mono"]    .bg-ink-800 { background-color: var(--bg-panel); }
+:root[data-theme="amber"]    .bg-ink-800,
+:root[data-theme="magenta"]  .bg-ink-800,
+:root[data-theme="ice"]      .bg-ink-800,
+:root[data-theme="blood"]    .bg-ink-800,
+:root[data-theme="mono"]     .bg-ink-800,
+:root[data-theme="playdate"] .bg-ink-800 { background-color: var(--bg-panel); }
 
-:root[data-theme="amber"]   .bg-ink-700,
-:root[data-theme="magenta"] .bg-ink-700,
-:root[data-theme="ice"]     .bg-ink-700,
-:root[data-theme="blood"]   .bg-ink-700,
-:root[data-theme="mono"]    .bg-ink-700 { background-color: var(--bg-elev); }
+:root[data-theme="amber"]    .bg-ink-700,
+:root[data-theme="magenta"]  .bg-ink-700,
+:root[data-theme="ice"]      .bg-ink-700,
+:root[data-theme="blood"]    .bg-ink-700,
+:root[data-theme="mono"]     .bg-ink-700,
+:root[data-theme="playdate"] .bg-ink-700 { background-color: var(--bg-elev); }
 
-:root[data-theme="amber"]   .border-ink-800,
-:root[data-theme="magenta"] .border-ink-800,
-:root[data-theme="ice"]     .border-ink-800,
-:root[data-theme="blood"]   .border-ink-800,
-:root[data-theme="mono"]    .border-ink-800 { border-color: var(--hairline); }
+:root[data-theme="amber"]    .border-ink-800,
+:root[data-theme="magenta"]  .border-ink-800,
+:root[data-theme="ice"]      .border-ink-800,
+:root[data-theme="blood"]    .border-ink-800,
+:root[data-theme="mono"]     .border-ink-800,
+:root[data-theme="playdate"] .border-ink-800 { border-color: var(--hairline); }
 
-:root[data-theme="amber"]   .ring-ink-800,
-:root[data-theme="magenta"] .ring-ink-800,
-:root[data-theme="ice"]     .ring-ink-800,
-:root[data-theme="blood"]   .ring-ink-800,
-:root[data-theme="mono"]    .ring-ink-800 { --tw-ring-color: var(--hairline); }
+:root[data-theme="amber"]    .ring-ink-800,
+:root[data-theme="magenta"]  .ring-ink-800,
+:root[data-theme="ice"]      .ring-ink-800,
+:root[data-theme="blood"]    .ring-ink-800,
+:root[data-theme="mono"]     .ring-ink-800,
+:root[data-theme="playdate"] .ring-ink-800 { --tw-ring-color: var(--hairline); }
+
+/* ---------------- PLAYDATE LIGHT-MODE TEXT FLIP ----------------
+ * The other 6 themes are dark — text-ink-100 / text-ink-200 stay light
+ * because the canvas is dark. Playdate is light, so the same text
+ * utility classes need to invert to near-black for legibility. Repaints
+ * every common text shade + the placeholder-ink-500 utility.
+ */
+:root[data-theme="playdate"] .text-ink-50,
+:root[data-theme="playdate"] .text-ink-100,
+:root[data-theme="playdate"] .text-ink-200 { color: var(--text-strong); }
+
+:root[data-theme="playdate"] .text-ink-300 { color: var(--text-body); }
+
+:root[data-theme="playdate"] .text-ink-400,
+:root[data-theme="playdate"] .text-ink-500 { color: var(--text-muted); }
+
+:root[data-theme="playdate"] .text-ink-600,
+:root[data-theme="playdate"] .text-ink-700 { color: var(--text-faint); }
+
+:root[data-theme="playdate"] .placeholder-ink-500::placeholder { color: var(--text-faint); }
+
+/* Tailwind opacity-modifier classes (bg-ink-800/60, bg-ink-700/40,
+ * ring-ink-700/40, etc) generate distinct selectors with the `/N`
+ * escaped as `\/N`. The plain .bg-ink-800 override above does NOT
+ * catch them, which is why siderail items + textarea bgs read as dark
+ * gray on the white Playdate canvas. Repaint each opacity variant. */
+:root[data-theme="playdate"] .bg-ink-800\/60,
+:root[data-theme="playdate"] .bg-ink-800\/70,
+:root[data-theme="playdate"] .bg-ink-800\/40,
+:root[data-theme="playdate"] .bg-ink-800\/30,
+:root[data-theme="playdate"] .hover\:bg-ink-800\/60:hover,
+:root[data-theme="playdate"] .hover\:bg-ink-800\/40:hover,
+:root[data-theme="playdate"] .focus\:bg-ink-800:focus { background-color: var(--bg-panel); }
+
+:root[data-theme="playdate"] .bg-ink-700\/40,
+:root[data-theme="playdate"] .bg-ink-700\/30 { background-color: var(--bg-elev); }
+
+:root[data-theme="playdate"] .ring-ink-700\/40,
+:root[data-theme="playdate"] .ring-ink-800\/40 { --tw-ring-color: var(--hairline); }
+
+:root[data-theme="playdate"] .focus-within\:ring-ink-700:focus-within { --tw-ring-color: rgb(123 92 231 / 0.4); }
+
+/* No backdrop wrap on the logo — user wants TRUE transparent PNG. The
+ * 2.4 MB lg variant was also resized to 600w (384 KB) so the dashboard
+ * hero loads fast. */
+
+/* Hover-tint utility classes on the ghost btn need a light-mode pair too.
+ * Default hover:bg-ink-800/60 reads as 'darken' on dark themes; on the
+ * Playdate light theme we want a SUBTLE lavender wash instead. */
+:root[data-theme="playdate"] .btn:hover { background-color: rgba(123, 92, 231, 0.08); color: var(--text-strong); }
+:root[data-theme="playdate"] .btn-icon:hover { background-color: rgba(123, 92, 231, 0.08); color: var(--text-strong); }
+
+/* Card / panel hairline ring needs a soft lavender tone on light bg. */
+:root[data-theme="playdate"] .card { background-color: var(--bg-elev); }
+
+/* Border directive for SHELL borders (border-ink-700/60 etc) — repaint
+ * to the lavender hairline so cards still have a visible edge. */
+:root[data-theme="playdate"] .border-ink-700,
+:root[data-theme="playdate"] .border-ink-700\/60 { border-color: var(--hairline); }

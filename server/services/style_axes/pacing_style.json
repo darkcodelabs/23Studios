@@ -1,0 +1,24 @@
+{
+  "id": "pacing_style",
+  "display_name": "Pacing",
+  "description": "Overall rhythm of play. Drives session length, scene density, tension curve, time pressure. Picked first — every other axis reads it.",
+  "prompt_template": "Given this style guide:\n{style_guide}\n\nGenerate {count} pacing approaches covering:\n- Session length target: 5min, 15min, 30min, 60min+, episodic\n- Scene density: sparse_exploration, balanced, dense_minigames, story_heavy\n- Tension curve: flat, rising, episodic_waves, freeform\n- Time pressure: never, contextual, omnipresent\n\nEach option must be distinct from the others by at least two of the above dimensions.\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the pacing option below per the user feedback. Stay within option_schema. Adjust session_target_min, scene_density, tension_curve, time_pressure, or recommended counts as needed.",
+  "option_schema": {
+    "id": "string (will be assigned by server)",
+    "name": "string",
+    "session_target_min": "int",
+    "scene_density": "enum: sparse_exploration | balanced | dense_minigames | story_heavy",
+    "tension_curve": "enum: flat | rising | episodic_waves | freeform",
+    "time_pressure": "enum: never | contextual | omnipresent",
+    "recommended_minigame_count": "int",
+    "recommended_dialog_scene_count": "int",
+    "preview_prompt": "string"
+  },
+  "option_count": 3,
+  "preview_kind": "text",
+  "preview_renderer": "render_pacing_curve",
+  "storage_key": "asset_library/styles/pacing_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["story", "launcher"]
+}

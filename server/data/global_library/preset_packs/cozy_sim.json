@@ -1,0 +1,200 @@
+{
+  "id": "cozy_sim",
+  "display_name": "Cozy Sim",
+  "description": "Day-cycle life sim. Free-2D top-down, gentle music, no fail states, lots of dialog. Stardew + Animal Crossing.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Daily rhythm",
+      "spec": {
+        "name": "Daily rhythm",
+        "session_target_min": 15,
+        "scene_density": "balanced",
+        "tension_curve": "flat",
+        "time_pressure": "never",
+        "recommended_minigame_count": 4,
+        "recommended_dialog_scene_count": 20,
+        "preview_prompt": "15-minute daily play loop with morning/evening beats"
+      }
+    },
+    "gameplay_style": {
+      "name": "Top-down village",
+      "spec": {
+        "name": "Top-down village",
+        "camera": "top_down",
+        "movement": "free_2d",
+        "scale": "world_map",
+        "rationale": "Player wanders multi-screen village; everything is interactable",
+        "references": ["Stardew Valley", "Animal Crossing"],
+        "sprite_size_recommendation": { "w": 20, "h": 28 },
+        "tile_size_recommendation": { "w": 16, "h": 16 },
+        "preview_prompt": "1-bit top-down village square with farm tiles + small house"
+      }
+    },
+    "character_style": {
+      "name": "Round mascot",
+      "spec": {
+        "name": "Round mascot",
+        "silhouette": "mascot",
+        "portrait_treatment": "floating_head",
+        "walk_cycle_frames": 4,
+        "detail_level": "moderate",
+        "face_dither": "bayer_4x4",
+        "sprite_dimensions": { "w": 20, "h": 28 },
+        "portrait_dimensions": { "w": 64, "h": 64 },
+        "preview_prompt": "1-bit round friendly mascot sprite, smile visible"
+      }
+    },
+    "minigame_style": {
+      "name": "Conveyor sort + memory pair",
+      "spec": {
+        "name": "Conveyor sort + memory pair",
+        "recipe_kit_id": "conveyor_sort",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "adaptive",
+        "failure_handling": "drop_and_continue",
+        "scoring": "tiered",
+        "estimated_session_seconds": 90,
+        "preview_prompt": "small items moving on a belt, sort by shape"
+      }
+    },
+    "menu_style": {
+      "name": "Radial crank menu",
+      "spec": {
+        "name": "Radial crank menu",
+        "layout": "radial",
+        "selection_input": "crank",
+        "visual_treatment": "icon_plus_text",
+        "confirm_pattern": "A_to_select",
+        "uses_gridview": false,
+        "uses_crank": true,
+        "nine_slice_panel": false,
+        "preview_prompt": "radial menu with 8 tool icons, crank dial visible"
+      }
+    },
+    "dialog_style": {
+      "name": "Floating-head, fast text",
+      "spec": {
+        "name": "Floating-head, fast text",
+        "text_speed": "fast",
+        "portrait_position": "top_right",
+        "portrait_kind": "2_frame_talk_loop",
+        "box_style": "nine_slice_panel",
+        "choice_display": "vertical_list",
+        "advance_input": "A",
+        "font": "custom_pixel",
+        "uses_nine_slice": true,
+        "uses_blip_synth": true,
+        "preview_prompt": "floating-head portrait top-right, friendly text under"
+      }
+    },
+    "animation_style": {
+      "name": "Bouncy with slide",
+      "spec": {
+        "name": "Bouncy with slide",
+        "default_frame_ms": 150,
+        "default_easing": "inOutBack",
+        "transition": "slide",
+        "idle_behavior": "breathe",
+        "hit_reaction": "scale_pop",
+        "uses_setOffset_for_shake": false,
+        "uses_setMosaic_for_transitions": false,
+        "uses_vcrPauseFilterImage": false,
+        "preview_lua_template": "-- inOutBack on sprite scale on pickup"
+      }
+    },
+    "transition_style": {
+      "name": "Slide directional",
+      "spec": {
+        "name": "Slide directional",
+        "technique": "slide_directional",
+        "duration_ms": 500,
+        "audio_behavior": "music_continues",
+        "loading_mask": "scene_preview",
+        "lua_implementation": "scene_transition.start_slide(direction, target_id, spawn_pos, on_complete)",
+        "uses_setMosaic": false,
+        "uses_setInverted": false,
+        "uses_stencil_image": false,
+        "preview_prompt": "screen slides left to reveal new scene"
+      }
+    },
+    "hud_style": {
+      "name": "Top strip with day/time",
+      "spec": {
+        "name": "Top strip with day/time",
+        "presence": "always_on",
+        "position": "top_strip",
+        "density": "moderate",
+        "treatment": "icons_plus_text",
+        "shows": ["day", "time", "money"],
+        "preview_prompt": "top strip showing 'Day 3 - 7:30am - 120c'"
+      }
+    },
+    "audio_style": {
+      "name": "Textural ambient",
+      "spec": {
+        "name": "Textural ambient",
+        "music_palette": "textural",
+        "sfx_palette": "mixed",
+        "mix_philosophy": "music_driven",
+        "reactive_intensity": "moderate",
+        "effects_chain": "light_reverb",
+        "default_synth_shapes": ["kWaveSine", "kWaveTriangle"],
+        "preview_prompt": "soft pad with twinkle SFX on pickups"
+      }
+    },
+    "save_style": {
+      "name": "End-of-day auto-save",
+      "spec": {
+        "name": "End-of-day auto-save",
+        "trigger": "hybrid",
+        "slot_count": 1,
+        "saves_screenshot": false,
+        "indicator": "brief_text",
+        "scenes_with_save_points": ["bed", "title_return"],
+        "lua_implementation": "playdate.datastore.write(state, 'save')"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Tools + Map + Settings",
+      "spec": {
+        "name": "Tools + Map + Settings",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Tools", "action_or_options": "fn_open_tools" },
+          { "slot": 2, "kind": "action", "title": "Map", "action_or_options": "fn_open_map" },
+          { "slot": 3, "kind": "options", "title": "Speed", "action_or_options": ["1x", "2x", "4x"] }
+        ],
+        "pause_image_intent": "Player character relaxing in pixel hammock",
+        "pause_image_prompt": "1-bit mascot in hammock between two trees, 400x240 left half",
+        "lock_behavior": "save_and_pause",
+        "auto_lock_disabled_scenes": []
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Critter collection",
+      "spec": {
+        "name": "Critter collection",
+        "kind": "hidden_items",
+        "tracking": "named_set",
+        "reward": "cosmetic_unlock",
+        "hint": "subtle_visual",
+        "estimated_count": 30,
+        "spawn_pattern": "seasonal",
+        "preview_prompt": "small bug sprite in tall grass tile"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Friendly easter eggs",
+      "spec": {
+        "name": "Friendly easter eggs",
+        "cheats": [
+          { "combo": "up,up,a,b,a", "effect": "give_500_coins", "mode": "release_easter_egg" }
+        ],
+        "debug_menu_items": [
+          { "title": "Advance day", "action": "advance_day" },
+          { "title": "Unlock all critters", "action": "unlock_critters" }
+        ],
+        "preview_prompt": "small toast notification 'Lucky!'"
+      }
+    }
+  }
+}

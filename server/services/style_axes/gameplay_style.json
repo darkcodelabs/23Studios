@@ -1,0 +1,25 @@
+{
+  "id": "gameplay_style",
+  "display_name": "Gameplay style",
+  "description": "The camera and movement paradigm. Drives scene composition, sprite proportions, and tilemap layout.",
+  "prompt_template": "Given this style guide:\n{style_guide}\nAnd this pacing pick:\n{prior_picks.pacing_style}\n\nGenerate {count} distinct gameplay style options. Each must be a viable approach for a Playdate game (400x240, 1-bit, 30fps default).\nConsider:\n- Camera angle: top_down | isometric | side_scroll | first_person | fixed_screen | mode_7 | vertical_scroll\n- Movement: grid | free_2d | on_rails | click_to_move | physics\n- Scale: room | single_screen | world_map\n\nEach option MUST differ from the others by camera angle.\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the gameplay option below per the user feedback. Keep it Playdate-appropriate (1-bit, 400x240, 30fps). Adjust camera, movement, scale, sprite/tile size recommendations, or rationale as needed.",
+  "option_schema": {
+    "id": "string",
+    "name": "string (e.g. 'Top-down Zelda-like')",
+    "camera": "enum: top_down | isometric | side_scroll | first_person | fixed_screen | mode_7 | vertical_scroll",
+    "movement": "enum: grid | free_2d | on_rails | click_to_move | physics",
+    "scale": "enum: room | single_screen | world_map",
+    "rationale": "string — why this fits the style guide",
+    "references": "array of strings — other games using this style",
+    "sprite_size_recommendation": { "w": "int", "h": "int" },
+    "tile_size_recommendation": { "w": "int", "h": "int" },
+    "preview_prompt": "string — the image gen prompt for a mockup of this style"
+  },
+  "option_count": 5,
+  "preview_kind": "image",
+  "preview_renderer": "render_gameplay_mockup",
+  "storage_key": "asset_library/styles/gameplay_style/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["story", "scene_bursts", "scene_lua"]
+}

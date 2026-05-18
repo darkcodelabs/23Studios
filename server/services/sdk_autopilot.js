@@ -28,6 +28,7 @@ const musicLib = require('./music_library');
 const claude = require('./claude');
 const spec = require('./playdate_spec');
 const assembly = require('./sdk_prompt_assembly');
+const assetLibrary = require('./asset_library');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -143,6 +144,7 @@ function safeParseJson(text) {
 async function runBrainstorm({ pitch, claudeCtx, storyBible, intake }) {
   const sys = assembly.assembleSystemPrompt({
     stageId: 'brainstorm',
+    activePicks: claudeCtx.activePicks,
     storyBible,
     vars: { intake: intake || {} },
     extras: 'You are a Playdate game design consultant. Keep it punchy and concrete.'
@@ -173,6 +175,7 @@ function backfillStoryScene(scene, idx, total) {
 async function runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake }) {
   const sys = assembly.assembleSystemPrompt({
     stageId: 'story',
+    activePicks: claudeCtx.activePicks,
     storyBible,
     vars: { intake: intake || { scene_count: 8, minigame_count: 2 } },
     extras: 'You output STRICT JSON only. No prose outside the JSON block.'
@@ -200,6 +203,7 @@ No markdown fences in your response.`,
 async function runCharacters({ pitch, story, claudeCtx, storyBible, intake }) {
   const sys = assembly.assembleSystemPrompt({
     stageId: 'characters',
+    activePicks: claudeCtx.activePicks,
     storyBible,
     vars: { intake: intake || {} },
     extras: 'You output STRICT JSON only.'
@@ -234,14 +238,16 @@ character's visual_anchor string verbatim.`,
 // Build the image prompt for one scene using section 7's visual lock. The
 // stage augment text + bible + universal directive are concatenated for
 // pulp_ai.generateScene; the JS layer adds the specific scene's vars.
-function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars }) {
+function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars, activePicks }) {
   const styleRefHint = scene.style_reference
     ? ` Match the silhouette + dither density of HAKCD's ${scene.style_reference} reference scene.`
     : '';
   const sys = assembly.assembleSystemPrompt({
     stageId: 'scene_bursts',
+    activePicks: claudeCtx.activePicks,
     storyBible,
-    vars: { intake: intake || {}, bible: bibleVars || {}, scene }
+    vars: { intake: intake || {}, bible: bibleVars || {}, scene },
+    activePicks
   });
   // pulp_ai.generateScene takes a single prompt string; we collapse the
   // system block into a leading style brief, then end with the concrete
@@ -256,7 +262,7 @@ function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars }) {
 
 // Generate each scene's 400x240 background PNG via pulp_ai.generateScene.
 async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
-                                storyBible, intake, bibleVars }) {
+                                storyBible, intake, bibleVars, activePicks }) {
   const scenes = sdk.scenes || [];
   for (let i = 0; i < scenes.length; i++) {
     if (job && job.cancelled) break;
@@ -269,7 +275,7 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
     }
     try {
       const { brief } = buildSceneBurstPrompt({
-        scene: s, storyBible, intake, bibleVars
+        scene: s, storyBible, intake, bibleVars, activePicks
       });
       const r = await pulpAi.generateScene({ prompt: brief, dim: [400, 240] });
       if (!r.pngBuffer) throw new Error('no png returned');
@@ -315,7 +321,7 @@ async function tryReferenceFallback(scene, destPng, ev) {
   }
 }
 
-async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job,
+async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job, activePicks,
                                    storyBible, intake, bibleVars }) {
   for (let i = 0; i < characters.length; i++) {
     if (job && job.cancelled) break;
@@ -388,6 +394,7 @@ async function runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake,
     if (featureIds.length) {
       const sys = assembly.assembleSystemPrompt({
         stageId: 'scene_lua',
+    activePicks: claudeCtx.activePicks,
         storyBible,
         vars: {
           intake: intake || {},
@@ -452,6 +459,7 @@ async function runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
   try {
     const sys = assembly.assembleSystemPrompt({
       stageId: 'sfx',
+    activePicks: claudeCtx.activePicks,
       storyBible,
       vars: { intake: intake || {}, bible: bibleVars || {} },
       extras: 'You output STRICT JSON only.'
@@ -491,6 +499,7 @@ async function runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
   try {
     const sys = assembly.assembleSystemPrompt({
       stageId: 'music',
+    activePicks: claudeCtx.activePicks,
       storyBible,
       vars: { intake: intake || {}, bible: bibleVars || {} },
       extras: 'You output STRICT JSON only.'
@@ -540,6 +549,7 @@ async function runLauncher({ sdkRoot, sdk, claudeCtx, storyBible, intake,
 
   const sys = assembly.assembleSystemPrompt({
     stageId: 'launcher',
+    activePicks: claudeCtx.activePicks,
     storyBible,
     vars: { intake: intake || {}, bible: bibleVars || {} },
     extras: 'You output STRICT JSON only.'
@@ -635,6 +645,20 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       const ctx = { project_name: project.name, theme: '', description: pitch };
       const claudeCtx = { projectId: project.id, cwd: project.local_path };
 
+      // Phase 3: load active style picks from the asset library and attach to
+      // claudeCtx so every run* below can inject them into the system prompt.
+      // Empty {} if no picks yet (project hasn't been through the picker).
+      try {
+        claudeCtx.activePicks = await assetLibrary.getActivePicksWithSpecs(project.id);
+        const pickCount = Object.keys(claudeCtx.activePicks || {}).length;
+        if (pickCount > 0) {
+          ev('log', { text: 'asset_library: ' + pickCount + ' active style picks loaded' });
+        }
+      } catch (e) {
+        ev('log', { text: 'asset_library: load failed (' + e.message + '); proceeding without picks' });
+        claudeCtx.activePicks = {};
+      }
+
       // Pull intake + bible vars out of sdk.json / story_bible.md so the
       // assembleSystemPrompt() {placeholders} resolve. sdk.intake is set
       // by the intake form route; if missing, defaults are sane.
@@ -666,12 +690,12 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
 
       ev('phase', { id: 'scene_bursts' });
       await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
-                             storyBible, intake, bibleVars });
+                             storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'portrait_bursts' });
       await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters,
-                                 emit: ev, job, storyBible, intake, bibleVars });
+                                 emit: ev, job, storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'scene_lua' });

@@ -70,6 +70,7 @@ async function request(method, url, body, opts = {}) {
 export const api = {
   get: (url, opts) => request('GET', url, null, opts),
   post: (url, body, opts) => request('POST', url, body, opts),
+  put: (url, body, opts) => request('PUT', url, body, opts),
   patch: (url, body, opts) => request('PATCH', url, body, opts),
   del: (url, opts) => request('DELETE', url, null, opts)
 };

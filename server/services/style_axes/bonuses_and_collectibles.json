@@ -1,0 +1,24 @@
+{
+  "id": "bonuses_and_collectibles",
+  "display_name": "Bonuses and collectibles",
+  "description": "Hidden items, achievements, unlockables. NEVER ship placeholder bonus art — playdate_validator.isPlaceholder* rejects at import.",
+  "prompt_template": "Given these prior picks:\n  pacing_style: {prior_picks.pacing_style}\n  story_summary: {prior_picks.story_summary}\n\nGenerate {count} bonus system options covering:\n- Collectible kind: hidden_items | achievements | lore_fragments | alt_endings | photo_mode_unlocks\n- Tracking: per_scene_count | total_count | named_set\n- Reward: cosmetic_unlock | gameplay_unlock | ending_change | just_completion\n- Discovery hint: none | subtle_visual | audio_cue | on_screen_marker\n- estimated_count: integer total of collectibles across the game\n- spawn_pattern: free-form string describing distribution ('one_per_scene', 'three_per_minigame', 'narrative_gated')\n\nReturn a JSON array of exactly {count} options matching option_schema.",
+  "refinement_prompt": "Revise the bonus system option below per the user feedback. Keep estimated_count consistent with spawn_pattern.",
+  "option_schema": {
+    "id": "string",
+    "name": "string",
+    "kind": "enum: hidden_items | achievements | lore_fragments | alt_endings | photo_mode_unlocks",
+    "tracking": "enum: per_scene_count | total_count | named_set",
+    "reward": "enum: cosmetic_unlock | gameplay_unlock | ending_change | just_completion",
+    "hint": "enum: none | subtle_visual | audio_cue | on_screen_marker",
+    "estimated_count": "int",
+    "spawn_pattern": "string",
+    "preview_prompt": "string"
+  },
+  "option_count": 3,
+  "preview_kind": "text",
+  "preview_renderer": "render_bonus_system",
+  "storage_key": "asset_library/styles/bonuses_and_collectibles/",
+  "reuse_scope": "project",
+  "consumed_by_stages": ["story", "scene_lua", "launcher"]
+}

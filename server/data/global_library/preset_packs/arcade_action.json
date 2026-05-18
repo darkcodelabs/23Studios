@@ -1,0 +1,200 @@
+{
+  "id": "arcade_action",
+  "display_name": "Arcade Action",
+  "description": "Quarter-eating wave defense + high score. Single screen, no dialog, fast feedback. Galaga + Robotron.",
+  "axis_picks": {
+    "pacing_style": {
+      "name": "Quarter run",
+      "spec": {
+        "name": "Quarter run",
+        "session_target_min": 5,
+        "scene_density": "dense_minigames",
+        "tension_curve": "rising",
+        "time_pressure": "omnipresent",
+        "recommended_minigame_count": 10,
+        "recommended_dialog_scene_count": 0,
+        "preview_prompt": "3-5 minute runs, immediate restart, leaderboard chase"
+      }
+    },
+    "gameplay_style": {
+      "name": "Fixed-screen wave defense",
+      "spec": {
+        "name": "Fixed-screen wave defense",
+        "camera": "fixed_screen",
+        "movement": "free_2d",
+        "scale": "single_screen",
+        "rationale": "Classic single-screen arena; waves of enemies until death",
+        "references": ["Galaga", "Robotron", "Geometry Wars"],
+        "sprite_size_recommendation": { "w": 16, "h": 16 },
+        "tile_size_recommendation": { "w": 0, "h": 0 },
+        "preview_prompt": "1-bit single-screen arena, ship at bottom, enemies descending"
+      }
+    },
+    "character_style": {
+      "name": "Geometric ship",
+      "spec": {
+        "name": "Geometric ship",
+        "silhouette": "geometric",
+        "portrait_treatment": "no_portrait",
+        "walk_cycle_frames": 1,
+        "detail_level": "minimal",
+        "face_dither": "none",
+        "sprite_dimensions": { "w": 16, "h": 16 },
+        "portrait_dimensions": { "w": 0, "h": 0 },
+        "preview_prompt": "1-bit triangular spaceship sprite"
+      }
+    },
+    "minigame_style": {
+      "name": "Wave defense",
+      "spec": {
+        "name": "Wave defense",
+        "recipe_kit_id": "wave_defense",
+        "custom_recipe_spec": null,
+        "difficulty_curve": "stepped",
+        "failure_handling": "restart",
+        "scoring": "continuous",
+        "estimated_session_seconds": 300,
+        "preview_prompt": "wave 5 boss visible"
+      }
+    },
+    "menu_style": {
+      "name": "Title + leaderboard",
+      "spec": {
+        "name": "Title + leaderboard",
+        "layout": "paged_cards",
+        "selection_input": "dpad",
+        "visual_treatment": "text_only",
+        "confirm_pattern": "A_to_select",
+        "uses_gridview": false,
+        "uses_crank": false,
+        "nine_slice_panel": false,
+        "preview_prompt": "title screen with paged leaderboard scroll"
+      }
+    },
+    "dialog_style": {
+      "name": "Score popups only",
+      "spec": {
+        "name": "Score popups only",
+        "text_speed": "instant",
+        "portrait_position": "none",
+        "portrait_kind": "static",
+        "box_style": "no_box",
+        "choice_display": "horizontal_list",
+        "advance_input": "A",
+        "font": "custom_pixel",
+        "uses_nine_slice": false,
+        "uses_blip_synth": false,
+        "preview_prompt": "'WAVE 5' banner top, '+1000' floating up over enemy"
+      }
+    },
+    "animation_style": {
+      "name": "Snappy with shake",
+      "spec": {
+        "name": "Snappy with shake",
+        "default_frame_ms": 100,
+        "default_easing": "linear",
+        "transition": "cut",
+        "idle_behavior": "still",
+        "hit_reaction": "shake",
+        "uses_setOffset_for_shake": true,
+        "uses_setMosaic_for_transitions": false,
+        "uses_vcrPauseFilterImage": false,
+        "preview_lua_template": "playdate.display.setOffset(math.random(-3,3), math.random(-3,3))"
+      }
+    },
+    "transition_style": {
+      "name": "Instant cut",
+      "spec": {
+        "name": "Instant cut",
+        "technique": "cut",
+        "duration_ms": 0,
+        "audio_behavior": "music_continues",
+        "loading_mask": "black_screen",
+        "lua_implementation": "scene_manager.replace(target_scene, args)",
+        "uses_setMosaic": false,
+        "uses_setInverted": false,
+        "uses_stencil_image": false,
+        "preview_prompt": "instant transition between waves"
+      }
+    },
+    "hud_style": {
+      "name": "Corners with score + lives",
+      "spec": {
+        "name": "Corners with score + lives",
+        "presence": "always_on",
+        "position": "corners",
+        "density": "dense",
+        "treatment": "text_only",
+        "shows": ["score", "lives", "wave", "multiplier"],
+        "preview_prompt": "TL: score, TR: high, BL: lives, BR: wave"
+      }
+    },
+    "audio_style": {
+      "name": "Chiptune all synth",
+      "spec": {
+        "name": "Chiptune all synth",
+        "music_palette": "chiptune",
+        "sfx_palette": "synth_only",
+        "mix_philosophy": "sfx_driven",
+        "reactive_intensity": "heavy",
+        "effects_chain": "dry",
+        "default_synth_shapes": ["kWaveSquare", "kWaveNoise"],
+        "preview_prompt": "square wave melody with white-noise explosions"
+      }
+    },
+    "save_style": {
+      "name": "High scores only",
+      "spec": {
+        "name": "High scores only",
+        "trigger": "gameWillTerminate_only",
+        "slot_count": 1,
+        "saves_screenshot": false,
+        "indicator": "none",
+        "scenes_with_save_points": [],
+        "lua_implementation": "playdate.datastore.write({high_scores=scores}, 'save')"
+      }
+    },
+    "hardware_menu_style": {
+      "name": "Restart + Sound + Pause",
+      "spec": {
+        "name": "Restart + Sound + Pause",
+        "menu_items": [
+          { "slot": 1, "kind": "action", "title": "Restart", "action_or_options": "fn_restart" },
+          { "slot": 2, "kind": "checkmark", "title": "Sound", "action_or_options": true },
+          { "slot": 3, "kind": "action", "title": "Title", "action_or_options": "fn_quit_to_title" }
+        ],
+        "pause_image_intent": "Stylized PAUSED text with leaderboard preview",
+        "pause_image_prompt": "1-bit large PAUSED text with mini leaderboard, 400x240 left half",
+        "lock_behavior": "save_only",
+        "auto_lock_disabled_scenes": ["play"]
+      }
+    },
+    "bonuses_and_collectibles": {
+      "name": "Achievement unlocks",
+      "spec": {
+        "name": "Achievement unlocks",
+        "kind": "achievements",
+        "tracking": "named_set",
+        "reward": "cosmetic_unlock",
+        "hint": "on_screen_marker",
+        "estimated_count": 12,
+        "spawn_pattern": "score_gated",
+        "preview_prompt": "small badge unlock toast 'NEW: x10 multiplier'"
+      }
+    },
+    "cheats_and_debug": {
+      "name": "Classic Konami easter egg",
+      "spec": {
+        "name": "Classic Konami easter egg",
+        "cheats": [
+          { "combo": "up,up,down,down,left,right,left,right,b,a", "effect": "extra_lives_30", "mode": "release_easter_egg" }
+        ],
+        "debug_menu_items": [
+          { "title": "Wave skip", "action": "skip_wave" },
+          { "title": "Invuln", "action": "toggle_invuln" }
+        ],
+        "preview_prompt": "small '+30 LIVES!' toast"
+      }
+    }
+  }
+}
