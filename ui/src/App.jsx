@@ -8,6 +8,7 @@ export const useAuth = () => useContext(AuthCtx);
 function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(false);
+  const [authDisabled, setAuthDisabled] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -19,6 +20,7 @@ function AuthProvider({ children }) {
       } else {
         setAuthed(false);
       }
+      setAuthDisabled(!!me.anon);
     } catch (_e) {
       setAuthed(false);
     } finally {
@@ -46,18 +48,28 @@ function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthCtx.Provider value={{ loading, authed, login, logout, refresh }}>
+    <AuthCtx.Provider value={{ loading, authed, authDisabled, login, logout, refresh }}>
       {children}
     </AuthCtx.Provider>
   );
 }
 
+// When the server has STUDIO_AUTH_DISABLED, never render the login page —
+// every visit to /login bounces straight to the dashboard.
+function LoginOrBounce({ Login }) {
+  const { authDisabled, loading } = useAuth();
+  if (loading) return <div className="h-screen w-screen flex items-center justify-center text-ink-400 text-sm">loading…</div>;
+  if (authDisabled) return <Navigate to="/dashboard" replace />;
+  return <Login />;
+}
+
 function RequireAuth({ children }) {
-  const { loading, authed } = useAuth();
+  const { loading, authed, authDisabled } = useAuth();
   const loc = useLocation();
   if (loading) {
     return <div className="h-screen w-screen flex items-center justify-center text-ink-400 text-sm">loading…</div>;
   }
+  if (authDisabled) return children;
   if (!authed) return <Navigate to="/login" state={{ from: loc.pathname }} replace />;
   return children;
 }
@@ -87,7 +99,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
         <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
