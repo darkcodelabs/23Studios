@@ -1,14 +1,14 @@
--- sdk_runtime_lua/scene_manager.lua
--- Ported from HAKCD source/systems/scene_manager.lua.
--- Stack-based scene manager. push / pop / replace.
---
--- Scene lifecycle (all optional):
+-- systems/scene_manager.lua
+-- Stack-based scene manager. push / pop / replace. Lifecycle:
 --   :init(args)   one-time when constructed
 --   :enter()      becomes top of stack
 --   :exit()       leaves top of stack
---   :update(dt)   every frame while on top
+--   :update()     every frame while on top
 --   :draw()       every frame while on top, after :update()
---   :input(evt)   optional input handler
+--   :input(evt)   optional, fed by main loop / input_buffer
+--
+-- Rules per docs/DESIGN_RULES.md: every full-screen draw queries
+-- systems.chrome_theme.get_inset() so PwnGlove chrome stays global.
 
 local M = {}
 
@@ -36,7 +36,9 @@ end
 function M.replace(scene, args)
     local cur = top()
     callIf(cur, "exit")
-    if cur ~= nil then table.remove(stack, #stack) end
+    if cur ~= nil then
+        table.remove(stack, #stack)
+    end
     callIf(scene, "init", args)
     callIf(scene, "enter")
     table.insert(stack, scene)
@@ -50,12 +52,25 @@ function M.pop()
     callIf(top(), "enter")
 end
 
-function M.current() return top() end
-function M.depth()   return #stack end
+function M.current()
+    return top()
+end
 
-function M.update(dt) callIf(top(), "update", dt) end
-function M.draw()     callIf(top(), "draw")        end
-function M.input(evt) callIf(top(), "input", evt)  end
+function M.depth()
+    return #stack
+end
+
+function M.update()
+    callIf(top(), "update")
+end
+
+function M.draw()
+    callIf(top(), "draw")
+end
+
+function M.input(evt)
+    callIf(top(), "input", evt)
+end
 
 _G.scene_manager = M
 return M
