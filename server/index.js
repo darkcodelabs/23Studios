@@ -26,6 +26,12 @@ const pulpExportRouter = require('./routes/pulp_export');
 const pulpWorkflowRouter = require('./routes/pulp_workflow');
 const pulpAutopilotRouter = require('./routes/pulp_autopilot');
 const sdkAutopilotRouter = require('./routes/sdk_autopilot');
+const stylesRouter = require('./routes/styles');
+const assetLibraryRouter = require('./routes/asset_library');
+const lateAddRouter = require('./routes/late_add');
+const npcRouter = require('./routes/npc');
+const levelsRouter = require('./routes/levels');
+const minigamesRouter = require('./routes/minigames');
 const openrouterRouter = require('./routes/openrouter');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
@@ -136,6 +142,14 @@ app.use('/api/projects', pulpExportRouter);
 app.use('/api/projects', pulpWorkflowRouter);
 app.use('/api/projects', pulpAutopilotRouter);
 app.use('/api/projects', sdkAutopilotRouter);
+// Phase 3 routers. styles + asset_library + late_add + npc + levels + minigames
+// mix /api/styles top-level + /api/projects/:id/... endpoints, so all mount at /api.
+app.use('/api', stylesRouter);
+app.use('/api', assetLibraryRouter);
+app.use('/api', lateAddRouter);
+app.use('/api', npcRouter);
+app.use('/api', levelsRouter);
+app.use('/api', minigamesRouter);
 app.use('/api/openrouter', openrouterRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
