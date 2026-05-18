@@ -104,23 +104,33 @@ function tilePrefix(name, type, ctx) {
   const id = String((ctx && ctx.id) || '').toLowerCase();
   let context;
   if (id.startsWith('coin_') || lower.includes('coin')) {
-    // CRITICAL: previous prompts produced dense-black silhouette discs that
-    // collapse to all-black at 16x16. Demand WHITE background + thin black
-    // outline of a small simple icon, subject covering AT MOST 60% of frame.
-    context = 'tile is a single SMALL ICON on a pure WHITE background. ' +
-              'Subject occupies AT MOST 60% of the frame, centered. ' +
-              'Style: thin 1-2 pixel black outline of a coin/token/badge shape with ' +
-              'a tiny symbol or word inside. NOT a solid black disc. NOT engraved metal. ' +
-              'Think arcade token outline drawing on a white field';
+    // Per playdate-dev skill: subject fills frame, reads clearly at thumbnail
+    // size, bold silhouette. White bg + thick black outline + INTERIOR DETAIL
+    // with negative space so the downsample doesn't collapse to solid black.
+    // Target ~30-50% black coverage so Bayer dither preserves silhouette.
+    context = 'tile is a BOLD HIGH-CONTRAST iconographic coin/token/badge that ' +
+              'FILLS the frame edge-to-edge with margin only at corners. ' +
+              'Pure WHITE background. Subject is a coin face with a chunky 2-pixel ' +
+              'black OUTLINE only; interior is mostly WHITE with one or two thick ' +
+              'BLACK accent shapes (letter, symbol, or icon). ' +
+              'Target ~30-50% black pixel coverage. Read clearly at 16x16. ' +
+              'NEVER a solid black disc. Think Mario coin: outlined circle with ' +
+              'an internal bold letter or symbol, not engraved metal';
   } else if (id.startsWith('nfo_') || lower.includes('nfo')) {
-    context = 'tile is a single SMALL ICON of a text file / document / floppy disk / scroll, ' +
-              'drawn as a thin black OUTLINE on a pure WHITE background. ' +
-              'Subject occupies AT MOST 60% of the frame, centered. ' +
-              'NOT solid black. NOT a screenshot of dense text. Simple line-art icon only';
+    context = 'tile is a BOLD HIGH-CONTRAST iconographic document/file/scroll/disk ' +
+              'icon that FILLS the frame. Pure WHITE background. Chunky 2-pixel ' +
+              'black OUTLINE of the shape. Interior shows 2-3 thick horizontal ' +
+              'lines or a single accent symbol. Mostly WHITE interior with ' +
+              'minimal black ink so the silhouette reads at 16x16. ' +
+              'Target ~30-40% black pixel coverage. NEVER a screenshot of dense ' +
+              'text. Think classic Mac System 7 document icon';
   } else if (id.startsWith('tool_') || lower.includes('tool')) {
-    context = 'tile is a single SMALL ICON of a hacker tool (key, wrench, USB stick, ' +
-              'phreak box, glove) drawn as a thin black outline on a pure WHITE background. ' +
-              'Subject occupies AT MOST 60% of the frame. Detailed silhouette OK but not solid black';
+    context = 'tile is a BOLD iconographic hacker tool (key, wrench, USB stick, ' +
+              'phreak box, glove) FILLING the frame edge-to-edge. ' +
+              'Pure WHITE background. Chunky 2-pixel black OUTLINE of the tool ' +
+              'silhouette. Interior should be mostly WHITE with selective black ' +
+              'detail strokes. Target ~30-50% black coverage. ' +
+              'Read clearly at 16x16. Think SNES inventory icon, not photo';
   } else if (type === 'sprite') {
     context = 'tile is a portrait icon, head-and-shoulders silhouette';
   } else if (type === 'item') {
