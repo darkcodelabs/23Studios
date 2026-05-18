@@ -250,16 +250,9 @@
 
 :root[data-theme="playdate"] .focus-within\:ring-ink-700:focus-within { --tw-ring-color: rgb(123 92 231 / 0.4); }
 
-/* The StudioLogo PNG is gold-on-transparent (black plate stripped
- * earlier). On white bg the gold traces float and read as scattered
- * orange specks — that's the "inverted-looking" image the user saw.
- * Give it a dark backdrop in the Playdate theme so it reads as
- * gold-on-black like the original intent. */
-:root[data-theme="playdate"] img[src*="studio-logo"] {
-  background: #1a1a25;
-  border-radius: 8px;
-  padding: 4px;
-}
+/* No backdrop wrap on the logo — user wants TRUE transparent PNG. The
+ * 2.4 MB lg variant was also resized to 600w (384 KB) so the dashboard
+ * hero loads fast. */
 
 /* Hover-tint utility classes on the ghost btn need a light-mode pair too.
  * Default hover:bg-ink-800/60 reads as 'darken' on dark themes; on the
