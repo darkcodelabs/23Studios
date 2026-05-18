@@ -6,7 +6,7 @@
  *   - /api/* and /ws/*: ALWAYS network, never cached (auth + CSRF + live data).
  * Bump CACHE_VERSION on every breaking change.
  */
-const CACHE_VERSION = 'v14-2026-05-18-playdate-light';
+const CACHE_VERSION = 'v15-2026-05-18-playdate-opacity-fix';
 const SHELL_CACHE = `studio-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `studio-assets-${CACHE_VERSION}`;
 
