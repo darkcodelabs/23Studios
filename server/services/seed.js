@@ -21,6 +21,12 @@ const HAKCD = {
 };
 
 async function seedDefaults() {
+  // Default-project auto-seed disabled. The studio used to inject the
+  // HAKCD reference project on first boot of an empty registry, but
+  // users have wiped + don't want it back automatically. Re-enable by
+  // setting STUDIO_SEED_DEFAULTS=1 in the env if the original behavior
+  // is wanted.
+  if (process.env.STUDIO_SEED_DEFAULTS !== '1') return false;
   const seed = [];
   if (fs.existsSync(HAKCD.local_path)) {
     seed.push(HAKCD);
