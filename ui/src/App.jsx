@@ -85,6 +85,7 @@ import PulpScripts from './pages/PulpScripts.jsx';
 import PulpSounds from './pages/PulpSounds.jsx';
 import PulpExport from './pages/PulpExport.jsx';
 import PulpPlay from './pages/PulpPlay.jsx';
+import PulpPlayPage from './pages/PulpPlayPage.jsx';
 import PulpEditor from './pages/PulpEditor.jsx';
 
 function PulpComingSoon({ name }) {
@@ -105,6 +106,7 @@ export default function App() {
         <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
         <Route path="/project/:id/files" element={<RequireAuth><Project /></RequireAuth>} />
         <Route path="/project/:id/edit" element={<RequireAuth><PulpEditor /></RequireAuth>} />
+        <Route path="/project/:id/play" element={<RequireAuth><PulpPlayPage /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />

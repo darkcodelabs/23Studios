@@ -1,0 +1,7 @@
+name=Cyber Glove Sprite Starter
+author=DarkCode
+description=1-bit cyber glove sprite reference project
+bundleID=ai.darkcode.cyberglove
+version=0.1.0
+buildNumber=1
+imagePath=launcher

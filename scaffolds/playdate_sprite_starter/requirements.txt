@@ -1,0 +1,7 @@
+# No Python deps required to run this Playdate project.
+# Optional helpers for asset workflow (install only if you want them):
+#
+#   pillow>=10.0    # quick 1-bit conversion + sprite-sheet splitting
+#   pypng>=0.20231128
+#
+# Install with: pip install -r requirements.txt
