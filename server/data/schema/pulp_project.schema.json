@@ -157,7 +157,9 @@
         },
         "script": { "type": "string", "maxLength": 1024 },
         "background_image": { "type": "string", "maxLength": 256 },
-        "scene_meta": { "$ref": "#/$defs/SceneMeta" }
+        "scene_meta": { "$ref": "#/$defs/SceneMeta" },
+        "bgm_file": { "type": "string", "maxLength": 256 },
+        "bgm_track_id": { "type": "string", "maxLength": 128 }
       }
     },
     "SceneMeta": {

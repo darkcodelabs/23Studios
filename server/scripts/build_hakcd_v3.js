@@ -180,11 +180,35 @@ async function main() {
   });
   log('autopilot stream closed');
 
-  log('-- step 5: patrol --regen for stragglers --');
+  log('-- step 4b: drop in HAKCD extras (23 coins + 47 NFOs + 9 tools as stubs) --');
   try {
-    await runChild('node', ['scripts/patrol_cli.js', projectId, '--regen']);
+    const extrasSrc = '/tmp/hakcd2_extras.js';
+    const extrasDst = `/tmp/build_v3_extras_${projectId}.js`;
+    if (fs.existsSync(extrasSrc)) {
+      const src = fs.readFileSync(extrasSrc, 'utf8')
+        .replace(/const PROJECT_ID = '[^']+'/, `const PROJECT_ID = '${projectId}'`)
+        .replace(/const LOG = '[^']+'/, `const LOG = '/tmp/build_v3_extras_${projectId}.log'`)
+        .replace(/const PROMPTS = '[^']+'/, `const PROMPTS = '/tmp/build_v3_extras_${projectId}_prompts.jsonl'`);
+      fs.writeFileSync(extrasDst, src);
+      await runChild('node', [extrasDst]);
+    } else {
+      log('extras source missing at ' + extrasSrc + '; skipping');
+    }
   } catch (e) {
-    log('patrol stragglers (non-fatal): ' + (e.code || e.message));
+    log('extras (non-fatal): ' + (e.code || e.message));
+  }
+
+  log('-- step 5: patrol --regen --force for ALL tiles (apply silhouette-first prompts) --');
+  try {
+    await runChild('node', ['scripts/patrol_cli.js', projectId, '--regen', '--force', '--kind=tile']);
+  } catch (e) {
+    log('patrol force-regen (non-fatal): ' + (e.code || e.message));
+  }
+  log('-- step 5b: patrol --regen for scenes + characters (placeholders only) --');
+  try {
+    await runChild('node', ['scripts/patrol_cli.js', projectId, '--regen', '--kind=scene,character']);
+  } catch (e) {
+    log('patrol scenes/chars (non-fatal): ' + (e.code || e.message));
   }
 
   log('-- step 6: drop baseline procedural SFX --');
@@ -210,7 +234,7 @@ async function main() {
     log('sfx out: could not resolve project path; skipping');
   }
 
-  log('-- step 7: attempt pdx export --');
+  log('-- step 7: attempt pdx export + wait + download --');
   try {
     const exp = await req({
       method: 'POST',
@@ -218,7 +242,46 @@ async function main() {
       headers,
       body: {}
     });
-    log('export status=' + exp.status + ' body=' + JSON.stringify(exp.body).slice(0, 300));
+    log('export start status=' + exp.status + ' body=' + JSON.stringify(exp.body).slice(0, 300));
+    const dl = exp.body && exp.body.download_url;
+    if (dl) {
+      // Poll the download endpoint; it 404s while building, 200s on success,
+      // 500/4xx on failure. Total budget: 10 min.
+      const deadline = Date.now() + 10 * 60 * 1000;
+      const outFile = `/tmp/hakcd3_${projectId}.pdx.tar`;
+      let done = false;
+      while (Date.now() < deadline) {
+        const r = await req({ method: 'GET', url: STUDIO + dl, headers });
+        if (r.status === 200) {
+          // Body came back as parsed text/JSON above; refetch as binary stream.
+          await new Promise((resolve, reject) => {
+            const u = new URL(STUDIO + dl);
+            const lib = require('http');
+            const r2 = lib.request({
+              method: 'GET', hostname: u.hostname, port: u.port,
+              path: u.pathname + u.search, headers
+            }, (res) => {
+              const f = fs.createWriteStream(outFile);
+              res.pipe(f);
+              f.on('finish', () => f.close(resolve));
+            });
+            r2.on('error', reject);
+            r2.end();
+          });
+          const sz = fs.statSync(outFile).size;
+          log(`export DOWNLOADED: ${outFile} (${sz} bytes)`);
+          done = true;
+          break;
+        } else if (r.status === 202 || r.status === 404) {
+          // still building or job not yet registered
+          await new Promise((res) => setTimeout(res, 4000));
+        } else {
+          log(`export poll status=${r.status} body=${JSON.stringify(r.body).slice(0, 200)}`);
+          await new Promise((res) => setTimeout(res, 4000));
+        }
+      }
+      if (!done) log('export timeout (10 min); job may still be running');
+    }
   } catch (e) {
     log('export FAIL (likely OOM): ' + e.message);
   }
