@@ -47,9 +47,17 @@ function sendMessage({ projectId, cwd, text, onChunk, onDone, onError }) {
     onError(new Error('invalid cwd'));
     return null;
   }
-  if (typeof text !== 'string' || text.length === 0 || text.length > 10000) {
+  // Claude Code happily accepts long stdin; cap at 200KB so workflow stage
+  // builders that include prior-stage JSON + project context don't tip over.
+  // Truncate-with-marker beats hard-reject so callers get a useful response
+  // instead of a black hole at stage 3 of 9.
+  if (typeof text !== 'string' || text.length === 0) {
     onError(new Error('invalid text'));
     return null;
+  }
+  const MAX_TEXT = 200000;
+  if (text.length > MAX_TEXT) {
+    text = text.slice(0, MAX_TEXT - 80) + '\n\n[... context truncated at 200 KB for subprocess input ...]';
   }
 
   const args = ['-p'];

@@ -83,6 +83,12 @@ function validatePulpId(id) {
   return null;
 }
 
+// Optional-string check: empty string treated as "not provided".
+function isOptionalString(v, max) {
+  if (v === undefined || v === null || v === '') return true;
+  return isPlainString(v, max);
+}
+
 function validateProjectCreate(input) {
   const errors = [];
   const push = (e) => { if (e) errors.push(e); };
@@ -95,18 +101,10 @@ function validateProjectCreate(input) {
   push(validateStatus(input.status));
   push(validateGameType(input.game_type));
   if (!isPlainString(input.name, 200)) errors.push('name is required (max 200)');
-  if (input.description !== undefined && !isPlainString(input.description, 1000)) {
-    errors.push('description must be string up to 1000 chars');
-  }
-  if (input.publisher !== undefined && !isPlainString(input.publisher, 200)) {
-    errors.push('publisher must be string up to 200 chars');
-  }
-  if (input.developer !== undefined && !isPlainString(input.developer, 200)) {
-    errors.push('developer must be string up to 200 chars');
-  }
-  if (input.captures_dir !== undefined && !isPlainString(input.captures_dir, 512)) {
-    errors.push('captures_dir must be string up to 512 chars');
-  }
+  if (!isOptionalString(input.description, 1000)) errors.push('description must be string up to 1000 chars');
+  if (!isOptionalString(input.publisher,   200))  errors.push('publisher must be string up to 200 chars');
+  if (!isOptionalString(input.developer,   200))  errors.push('developer must be string up to 200 chars');
+  if (!isOptionalString(input.captures_dir, 512)) errors.push('captures_dir must be string up to 512 chars');
   return errors;
 }
 
@@ -120,13 +118,11 @@ function validateProjectPatch(input) {
   if (input.preflight_command !== undefined) push(validateCommand(input.preflight_command, 'preflight_command'));
   if (input.status !== undefined) push(validateStatus(input.status));
   if (input.game_type !== undefined) push(validateGameType(input.game_type));
-  if (input.name !== undefined && !isPlainString(input.name, 200)) errors.push('name must be string up to 200');
-  if (input.description !== undefined && input.description !== null && !isPlainString(input.description, 1000)) {
-    errors.push('description must be string up to 1000 chars');
-  }
-  if (input.publisher !== undefined && !isPlainString(input.publisher, 200)) errors.push('publisher must be string up to 200');
-  if (input.developer !== undefined && !isPlainString(input.developer, 200)) errors.push('developer must be string up to 200');
-  if (input.captures_dir !== undefined && !isPlainString(input.captures_dir, 512)) errors.push('captures_dir must be string up to 512');
+  if (input.name        !== undefined && !isOptionalString(input.name, 200))         errors.push('name must be string up to 200');
+  if (input.description !== undefined && !isOptionalString(input.description, 1000)) errors.push('description must be string up to 1000 chars');
+  if (input.publisher   !== undefined && !isOptionalString(input.publisher, 200))    errors.push('publisher must be string up to 200');
+  if (input.developer   !== undefined && !isOptionalString(input.developer, 200))    errors.push('developer must be string up to 200');
+  if (input.captures_dir!== undefined && !isOptionalString(input.captures_dir, 512)) errors.push('captures_dir must be string up to 512');
   return errors;
 }
 
