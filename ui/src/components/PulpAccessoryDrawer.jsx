@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import FileTree from './FileTree.jsx';
 import FileViewer from './FileViewer.jsx';
 import ChatPanel from './ChatPanel.jsx';
+import PulpCoveragePanel from './PulpCoveragePanel.jsx';
 
 const MIN_PX = 160;
 const MAX_PX = 720;
@@ -48,9 +49,10 @@ export default function PulpAccessoryDrawer({ kind, project, onClose }) {
         </button>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">
-        {kind === 'files' ? <FilesPanel project={project} /> : null}
-        {kind === 'logs'  ? <LogsPanel project={project} /> : null}
-        {kind === 'chat'  ? <ChatPanel project={project} model={null} /> : null}
+        {kind === 'files'    ? <FilesPanel project={project} /> : null}
+        {kind === 'logs'     ? <LogsPanel project={project} /> : null}
+        {kind === 'chat'     ? <ChatPanel project={project} model={null} /> : null}
+        {kind === 'coverage' ? <PulpCoveragePanel project={project} /> : null}
       </div>
     </div>
   );

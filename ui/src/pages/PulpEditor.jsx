@@ -25,7 +25,7 @@ export default function PulpEditor() {
   const [project, setProject] = useState(null);
   const [err, setErr] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
-  const [drawer, setDrawer] = useState(null);  // 'files' | 'logs' | 'chat' | null
+  const [drawer, setDrawer] = useState(null);  // 'files' | 'logs' | 'chat' | 'coverage' | null
   const [workflow, setWorkflow] = useState(null);
   const [compactHidden, setCompactHidden] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -94,7 +94,7 @@ export default function PulpEditor() {
         document.execCommand?.('redo');
         return;
       case 'play':
-        selectTab('play');
+        navigate(`/project/${id}/play`);
         return;
       case 'pdx':
         selectTab('export');
@@ -137,7 +137,12 @@ export default function PulpEditor() {
       <PulpWorkflowContext.Provider value={{ workflow, setWorkflow }}>
         <div className="h-screen flex flex-col bg-ink-900">
           <div className="relative">
-            <PulpHeaderBar project={project} aiOpen={aiOpen} onToggleAi={() => setAiOpen((v) => !v)} />
+            <PulpHeaderBar
+              project={project}
+              aiOpen={aiOpen}
+              onToggleAi={() => setAiOpen((v) => !v)}
+              onOpenCoverage={() => setDrawer('coverage')}
+            />
             {project ? (
               <div className="absolute top-1.5 right-[8.5rem] z-10">
                 {/* small rocket → opens the autopilot modal */}
