@@ -621,6 +621,24 @@ async function runExport(job, project, onEvent) {
     log(onEvent, `rendered ${renderedCharSheets} character imagetable(s) of ${characters.length} character(s)`);
   }
 
+  // Step 5b: copy procedural SFX baseline (HAKCD's 6 default WAVs) if the
+  // autopilot generated them. Lands under source/sounds/ so audio_manager
+  // can resolve them via play_sfx(name).
+  const baselineSrc = path.join(project.local_path || '', 'pulp_data', 'sfx_baseline');
+  if (project.local_path && fs.existsSync(baselineSrc)) {
+    let baselineCopied = 0;
+    for (const f of fs.readdirSync(baselineSrc)) {
+      if (!/\.wav$/i.test(f)) continue;
+      try {
+        await fsp.copyFile(path.join(baselineSrc, f), path.join(soundsDir, f));
+        baselineCopied++;
+      } catch (e) {
+        log(onEvent, `skip sfx ${f}: ${e.message}`);
+      }
+    }
+    if (baselineCopied) log(onEvent, `copied ${baselineCopied} procedural sfx wav(s)`);
+  }
+
   // Step 6: emit transpiled scripts
   progress(onEvent, 'transpile', 60, 'writing per-script lua');
   if (trans.game && trans.game.lua) {
