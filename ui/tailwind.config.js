@@ -17,7 +17,9 @@ export default {
           900: '#0d0f15',
           950: '#08090d'
         },
-        accent: '#9dffce'
+        // CSS variable so themes can override at runtime via
+        // document.documentElement.style.setProperty('--accent', '#xxx')
+        accent: 'var(--accent, #9dffce)'
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],

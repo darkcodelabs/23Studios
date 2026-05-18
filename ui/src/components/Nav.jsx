@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../App.jsx';
 import StudioLogo from './StudioLogo.jsx';
+import ThemePicker from './ThemePicker.jsx';
 import { useSiderail } from '../lib/use_siderail.js';
 
 // Shared top header. Hosts:
@@ -53,6 +54,7 @@ export default function Nav({ subtitle, showSiderailToggle = true }) {
           </>
         ) : null}
         <div className="flex-1" />
+        <ThemePicker />
         <button onClick={onLogout} className="btn-icon" title="log out" aria-label="log out">
           <LogOut className="w-4 h-4" />
         </button>

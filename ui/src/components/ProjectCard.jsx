@@ -114,7 +114,7 @@ function SdkActions({ project }) {
         <a
           href={build.download_url}
           className="btn text-xs"
-          download={`${project.id}.pdx.tar`}
+          download={`${project.id}.pdx.zip`}
           onClick={(e) => e.stopPropagation()}
           title={`download ${formatBytesMB(build.cached_tar_bytes)}`}
         >

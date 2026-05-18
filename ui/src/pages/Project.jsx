@@ -168,7 +168,7 @@ function SdkBuildBar({ project }) {
       {ready ? (
         <a
           href={build.download_url}
-          download={`${project.id}.pdx.tar`}
+          download={`${project.id}.pdx.zip`}
           className="btn text-xs"
           title={`download ${formatBytes(build.cached_tar_bytes)} pdx tarball`}
         >
