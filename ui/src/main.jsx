@@ -21,3 +21,12 @@ root.render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// PWA service worker. Dev hot-reload + SW caching conflict, so prod only.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register(`${APP_BASE}/sw.js`, { scope: `${APP_BASE}/` })
+      .catch((err) => console.warn('SW registration failed:', err));
+  });
+}

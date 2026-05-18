@@ -1,0 +1,19 @@
+{
+  "name": "23 Studios",
+  "short_name": "23 Studios",
+  "description": "Game production pipeline for DarkCode LLC — 1-bit Playdate studio with autopilot.",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0d0f15",
+  "theme_color": "#9dffce",
+  "categories": ["productivity", "developer", "games"],
+  "icons": [
+    { "src": "icons/icon-192.png",          "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png",          "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/apple-touch-icon.png",  "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
