@@ -176,6 +176,9 @@ async function startExport({ projectId, onEvent }) {
                        scenesAssetsDir, charactersDir, soundsDir, scenesScriptsDir]) {
         await fsp.mkdir(d, { recursive: true });
       }
+      // Stamp the stage dir with the project id so getJobsByProject() can
+      // recover after a server restart.
+      await fsp.writeFile(path.join(stageRoot, '.project_id'), projectId);
 
       progress(onEvent, 'runtime', 20, 'copying sdk runtime');
       await copyDir(RUNTIME_DIR, runtimeDir);
@@ -294,8 +297,49 @@ function safeIdent(s) {
   return String(s || 'scene').replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
 }
 
-function getJob(id) { return _jobs.get(id) || null; }
+function getJob(id) {
+  if (_jobs.has(id)) return _jobs.get(id);
+  // Cold-load: scan ROOT_BUILD_DIR/<id> for an already-completed pdx that
+  // a previous process produced. The in-memory map is cleared on restart;
+  // the disk artifact persists, so we synthesize a 'done' job entry.
+  const stageRoot = path.join(ROOT_BUILD_DIR, id);
+  if (!fs.existsSync(stageRoot)) return null;
+  const buildDir = path.join(stageRoot, 'build');
+  if (!fs.existsSync(buildDir)) return null;
+  for (const f of fs.readdirSync(buildDir)) {
+    if (f.endsWith('.pdx')) {
+      const full = path.join(buildDir, f);
+      const synthesized = {
+        id, project_id: null, status: 'done',
+        started_at: fs.statSync(stageRoot).mtimeMs,
+        stage_dir: stageRoot, out_pdx: full,
+        recovered: true
+      };
+      _jobs.set(id, synthesized);
+      return synthesized;
+    }
+  }
+  return null;
+}
+
 function getJobsByProject(pid) {
+  // Hydrate the in-memory map from any stage dirs on disk first. Each
+  // build lives at ROOT_BUILD_DIR/<jobId> and its game_data.lua names
+  // the project (no — actually only pdxinfo names it, which is just the
+  // display name). Track project_id via a `.project_id` file we drop at
+  // export time so we don't have to parse pdxinfo here.
+  if (fs.existsSync(ROOT_BUILD_DIR)) {
+    for (const jobDir of fs.readdirSync(ROOT_BUILD_DIR)) {
+      if (_jobs.has(jobDir)) continue;
+      const stamp = path.join(ROOT_BUILD_DIR, jobDir, '.project_id');
+      if (!fs.existsSync(stamp)) continue;
+      try {
+        const onDisk = fs.readFileSync(stamp, 'utf8').trim();
+        const j = getJob(jobDir);
+        if (j) j.project_id = onDisk;
+      } catch (_e) { /* swallow */ }
+    }
+  }
   const out = [];
   for (const j of _jobs.values()) if (j.project_id === pid) out.push(j);
   return out;
