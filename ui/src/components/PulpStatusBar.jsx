@@ -1,10 +1,11 @@
-import { FolderTree, ScrollText, MessageSquare, ShieldCheck } from 'lucide-react';
+import { FolderTree, ScrollText, MessageSquare, ShieldCheck, Music2 } from 'lucide-react';
 
 const TRIGGERS = [
   { id: 'files',    label: 'files',    icon: FolderTree },
   { id: 'logs',     label: 'logs',     icon: ScrollText },
   { id: 'chat',     label: 'chat',     icon: MessageSquare },
-  { id: 'coverage', label: 'coverage', icon: ShieldCheck }
+  { id: 'coverage', label: 'coverage', icon: ShieldCheck },
+  { id: 'music',    label: 'music',    icon: Music2 }
 ];
 
 export default function PulpStatusBar({ activeDrawer, onOpenDrawer, project }) {

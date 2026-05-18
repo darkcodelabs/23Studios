@@ -152,4 +152,101 @@ router.post('/:id/pulp/patrol/regen', async (req, res) => {
   }
 });
 
+// ----- Music: stream a rendered WAV for in-browser preview -----
+// Path is intentionally narrow: only files inside the project's
+// pulp_data/scene_music/ dir, only .wav, no traversal.
+router.get('/:id/pulp/music/track/:name', async (req, res) => {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const projectsSvc = require('../services/projects');
+    const project = await projectsSvc.getProject(req.params.id);
+    if (!project || !project.local_path) return res.status(404).end();
+    const name = String(req.params.name || '');
+    if (!/^[A-Za-z0-9._-]{1,256}\.wav$/.test(name)) {
+      return res.status(400).json({ error: 'bad_name' });
+    }
+    const full = path.join(project.local_path, 'pulp_data', 'scene_music', name);
+    if (!full.startsWith(path.join(project.local_path, 'pulp_data', 'scene_music'))) {
+      return res.status(400).json({ error: 'traversal' });
+    }
+    if (!fs.existsSync(full)) return res.status(404).end();
+    res.setHeader('Content-Type', 'audio/wav');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    fs.createReadStream(full).pipe(res);
+  } catch (e) { sendErr(res, e); }
+});
+
+// ----- Music: list per-room assignments -----
+router.get('/:id/pulp/music', async (req, res) => {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const projectsSvc = require('../services/projects');
+    const project = await projectsSvc.getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: 'not_found' });
+    const { project: pulpFile } = await pulp.readPulp(req.params.id);
+    const rooms = Array.isArray(pulpFile.rooms) ? pulpFile.rooms : [];
+    const manifestPath = project.local_path
+      ? path.join(project.local_path, 'pulp_data', 'scene_music', 'manifest.json')
+      : null;
+    let manifest = null;
+    if (manifestPath && fs.existsSync(manifestPath)) {
+      try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); }
+      catch (_e) { manifest = null; }
+    }
+    const library = (manifest && Array.isArray(manifest.tracks)) ? manifest.tracks : [];
+    const assignments = rooms.map((r) => ({
+      room_id: r.id,
+      room_name: r.name || r.id,
+      bgm_file: r.bgm_file || null,
+      bgm_track_id: r.bgm_track_id || null,
+      track: r.bgm_track_id ? (library.find((t) => t.id === r.bgm_track_id) || null) : null
+    }));
+    const counts = {
+      total_rooms: rooms.length,
+      assigned: assignments.filter((a) => a.bgm_track_id).length,
+      library_size: library.length
+    };
+    res.json({ counts, assignments, library_manifest_path: manifestPath || null });
+  } catch (e) { sendErr(res, e); }
+});
+
+// ----- Music: re-assign (round-robin avoidance) -----
+router.post('/:id/pulp/music/assign', async (req, res) => {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const projectsSvc = require('../services/projects');
+    const musicLib = require('../services/music_library');
+    const project = await projectsSvc.getProject(req.params.id);
+    if (!project || !project.local_path) {
+      return res.status(404).json({ error: 'not_found' });
+    }
+    const { project: pulpFile } = await pulp.readPulp(req.params.id);
+    const rooms = Array.isArray(pulpFile.rooms) ? pulpFile.rooms : [];
+    const destDir = path.join(project.local_path, 'pulp_data', 'scene_music');
+    if (!fs.existsSync(path.join(destDir, 'manifest.json'))) {
+      return res.status(409).json({ error: 'music_not_seeded',
+        detail: 'run autopilot music_assign or POST /pulp/music/seed first' });
+    }
+    const manifest = JSON.parse(fs.readFileSync(path.join(destDir, 'manifest.json'), 'utf8'));
+    const library = manifest.tracks || [];
+    const used = new Set();
+    const out = [];
+    for (const room of rooms) {
+      const pick = musicLib.pickForScene({ library, scene: room, used });
+      if (!pick.trackId) continue;
+      used.add(pick.trackId);
+      const track = library.find((t) => t.id === pick.trackId);
+      const bgmFile = 'sounds/' + path.basename(track.wav);
+      await pulp.patchRoom(req.params.id, room.id, {
+        bgm_file: bgmFile, bgm_track_id: track.id
+      });
+      out.push({ room_id: room.id, track_id: track.id, bgm_file: bgmFile });
+    }
+    res.json({ assigned: out.length, total: rooms.length, assignments: out });
+  } catch (e) { sendErr(res, e); }
+});
+
 module.exports = router;

@@ -4,6 +4,7 @@ import FileTree from './FileTree.jsx';
 import FileViewer from './FileViewer.jsx';
 import ChatPanel from './ChatPanel.jsx';
 import PulpCoveragePanel from './PulpCoveragePanel.jsx';
+import PulpMusicPanel from './PulpMusicPanel.jsx';
 
 const MIN_PX = 160;
 const MAX_PX = 720;
@@ -53,6 +54,7 @@ export default function PulpAccessoryDrawer({ kind, project, onClose }) {
         {kind === 'logs'     ? <LogsPanel project={project} /> : null}
         {kind === 'chat'     ? <ChatPanel project={project} model={null} /> : null}
         {kind === 'coverage' ? <PulpCoveragePanel project={project} /> : null}
+        {kind === 'music'    ? <PulpMusicPanel project={project} /> : null}
       </div>
     </div>
   );
