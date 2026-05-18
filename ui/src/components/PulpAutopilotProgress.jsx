@@ -2,13 +2,19 @@ import { safeErr } from '../lib/format_err.js';
 import { useEffect, useRef, useState } from 'react';
 import {
   Loader2, CheckCircle2, AlertTriangle, Circle, X,
-  Image as ImageIcon, Music2, Map as MapIcon, Rocket
+  Image as ImageIcon, Music2, Map as MapIcon, Rocket, Eye
 } from 'lucide-react';
 import {
   runAutopilot, cancel as cancelAutopilot, AUTOPILOT_STAGES
 } from '../lib/pulp_autopilot_client.js';
+import PulpPreviewGallery from './PulpPreviewGallery.jsx';
+import PulpAssetThumb from './PulpAssetThumb.jsx';
+import {
+  listTiles, listSounds, listSongs, listRooms, KIND_TO_TAB
+} from '../lib/pulp_preview_client.js';
 
 const MAX_LOG_LINES = 200;
+const MAX_LIVE_THUMBS = 24;
 
 // Render the live SSE feed. Owns its own AbortController + state.
 // Props:
@@ -17,7 +23,7 @@ const MAX_LOG_LINES = 200;
 //   model?: string
 //   onClose(): called when the user clicks close or after auto-close
 //   onDone({summary}): optional callback
-export default function PulpAutopilotProgress({ projectId, pitch, model, onClose, onDone }) {
+export default function PulpAutopilotProgress({ projectId, pitch, model, onClose, onDone, onJumpTab }) {
   const [stages, setStages] = useState(() => initialStages());
   const [counters, setCounters] = useState({ tile: 0, scene: 0, sound: 0,
     tile_total: 0, scene_total: 0, sound_total: 0 });
@@ -26,8 +32,14 @@ export default function PulpAutopilotProgress({ projectId, pitch, model, onClose
   const [summary, setSummary] = useState(null);
   const [stageErrors, setStageErrors] = useState({});
   const [autoClose, setAutoClose] = useState(false);
+  // Live-wall: capped queue of thumbs hydrated lazily as asset events arrive.
+  // Each entry is { kind, id, ts, asset|null } — asset is filled in by a
+  // background fetch keyed off (kind, id) so the thumb can render its real
+  // pixels/scene/spec instead of just a placeholder.
+  const [liveThumbs, setLiveThumbs] = useState([]);
   const ctrlRef = useRef(null);
   const logRef = useRef(null);
+  const hydrateRef = useRef(new Set()); // dedupe in-flight hydrations
 
   useEffect(() => {
     if (!projectId || !pitch) return;
@@ -75,6 +87,7 @@ export default function PulpAutopilotProgress({ projectId, pitch, model, onClose
           }));
         }
         pushLog(`+ ${kind}: ${id} (${count_so_far}/${total_planned || '?'})`);
+        pushLiveThumb({ kind, id });
       },
       onError: ({ message, stage, recoverable }) => {
         const msg = safeErr(message) || 'error';
@@ -115,6 +128,51 @@ export default function PulpAutopilotProgress({ projectId, pitch, model, onClose
       if (next.length > MAX_LOG_LINES) next.splice(0, next.length - MAX_LOG_LINES);
       return next;
     });
+  }
+
+  function pushLiveThumb({ kind, id }) {
+    if (!kind || !id) return;
+    setLiveThumbs((prev) => {
+      // dedupe: drop any earlier entry for the same id so re-emits float to top
+      const filtered = prev.filter((t) => !(t.kind === kind && t.id === id));
+      const next = [{ kind, id, ts: Date.now(), asset: null }, ...filtered];
+      if (next.length > MAX_LIVE_THUMBS) next.length = MAX_LIVE_THUMBS;
+      return next;
+    });
+    hydrateLiveThumb(kind, id);
+  }
+
+  async function hydrateLiveThumb(kind, id) {
+    const key = `${kind}:${id}`;
+    if (hydrateRef.current.has(key)) return;
+    hydrateRef.current.add(key);
+    try {
+      let list = [];
+      if (kind === 'tile')        list = await listTiles(projectId);
+      else if (kind === 'scene')  list = await listRooms(projectId);
+      else if (kind === 'sound')  list = await listSounds(projectId);
+      else if (kind === 'song')   list = await listSongs(projectId);
+      const found = list.find((x) => x.id === id);
+      if (!found) return;
+      setLiveThumbs((prev) => prev.map((t) =>
+        t.kind === kind && t.id === id ? { ...t, asset: found } : t
+      ));
+    } finally {
+      hydrateRef.current.delete(key);
+    }
+  }
+
+  function jumpToFullGallery() {
+    onClose?.();
+    onJumpTab?.('preview');
+  }
+
+  function jumpToAsset(kind, asset) {
+    const tab = KIND_TO_TAB[kind];
+    if (tab && onJumpTab) {
+      onClose?.();
+      onJumpTab(tab, asset?.id);
+    }
   }
 
   async function onCancel() {
@@ -177,6 +235,54 @@ export default function PulpAutopilotProgress({ projectId, pitch, model, onClose
         />
       </div>
 
+      {/* Live wall — newest asset thumbs as they stream in */}
+      {liveThumbs.length > 0 ? (
+        <div className="border border-ink-700 rounded bg-ink-900/60 p-2">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Eye className="w-3 h-3 text-accent" />
+            <span className="text-[10px] uppercase tracking-wide text-ink-400 font-mono">
+              live wall
+            </span>
+            <span className="text-[10px] text-ink-500 font-mono">
+              {liveThumbs.length} most recent
+            </span>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={jumpToFullGallery}
+              className="text-[10px] font-mono text-ink-300 hover:text-accent px-1.5 py-0.5 border border-ink-700 hover:border-accent rounded"
+            >
+              view full gallery
+            </button>
+          </div>
+          <div className="grid gap-1.5"
+               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))' }}>
+            {liveThumbs.map((t) => (
+              t.asset ? (
+                <PulpAssetThumb
+                  key={`${t.kind}:${t.id}`}
+                  kind={t.kind}
+                  projectId={projectId}
+                  asset={t.asset}
+                  size={48}
+                  onClick={jumpToAsset}
+                />
+              ) : (
+                <div
+                  key={`${t.kind}:${t.id}`}
+                  title={`${t.kind} ${t.id} — loading`}
+                  className="flex flex-col items-center justify-center bg-ink-950 border border-ink-700 rounded text-ink-500 text-[9px] font-mono"
+                  style={{ width: 56, height: 56 }}
+                >
+                  <Loader2 className="w-3 h-3 animate-spin mb-0.5" />
+                  {t.kind}
+                </div>
+              )
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {/* Log tail */}
       <div
         ref={logRef}
@@ -199,6 +305,9 @@ export default function PulpAutopilotProgress({ projectId, pitch, model, onClose
             close automatically and open editor
           </label>
           <div className="flex-1" />
+          <button type="button" className="btn text-xs" onClick={jumpToFullGallery}>
+            <Eye className="w-3 h-3" /> view full gallery
+          </button>
           <button type="button" className="btn-primary text-xs" onClick={onClose}>
             open editor
           </button>

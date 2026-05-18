@@ -7,6 +7,7 @@ import PulpSounds from '../pages/PulpSounds.jsx';
 import PulpPlay from '../pages/PulpPlay.jsx';
 import PulpExport from '../pages/PulpExport.jsx';
 import PulpWorkflow from '../pages/PulpWorkflow.jsx';
+import PulpPreview from '../pages/PulpPreview.jsx';
 
 // Song + sound currently share PulpSounds (it has internal SFX/Songs tabs).
 // PulpEditor passes a hint via the `activeTab` prop so the page can default
@@ -17,6 +18,7 @@ function SoundOrSong({ kind }) {
 
 const TAB_COMPONENTS = {
   workflow: (props) => <PulpWorkflow onJumpTab={props.onJumpTab} />,
+  preview: (props) => <PulpPreview onJumpTab={props.onJumpTab} />,
   game:   () => <PulpGameTab />,
   font:   () => <PulpFontTab />,
   room:   () => <PulpRooms />,

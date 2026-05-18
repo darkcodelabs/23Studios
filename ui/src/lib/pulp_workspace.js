@@ -18,7 +18,7 @@ export function useWorkflow() {
   return useContext(PulpWorkflowContext);
 }
 
-export const TAB_IDS = ['workflow', 'game', 'font', 'room', 'tile', 'song', 'sound', 'script', 'play', 'export'];
+export const TAB_IDS = ['workflow', 'preview', 'game', 'font', 'room', 'tile', 'song', 'sound', 'script', 'play', 'export'];
 export const DEFAULT_TAB = 'workflow';
 
 export function tabFromUrl(search) {

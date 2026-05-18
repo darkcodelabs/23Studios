@@ -22,6 +22,18 @@ export default function PulpAutopilotButton({
   const [phase, setPhase] = useState('idle'); // 'idle' | 'running'
   const [pitch, setPitch] = useState(defaultPitch);
   const [model] = useState(''); // reserved; default model
+  const navigate = useNavigate();
+
+  // Used by the live-wall and "view full gallery" button: jump to a tab inside
+  // the editor by mutating the URL (?tab=...&focus=...). Works whether the
+  // button is hosted in the editor shell or somewhere else.
+  function onJumpTab(tabId, assetId) {
+    if (!project?.id) return;
+    const params = new URLSearchParams();
+    params.set('tab', tabId);
+    if (assetId) params.set('focus', assetId);
+    navigate(`/project/${project.id}/edit?${params.toString()}`);
+  }
 
   function startModal() { setOpen(true); setPhase('idle'); setPitch(defaultPitch); }
   function closeModal() { setOpen(false); setPhase('idle'); onClose?.(); }
@@ -70,6 +82,7 @@ export default function PulpAutopilotButton({
                 model={model || undefined}
                 onClose={closeModal}
                 onDone={onDone}
+                onJumpTab={onJumpTab}
               />
             )}
           </div>
