@@ -5,6 +5,7 @@ const fs = require('fs');
 const fsp = require('fs/promises');
 const express = require('express');
 const projects = require('../services/projects');
+const intakeForm = require('../services/intake_form');
 const { validateProjectCreate, validateProjectPatch, validateId } = require('../services/validation');
 
 const router = express.Router();
@@ -94,6 +95,86 @@ router.post('/quick', async (req, res, next) => {
     }
     const created = await projects.createProject(input);
     res.status(201).json({ project: created });
+  } catch (e) {
+    if (e && e.status === 409) return res.status(409).json({ error: e.code || 'conflict' });
+    next(e);
+  }
+});
+
+// POST /api/projects/intake
+// Body: full intake form payload (section 1 of docs/23studios_intake_prompt.md).
+// Only `pitch` is required. Blank string/list fields are filled by a single
+// Claude inference pass; enums and numbers fall through to schema defaults.
+// Side effects on success:
+//   - <local_path>/sdk_data/intake.yaml  (final filled form)
+//   - <local_path>/sdk_data/story_bible.md  (section 2 template, substituted)
+//   - project record created via projects.createProject (game_type='sdk')
+router.post('/intake', async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const pitch = typeof body.pitch === 'string' ? body.pitch.trim() : '';
+    if (!pitch) return res.status(400).json({ error: 'bad_request', detail: 'pitch required' });
+    if (pitch.length > 4000) return res.status(400).json({ error: 'bad_request', detail: 'pitch too long' });
+
+    const baseSlug = slugifyPitch(pitch);
+    const suffix = Date.now().toString(36).slice(-5);
+    const id = `${baseSlug}-${suffix}`.slice(0, 48);
+
+    const scratchRoot = path.join(dataDir(), 'scratch_projects');
+    await fsp.mkdir(scratchRoot, { recursive: true, mode: 0o700 });
+    const localPath = path.join(scratchRoot, id);
+    await fsp.mkdir(localPath, { recursive: true, mode: 0o700 });
+    const gitMarker = path.join(localPath, '.git');
+    if (!fs.existsSync(gitMarker)) {
+      await fsp.mkdir(gitMarker, { recursive: true, mode: 0o700 });
+    }
+    await fsp.mkdir(path.join(localPath, 'pulp_data'), { recursive: true, mode: 0o700 });
+    await fsp.mkdir(path.join(localPath, 'sdk_data'), { recursive: true, mode: 0o700 });
+
+    // Write the raw user intake first so the inference call has a recoverable
+    // audit trail even if the LLM step blows up.
+    const rawIntake = intakeForm.normalizeIntake(body);
+    rawIntake.pitch = pitch;
+    await intakeForm.writeIntake(localPath, rawIntake);
+
+    // Inference fill. claude.sendMessage requires the project's cwd to exist
+    // and a safe id — both already true at this point.
+    const { intake: filled, fields_inferred, fields_provided } = await intakeForm.inferMissingFields({
+      intake: rawIntake,
+      claudeCtx: { projectId: id, cwd: localPath }
+    });
+
+    // Persist the FINAL filled intake (overwrites the raw stub above) +
+    // render the story bible from the filled values.
+    await intakeForm.writeIntake(localPath, filled);
+    const name = (typeof body.name === 'string' && body.name.trim()) || pitch.slice(0, 80) || id;
+    const bibleMd = intakeForm.renderStoryBible(filled, name);
+    await intakeForm.writeStoryBible(localPath, bibleMd);
+
+    const input = {
+      id,
+      name,
+      description: pitch.slice(0, 1000),
+      repo: 'https://github.com/local/scratch.git',
+      local_path: localPath,
+      platform: 'playdate',
+      publisher: '23 Studios',
+      developer: '23 Studios',
+      build_command: '',
+      preflight_command: '',
+      captures_dir: '',
+      status: 'active',
+      game_type: 'sdk'
+    };
+    const errors = validateProjectCreate(input);
+    if (errors.length) {
+      return res.status(400).json({ error: 'validation_failed', detail: errors });
+    }
+    const created = await projects.createProject(input);
+    res.status(201).json({
+      project: created,
+      intake_summary: { fields_provided, fields_inferred }
+    });
   } catch (e) {
     if (e && e.status === 409) return res.status(409).json({ error: e.code || 'conflict' });
     next(e);

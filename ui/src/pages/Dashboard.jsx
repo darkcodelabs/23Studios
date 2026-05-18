@@ -9,6 +9,7 @@ import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import ProjectForm from '../components/ProjectForm.jsx';
+import IntakeForm from '../components/IntakeForm.jsx';
 import StudioLogo from '../components/StudioLogo.jsx';
 import PulpAutopilotProgress from '../components/PulpAutopilotProgress.jsx';
 import { api } from '../lib/api.js';
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [projects, setProjects] = useState(null);
   const [err, setErr] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showIntake, setShowIntake] = useState(false);
   const { collapsed } = useSiderail();
 
   const load = useCallback(async () => {
@@ -60,11 +62,12 @@ export default function Dashboard() {
 
         <main className="flex-1 min-w-0 overflow-y-auto">
           <div className="max-w-4xl mx-auto w-full px-6 py-8 space-y-8">
-            <MakeAGameCard onCreated={(p) => {
-              // Land directly in the workflow tab; autopilot keeps streaming as a
-              // background job (server doesn't tie SSE to the editor page).
-              navigate(`/project/${p.id}/edit?tab=workflow`);
-            }} />
+            <MakeAGameCard
+              onCreated={(p) => {
+                navigate(`/project/${p.id}/edit?tab=workflow`);
+              }}
+              onDetailed={() => setShowIntake(true)}
+            />
 
             <section className="space-y-4">
               <div className="flex items-center gap-2">
@@ -105,13 +108,20 @@ export default function Dashboard() {
           onCreated={() => load()}
         />
       ) : null}
+
+      {showIntake ? (
+        <IntakeForm
+          onClose={() => setShowIntake(false)}
+          onCreated={() => load()}
+        />
+      ) : null}
     </div>
   );
 }
 
 // ChatGPT-style composer: a single rounded textarea with the GO button inset
 // on the right. No separate header box. The placeholder carries the prompt.
-function MakeAGameCard({ onCreated }) {
+function MakeAGameCard({ onCreated, onDetailed }) {
   const [pitch, setPitch] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -200,6 +210,15 @@ function MakeAGameCard({ onCreated }) {
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
         </button>
       </form>
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={onDetailed}
+          className="text-xs text-ink-400 hover:text-ink-200 inline-flex items-center gap-1"
+        >
+          Detailed intake <ArrowRight className="w-3 h-3" />
+        </button>
+      </div>
       {err ? <div className="text-xs text-red-400 px-1">{err}</div> : null}
     </section>
   );

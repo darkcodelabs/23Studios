@@ -27,6 +27,7 @@ const sfxSynth = require('./sfx_synth');
 const musicLib = require('./music_library');
 const claude = require('./claude');
 const spec = require('./playdate_spec');
+const assembly = require('./sdk_prompt_assembly');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -54,6 +55,27 @@ function readStoryBible(localPath) {
   // Cap aggressively so each Claude call has room for stage-specific prompt
   // + accumulated prior-stage outputs. The bible itself rarely exceeds 20k.
   return raw.length > 16000 ? raw.slice(0, 16000) + '\n\n[... bible truncated to 16k chars ...]' : raw;
+}
+
+// Extract a small vars bag from the bible markdown so {bible.primary_dither}
+// + similar placeholders in stage augments resolve. Tolerant of missing
+// fields — returns whatever it can parse.
+function parseBibleVars(bible) {
+  const out = {};
+  if (!bible) return out;
+  const pairs = [
+    ['primary_dither',   /Primary dither:\s*([^\n(]+)/i],
+    ['secondary_dither', /Secondary dither:\s*([^\n(]+)/i],
+    ['tertiary_dither',  /Tertiary:\s*([^\n(]+)/i],
+    ['era',              /Era:\s*([^\n]+)/i],
+    ['location',         /Location:\s*([^\n]+)/i],
+    ['vibe',             /Vibe:\s*([^\n]+)/i],
+  ];
+  for (const [k, re] of pairs) {
+    const m = bible.match(re);
+    if (m) out[k] = m[1].trim();
+  }
+  return out;
 }
 
 function bibleSystem(storyBible) {
@@ -118,79 +140,123 @@ function safeParseJson(text) {
   return null;
 }
 
-async function runBrainstorm({ pitch, claudeCtx, storyBible }) {
-  const sys = [
-    'You are a Playdate game design consultant. Keep it punchy and concrete.',
-    bibleSystem(storyBible)
-  ].filter(Boolean).join('\n\n');
+async function runBrainstorm({ pitch, claudeCtx, storyBible, intake }) {
+  const sys = assembly.assembleSystemPrompt({
+    stageId: 'brainstorm',
+    storyBible,
+    vars: { intake: intake || {} },
+    extras: 'You are a Playdate game design consultant. Keep it punchy and concrete.'
+  });
   const text = await askClaude(claudeCtx,
-    'Pitch: ' + pitch + '\n\nFlesh out a one-page brainstorm tied to the story bible above. Genre, hooks, audience, vibe. Plain text, no markdown.',
+    'Pitch: ' + pitch + '\n\nFlesh out a one-page brainstorm tied to the story bible above. Plain text, no markdown.',
     sys
   );
   return { text };
 }
 
-async function runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible }) {
-  const sys = ['You output STRICT JSON only. No prose outside the JSON block.',
-               bibleSystem(storyBible)].filter(Boolean).join('\n\n');
+// Backfill story scene fields added in section 5 (type/mood/music_intent/
+// mechanic_kit/custom_spec/exits) when an older or terse Claude response
+// omits them. Default sensibly so downstream stages do not break.
+function backfillStoryScene(scene, idx, total) {
+  if (!scene || typeof scene !== 'object') return scene;
+  const isTitle = idx === 0;
+  if (!scene.type) scene.type = isTitle ? 'cutscene' : 'explore';
+  if (!scene.mood) scene.mood = isTitle ? 'expectant' : 'neutral';
+  if (!scene.music_intent) scene.music_intent = 'ambient bed, low presence';
+  if (scene.mechanic_kit === undefined) scene.mechanic_kit = null;
+  if (scene.custom_spec === undefined) scene.custom_spec = null;
+  if (!Array.isArray(scene.exits)) scene.exits = [];
+  if (scene.style_reference === undefined) scene.style_reference = null;
+  return scene;
+}
+
+async function runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake }) {
+  const sys = assembly.assembleSystemPrompt({
+    stageId: 'story',
+    storyBible,
+    vars: { intake: intake || { scene_count: 8, minigame_count: 2 } },
+    extras: 'You output STRICT JSON only. No prose outside the JSON block.'
+  });
+  const sceneCount = (intake && intake.scene_count) || 8;
   const text = await askClaude(claudeCtx,
 `Pitch: ${pitch}
 
 Brainstorm: ${brainstorm.text}
 
-Output a JSON object with this shape (no markdown, no commentary):
-{
-  "outline": "3-5 sentence story outline",
-  "startup_scene": "scene_id of the first scene",
-  "scenes": [
-    {
-      "id": "snake_case_id",
-      "name": "Human Name",
-      "description": "What the player sees in the BACKGROUND ONLY. Be concrete about the 1-bit pixel-art environment: architecture, props, lighting, dither pattern. CRITICAL: do NOT describe any human figure, character, player, NPC, or person in the background — the player + NPCs are rendered as separate sprites on top. The background is the EMPTY ROOM / scene only.",
-      "style_reference": "Optional name of a HAKCD reference asset to anchor style: one of bedroom, bbs_chat_close, chat, coins_inventory, haxheadroom_minigame, lockpicking_minigme, lockpicking_target, menu, powerglove_hacking, powerglove_menu, room3, seckc, title, or null."
-    }
-  ]
-}
+Output JSON matching the schema in the stage augment above. Generate
+${sceneCount} scenes total. Include a title scene first. Scene ids +
+names + descriptions MUST come from the story bible's act breakdown.
 
-Generate 5-10 scenes total. Include a title scene first, then 4-9 gameplay scenes. Backgrounds are EMPTY environments only — no characters visible in any scene PNG. Scene ids + names + descriptions MUST come from the story bible's act breakdown.`,
+No markdown fences in your response.`,
     sys
   );
   const parsed = safeParseJson(text);
   if (!parsed) throw new Error('story stage: JSON parse failed');
+  const scenes = Array.isArray(parsed.scenes) ? parsed.scenes : [];
+  parsed.scenes = scenes.map((s, i) => backfillStoryScene(s, i, scenes.length));
   return parsed;
 }
 
-async function runCharacters({ pitch, story, claudeCtx, storyBible }) {
-  const sys = ['You output STRICT JSON only.',
-               bibleSystem(storyBible)].filter(Boolean).join('\n\n');
+async function runCharacters({ pitch, story, claudeCtx, storyBible, intake }) {
+  const sys = assembly.assembleSystemPrompt({
+    stageId: 'characters',
+    storyBible,
+    vars: { intake: intake || {} },
+    extras: 'You output STRICT JSON only.'
+  });
   const text = await askClaude(claudeCtx,
 `Pitch: ${pitch}
 Story outline: ${story.outline}
 Scenes: ${(story.scenes || []).map((s) => s.name).join(', ')}
 
-Output STRICT JSON only:
-{
-  "characters": [
-    {
-      "id": "snake_case_id",
-      "name": "Human Name",
-      "role": "protagonist|antagonist|npc|mentor|ally",
-      "bio": "1-2 sentence character backstory",
-      "portrait_prompt": "Visual description for 1-bit portrait — focus on silhouette + 1-2 defining features"
-    }
-  ]
-}
-
-Generate 3-6 characters. The protagonist + antagonist + mentor MUST match the bible's named cast — do not invent new ones. You may add 1-2 supporting NPCs.`,
+Output JSON matching the schema in the stage augment above. Generate
+3-6 characters. The protagonist + antagonist + mentor MUST match the
+bible's named cast. Every character.portrait_prompt MUST contain the
+character's visual_anchor string verbatim.`,
     sys
   );
   const parsed = safeParseJson(text);
   if (!parsed) throw new Error('characters stage: JSON parse failed');
+  // Backfill visual_anchor if Claude forgot — derive a stable placeholder
+  // from the role so downstream regen + QA pass.
+  for (const c of (parsed.characters || [])) {
+    if (c && !c.visual_anchor) {
+      c.visual_anchor = `${c.role || 'character'} silhouette anchor`;
+    }
+    if (c && c.portrait_prompt && c.visual_anchor
+        && !c.portrait_prompt.includes(c.visual_anchor)) {
+      c.portrait_prompt = `${c.visual_anchor}. ${c.portrait_prompt}`;
+    }
+  }
   return parsed;
 }
 
+// Build the image prompt for one scene using section 7's visual lock. The
+// stage augment text + bible + universal directive are concatenated for
+// pulp_ai.generateScene; the JS layer adds the specific scene's vars.
+function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars }) {
+  const styleRefHint = scene.style_reference
+    ? ` Match the silhouette + dither density of HAKCD's ${scene.style_reference} reference scene.`
+    : '';
+  const sys = assembly.assembleSystemPrompt({
+    stageId: 'scene_bursts',
+    storyBible,
+    vars: { intake: intake || {}, bible: bibleVars || {}, scene }
+  });
+  // pulp_ai.generateScene takes a single prompt string; we collapse the
+  // system block into a leading style brief, then end with the concrete
+  // scene line. The image model gets the visual lock + the scene subject.
+  const brief = `${scene.name}. ${scene.description || ''} ` +
+    `EMPTY scene background — NO human figure, NO player, NO NPC, ` +
+    `NO character visible anywhere in the frame. Architecture, props, ` +
+    `lighting, dither textures only. The sprite layer is composited on ` +
+    `top by the runtime — leave the focal area empty.${styleRefHint}`;
+  return { sys, brief };
+}
+
 // Generate each scene's 400x240 background PNG via pulp_ai.generateScene.
-async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job }) {
+async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
+                                storyBible, intake, bibleVars }) {
   const scenes = sdk.scenes || [];
   for (let i = 0; i < scenes.length; i++) {
     if (job && job.cancelled) break;
@@ -202,25 +268,15 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job }) {
       continue;
     }
     try {
-      // generateScene returns { pngBuffer } (400x240 1-bit, sanitized).
-      // EXPLICIT 'no character' clause — player + NPCs are sprite-layer entities.
-      const styleRefHint = s.style_reference
-        ? ` Match the silhouette + dither density of HAKCD's ${s.style_reference} reference scene.`
-        : '';
-      const promptText = `${s.name}. ${s.description || ''} ` +
-        `IMPORTANT: this is an EMPTY scene background — NO human figure, NO player, ` +
-        `NO NPC, NO character visible anywhere in the frame. Only architecture, ` +
-        `props, lighting, dither textures. The player sprite is rendered on top by ` +
-        `the runtime — leave the floor / focal area empty.${styleRefHint}`;
-      const r = await pulpAi.generateScene({ prompt: promptText, dim: [400, 240] });
+      const { brief } = buildSceneBurstPrompt({
+        scene: s, storyBible, intake, bibleVars
+      });
+      const r = await pulpAi.generateScene({ prompt: brief, dim: [400, 240] });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(destPng, r.pngBuffer);
       ev('asset', { kind: 'scene', id: s.id, bytes: r.pngBuffer.length });
     } catch (e) {
       ev('log', { text: `scene ${s.id} failed: ${e.message}` });
-      // Fallback: if a style_reference is set + AI failed, copy + crop the
-      // reference PNG directly. Loses character-removal benefit but ships
-      // SOMETHING instead of a blank slot.
       if (s.style_reference) {
         await tryReferenceFallback(s, destPng, ev);
       }
@@ -259,7 +315,8 @@ async function tryReferenceFallback(scene, destPng, ev) {
   }
 }
 
-async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job }) {
+async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job,
+                                   storyBible, intake, bibleVars }) {
   for (let i = 0; i < characters.length; i++) {
     if (job && job.cancelled) break;
     const c = characters[i];
@@ -270,10 +327,13 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
       continue;
     }
     try {
-      const r = await pulpAi.generatePortrait({
-        prompt: c.portrait_prompt || `${c.name} — ${c.role}`,
-        dim: 64
-      });
+      // Section 8: visual_anchor must lead. Fall back to portrait_prompt or
+      // a minimal description if either is missing.
+      const anchor = c.visual_anchor || `${c.role || 'character'} anchor`;
+      const promptText = (c.portrait_prompt && c.portrait_prompt.includes(anchor))
+        ? c.portrait_prompt
+        : `${anchor}. ${c.portrait_prompt || (c.name + ' - ' + c.role)}`;
+      const r = await pulpAi.generatePortrait({ prompt: promptText, dim: 64 });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(destPng, r.pngBuffer);
       ev('asset', { kind: 'portrait', id: c.id, bytes: r.pngBuffer.length });
@@ -283,59 +343,135 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
   }
 }
 
-function buildSceneLua(scene) {
-  const id = scene.id;
-  const ident = id.replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
-  return [
-    `-- scenes/${id}.lua — autopilot-generated SDK scene.`,
-    'local gfx <const> = playdate.graphics',
-    '',
-    `local Scene_${ident} = {}`,
-    '',
-    `function Scene_${ident}:init(args) self._spawn = args and args.spawn end`,
-    `function Scene_${ident}:enter()`,
-    `  self._bg = gfx.image.new("assets/scenes/${id}")`,
-    `  if audio_manager and audio_manager.play_music then`,
-    `    audio_manager.play_music("sounds/${id}", { fade_ms = 250 })`,
-    `  end`,
-    `end`,
-    '',
-    `function Scene_${ident}:exit() end`,
-    `function Scene_${ident}:update(dt) end`,
-    '',
-    `function Scene_${ident}:draw()`,
-    `  gfx.clear(gfx.kColorWhite)`,
-    `  if self._bg then self._bg:draw(0, 0) end`,
-    `end`,
-    '',
-    `function Scene_${ident}:input(evt)`,
-    `  -- A: confirm/advance. B: back. autopilot leaves this minimal.`,
-    `  if evt == "a" then`,
-    `    if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("select") end`,
-    `  end`,
-    `end`,
-    '',
-    `return Scene_${ident}`,
-    ''
-  ].join('\n');
+// Heuristic: 3-7 feature ids picked from the manifest, weighted by the
+// scene's description + type. Used when Claude is unavailable or returns
+// an unparseable response. Always returns a stable, runnable set.
+function pickFeaturesHeuristic(scene, manifest) {
+  const desc = String((scene && scene.description) || '').toLowerCase();
+  const type = String((scene && scene.type) || 'explore').toLowerCase();
+  const features = (manifest && manifest.features) || {};
+  const ids = Object.keys(features);
+  if (!ids.length) return [];
+
+  const score = (fid) => {
+    const entry = features[fid] || {};
+    const tags = (entry.tags || []).map((t) => String(t).toLowerCase());
+    let s = 0;
+    if (tags.includes(type)) s += 4;
+    for (const tag of tags) if (desc.includes(tag)) s += 2;
+    if (type === 'dialog' && /dialog|input_button_a|text_box/.test(fid)) s += 3;
+    if (type === 'minigame' && /score|fail|timer|crank|accel/.test(fid)) s += 3;
+    if (type === 'explore' && /sprite|collide|movement/.test(fid)) s += 2;
+    if (/^music_/.test(fid)) s += 1;
+    return s;
+  };
+  ids.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
+  // 3-7 features, biased toward 4-5 for typical scenes.
+  const n = Math.max(3, Math.min(7, Math.round(3 + ids.length / 20)));
+  return ids.slice(0, n);
 }
 
-async function runSceneLua({ sdkRoot, sdk, emit: ev }) {
+async function runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+                             bibleVars, emit: ev, job }) {
+  const manifest = assembly.loadFeatureManifest();
+  const featureIds = manifest && manifest.features
+    ? Object.keys(manifest.features) : [];
+  if (!featureIds.length) {
+    ev('log', { text: 'scene_lua: no feature_manifest.seed.json — using basic template' });
+  }
+
   for (const s of sdk.scenes || []) {
+    if (job && job.cancelled) break;
     if (!s || !s.id) continue;
-    s.lua = buildSceneLua(s);
-    ev('asset', { kind: 'scene_lua', id: s.id, bytes: s.lua.length });
+    let featureSet = [];
+
+    if (featureIds.length) {
+      const sys = assembly.assembleSystemPrompt({
+        stageId: 'scene_lua',
+        storyBible,
+        vars: {
+          intake: intake || {},
+          bible: bibleVars || {},
+          scene: s,
+          feature_manifest_ids: featureIds.join(', ')
+        },
+        extras: 'You output STRICT JSON only.'
+      });
+      try {
+        const text = await askClaude(claudeCtx,
+          `Pick features for scene "${s.id}" (type=${s.type}). Output STRICT JSON per the schema in the augment.`,
+          sys
+        );
+        const parsed = safeParseJson(text);
+        if (parsed && Array.isArray(parsed.feature_set)) {
+          featureSet = parsed.feature_set.filter((id) => featureIds.includes(id));
+        }
+      } catch (e) {
+        ev('log', { text: `scene_lua ${s.id} claude failed: ${e.message}` });
+      }
+      if (!featureSet.length) featureSet = pickFeaturesHeuristic(s, manifest);
+      // Clamp to 3-7.
+      featureSet = featureSet.slice(0, 7);
+      while (featureSet.length < 3 && featureIds.length) {
+        for (const fid of featureIds) {
+          if (!featureSet.includes(fid)) { featureSet.push(fid); break; }
+        }
+        if (featureSet.length >= featureIds.length) break;
+      }
+    }
+
+    // Recipe body from mechanic_kit, if set + ships in manifest.recipes.
+    const kit = s.mechanic_kit;
+    const recipeBody = (kit && manifest && manifest.recipes
+                        && manifest.recipes[kit] && manifest.recipes[kit].body) || '';
+
+    s.feature_set = featureSet;
+    s.lua = assembly.buildSceneLuaFromFeatures(s, featureSet, recipeBody);
+    ev('asset', { kind: 'scene_lua', id: s.id,
+                  bytes: s.lua.length, features: featureSet });
   }
 }
 
-async function runSfxBaseline({ sdkRoot, emit: ev }) {
+// Legacy export kept for tests / external callers — wraps the new path.
+function buildSceneLua(scene) {
+  return assembly.buildSceneLuaFromFeatures(scene, scene.feature_set || [], '');
+}
+
+async function runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+                                bibleVars, emit: ev }) {
+  // Always emit the 6 procedural baselines first — they're deterministic
+  // and the rest of the runtime expects them.
   try {
     const r = sfxSynth.generateBaseline({ destDir: path.join(sdkRoot, 'sfx_baseline') });
     for (const n of Object.keys(r)) ev('asset', { kind: 'sfx', id: n, ms: r[n].ms });
   } catch (e) { ev('log', { text: 'sfx_baseline failed: ' + e.message }); }
+
+  // Ask Claude for the event_map + extra_oneshots per section 10. We
+  // persist the result to sdk.sfx so the export stage can act on it
+  // (synth of extras is wolf-recipes' lane; we just collect the recipes).
+  try {
+    const sys = assembly.assembleSystemPrompt({
+      stageId: 'sfx',
+      storyBible,
+      vars: { intake: intake || {}, bible: bibleVars || {} },
+      extras: 'You output STRICT JSON only.'
+    });
+    const text = await askClaude(claudeCtx,
+      'Pick event_map + extra_oneshots per the schema in the augment above. STRICT JSON.',
+      sys
+    );
+    const parsed = safeParseJson(text);
+    if (parsed) {
+      sdk.sfx = parsed;
+      ev('log', { text: `sfx: event_map ${Object.keys(parsed.event_map || {}).length} + ${(parsed.extra_oneshots || []).length} extras` });
+    }
+  } catch (e) {
+    ev('log', { text: 'sfx claude pass failed (baseline still emitted): ' + e.message });
+  }
 }
 
-async function runMusicAssign({ sdkRoot, sdk, emit: ev }) {
+async function runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+                                bibleVars, emit: ev }) {
   const sourceDir = process.env.MUSIC_SOURCE_DIR
     || '/home/hakcer/projects/personal/hakcd/tools/keygenmusic_scraper/downloads/keygenmusic';
   if (!fs.existsSync(sourceDir)) {
@@ -347,19 +483,119 @@ async function runMusicAssign({ sdkRoot, sdk, emit: ev }) {
   const limit = Math.max(scenes.length + 5, 6);
   const r = await musicLib.seedLocalLibrary({ destDir, sourceDir, limit });
   ev('log', { text: `music library: ${r.manifest.length} tracks` });
+
+  // Ask Claude for per-scene preferred_keywords (section 11). We then feed
+  // those to musicLib.pickForScene to bias selection. If the claude pass
+  // fails we fall straight back to scene description matching.
+  let assignmentMap = {};
+  try {
+    const sys = assembly.assembleSystemPrompt({
+      stageId: 'music',
+      storyBible,
+      vars: { intake: intake || {}, bible: bibleVars || {} },
+      extras: 'You output STRICT JSON only.'
+    });
+    const sceneSummary = scenes.map((s) =>
+      `- ${s.id} (${s.type}, mood=${s.mood}, intent=${s.music_intent})`).join('\n');
+    const text = await askClaude(claudeCtx,
+      `Scenes:\n${sceneSummary}\n\nOutput JSON per the schema in the augment.`,
+      sys
+    );
+    const parsed = safeParseJson(text);
+    if (parsed && Array.isArray(parsed.assignments)) {
+      for (const a of parsed.assignments) {
+        if (a && a.scene_id) assignmentMap[a.scene_id] = a;
+      }
+      ev('log', { text: `music: claude assignments for ${parsed.assignments.length} scenes` });
+    }
+  } catch (e) {
+    ev('log', { text: 'music claude pass failed; using description-only matching: ' + e.message });
+  }
+
   const used = new Set();
   for (const s of scenes) {
-    const pick = musicLib.pickForScene({ library: r.manifest, scene: s, used });
+    const hint = assignmentMap[s.id];
+    const sceneForPick = hint && hint.preferred_keywords
+      ? Object.assign({}, s, { music_keywords: hint.preferred_keywords })
+      : s;
+    const pick = musicLib.pickForScene({ library: r.manifest, scene: sceneForPick, used });
     if (!pick.trackId) continue;
     used.add(pick.trackId);
     const track = r.manifest.find((t) => t.id === pick.trackId);
     s.bgm_track_id = track.id;
     s.bgm_file = 'sounds/' + path.basename(track.wav);
-    // Rename the wav to match scene id so the scene's enter hook resolves.
     const tgt = path.join(destDir, s.id + '.wav');
     try { fs.copyFileSync(track.wav, tgt); } catch (_e) { /* ignore */ }
     ev('asset', { kind: 'bgm', scene_id: s.id, track_id: track.id });
   }
+}
+
+// Section 12 — launcher stage. Asks Claude for card/icon/launchImage image
+// prompts + optional animation.txt, then generates the 3 PNGs at correct
+// dims via pulp_ai.generateScene. Writes them under sdk_data/launcher/.
+async function runLauncher({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+                             bibleVars, emit: ev, job }) {
+  const dest = path.join(sdkRoot, 'launcher');
+  fs.mkdirSync(dest, { recursive: true });
+
+  const sys = assembly.assembleSystemPrompt({
+    stageId: 'launcher',
+    storyBible,
+    vars: { intake: intake || {}, bible: bibleVars || {} },
+    extras: 'You output STRICT JSON only.'
+  });
+  let prompts = null;
+  try {
+    const text = await askClaude(claudeCtx,
+      'Output card/icon/launchImage prompts + optional animation_txt per the schema in the augment. STRICT JSON.',
+      sys
+    );
+    prompts = safeParseJson(text);
+  } catch (e) {
+    ev('log', { text: 'launcher claude pass failed: ' + e.message });
+  }
+  if (!prompts) {
+    // Minimal fallback: derive from title scene description.
+    const title = (sdk.scenes || []).find((s) => s && s.id) || {};
+    prompts = {
+      card_prompt: `${title.name || 'Title'}: ${title.description || ''} 350x155, 1-bit pixel art, pure black and pure white only, launcher card, no anti-aliasing.`,
+      icon_prompt: 'central game glyph silhouette, 32x32, 1-bit, pure black silhouette on pure white, no anti-aliasing.',
+      launch_image_prompt: `${title.name || 'Title'} splash: ${title.description || ''} 400x240, 1-bit pixel art, pure black and pure white only, splash screen, no anti-aliasing.`,
+      animation_txt: null,
+    };
+  }
+
+  const targets = [
+    { name: 'card.png',         prompt: prompts.card_prompt,         dim: [350, 155] },
+    { name: 'icon.png',         prompt: prompts.icon_prompt,         dim: [32, 32] },
+    { name: 'launchImage.png',  prompt: prompts.launch_image_prompt, dim: [400, 240] },
+  ];
+  for (const t of targets) {
+    if (job && job.cancelled) break;
+    const out = path.join(dest, t.name);
+    if (fs.existsSync(out)) {
+      ev('asset', { kind: 'launcher', id: t.name, skipped: 'exists' });
+      continue;
+    }
+    try {
+      const r = await pulpAi.generateScene({ prompt: t.prompt, dim: t.dim });
+      if (!r.pngBuffer) throw new Error('no png returned');
+      await fsp.writeFile(out, r.pngBuffer);
+      ev('asset', { kind: 'launcher', id: t.name, bytes: r.pngBuffer.length });
+    } catch (e) {
+      ev('log', { text: `launcher ${t.name} failed: ${e.message}` });
+    }
+  }
+  if (prompts.animation_txt && typeof prompts.animation_txt === 'string') {
+    try {
+      await fsp.writeFile(path.join(dest, 'animation.txt'), prompts.animation_txt);
+      ev('asset', { kind: 'launcher', id: 'animation.txt',
+                    bytes: prompts.animation_txt.length });
+    } catch (e) {
+      ev('log', { text: 'launcher animation.txt failed: ' + e.message });
+    }
+  }
+  sdk.launcher = { prompts, has_animation: !!prompts.animation_txt };
 }
 
 // --- Public ---
@@ -399,15 +635,21 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       const ctx = { project_name: project.name, theme: '', description: pitch };
       const claudeCtx = { projectId: project.id, cwd: project.local_path };
 
+      // Pull intake + bible vars out of sdk.json / story_bible.md so the
+      // assembleSystemPrompt() {placeholders} resolve. sdk.intake is set
+      // by the intake form route; if missing, defaults are sane.
+      const intake = (sdk && sdk.intake) || {};
+      const bibleVars = parseBibleVars(storyBible);
+
       ev('phase', { id: 'brainstorm' });
-      const brainstorm = await runBrainstorm({ pitch, claudeCtx, storyBible });
+      const brainstorm = await runBrainstorm({ pitch, claudeCtx, storyBible, intake });
       sdk.brainstorm = brainstorm.text;
       await writeSdk(project.local_path, sdk);
       ev('log', { text: 'brainstorm: ' + brainstorm.text.slice(0, 200) + '...' });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'story' });
-      const story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible });
+      const story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake });
       sdk.outline = story.outline;
       sdk.startup_scene = story.startup_scene || (story.scenes && story.scenes[0] && story.scenes[0].id);
       sdk.scenes = story.scenes || [];
@@ -416,31 +658,43 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       job.summary.stages_complete++;
 
       ev('phase', { id: 'characters' });
-      const chars = await runCharacters({ pitch, story, claudeCtx, storyBible });
+      const chars = await runCharacters({ pitch, story, claudeCtx, storyBible, intake });
       sdk.characters = chars.characters || [];
       await writeSdk(project.local_path, sdk);
       ev('log', { text: 'characters: ' + sdk.characters.length });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'scene_bursts' });
-      await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job });
+      await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
+                             storyBible, intake, bibleVars });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'portrait_bursts' });
-      await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters, emit: ev, job });
+      await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters,
+                                 emit: ev, job, storyBible, intake, bibleVars });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'scene_lua' });
-      await runSceneLua({ sdkRoot, sdk, emit: ev });
+      await runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
+                          emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
 
       ev('phase', { id: 'sfx' });
-      await runSfxBaseline({ sdkRoot, emit: ev });
+      await runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+                              bibleVars, emit: ev });
+      await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
 
       ev('phase', { id: 'music' });
-      await runMusicAssign({ sdkRoot, sdk, emit: ev });
+      await runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+                             bibleVars, emit: ev });
+      await writeSdk(project.local_path, sdk);
+      job.summary.stages_complete++;
+
+      ev('phase', { id: 'launcher' });
+      await runLauncher({ sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
+                          emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
 
