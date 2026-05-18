@@ -9,6 +9,7 @@ import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
 import ProjectCard from '../components/ProjectCard.jsx';
 import ProjectForm from '../components/ProjectForm.jsx';
+import StudioLogo from '../components/StudioLogo.jsx';
 import PulpAutopilotProgress from '../components/PulpAutopilotProgress.jsx';
 import { api } from '../lib/api.js';
 import { quickCreateProject } from '../lib/pulp_autopilot_client.js';
@@ -164,9 +165,12 @@ function MakeAGameCard({ onCreated }) {
 
   return (
     <section className="space-y-3">
-      <div className="text-center space-y-1">
-        <h1 className="text-2xl tracking-tight text-ink-100">Make a game</h1>
-        <p className="text-sm text-ink-400">Type a sentence. Get a game.</p>
+      <div className="flex flex-col items-center gap-2">
+        {/* Cyber-glove brand mark replaces the heading. Renders at native
+            intrinsic dims via StudioLogo; max-w cap keeps it from going
+            full-width on wide viewports. */}
+        <StudioLogo size="lg" className="max-w-md w-full h-auto" />
+        <p className="text-sm text-ink-400 tracking-wide">23 Studios</p>
       </div>
       <form
         onSubmit={onGo}
