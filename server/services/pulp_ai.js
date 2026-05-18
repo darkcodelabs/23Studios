@@ -15,6 +15,27 @@ const pulp = require('./pulp_project');
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
 
+// Image generation: prefer a direct OpenAI API key (OPENAI_API_KEY) because
+// OpenRouter's /images proxy is unreliable for DALL-E 3. Fall back to the
+// OpenRouter client (chat works fine there); fall back to placeholder last.
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+
+let _imageClient = null;
+function imageClient() {
+  if (_imageClient) return _imageClient;
+  if (OPENAI_API_KEY) {
+    _imageClient = { kind: 'openai', oai: new OpenAI({ baseURL: OPENAI_BASE_URL, apiKey: OPENAI_API_KEY }) };
+  } else if (API_KEY) {
+    _imageClient = { kind: 'openrouter', oai: client() };
+  } else {
+    const e = new Error('no_image_provider');
+    e.code = 'no_image_provider';
+    throw e;
+  }
+  return _imageClient;
+}
+
 const DATA_DIR = process.env.PROJECTS_DATA_DIR
   ? path.resolve(process.env.PROJECTS_DATA_DIR)
   : path.join(__dirname, '..', 'data');
@@ -198,12 +219,18 @@ async function generateTileArt({ projectId, prompt, model, style }) {
   let imgBuf = null;
   let usedModel = requestedModel;
 
-  if (!API_KEY) {
+  if (!OPENAI_API_KEY && !API_KEY) {
     fallback = true;
   } else {
     try {
-      const result = await client().images.generate({
-        model: requestedModel,
+      const ic = imageClient();
+      // When using OpenAI directly, swap the OpenRouter-prefixed model id
+      // ("openai/dall-e-3" -> "dall-e-3"). OpenAI rejects the prefix.
+      const sendModel = ic.kind === 'openai' && requestedModel.startsWith('openai/')
+        ? requestedModel.slice('openai/'.length)
+        : requestedModel;
+      const result = await ic.oai.images.generate({
+        model: sendModel,
         prompt: augmented,
         size: '1024x1024',
         n: 1,
@@ -212,6 +239,7 @@ async function generateTileArt({ projectId, prompt, model, style }) {
       const item = result && result.data && result.data[0];
       if (!item) throw new Error('empty image gen response');
       imgBuf = await decodeImageFromGenResult(item);
+      usedModel = `${ic.kind}:${sendModel}`;
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn('[pulp_ai] image gen failed, falling back:', e && (e.code || e.message));
@@ -359,42 +387,35 @@ async function generateScene({ prompt, model, dim }) {
   let imgBuf = null;
   let usedModel = requestedModel;
 
-  if (!API_KEY) {
+  if (!OPENAI_API_KEY && !API_KEY) {
     fallback = true;
   } else {
     try {
-      // Try 1792x1024 (landscape) first for DALL-E-3; downsize covers to dim.
+      const ic = imageClient();
+      const sendModel = ic.kind === 'openai' && requestedModel.startsWith('openai/')
+        ? requestedModel.slice('openai/'.length)
+        : requestedModel;
       let size = '1792x1024';
-      // Some non-DALL-E models only accept 1024x1024 — caller can pick model.
       try {
-        const result = await client().images.generate({
-          model: requestedModel,
-          prompt: augmented,
-          size,
-          n: 1,
-          response_format: 'b64_json'
+        const result = await ic.oai.images.generate({
+          model: sendModel, prompt: augmented, size, n: 1, response_format: 'b64_json'
         });
         const item = result && result.data && result.data[0];
         if (!item) throw new Error('empty image gen response');
         imgBuf = await decodeImageFromGenResult(item);
-      } catch (e1) {
-        // Retry at 1024x1024 if the wide size was rejected.
+      } catch (_e1) {
         size = '1024x1024';
-        const result = await client().images.generate({
-          model: requestedModel,
-          prompt: augmented,
-          size,
-          n: 1,
-          response_format: 'b64_json'
+        const result = await ic.oai.images.generate({
+          model: sendModel, prompt: augmented, size, n: 1, response_format: 'b64_json'
         });
         const item = result && result.data && result.data[0];
         if (!item) throw new Error('empty image gen response');
         imgBuf = await decodeImageFromGenResult(item);
       }
+      usedModel = `${ic.kind}:${sendModel}`;
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.warn('[pulp_ai] scene gen failed, falling back:',
-        e && (e.code || e.message));
+      console.warn('[pulp_ai] scene gen failed, falling back:', e && (e.code || e.message));
       fallback = true;
     }
   }
