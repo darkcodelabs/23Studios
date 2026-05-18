@@ -211,6 +211,22 @@ async function main() {
     log('patrol scenes/chars (non-fatal): ' + (e.code || e.message));
   }
 
+  log('-- step 5c: seed music library + assign per-scene BGM --');
+  try {
+    const sceneMusicDir = path.join(__dirname, '..', '..', 'server', 'server', 'data',
+                                    'scratch_projects', projectId, 'pulp_data', 'scene_music');
+    await runChild('node', ['scripts/seed_music.js', `--dir=${sceneMusicDir}`, '--limit=30']);
+    const r = await req({
+      method: 'POST',
+      url: `${STUDIO}/api/projects/${projectId}/pulp/music/assign`,
+      headers,
+      body: {}
+    });
+    log(`music assign status=${r.status} body=${JSON.stringify(r.body).slice(0, 300)}`);
+  } catch (e) {
+    log('music assign (non-fatal): ' + (e.code || e.message));
+  }
+
   log('-- step 6: drop baseline procedural SFX --');
   // The pulp project's local_path lives under server/data/scratch_projects/<id>
   // OR server/server/data/scratch_projects/<id> depending on CWD resolution.
