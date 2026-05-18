@@ -110,10 +110,13 @@ function attachLogs(wssLogs) {
 async function handleUpgrade(server, wssChat, wssLogs) {
   server.on('upgrade', async (req, socket, head) => {
     const url = req.url || '';
-    if (!url.startsWith('/ws/')) {
-      socket.destroy();
-      return;
-    }
+    // Only handle the routes WE own. Other WS handlers (pulp_export,
+    // sdk_preview) install their own server.on('upgrade') listeners and
+    // claim the socket via wss.handleUpgrade. If we destroy the socket
+    // on a non-chat URL, we race them.
+    const isChat = url === '/ws/chat' || url.startsWith('/ws/chat?');
+    const isLogs = /^\/ws\/logs\//.test(url);
+    if (!isChat && !isLogs) return; // not ours; let another listener handle.
     const ok = await isAuthenticated(req);
     if (!ok) {
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');

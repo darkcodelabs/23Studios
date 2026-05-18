@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { FolderTree, MessageSquare, ScrollText, Gamepad2 } from 'lucide-react';
+import { FolderTree, MessageSquare, ScrollText, Gamepad2, Download, PlayCircle, Hammer, Loader2 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import FileTree from '../components/FileTree.jsx';
 import FileViewer from '../components/FileViewer.jsx';
@@ -59,6 +59,7 @@ export default function Project() {
             );
           })}
           <div className="flex-1" />
+          {project?.game_type === 'sdk' ? <SdkBuildBar project={project} /> : null}
           <GameTypeToggle project={project} onChange={setProject} />
           {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
         </div>
@@ -84,6 +85,76 @@ export default function Project() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function SdkBuildBar({ project }) {
+  const [build, setBuild] = useState(null);
+  const [building, setBuilding] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const refresh = async () => {
+    try {
+      const r = await api.get(`/api/projects/${project.id}/sdk/build/latest`);
+      setBuild(r);
+    } catch (_e) { setBuild(null); }
+  };
+  useEffect(() => { refresh(); }, [project?.id]);
+
+  async function doExport() {
+    setBuilding(true); setMsg('starting pdc…');
+    try {
+      const r = await api.post(`/api/projects/${project.id}/sdk/export`, {});
+      const status = r.status_url;
+      // Poll job status until done/failed.
+      const deadline = Date.now() + 5 * 60 * 1000;
+      while (Date.now() < deadline) {
+        await new Promise((res) => setTimeout(res, 1500));
+        try {
+          const s = await api.get(status);
+          if (s.status === 'done') { setMsg('built'); break; }
+          if (s.status === 'failed') { setMsg('build failed: ' + (s.error || '')); break; }
+          setMsg('building (' + (s.status || '?') + ')');
+        } catch (_e) { /* keep polling */ }
+      }
+      await refresh();
+    } catch (e) {
+      setMsg('export error: ' + (e?.detail || e?.message || 'unknown'));
+    } finally {
+      setBuilding(false);
+    }
+  }
+
+  function doSim() {
+    // Open the in-browser SDK preview page. The page connects to a
+    // WebSocket that spawns Xvfb + the actual Playdate Simulator on the
+    // server and streams its framebuffer back. No local DISPLAY required.
+    window.location.href = `/project/${project.id}/sdk/play`;
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 text-[11px] font-mono">
+      <button type="button" className="btn text-[11px]" onClick={doExport} disabled={building}>
+        {building ? <Loader2 className="w-3 h-3 animate-spin" /> : <Hammer className="w-3 h-3" />}
+        {building ? 'building' : 'build .pdx'}
+      </button>
+      {build?.download_url ? (
+        <a
+          href={build.download_url}
+          download={`${project.id}.pdx.tar`}
+          className="btn text-[11px]"
+          title="download latest .pdx tarball"
+        >
+          <Download className="w-3 h-3" /> download
+        </a>
+      ) : null}
+      <button type="button" className="btn text-[11px]" onClick={doSim} disabled={launching || !build}>
+        {launching ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
+        simulator
+      </button>
+      {msg ? <span className="text-ink-500 truncate max-w-xs ml-1">{msg}</span> : null}
     </div>
   );
 }

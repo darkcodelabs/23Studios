@@ -172,6 +172,9 @@ const server = app.listen(PORT, HOST, () => {
 
 chatWs.install(server);
 pulpExportRouter.installExportWs(server);
+if (typeof sdkAutopilotRouter.installPreviewWs === 'function') {
+  sdkAutopilotRouter.installPreviewWs(server);
+}
 
 seedDefaults().catch((e) => console.error('[seed]', e));
 

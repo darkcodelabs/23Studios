@@ -27,6 +27,18 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register(`${APP_BASE}/sw.js`, { scope: `${APP_BASE}/` })
+      .then((reg) => {
+        // Force an update check on every page load so version bumps land
+        // without the user having to clear site data. When a new SW takes
+        // control of the page, reload once to pull fresh asset hashes.
+        reg.update().catch(() => {});
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (reloaded) return;
+          reloaded = true;
+          window.location.reload();
+        });
+      })
       .catch((err) => console.warn('SW registration failed:', err));
   });
 }

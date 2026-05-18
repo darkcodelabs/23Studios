@@ -1,8 +1,10 @@
 'use strict';
 
 const express = require('express');
+const { WebSocketServer } = require('ws');
 const sdkAutopilot = require('../services/sdk_autopilot');
 const sdkExport = require('../services/sdk_export');
+const sdkPreview = require('../services/sdk_preview');
 
 const router = express.Router();
 
@@ -77,7 +79,9 @@ router.get('/:id/sdk/export/jobs/:jobId', (req, res) => {
 });
 
 // GET /api/projects/:id/sdk/export/jobs/:jobId/download
-// Streams the .pdx directory as a tar so the front-end gets a single blob.
+// Serves the .pdx as a tarball. Prefers a pre-built tarball on disk
+// (cached, supports HTTP Range, plays nice with reverse proxies that cap
+// streaming durations). Falls back to live `tar cf -` streaming.
 router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
   const j = sdkExport.getJob(req.params.jobId);
   if (!j) return res.status(404).end();
@@ -90,11 +94,57 @@ router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
   const fs = require('fs');
   const outPdx = j.out_pdx;
   if (!outPdx || !fs.existsSync(outPdx)) return res.status(404).end();
-  res.setHeader('Content-Type', 'application/x-tar');
-  res.setHeader('Content-Disposition', `attachment; filename="${path.basename(outPdx)}.tar"`);
-  const tar = spawn('tar', ['cf', '-', '-C', path.dirname(outPdx), path.basename(outPdx)], { shell: false });
-  tar.stdout.pipe(res);
-  tar.stderr.on('data', (b) => { /* swallow tar warnings */ void b; });
+
+  // Find or build a static tar cache to avoid streaming through a reverse
+  // proxy that may cap idle time / drop the connection mid-stream.
+  const cacheDir = '/tmp';
+  const baseName = `${req.params.id}.pdx.tar`;
+  const cachePath = path.join(cacheDir, baseName);
+
+  // If the cache is older than the pdx OR missing, rebuild it.
+  let cacheValid = false;
+  try {
+    if (fs.existsSync(cachePath)) {
+      const cs = fs.statSync(cachePath);
+      const ps = fs.statSync(outPdx);
+      cacheValid = cs.mtimeMs >= ps.mtimeMs;
+    }
+  } catch (_e) { cacheValid = false; }
+
+  if (!cacheValid) {
+    try {
+      // Synchronous tar to ensure cache exists before serving. For a 250MB
+      // .pdx this takes ~2-3s; acceptable for the first hit, and the
+      // Range-capable static serve makes all subsequent fetches fast +
+      // resumable.
+      const { spawnSync } = require('child_process');
+      const r = spawnSync('tar', ['cf', cachePath, '-C', path.dirname(outPdx), path.basename(outPdx)],
+                          { shell: false });
+      if (r.status !== 0) {
+        console.error('[sdk download] tar build failed:', r.stderr && r.stderr.toString());
+        // Fall back to live stream.
+        res.setHeader('Content-Type', 'application/x-tar');
+        res.setHeader('Content-Disposition', `attachment; filename="${baseName}"`);
+        const tar = spawn('tar', ['cf', '-', '-C', path.dirname(outPdx), path.basename(outPdx)], { shell: false });
+        tar.stdout.pipe(res);
+        tar.stderr.on('data', (b) => { void b; });
+        return;
+      }
+    } catch (e) {
+      return res.status(500).json({ error: 'tar_build_failed', detail: e.message });
+    }
+  }
+
+  // Serve as static file via express.sendFile so Range + Content-Length are
+  // honored. The browser shows a real progress bar and downloads resume on
+  // proxy hiccups.
+  res.sendFile(cachePath, {
+    headers: {
+      'Content-Type': 'application/x-tar',
+      'Content-Disposition': `attachment; filename="${baseName}"`,
+      'Cache-Control': 'private, max-age=300'
+    }
+  });
 });
 
 // GET /api/projects/:id/sdk/build/latest -> the most recent done export job
@@ -163,4 +213,65 @@ router.post('/:id/sdk/simulator', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 
+// POST /api/projects/:id/sdk/preview/start -> spawn Xvfb + simulator
+router.post('/:id/sdk/preview/start', async (req, res) => {
+  try {
+    const st = await sdkPreview.start({ projectId: req.params.id });
+    res.json({ ok: true, display: st.display, pdx: st.pdxPath });
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/preview/stop
+router.post('/:id/sdk/preview/stop', (req, res) => {
+  sdkPreview.stop(req.params.id);
+  res.json({ ok: true });
+});
+
+// POST /api/projects/:id/sdk/preview/input  body: { action: 'a'|'b'|'up'|... }
+router.post('/:id/sdk/preview/input', (req, res) => {
+  try {
+    const st = sdkPreview.get(req.params.id);
+    if (!st) return res.status(409).json({ error: 'preview_not_running' });
+    const action = String((req.body && req.body.action) || '');
+    const key = sdkPreview.mapKey(action);
+    if (!key) return res.status(400).json({ error: 'unknown_action' });
+    st.sendKey(key);
+    res.json({ ok: true });
+  } catch (e) { sendErr(res, e); }
+});
+
+// WS install — separate from the express router; the index.js bootstrap
+// reaches in via installPreviewWs(server) below.
+function installPreviewWs(server) {
+  const wss = new WebSocketServer({
+    noServer: true, maxPayload: 1024 * 1024, perMessageDeflate: false
+  });
+  wss.on('connection', async (ws, req) => {
+    const projectId = req._projectId;
+    console.log('[sdk_preview ws] connect project=' + projectId
+      + ' ext=' + JSON.stringify(ws.extensions || {})
+      + ' deflate=' + (!!ws._receiver && !!ws._receiver._extensions && !!ws._receiver._extensions['permessage-deflate']));
+    try {
+      const st = await sdkPreview.start({ projectId });
+      st.subscribe(ws);
+      ws.send(JSON.stringify({ t: 'ready', display: st.display, pdx: st.pdxPath }),
+              { compress: false, binary: false });
+    } catch (e) {
+      console.log('[sdk_preview ws] start failed: ' + e.message);
+      try { ws.send(JSON.stringify({ t: 'error', message: e.message, code: e.code }),
+                    { compress: false }); } catch (_e) { /* */ }
+      try { ws.close(); } catch (_e) { /* */ }
+    }
+  });
+
+  server.on('upgrade', (req, socket, head) => {
+    const url = req.url || '';
+    const m = url.match(/^\/ws\/sdk\/preview\/([A-Za-z0-9_-]{1,80})(?:\?.*)?$/);
+    if (!m) return;
+    req._projectId = m[1];
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+  });
+}
+
 module.exports = router;
+module.exports.installPreviewWs = installPreviewWs;

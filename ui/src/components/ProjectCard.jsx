@@ -63,17 +63,9 @@ function SdkActions({ project }) {
     return () => { alive = false; };
   }, [project.id]);
 
-  async function launchSim() {
-    setLaunching(true);
-    setLaunchMsg(null);
-    try {
-      const r = await api.post(`/api/projects/${project.id}/sdk/simulator`, {});
-      setLaunchMsg(r.launched ? `launched (pid ${r.pid})` : 'no response');
-    } catch (e) {
-      setLaunchMsg(e?.detail || e?.message || 'launch failed');
-    } finally {
-      setLaunching(false);
-    }
+  function launchSim() {
+    // Navigate to the in-browser SDK preview page (server-side Xvfb + sim).
+    window.location.href = `/project/${project.id}/sdk/play`;
   }
 
   if (err) return null; // no build yet — silent
