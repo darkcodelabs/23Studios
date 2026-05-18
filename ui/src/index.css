@@ -141,42 +141,57 @@
   --bg-elev:  #1d2026;
   --hairline: #262932;
 }
+/* Playdate — warm brown-black surfaces, Panic yellow accent. Reads like
+ * the device LCD on its plastic shell. Devforum.play.date chrome pairs
+ * #FFC500 with very dark warm neutrals; we mirror that on a dark canvas. */
+:root[data-theme="playdate"] {
+  --bg-base:  #1a1407;
+  --bg-panel: #221a09;
+  --bg-elev:  #2c220c;
+  --hairline: #3a2e10;
+}
 /* default green theme: no overrides, lets tailwind ink-900/800/700 win */
 
 /* Surface paint. Any element with the canonical bg- or ring- ink class
  * is re-painted via the theme variables. Specificity wins over the
  * generated utility classes because of the :root prefix. */
-:root[data-theme="amber"]   .bg-ink-900,
-:root[data-theme="magenta"] .bg-ink-900,
-:root[data-theme="ice"]     .bg-ink-900,
-:root[data-theme="blood"]   .bg-ink-900,
-:root[data-theme="mono"]    .bg-ink-900,
-:root[data-theme="amber"]   body,
-:root[data-theme="magenta"] body,
-:root[data-theme="ice"]     body,
-:root[data-theme="blood"]   body,
-:root[data-theme="mono"]    body { background-color: var(--bg-base); }
+:root[data-theme="amber"]    .bg-ink-900,
+:root[data-theme="magenta"]  .bg-ink-900,
+:root[data-theme="ice"]      .bg-ink-900,
+:root[data-theme="blood"]    .bg-ink-900,
+:root[data-theme="mono"]     .bg-ink-900,
+:root[data-theme="playdate"] .bg-ink-900,
+:root[data-theme="amber"]    body,
+:root[data-theme="magenta"]  body,
+:root[data-theme="ice"]      body,
+:root[data-theme="blood"]    body,
+:root[data-theme="mono"]     body,
+:root[data-theme="playdate"] body { background-color: var(--bg-base); }
 
-:root[data-theme="amber"]   .bg-ink-800,
-:root[data-theme="magenta"] .bg-ink-800,
-:root[data-theme="ice"]     .bg-ink-800,
-:root[data-theme="blood"]   .bg-ink-800,
-:root[data-theme="mono"]    .bg-ink-800 { background-color: var(--bg-panel); }
+:root[data-theme="amber"]    .bg-ink-800,
+:root[data-theme="magenta"]  .bg-ink-800,
+:root[data-theme="ice"]      .bg-ink-800,
+:root[data-theme="blood"]    .bg-ink-800,
+:root[data-theme="mono"]     .bg-ink-800,
+:root[data-theme="playdate"] .bg-ink-800 { background-color: var(--bg-panel); }
 
-:root[data-theme="amber"]   .bg-ink-700,
-:root[data-theme="magenta"] .bg-ink-700,
-:root[data-theme="ice"]     .bg-ink-700,
-:root[data-theme="blood"]   .bg-ink-700,
-:root[data-theme="mono"]    .bg-ink-700 { background-color: var(--bg-elev); }
+:root[data-theme="amber"]    .bg-ink-700,
+:root[data-theme="magenta"]  .bg-ink-700,
+:root[data-theme="ice"]      .bg-ink-700,
+:root[data-theme="blood"]    .bg-ink-700,
+:root[data-theme="mono"]     .bg-ink-700,
+:root[data-theme="playdate"] .bg-ink-700 { background-color: var(--bg-elev); }
 
-:root[data-theme="amber"]   .border-ink-800,
-:root[data-theme="magenta"] .border-ink-800,
-:root[data-theme="ice"]     .border-ink-800,
-:root[data-theme="blood"]   .border-ink-800,
-:root[data-theme="mono"]    .border-ink-800 { border-color: var(--hairline); }
+:root[data-theme="amber"]    .border-ink-800,
+:root[data-theme="magenta"]  .border-ink-800,
+:root[data-theme="ice"]      .border-ink-800,
+:root[data-theme="blood"]    .border-ink-800,
+:root[data-theme="mono"]     .border-ink-800,
+:root[data-theme="playdate"] .border-ink-800 { border-color: var(--hairline); }
 
-:root[data-theme="amber"]   .ring-ink-800,
-:root[data-theme="magenta"] .ring-ink-800,
-:root[data-theme="ice"]     .ring-ink-800,
-:root[data-theme="blood"]   .ring-ink-800,
-:root[data-theme="mono"]    .ring-ink-800 { --tw-ring-color: var(--hairline); }
+:root[data-theme="amber"]    .ring-ink-800,
+:root[data-theme="magenta"]  .ring-ink-800,
+:root[data-theme="ice"]      .ring-ink-800,
+:root[data-theme="blood"]    .ring-ink-800,
+:root[data-theme="mono"]     .ring-ink-800,
+:root[data-theme="playdate"] .ring-ink-800 { --tw-ring-color: var(--hairline); }
