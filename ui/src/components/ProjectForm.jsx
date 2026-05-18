@@ -45,47 +45,47 @@ export default function ProjectForm({ onClose, onCreated }) {
   }
 
   return (
-    <div className="fixed inset-0 z-20 bg-ink-900/80 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-20 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <form
         onSubmit={onSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-ink-800 border border-ink-600 rounded-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-xl bg-ink-900 ring-1 ring-ink-800 rounded-xl p-5 space-y-3 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-mono text-base text-ink-100">new project</h2>
-          <button type="button" onClick={onClose} className="text-ink-400 hover:text-ink-200" aria-label="close">
+          <h2 className="text-base text-ink-100 tracking-tight">New project</h2>
+          <button type="button" onClick={onClose} className="btn-icon" aria-label="close">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <Field label="id (slug)" required>
+        <Field label="ID (slug)" required>
           <input className="input font-mono" value={form.id} onChange={up('id')} pattern="[a-zA-Z0-9][a-zA-Z0-9-]{0,63}" maxLength={64} required />
         </Field>
-        <Field label="name" required>
+        <Field label="Name" required>
           <input className="input" value={form.name} onChange={up('name')} maxLength={200} required />
         </Field>
-        <Field label="description">
+        <Field label="Description">
           <textarea className="input" value={form.description} onChange={up('description')} maxLength={1000} rows={2} />
         </Field>
-        <Field label="git repo url" required>
+        <Field label="Git repo URL" required>
           <input className="input font-mono" value={form.repo} onChange={up('repo')} placeholder="https://github.com/owner/repo.git" required />
         </Field>
-        <Field label="local path (must exist + be a git repo)" required>
+        <Field label="Local path (must exist + be a git repo)" required>
           <input className="input font-mono" value={form.local_path} onChange={up('local_path')} placeholder="/home/hakcer/projects/..." required />
         </Field>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="platform">
+          <Field label="Platform">
             <select className="input" value={form.platform} onChange={up('platform')}>
               <option value="playdate">playdate</option>
             </select>
           </Field>
-          <Field label="game type">
+          <Field label="Game type">
             <select className="input" value={form.game_type} onChange={up('game_type')}>
               <option value="sdk">sdk (lua)</option>
               <option value="pulp">pulp (editor)</option>
             </select>
           </Field>
-          <Field label="status">
+          <Field label="Status">
             <select className="input" value={form.status} onChange={up('status')}>
               <option value="active">active</option>
               <option value="paused">paused</option>
@@ -94,30 +94,30 @@ export default function ProjectForm({ onClose, onCreated }) {
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="publisher">
+          <Field label="Publisher">
             <input className="input" value={form.publisher} onChange={up('publisher')} maxLength={200} />
           </Field>
-          <Field label="developer">
+          <Field label="Developer">
             <input className="input" value={form.developer} onChange={up('developer')} maxLength={200} />
           </Field>
         </div>
-        <Field label="build command">
+        <Field label="Build command">
           <input className="input font-mono" value={form.build_command} onChange={up('build_command')} placeholder="./build.sh game" />
         </Field>
-        <Field label="preflight command">
+        <Field label="Preflight command">
           <input className="input font-mono" value={form.preflight_command} onChange={up('preflight_command')} placeholder="./tools/preflight.sh" />
         </Field>
-        <Field label="captures dir">
+        <Field label="Captures dir">
           <input className="input font-mono" value={form.captures_dir} onChange={up('captures_dir')} placeholder="build/recordings" />
         </Field>
 
         {err ? <div className="text-xs text-red-400 whitespace-pre-wrap">{safeErr(err)}</div> : null}
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-1 pt-2">
           <button type="button" className="btn" onClick={onClose} disabled={busy}>cancel</button>
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            create
+            Create
           </button>
         </div>
       </form>
@@ -128,8 +128,8 @@ export default function ProjectForm({ onClose, onCreated }) {
 function Field({ label, required, children }) {
   return (
     <label className="block space-y-1">
-      <span className="block text-xs uppercase tracking-wide text-ink-400">
-        {label}{required ? <span className="text-accent ml-1">*</span> : null}
+      <span className="block text-xs text-ink-400">
+        {label}{required ? <span className="text-ink-300 ml-0.5">*</span> : null}
       </span>
       {children}
     </label>

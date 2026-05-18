@@ -136,15 +136,44 @@ router.get('/:id/sdk/export/jobs/:jobId/download', (req, res) => {
   }
 
   // Serve as static file via express.sendFile so Range + Content-Length are
-  // honored. The browser shows a real progress bar and downloads resume on
-  // proxy hiccups.
-  res.sendFile(cachePath, {
-    headers: {
-      'Content-Type': 'application/x-tar',
-      'Content-Disposition': `attachment; filename="${baseName}"`,
-      'Cache-Control': 'private, max-age=300'
-    }
-  });
+  // honored. Set headers explicitly BEFORE sendFile — the options.headers
+  // option doesn't always land through some Express/Helmet stacks.
+  res.setHeader('Content-Type', 'application/x-tar');
+  res.setHeader('Content-Disposition', `attachment; filename="${baseName}"`);
+  res.setHeader('Cache-Control', 'private, max-age=300');
+  res.sendFile(cachePath);
+});
+
+// GET /api/projects/:id/sdk/build/status -> a compact health snapshot the
+// UI polls + uses to gate the download / simulator buttons.
+router.get('/:id/sdk/build/status', (req, res) => {
+  const fs = require('fs');
+  const jobs = sdkExport.getJobsByProject(req.params.id);
+  if (jobs.length === 0) {
+    return res.json({ has_build: false, status: 'never_built',
+                      hint: 'click "build .pdx" to compile' });
+  }
+  const done = jobs.filter((j) => j.status === 'done')
+    .sort((a, b) => (b.started_at || 0) - (a.started_at || 0));
+  const j = done[0] || jobs[0];
+  const out = {
+    has_build: !!done[0],
+    status: j.status,
+    job_id: j.id,
+    started_at: j.started_at,
+    error: j.error || null,
+    out_pdx: j.out_pdx || null,
+    pdx_exists: !!(j.out_pdx && fs.existsSync(j.out_pdx))
+  };
+  if (out.has_build) {
+    out.download_url = `/api/projects/${req.params.id}/sdk/export/jobs/${j.id}/download`;
+    // Cached tar size hint so the UI can show "Download (278 MB)".
+    const cachePath = require('path').join('/tmp', `${req.params.id}.pdx.tar`);
+    try {
+      if (fs.existsSync(cachePath)) out.cached_tar_bytes = fs.statSync(cachePath).size;
+    } catch (_e) { /* */ }
+  }
+  res.json(out);
 });
 
 // GET /api/projects/:id/sdk/build/latest -> the most recent done export job

@@ -14,12 +14,32 @@ export default {
           600: '#3a3f4d',
           700: '#262a35',
           800: '#181b23',
-          900: '#0d0f15'
+          900: '#0d0f15',
+          950: '#08090d'
         },
         accent: '#9dffce'
       },
       fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['"JetBrains Mono"', '"Fira Code"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+      },
+      ringColor: {
+        ink: {
+          700: '#262a35',
+          800: '#181b23'
+        }
+      },
+      ringWidth: {
+        DEFAULT: '1px'
+      },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' }
+        }
+      },
+      animation: {
+        'fade-in': 'fade-in 120ms ease-out'
       }
     }
   },

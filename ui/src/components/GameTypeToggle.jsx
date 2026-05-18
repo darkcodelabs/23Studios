@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { Joystick, FileCode2, Loader2 } from 'lucide-react';
 import { api } from '../lib/api.js';
 
-// Small inline pill that flips a project between sdk (file browser) and pulp
-// (visual editor) game types. On flip, PATCHes the registry and navigates to
-// the matching workspace URL.
+// Inline segmented control that flips a project between sdk (file browser)
+// and pulp (visual editor) game types. Visuals updated to the new ghost
+// convention — no decorative border by default, accent is reserved for the
+// active segment background.
 export default function GameTypeToggle({ project, onChange }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -32,7 +33,7 @@ export default function GameTypeToggle({ project, onChange }) {
   }
 
   return (
-    <div className="inline-flex items-center rounded-md border border-ink-700 bg-ink-900 text-[10px] font-mono overflow-hidden">
+    <div className="inline-flex items-center rounded-md bg-ink-800/60 text-[11px] overflow-hidden">
       <Mode
         label="sdk"
         icon={FileCode2}
@@ -62,10 +63,10 @@ function Mode({ label, icon: Icon, active, disabled, onClick, title }) {
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`flex items-center gap-1 px-2 py-1 transition ${
+      className={`inline-flex items-center gap-1 px-2 py-1 transition-colors ${
         active
           ? 'bg-accent text-ink-900'
-          : 'text-ink-400 hover:text-ink-100 hover:bg-ink-800'
+          : 'text-ink-400 hover:text-ink-100'
       } disabled:opacity-50`}
     >
       <Icon className="w-3 h-3" />

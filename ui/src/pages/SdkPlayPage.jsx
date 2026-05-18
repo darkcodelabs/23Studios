@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { api } from '../lib/api.js';
 import PlaydateChassis from '../components/PlaydateChassis.jsx';
+import StudioLogo from '../components/StudioLogo.jsx';
 
 // Streams the server-side Playdate Simulator's framebuffer over WebSocket
 // + routes touch controls back as xdotool keystrokes. The same
@@ -101,21 +102,27 @@ export default function SdkPlayPage() {
 
   return (
     <div className="h-screen overflow-auto bg-ink-900 text-ink-100">
-      <header className="flex items-center justify-between px-4 py-2 border-b border-ink-700/60 bg-ink-900/40">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="flex items-center justify-between px-3 h-11 border-b border-ink-800 bg-ink-900">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
             onClick={() => navigate(`/project/${id}`)}
-            className="inline-flex items-center gap-1 text-xs text-ink-300 hover:text-accent transition"
+            className="btn text-xs"
+            title="back to project"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> project
           </button>
-          <span className="text-ink-500 text-xs">/</span>
+          <span className="text-ink-600 text-xs">/</span>
+          <StudioLogo size="sm" className="h-5 w-auto" />
           <span className="text-sm text-ink-100 truncate">{id}</span>
           <span className="pill">sdk preview</span>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          {status === 'streaming' ? <span className="text-accent">● live</span>
+          {status === 'streaming' ? (
+            <span className="inline-flex items-center text-ink-300">
+              <span className="pill-dot bg-accent" /> live
+            </span>
+          )
             : status === 'connecting' ? <span className="text-ink-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> connecting</span>
             : status === 'error' ? <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {errMsg}</span>
             : <span className="text-ink-500">{status}</span>}

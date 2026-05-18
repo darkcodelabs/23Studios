@@ -1,8 +1,9 @@
 import { safeErr } from '../lib/format_err.js';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../App.jsx';
+import StudioLogo from '../components/StudioLogo.jsx';
 
 export default function Login() {
   const { login, authed } = useAuth();
@@ -37,16 +38,16 @@ export default function Login() {
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-ink-900 px-4">
       <form onSubmit={onSubmit} className="w-full max-w-sm space-y-6">
-        <div className="space-y-1 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-ink-800 border border-ink-700">
-            <Lock className="w-5 h-5 text-accent" />
+        <div className="space-y-3 text-center flex flex-col items-center">
+          <StudioLogo size="md" />
+          <div className="space-y-1">
+            <h1 className="text-xl text-ink-100 tracking-tight">23 Studios</h1>
+            <p className="text-xs text-ink-400">game production pipeline</p>
           </div>
-          <h1 className="text-2xl font-mono text-ink-100">23 Studios</h1>
-          <p className="text-xs text-ink-400">game production pipeline</p>
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="pw" className="block text-xs uppercase tracking-wide text-ink-400">studio password</label>
+        <div className="space-y-1.5">
+          <label htmlFor="pw" className="block text-xs text-ink-400">Studio password</label>
           <input
             id="pw"
             ref={inputRef}
@@ -65,7 +66,7 @@ export default function Login() {
 
         <button type="submit" className="btn-primary w-full" disabled={busy || !password}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          enter
+          Enter
         </button>
 
         <p className="text-[10px] text-ink-500 text-center">

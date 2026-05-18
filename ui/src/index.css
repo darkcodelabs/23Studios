@@ -4,24 +4,96 @@
 
 @layer base {
   html, body, #root { height: 100%; }
-  body { font-feature-settings: "ss01", "cv02"; }
+  body {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-feature-settings: "ss01", "cv02";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   ::selection { background: theme('colors.accent'); color: theme('colors.ink.900'); }
+
+  /* sane defaults for headings */
+  h1, h2, h3, h4, h5, h6 { letter-spacing: -0.01em; }
 }
 
 @layer components {
+  /* ---------------- buttons ---------------- */
+  /* default ghost button: no border, hover-tinted only */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border border-ink-600 bg-ink-800 hover:bg-ink-700 text-ink-100 text-sm transition;
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md
+           bg-transparent text-ink-300 text-sm
+           hover:bg-ink-800/60 hover:text-ink-100
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-100;
   }
+  /* the one accented action — primary CTA, no border */
   .btn-primary {
-    @apply btn border-accent text-ink-900 bg-accent hover:bg-accent/90;
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md
+           bg-accent text-ink-900 font-medium text-sm
+           hover:bg-accent/90
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-100;
   }
+  /* 28x28 icon square, no border */
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-7 h-7 rounded-md
+           bg-transparent text-ink-400
+           hover:bg-ink-800/40 hover:text-ink-100
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-100;
+  }
+  /* destructive ghost — same shape as .btn, red on hover */
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-md
+           bg-transparent text-red-400 text-sm
+           hover:bg-red-500/10 hover:text-red-300
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-100;
+  }
+
+  /* ---------------- inputs ---------------- */
+  /* borderless body; thin bottom hairline that brightens on focus */
   .input {
-    @apply w-full px-3 py-2 rounded-md bg-ink-800 border border-ink-600 focus:border-accent focus:outline-none text-ink-100;
+    @apply w-full px-3 py-2 rounded-md
+           bg-ink-800/60 border-0 border-b border-b-ink-700
+           text-ink-100 placeholder-ink-500
+           focus:outline-none focus:border-b-accent focus:bg-ink-800
+           transition-colors duration-100;
   }
+
+  /* ---------------- cards ---------------- */
+  /* no decorative border; hairline + subtle hover ring lift */
   .card {
-    @apply rounded-lg border border-ink-700 bg-ink-800 p-4 hover:border-ink-500 transition;
+    @apply rounded-xl bg-ink-900 ring-1 ring-ink-800 p-4
+           hover:ring-ink-700/40
+           transition-shadow duration-150;
   }
+
+  /* ---------------- pills ---------------- */
+  /* monochrome, no border */
   .pill {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-ink-600 bg-ink-900/40 text-ink-300;
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+           text-[11px] leading-none bg-ink-800/60 text-ink-300 border-0;
   }
+  .pill-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle;
+  }
+
+  /* horizontal hairline divider */
+  .hairline {
+    @apply border-b border-ink-800;
+  }
+}
+
+@layer utilities {
+  /* preserve 1-bit pixel-art crispness on small images */
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+  /* slim scrollbar styling kept for chip rows */
+  .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: theme('colors.ink.700'); border-radius: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 }
