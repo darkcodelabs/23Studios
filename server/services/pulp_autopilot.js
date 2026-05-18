@@ -29,6 +29,7 @@ const wf = require('./pulp_workflow');
 const ai = require('./pulp_ai');
 const pulp = require('./pulp_project');
 const scenes = require('./pulp_scenes');
+const portraits = require('./pulp_portraits');
 const assets = require('./pulp_assets');
 
 const PIPELINE_STAGES = [
@@ -457,52 +458,75 @@ async function runTileBurst({ projectId, charactersOut, model, emit, job }) {
   const project = await projects.getProject(projectId);
   if (!project) return;
 
-  const tasks = [];
-  const labels = [];
-
-  // 1) Character portraits.
+  // ---- 1) Character portraits (64x64 proper portrait pipeline) ----
   const cast = Array.isArray(charactersOut && charactersOut.cast) ? charactersOut.cast : [];
+  const portraitTasks = [];
   for (const c of cast.slice(0, 8)) {
     const idHint = c && (c.id || c.name) ? slugifyId(c.id || c.name) : null;
-    const portrait = c && (c.portrait_prompt || c.bio || c.name) || 'a mysterious character';
     if (!idHint) continue;
-    labels.push({ idHint: `char_${idHint}`, name: c.name || idHint, prompt: portrait });
-  }
-
-  // 2) Generic filler world tiles.
-  for (let i = 0; i < TILE_FILLER_PROMPTS.length; i++) {
-    labels.push({
-      idHint: `tile_${i + 1}`,
-      name: TILE_FILLER_PROMPTS[i].slice(0, 40),
-      prompt: TILE_FILLER_PROMPTS[i]
-    });
-  }
-
-  for (const lab of labels) {
-    tasks.push(async () => {
+    const prompt = (c && (c.portrait_prompt || c.bio || c.name)) || 'a mysterious character';
+    portraitTasks.push(async () => {
       if (job.cancelled) throw aErr(499, 'cancelled');
-      const out = await ai.generateTileArt({
-        projectId,
-        prompt: lab.prompt,
-        model: model || undefined
-      });
-      const id = await persistTileFromBase64(projectId, lab.idHint, lab.name, out.image_base64);
-      job.summary.tiles_added += 1;
-      emit('asset', {
-        kind: 'tile',
-        id,
-        count_so_far: job.summary.tiles_added,
-        total_planned: labels.length
-      });
-      return id;
+      // Ensure a Character record exists (idempotent — patch if it already does).
+      try {
+        const existing = await pulp.getCharacter(projectId, idHint);
+        if (!existing) {
+          await pulp.createCharacter(projectId, {
+            id: idHint,
+            name: c.name || idHint,
+            role: c.role || '',
+            bio: (c.bio || '').slice(0, 1000),
+            portrait_prompt: prompt.slice(0, 1000)
+          });
+        }
+      } catch (e) {
+        emit('log', { text: `character ${idHint}: ${humanErr(e)}` });
+        return null;
+      }
+      try {
+        await portraits.generateAndSavePortrait({
+          projectId, safeCid: idHint, prompt, model: model || undefined
+        });
+        job.summary.portraits_added = (job.summary.portraits_added || 0) + 1;
+        emit('asset', {
+          kind: 'portrait',
+          id: idHint,
+          count_so_far: job.summary.portraits_added,
+          total_planned: cast.length
+        });
+        return idHint;
+      } catch (e) {
+        emit('log', { text: `portrait ${idHint}: ${humanErr(e)}` });
+        return null;
+      }
     });
   }
 
-  emit('log', { text: `tile_burst: ${labels.length} tiles queued` });
-  const results = await runPool(tasks, IMAGE_CONCURRENCY);
+  // ---- 2) Generic filler world tiles (still 16x16 pulp tiles) ----
+  const tileLabels = TILE_FILLER_PROMPTS.map((p, i) => ({
+    idHint: `tile_${i + 1}`, name: p.slice(0, 40), prompt: p
+  }));
+  const tileTasks = tileLabels.map((lab) => async () => {
+    if (job.cancelled) throw aErr(499, 'cancelled');
+    const out = await ai.generateTileArt({
+      projectId, prompt: lab.prompt, model: model || undefined
+    });
+    const id = await persistTileFromBase64(projectId, lab.idHint, lab.name, out.image_base64);
+    job.summary.tiles_added += 1;
+    emit('asset', {
+      kind: 'tile', id,
+      count_so_far: job.summary.tiles_added,
+      total_planned: tileLabels.length
+    });
+    return id;
+  });
+
+  emit('log', { text: `tile_burst: ${portraitTasks.length} portraits + ${tileLabels.length} tiles queued` });
+  const allTasks = portraitTasks.concat(tileTasks);
+  const results = await runPool(allTasks, IMAGE_CONCURRENCY);
   const failed = results.filter((r) => !r.ok).length;
   if (failed > 0) {
-    emit('log', { text: `tile_burst: ${failed}/${labels.length} failed` });
+    emit('log', { text: `tile_burst: ${failed}/${allTasks.length} failed` });
   }
 }
 

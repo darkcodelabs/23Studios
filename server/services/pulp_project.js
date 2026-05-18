@@ -33,6 +33,17 @@ const TOP_LEVEL_PATCHABLE = new Set([
 
 const COLLECTIONS = new Set(['tiles', 'rooms', 'sounds', 'songs']);
 
+// Per-character patchable allow-list. Mirrors $defs.Character in the schema;
+// keep in sync.
+const CHARACTER_PATCHABLE = new Set([
+  'name',
+  'role',
+  'bio',
+  'portrait_prompt',
+  'portrait_image',
+  'portrait_meta'
+]);
+
 // Per-project promise-chain mutex
 const chains = new Map();
 function withLock(projectId, fn) {
@@ -309,6 +320,110 @@ async function patchRoom(projectId, roomId, patch) {
   });
 }
 
+// ----- Characters (top-level array; lazy-init for legacy project.json) -----
+//
+// The workflow's "characters" stage stores its output under workflow.json,
+// not project.json. We add a canonical top-level `characters[]` here so
+// portraits (and any future cast attributes) have a stable persistent home.
+// Pre-existing project.json files that lack the array continue to validate
+// because `characters` is optional in the schema; we lazily inject `[]` only
+// on first mutating call.
+
+async function listCharacters(projectId) {
+  const { project } = await readPulp(projectId);
+  return Array.isArray(project.characters) ? project.characters : [];
+}
+
+async function getCharacter(projectId, cid) {
+  const idErr = validatePulpId(cid);
+  if (idErr) throw pulpErr(400, 'bad_id', idErr);
+  const list = await listCharacters(projectId);
+  const found = list.find((c) => c && c.id === cid);
+  if (!found) throw pulpErr(404, 'item_not_found');
+  return found;
+}
+
+async function createCharacter(projectId, body) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw pulpErr(400, 'bad_request');
+    }
+    const idErr = validatePulpId(body.id);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    if (typeof body.name !== 'string' || body.name.length === 0) {
+      throw pulpErr(400, 'bad_request', { field: 'name' });
+    }
+    // Whitelist incoming fields to schema-known keys.
+    const allowed = ['id', 'name', 'role', 'bio',
+      'portrait_prompt', 'portrait_image', 'portrait_meta'];
+    const character = {};
+    for (const k of allowed) {
+      if (body[k] !== undefined) character[k] = body[k];
+    }
+    const { project: cur } = await readFileOrDefault(file);
+    const list = Array.isArray(cur.characters) ? cur.characters : [];
+    if (list.some((x) => x && x.id === character.id)) {
+      throw pulpErr(409, 'duplicate_id', { id: character.id });
+    }
+    const next = { ...cur, characters: [...list, character] };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return character;
+  });
+}
+
+async function patchCharacter(projectId, cid, patch) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    const idErr = validatePulpId(cid);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      throw pulpErr(400, 'bad_request');
+    }
+    for (const k of Object.keys(patch)) {
+      if (!CHARACTER_PATCHABLE.has(k)) {
+        throw pulpErr(400, 'field_not_patchable', { field: k });
+      }
+    }
+    const { project: cur } = await readFileOrDefault(file);
+    const list = Array.isArray(cur.characters) ? cur.characters : [];
+    const idx = list.findIndex((x) => x && x.id === cid);
+    if (idx === -1) throw pulpErr(404, 'item_not_found');
+    const merged = { ...list[idx], ...patch, id: cid };
+    const nextList = list.slice();
+    nextList[idx] = merged;
+    const next = { ...cur, characters: nextList };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return merged;
+  });
+}
+
+async function deleteCharacter(projectId, cid) {
+  return withLock(projectId, async () => {
+    const project = await loadProjectOrThrow(projectId);
+    const { dir, file } = await resolvePulpPaths(project);
+    const idErr = validatePulpId(cid);
+    if (idErr) throw pulpErr(400, 'bad_id', idErr);
+    const { project: cur } = await readFileOrDefault(file);
+    const list = Array.isArray(cur.characters) ? cur.characters : [];
+    const idx = list.findIndex((x) => x && x.id === cid);
+    if (idx === -1) throw pulpErr(404, 'item_not_found');
+    const nextList = list.slice();
+    nextList.splice(idx, 1);
+    const next = { ...cur, characters: nextList };
+    runSchema(next);
+    await ensureDir(dir);
+    await atomicWriteJson(file, next);
+    return true;
+  });
+}
+
 async function deleteCollectionItem(projectId, collection, itemId) {
   if (!COLLECTIONS.has(collection)) throw pulpErr(400, 'bad_collection');
   return withLock(projectId, async () => {
@@ -340,7 +455,13 @@ module.exports = {
   patchCollectionItem,
   patchRoom,
   deleteCollectionItem,
+  listCharacters,
+  getCharacter,
+  createCharacter,
+  patchCharacter,
+  deleteCharacter,
   COLLECTIONS,
   ROOM_PATCHABLE,
+  CHARACTER_PATCHABLE,
   pulpErr
 };

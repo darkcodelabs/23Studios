@@ -41,6 +41,11 @@
       "maxItems": 4096,
       "items": { "$ref": "#/$defs/Song" }
     },
+    "characters": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/Character" }
+    },
     "player": { "$ref": "#/$defs/Player" },
     "game_script": { "type": "string", "maxLength": 1024 },
     "workflow_state": {
@@ -216,6 +221,45 @@
         "start_room": { "$ref": "#/$defs/OptionalId" },
         "start_x": { "type": "integer", "minimum": 0, "maximum": 24 },
         "start_y": { "type": "integer", "minimum": 0, "maximum": 14 }
+      }
+    },
+    "PortraitMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dim": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "integer", "minimum": 1, "maximum": 32768 }
+        },
+        "dither": { "enum": ["atkinson", "floyd", "bayer4", "ordered8", "threshold"] },
+        "threshold": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "contrast": { "type": "number", "minimum": 0.5, "maximum": 2.0 },
+        "brightness": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "fit": { "enum": ["cover", "contain", "fill"] },
+        "src_dim": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "integer", "minimum": 0, "maximum": 32768 }
+        },
+        "src_ext": { "type": "string", "maxLength": 16 },
+        "processed_at_ts": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Character": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "role": { "type": "string", "maxLength": 1024 },
+        "bio": { "type": "string", "maxLength": 4096 },
+        "portrait_prompt": { "type": "string", "maxLength": 4096 },
+        "portrait_image": { "type": "string", "maxLength": 256 },
+        "portrait_meta": { "$ref": "#/$defs/PortraitMeta" }
       }
     }
   }

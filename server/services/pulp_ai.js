@@ -436,6 +436,116 @@ async function generateScene({ prompt, model, dim }) {
   };
 }
 
+// ---------- Portrait art (character bust, default 64x64) ----------
+
+const PORTRAIT_DIM_DEFAULT = [64, 64];
+const PORTRAIT_DIM_MIN = 32;
+const PORTRAIT_DIM_MAX = 128;
+
+const PORTRAIT_STYLE_LOCK =
+  '1-bit pure black-and-white pixel art portrait, head-and-shoulders or bust ' +
+  'composition, Atkinson dither shading only. NO grayscale, NO color, NO ' +
+  'anti-aliasing. Thick 2-px black outlines. Mars After Midnight / ' +
+  'Whitewater Wipeout aesthetic. Square aspect, fills the frame. Subject ' +
+  'reads at small resolution. Subject: ';
+
+function clampPortraitDim(v, fallback) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(PORTRAIT_DIM_MIN, Math.min(PORTRAIT_DIM_MAX, n));
+}
+
+async function toPortraitPng(buf, width, height) {
+  const w = clampPortraitDim(width, PORTRAIT_DIM_DEFAULT[0]);
+  const h = clampPortraitDim(height, PORTRAIT_DIM_DEFAULT[1]);
+  // Square-ish bust: use cover-fit so the AI's full image is cropped to the
+  // tight character canvas without letterboxing.
+  return await sharp(buf)
+    .resize(w, h, { fit: 'cover', position: 'centre', kernel: 'nearest' })
+    .greyscale()
+    .threshold(128)
+    .toColourspace('b-w')
+    .png()
+    .toBuffer();
+}
+
+/**
+ * generatePortrait({prompt, model, dim, dither, threshold, contrast, brightness})
+ * Returns { pngBuffer, model, prompt, fallback?, dim }
+ * - pngBuffer is a 1-bit (b-w) PNG sized to dim (default 64x64).
+ * - Mirrors generateScene's shape; downstream re-dither happens in
+ *   pulp_portraits.runDitherPipeline so the dither/threshold/contrast/
+ *   brightness knobs actually apply with our local algorithms.
+ * - Falls back to a deterministic placeholder if no image provider is
+ *   configured or the upstream call fails.
+ *
+ * Note: dither/threshold/contrast/brightness are accepted for parity with
+ * generateScene's call-site, but are NOT applied here — the caller passes
+ * them through runDitherPipeline on the returned pngBuffer. They're part of
+ * the signature so the service surface stays uniform.
+ */
+// eslint-disable-next-line no-unused-vars
+async function generatePortrait({ prompt, model, dim, dither, threshold, contrast, brightness }) {
+  const cleanPrompt = sanitizePrompt(prompt);
+  if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
+  const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
+  const [dw, dh] = Array.isArray(dim) && dim.length === 2
+    ? [clampPortraitDim(dim[0], PORTRAIT_DIM_DEFAULT[0]),
+       clampPortraitDim(dim[1], PORTRAIT_DIM_DEFAULT[1])]
+    : PORTRAIT_DIM_DEFAULT;
+
+  const augmented = PORTRAIT_STYLE_LOCK + cleanPrompt;
+
+  let fallback = false;
+  let imgBuf = null;
+  let usedModel = requestedModel;
+
+  if (!OPENAI_API_KEY && !API_KEY) {
+    fallback = true;
+  } else {
+    try {
+      const ic = imageClient();
+      const sendModel = ic.kind === 'openai' && requestedModel.startsWith('openai/')
+        ? requestedModel.slice('openai/'.length)
+        : requestedModel;
+      // DALL-E 3 only supports a fixed set of sizes; portraits are square so
+      // 1024x1024 fits cleanly and downsamples well to our 64x64 target.
+      const result = await ic.oai.images.generate({
+        model: sendModel,
+        prompt: augmented,
+        size: '1024x1024',
+        n: 1,
+        response_format: 'b64_json'
+      });
+      const item = result && result.data && result.data[0];
+      if (!item) throw new Error('empty image gen response');
+      imgBuf = await decodeImageFromGenResult(item);
+      usedModel = `${ic.kind}:${sendModel}`;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[pulp_ai] portrait gen failed, falling back:', e && (e.code || e.message));
+      fallback = true;
+    }
+  }
+
+  if (fallback) {
+    // Re-use the scene placeholder; it produces a deterministic 1-bit
+    // dithered field that the downstream pipeline will re-dither to spec.
+    imgBuf = await placeholderScenePng(augmented, Math.max(64, dw), Math.max(64, dh));
+    usedModel = 'local-placeholder';
+  }
+
+  const pngBuffer = await toPortraitPng(imgBuf, dw, dh);
+
+  return {
+    pngBuffer,
+    model: usedModel,
+    prompt: augmented,
+    fallback,
+    dim: [dw, dh]
+  };
+}
+
 // ---------- Claude prompt helpers ----------
 
 function awaitClaude({ projectId, cwd, text }) {
@@ -712,11 +822,16 @@ async function getLog(projectId) {
 module.exports = {
   generateTileArt,
   generateScene,
+  generatePortrait,
   generateScript,
   generateRoomLayout,
   generateSound,
   getLog,
   aiErr,
+  PORTRAIT_DIM_DEFAULT,
+  PORTRAIT_DIM_MIN,
+  PORTRAIT_DIM_MAX,
+  PORTRAIT_STYLE_LOCK,
   // exported for testing
   _internals: {
     sanitizePrompt,
@@ -726,7 +841,9 @@ module.exports = {
     placeholderTilePng,
     placeholderScenePng,
     toScenePng,
+    toPortraitPng,
     deterministicBitsFromPrompt,
-    SCENE_STYLE_LOCK
+    SCENE_STYLE_LOCK,
+    PORTRAIT_STYLE_LOCK
   }
 };
