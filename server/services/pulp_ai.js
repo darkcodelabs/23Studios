@@ -15,25 +15,60 @@ const pulp = require('./pulp_project');
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
 
-// Image generation: prefer a direct OpenAI API key (OPENAI_API_KEY) because
-// OpenRouter's /images proxy is unreliable for DALL-E 3. Fall back to the
-// OpenRouter client (chat works fine there); fall back to placeholder last.
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-
-let _imageClient = null;
-function imageClient() {
-  if (_imageClient) return _imageClient;
-  if (OPENAI_API_KEY) {
-    _imageClient = { kind: 'openai', oai: new OpenAI({ baseURL: OPENAI_BASE_URL, apiKey: OPENAI_API_KEY }) };
-  } else if (API_KEY) {
-    _imageClient = { kind: 'openrouter', oai: client() };
-  } else {
-    const e = new Error('no_image_provider');
-    e.code = 'no_image_provider';
+// Image generation goes through OpenRouter's chat-completions surface with
+// multimodal output (modalities: ['image','text']). OpenRouter's /images
+// proxy doesn't reliably pass DALL-E 3 through; the chat-completions path
+// returns images in message.images[0].image_url.url as base64 data URLs.
+// The right OpenAI model on OpenRouter for this is `openai/gpt-image-1`.
+async function generateImageViaOpenRouter({ prompt, model, sizeHint }) {
+  if (!API_KEY) {
+    const e = new Error('openrouter_unavailable');
+    e.code = 'openrouter_unavailable';
     throw e;
   }
-  return _imageClient;
+  const sizeLine = sizeHint ? `\n\nRender at ${sizeHint}.` : '';
+  const payload = {
+    model,
+    messages: [{ role: 'user', content: prompt + sizeLine }],
+    modalities: ['image', 'text']
+  };
+  const res = await fetch(`${BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'http://127.0.0.1',
+      'X-Title': '23 Studios'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    const e = new Error(`openrouter_${res.status}: ${txt.slice(0, 200)}`);
+    e.code = `openrouter_${res.status}`;
+    throw e;
+  }
+  const body = await res.json();
+  const msg = body && body.choices && body.choices[0] && body.choices[0].message;
+  if (!msg) throw new Error('no_choices');
+  const imgs = Array.isArray(msg.images) ? msg.images : [];
+  for (const item of imgs) {
+    const url = (item && item.image_url && item.image_url.url) || (typeof item === 'string' ? item : null);
+    if (typeof url === 'string' && url.startsWith('data:')) {
+      const comma = url.indexOf(',');
+      if (comma > 0) return Buffer.from(url.slice(comma + 1), 'base64');
+    }
+    if (typeof url === 'string' && /^https?:/.test(url)) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`image fetch ${r.status}`);
+      return Buffer.from(await r.arrayBuffer());
+    }
+  }
+  if (typeof msg.content === 'string') {
+    const m = msg.content.match(/data:image\/(?:png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)/);
+    if (m) return Buffer.from(m[1], 'base64');
+  }
+  throw new Error('no_image_in_response');
 }
 
 const DATA_DIR = process.env.PROJECTS_DATA_DIR
@@ -42,7 +77,12 @@ const DATA_DIR = process.env.PROJECTS_DATA_DIR
 
 const DOCS_PATH = path.join(__dirname, '..', 'data', 'pulpscript_docs.md');
 
-const DEFAULT_IMAGE_MODEL = 'openai/dall-e-3';
+// Verified against `GET /api/v1/models` on 2026-05-17. Image-output capable
+// models exposed on OpenRouter: openai/gpt-5-image, openai/gpt-5-image-mini,
+// openai/gpt-5.4-image-2, google/gemini-2.5-flash-image,
+// google/gemini-3.1-flash-image-preview, google/gemini-3-pro-image-preview.
+// Default to the cheapest reliable OpenAI image model; callers can override.
+const DEFAULT_IMAGE_MODEL = 'openai/gpt-5-image-mini';
 
 const PROMPT_MAX = 4000;
 const PROJECT_STATE_MAX = 4 * 1024;
@@ -232,30 +272,19 @@ async function generateTileArt({ projectId, prompt, model, style, tileDim }) {
   let imgBuf = null;
   let usedModel = requestedModel;
 
-  if (!OPENAI_API_KEY && !API_KEY) {
+  if (!API_KEY) {
     fallback = true;
   } else {
     try {
-      const ic = imageClient();
-      // When using OpenAI directly, swap the OpenRouter-prefixed model id
-      // ("openai/dall-e-3" -> "dall-e-3"). OpenAI rejects the prefix.
-      const sendModel = ic.kind === 'openai' && requestedModel.startsWith('openai/')
-        ? requestedModel.slice('openai/'.length)
-        : requestedModel;
-      const result = await ic.oai.images.generate({
-        model: sendModel,
+      imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
-        size: '1024x1024',
-        n: 1,
-        response_format: 'b64_json'
+        model: requestedModel,
+        sizeHint: 'square 1024x1024, sharp 1-bit pixel art'
       });
-      const item = result && result.data && result.data[0];
-      if (!item) throw new Error('empty image gen response');
-      imgBuf = await decodeImageFromGenResult(item);
-      usedModel = `${ic.kind}:${sendModel}`;
+      usedModel = `openrouter:${requestedModel}`;
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.warn('[pulp_ai] image gen failed, falling back:', e && (e.code || e.message));
+      console.warn('[pulp_ai] tile image gen failed, falling back:', e && (e.code || e.message));
       fallback = true;
     }
   }
@@ -400,32 +429,16 @@ async function generateScene({ prompt, model, dim }) {
   let imgBuf = null;
   let usedModel = requestedModel;
 
-  if (!OPENAI_API_KEY && !API_KEY) {
+  if (!API_KEY) {
     fallback = true;
   } else {
     try {
-      const ic = imageClient();
-      const sendModel = ic.kind === 'openai' && requestedModel.startsWith('openai/')
-        ? requestedModel.slice('openai/'.length)
-        : requestedModel;
-      let size = '1792x1024';
-      try {
-        const result = await ic.oai.images.generate({
-          model: sendModel, prompt: augmented, size, n: 1, response_format: 'b64_json'
-        });
-        const item = result && result.data && result.data[0];
-        if (!item) throw new Error('empty image gen response');
-        imgBuf = await decodeImageFromGenResult(item);
-      } catch (_e1) {
-        size = '1024x1024';
-        const result = await ic.oai.images.generate({
-          model: sendModel, prompt: augmented, size, n: 1, response_format: 'b64_json'
-        });
-        const item = result && result.data && result.data[0];
-        if (!item) throw new Error('empty image gen response');
-        imgBuf = await decodeImageFromGenResult(item);
-      }
-      usedModel = `${ic.kind}:${sendModel}`;
+      imgBuf = await generateImageViaOpenRouter({
+        prompt: augmented,
+        model: requestedModel,
+        sizeHint: 'landscape 1792x1024 (5:3 aspect), Playdate 400x240 native target'
+      });
+      usedModel = `openrouter:${requestedModel}`;
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn('[pulp_ai] scene gen failed, falling back:', e && (e.code || e.message));
@@ -516,27 +529,16 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
   let imgBuf = null;
   let usedModel = requestedModel;
 
-  if (!OPENAI_API_KEY && !API_KEY) {
+  if (!API_KEY) {
     fallback = true;
   } else {
     try {
-      const ic = imageClient();
-      const sendModel = ic.kind === 'openai' && requestedModel.startsWith('openai/')
-        ? requestedModel.slice('openai/'.length)
-        : requestedModel;
-      // DALL-E 3 only supports a fixed set of sizes; portraits are square so
-      // 1024x1024 fits cleanly and downsamples well to our 64x64 target.
-      const result = await ic.oai.images.generate({
-        model: sendModel,
+      imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
-        size: '1024x1024',
-        n: 1,
-        response_format: 'b64_json'
+        model: requestedModel,
+        sizeHint: 'square 1024x1024, head-and-shoulders portrait, 1-bit dithered'
       });
-      const item = result && result.data && result.data[0];
-      if (!item) throw new Error('empty image gen response');
-      imgBuf = await decodeImageFromGenResult(item);
-      usedModel = `${ic.kind}:${sendModel}`;
+      usedModel = `openrouter:${requestedModel}`;
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn('[pulp_ai] portrait gen failed, falling back:', e && (e.code || e.message));
