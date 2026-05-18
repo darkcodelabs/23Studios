@@ -46,7 +46,7 @@ export default function ProjectCard({ project }) {
               <span className="pill">
                 {isPlaydate ? (
                   <img
-                    src="/icons/icon-192.png"
+                    src={((typeof window !== 'undefined' && window.__APP_BASE__) || '') + '/icons/icon-192.png'}
                     alt=""
                     width={14}
                     height={14}

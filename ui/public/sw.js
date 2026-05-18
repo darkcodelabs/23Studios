@@ -6,7 +6,7 @@
  *   - /api/* and /ws/*: ALWAYS network, never cached (auth + CSRF + live data).
  * Bump CACHE_VERSION on every breaking change.
  */
-const CACHE_VERSION = 'v5-2026-05-18-sdk-buttons';
+const CACHE_VERSION = 'v6-2026-05-18-ux-w1-logo';
 const SHELL_CACHE = `studio-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `studio-assets-${CACHE_VERSION}`;
 

@@ -62,24 +62,24 @@ export default function ModelSelector({ value, onChange }) {
         onClick={() => setOpen((v) => !v)}
         className="btn text-xs gap-1.5"
       >
-        <Cpu className="w-3.5 h-3.5 text-accent" />
+        <Cpu className="w-3.5 h-3.5" />
         <span className="truncate max-w-[200px]">{current.label}</span>
         <ChevronDown className="w-3 h-3" />
       </button>
       {open ? (
         <div
-          className="absolute right-0 mt-1 w-80 max-h-80 overflow-y-auto bg-ink-800 border border-ink-600 rounded-md shadow-xl z-20"
+          className="absolute right-0 mt-1 w-80 max-h-80 overflow-y-auto bg-ink-900 ring-1 ring-ink-800 rounded-md shadow-2xl z-20"
           onMouseLeave={() => setOpen(false)}
         >
           <button
             type="button"
             onClick={() => choose(CLAUDE_OPTION)}
-            className={`w-full text-left px-3 py-2 text-xs font-mono hover:bg-ink-700 ${current.id === CLAUDE_OPTION.id ? 'bg-ink-700 text-accent' : 'text-ink-200'}`}
+            className={`w-full text-left px-3 py-2 text-xs hover:bg-ink-800/60 ${current.id === CLAUDE_OPTION.id ? 'bg-ink-800/60 text-ink-100' : 'text-ink-300'}`}
           >
-            {CLAUDE_OPTION.label}
-            <div className="text-[10px] text-ink-500">subprocess. has cwd context.</div>
+            <span className="font-mono">{CLAUDE_OPTION.label}</span>
+            <div className="text-[10px] text-ink-500 mt-0.5">subprocess. has cwd context.</div>
           </button>
-          <div className="border-t border-ink-700" />
+          <div className="border-t border-ink-800" />
           {loading ? (
             <div className="px-3 py-2 text-xs text-ink-400">loading models…</div>
           ) : err ? (
@@ -91,10 +91,10 @@ export default function ModelSelector({ value, onChange }) {
               key={m.id}
               type="button"
               onClick={() => choose(m)}
-              className={`w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-ink-700 ${current.id === m.id ? 'bg-ink-700 text-accent' : 'text-ink-200'}`}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-ink-800/60 ${current.id === m.id ? 'bg-ink-800/60 text-ink-100' : 'text-ink-300'}`}
             >
-              <span className="truncate block">{m.label}</span>
-              <span className="text-[10px] text-ink-500 truncate block">{m.id}</span>
+              <span className="truncate block font-mono">{m.label}</span>
+              <span className="text-[10px] text-ink-500 truncate block font-mono">{m.id}</span>
             </button>
           ))}
         </div>

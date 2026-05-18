@@ -20,11 +20,13 @@ const VARIANTS = {
 
 export default function StudioLogo({ size = 'sm', className = '', alt = '23 Studios' }) {
   const v = VARIANTS[size] || VARIANTS.sm;
-  // Note: APP_BASE prefix not needed — these assets live under public/icons
-  // and are served from the same origin / base path as the SPA itself.
+  // Through code-server proxies the app mounts at /proxy/<port>/; root-
+  // relative paths ignore <base href>, so we prepend window.__APP_BASE__
+  // (set by the boot script in index.html) to anchor onto the proxy mount.
+  const base = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
   return (
     <img
-      src={v.src}
+      src={base + v.src}
       alt={alt}
       width={v.w}
       height={v.h}
