@@ -3,20 +3,23 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
+// Each theme provides accent as both a hex (for swatches) and an
+// RGB-triplet string ("R G B" — space-separated, no commas, no rgb()) so
+// Tailwind's alpha modifier syntax (`bg-accent/90`) keeps working.
 export const THEMES = [
-  { id: 'green',   name: 'Terminal Green', accent: '#9dffce' },
-  { id: 'amber',   name: 'CRT Amber',      accent: '#ffb849' },
-  { id: 'magenta', name: 'Cyber Magenta',  accent: '#ff5fb1' },
-  { id: 'ice',     name: 'Ice Blue',       accent: '#7cd3ff' },
-  { id: 'mono',    name: 'Monochrome',     accent: '#e3e6ec' },
-  { id: 'blood',   name: 'Blood Red',      accent: '#ff5454' }
+  { id: 'green',   name: 'Terminal Green', hex: '#9dffce', rgb: '157 255 206' },
+  { id: 'amber',   name: 'CRT Amber',      hex: '#ffb849', rgb: '255 184 73' },
+  { id: 'magenta', name: 'Cyber Magenta',  hex: '#ff5fb1', rgb: '255 95 177' },
+  { id: 'ice',     name: 'Ice Blue',       hex: '#7cd3ff', rgb: '124 211 255' },
+  { id: 'mono',    name: 'Monochrome',     hex: '#e3e6ec', rgb: '227 230 236' },
+  { id: 'blood',   name: 'Blood Red',      hex: '#ff5454', rgb: '255 84 84' }
 ];
 
 const STORAGE_KEY = 'studio:theme';
 
 function applyAccent(themeId) {
   const t = THEMES.find((x) => x.id === themeId) || THEMES[0];
-  document.documentElement.style.setProperty('--accent', t.accent);
+  document.documentElement.style.setProperty('--accent-rgb', t.rgb);
   document.documentElement.dataset.theme = t.id;
 }
 

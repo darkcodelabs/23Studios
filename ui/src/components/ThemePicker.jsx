@@ -45,7 +45,7 @@ export default function ThemePicker() {
             >
               <span
                 className="inline-block w-3 h-3 rounded-full"
-                style={{ background: t.accent }}
+                style={{ background: t.hex }}
               />
               <span className="flex-1 text-left">{t.name}</span>
               {theme === t.id ? <Check className="w-3 h-3 text-ink-400" /> : null}

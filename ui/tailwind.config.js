@@ -17,9 +17,10 @@ export default {
           900: '#0d0f15',
           950: '#08090d'
         },
-        // CSS variable so themes can override at runtime via
-        // document.documentElement.style.setProperty('--accent', '#xxx')
-        accent: 'var(--accent, #9dffce)'
+        // RGB triplet variable so Tailwind's alpha modifier syntax (eg.
+        // bg-accent/90, ring-accent/30) still resolves. Themes override
+        // --accent-rgb at runtime via setProperty.
+        accent: 'rgb(var(--accent-rgb, 157 255 206) / <alpha-value>)'
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
