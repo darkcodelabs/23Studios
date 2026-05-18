@@ -1,0 +1,1146 @@
+{
+  "version": 1,
+  "sdk_version": "3.0.6",
+  "description": "Authoritative catalog of Playdate SDK features the autopilot may emit into scene Lua. Snippets concatenate by slot via buildSceneLuaFromFeatures(). All APIs verified against Playdate SDK 3.0.6.",
+  "features": [
+    {
+      "id": "button_pressed_edge",
+      "name": "Button just-pressed edge",
+      "category": "input",
+      "when_to_use": "Fire once on the frame a button transitions down. Use for confirm, jump, attack, dialog advance — anything that should NOT repeat while held.",
+      "example_lua": "if playdate.buttonJustPressed(playdate.kButtonA) then ... end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    if playdate.buttonJustPressed(playdate.kButtonA) then\n        state.on_a()\n    end",
+        "cleanup": ""
+      },
+      "tags": ["button", "edge", "ui"]
+    },
+    {
+      "id": "button_released_edge",
+      "name": "Button just-released edge",
+      "category": "input",
+      "when_to_use": "Fire once on the frame a button is released. Use for charged shots, tap-vs-hold disambiguation, releasing a grabbed object.",
+      "example_lua": "if playdate.buttonJustReleased(playdate.kButtonA) then ... end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    if playdate.buttonJustReleased(playdate.kButtonA) then\n        state.on_release()\n    end",
+        "cleanup": ""
+      },
+      "tags": ["button", "edge"]
+    },
+    {
+      "id": "button_held_poll",
+      "name": "Button held this frame",
+      "category": "input",
+      "when_to_use": "Continuous input each frame: movement, hold-to-charge, scroll. NOT for menu confirm (use edge).",
+      "example_lua": "if playdate.buttonIsPressed(playdate.kButtonRight) then x = x + 2 end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    if playdate.buttonIsPressed(playdate.kButtonRight) then state.x = state.x + 2 end\n    if playdate.buttonIsPressed(playdate.kButtonLeft)  then state.x = state.x - 2 end",
+        "cleanup": ""
+      },
+      "tags": ["button", "movement"]
+    },
+    {
+      "id": "button_callbacks",
+      "name": "Global button callbacks",
+      "category": "input",
+      "when_to_use": "Override playdate.AButtonDown / BButtonDown / upButtonDown etc when you want event-style handlers instead of polling.",
+      "example_lua": "function playdate.AButtonDown() ... end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "function playdate.AButtonDown() state.confirm() end\nfunction playdate.BButtonDown() state.back() end",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["button", "callback"]
+    },
+    {
+      "id": "dpad_navigation",
+      "name": "D-pad menu navigation",
+      "category": "input",
+      "when_to_use": "Cursor movement through a list / grid. Pair with A-confirm. Provide as fallback when crank also navigates.",
+      "example_lua": "if playdate.buttonJustPressed(playdate.kButtonDown) then cursor = cursor + 1 end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "    state.cursor = 1",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    if playdate.buttonJustPressed(playdate.kButtonDown) then\n        state.cursor = math.min(state.cursor + 1, #state.items)\n    elseif playdate.buttonJustPressed(playdate.kButtonUp) then\n        state.cursor = math.max(state.cursor - 1, 1)\n    end",
+        "cleanup": ""
+      },
+      "tags": ["dpad", "menu"]
+    },
+    {
+      "id": "crank_change",
+      "name": "Crank delta (degrees this frame)",
+      "category": "input",
+      "when_to_use": "Smooth analog rotation: dials, vehicle steering, reel-in. Returns degrees change since last frame plus acceleration factor.",
+      "example_lua": "local change, accel = playdate.getCrankChange()",
+      "imports": ["CoreLibs/crank"],
+      "snippets": {
+        "imports": "import \"CoreLibs/crank\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    local change, accel = playdate.getCrankChange()\n    state.angle = state.angle + change",
+        "cleanup": ""
+      },
+      "tags": ["crank", "analog"]
+    },
+    {
+      "id": "crank_ticks",
+      "name": "Crank discrete tick reader",
+      "category": "input",
+      "when_to_use": "Step through discrete options. Use for menus, dialog choices, character creator categories. Pass ticks-per-revolution.",
+      "example_lua": "local ticks = playdate.getCrankTicks(8)",
+      "imports": ["CoreLibs/crank"],
+      "snippets": {
+        "imports": "import \"CoreLibs/crank\"",
+        "state_init": "    state.choice = 1",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    local ticks = playdate.getCrankTicks(12)\n    if ticks ~= 0 then\n        state.choice = ((state.choice - 1 + ticks) % #state.options + #state.options) % #state.options + 1\n    end",
+        "cleanup": ""
+      },
+      "tags": ["crank", "menu", "discrete"]
+    },
+    {
+      "id": "crank_position",
+      "name": "Crank absolute position",
+      "category": "input",
+      "when_to_use": "Use when the crank's absolute angle maps to game state (a dial pointer, a year/date scrubber). NOT for incremental input.",
+      "example_lua": "local pos = playdate.getCrankPosition()",
+      "imports": ["CoreLibs/crank"],
+      "snippets": {
+        "imports": "import \"CoreLibs/crank\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    local pos = playdate.getCrankPosition()\n    state.dial_angle = pos",
+        "cleanup": ""
+      },
+      "tags": ["crank", "absolute"]
+    },
+    {
+      "id": "crank_docked_check",
+      "name": "Crank docked state",
+      "category": "input",
+      "when_to_use": "Detect whether the crank is folded into the device. Pause crank gameplay or show the crank-out prompt when docked.",
+      "example_lua": "if playdate.isCrankDocked() then ... end",
+      "imports": ["CoreLibs/crank"],
+      "snippets": {
+        "imports": "import \"CoreLibs/crank\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    if playdate.isCrankDocked() then\n        playdate.ui.crankIndicator:update()\n    end",
+        "cleanup": ""
+      },
+      "tags": ["crank", "ui"]
+    },
+    {
+      "id": "crank_indicator",
+      "name": "Crank-out indicator overlay",
+      "category": "input",
+      "when_to_use": "Standard Panic UI that prompts the player to extend the crank. Required UX when crank input is essential and the crank is docked.",
+      "example_lua": "playdate.ui.crankIndicator:start(); playdate.ui.crankIndicator:update()",
+      "imports": ["CoreLibs/ui"],
+      "snippets": {
+        "imports": "import \"CoreLibs/ui\"",
+        "state_init": "",
+        "setup": "    playdate.ui.crankIndicator:start()",
+        "input_bindings": "",
+        "update_tick": "    if playdate.isCrankDocked() then playdate.ui.crankIndicator:update() end",
+        "cleanup": ""
+      },
+      "tags": ["crank", "ui", "indicator"]
+    },
+    {
+      "id": "crank_callback",
+      "name": "playdate.cranked callback",
+      "category": "input",
+      "when_to_use": "Event-style crank handler. Fires every frame the crank moves. Use when scene wants to react to crank without polling in update.",
+      "example_lua": "function playdate.cranked(change, accel) ... end",
+      "imports": ["CoreLibs/crank"],
+      "snippets": {
+        "imports": "import \"CoreLibs/crank\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "function playdate.cranked(change, accel)\n    state.on_crank(change, accel)\nend",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["crank", "callback"]
+    },
+    {
+      "id": "accelerometer_read",
+      "name": "Accelerometer 3-axis read",
+      "category": "input",
+      "when_to_use": "Tilt-based steering, shake gestures, balance puzzles. MUST start the peripheral first. Cannot detect rotation when flat.",
+      "example_lua": "playdate.startAccelerometer(); local x, y, z = playdate.readAccelerometer()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.startAccelerometer()",
+        "input_bindings": "",
+        "update_tick": "    local ax, ay, az = playdate.readAccelerometer()\n    state.tilt_x, state.tilt_y = ax, ay",
+        "cleanup": "    playdate.stopAccelerometer()"
+      },
+      "tags": ["tilt", "accelerometer", "motion"]
+    },
+    {
+      "id": "keyboard_show",
+      "name": "Onscreen keyboard text entry",
+      "category": "input",
+      "when_to_use": "Short text entry only (player name, save label). Reconsider design if lots of text needed.",
+      "example_lua": "playdate.keyboard.show(\"\")",
+      "imports": ["CoreLibs/keyboard"],
+      "snippets": {
+        "imports": "import \"CoreLibs/keyboard\"",
+        "state_init": "    state.name = \"\"",
+        "setup": "    playdate.keyboard.keyboardWillHideCallback = function(ok)\n        if ok then state.name = playdate.keyboard.text end\n    end",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    playdate.keyboard.hide()"
+      },
+      "tags": ["keyboard", "text"]
+    },
+    {
+      "id": "gfx_clear",
+      "name": "Clear screen each frame",
+      "category": "graphics",
+      "when_to_use": "Start of draw when not using sprite system. Pass a color to fill (kColorWhite / kColorBlack).",
+      "example_lua": "playdate.graphics.clear(playdate.graphics.kColorWhite)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["draw", "clear"]
+    },
+    {
+      "id": "gfx_set_color",
+      "name": "Set draw color",
+      "category": "graphics",
+      "when_to_use": "Switch between black, white, clear, XOR before lines/rects/text. Default is black.",
+      "example_lua": "playdate.graphics.setColor(playdate.graphics.kColorBlack)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["draw", "color"]
+    },
+    {
+      "id": "gfx_set_dither",
+      "name": "Set dither pattern",
+      "category": "graphics",
+      "when_to_use": "Fake greys in 1-bit. Atkinson for portraits, Bayer for skies, no Floyd-Steinberg for moving regions.",
+      "example_lua": "playdate.graphics.setDitherPattern(0.5, playdate.graphics.image.kDitherTypeBayer8x8)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["dither", "shade"]
+    },
+    {
+      "id": "gfx_pattern_fill",
+      "name": "Set pattern fill",
+      "category": "graphics",
+      "when_to_use": "Repeating 8x8 pattern for rect/polygon fills. Use for floors, walls, large backgrounds without per-pixel cost.",
+      "example_lua": "playdate.graphics.setPattern({0xAA,0x55,0xAA,0x55,0xAA,0x55,0xAA,0x55})",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["pattern", "fill"]
+    },
+    {
+      "id": "gfx_draw_text",
+      "name": "Draw text at point",
+      "category": "graphics",
+      "when_to_use": "HUD, dialog. Respect cap height minimums (12 dialog, 10 HUD).",
+      "example_lua": "playdate.graphics.drawText(\"hello\", 10, 10)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["text", "hud"]
+    },
+    {
+      "id": "gfx_draw_text_aligned",
+      "name": "Draw text in rect with alignment",
+      "category": "graphics",
+      "when_to_use": "Word-wrap dialog, right-align scores, center titles. Use drawTextInRect for multi-line wrap.",
+      "example_lua": "playdate.graphics.drawTextInRect(\"line of dialog\", 8, 180, 384, 56, nil, nil, kTextAlignment.left)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["text", "wrap"]
+    },
+    {
+      "id": "gfx_font_load",
+      "name": "Load + set custom font",
+      "category": "graphics",
+      "when_to_use": "Switch fonts per scene. Use the project font tree; never reference Asheville (that's the missing-font fallback).",
+      "example_lua": "local f = playdate.graphics.font.new(\"fonts/Roobert-20-Medium\"); playdate.graphics.setFont(f)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.font = playdate.graphics.font.new(\"fonts/Roobert-20-Medium\")\n    playdate.graphics.setFont(state.font)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["font", "text"]
+    },
+    {
+      "id": "gfx_image_load",
+      "name": "Load and draw single image",
+      "category": "graphics",
+      "when_to_use": "Static art: backgrounds, portraits, title cards. Cached after first load.",
+      "example_lua": "local img = playdate.graphics.image.new(\"images/title\"); img:draw(0,0)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.bg = playdate.graphics.image.new(\"images/{SCENE_ID}_bg\")",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["image", "art"]
+    },
+    {
+      "id": "gfx_imagetable_load",
+      "name": "Load imagetable for sprite frames",
+      "category": "graphics",
+      "when_to_use": "Frame-by-frame animation, tile atlases. File name MUST be name-table-W-H.png. Reference without extension or table suffix.",
+      "example_lua": "local it = playdate.graphics.imagetable.new(\"images/hero\")",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.frames = playdate.graphics.imagetable.new(\"images/{SCENE_ID}_frames\")",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["imagetable", "animation"]
+    },
+    {
+      "id": "gfx_animation_loop",
+      "name": "AnimationLoop frame iteration",
+      "category": "graphics",
+      "when_to_use": "Wraps an imagetable in a self-paced animation. Easiest path for looped sprite animation. Pass delay, imagetable, shouldLoop.",
+      "example_lua": "local loop = playdate.graphics.animation.loop.new(80, imagetable, true)",
+      "imports": ["CoreLibs/animation"],
+      "snippets": {
+        "imports": "import \"CoreLibs/animation\"",
+        "state_init": "",
+        "setup": "    state.anim = playdate.graphics.animation.loop.new(80, state.frames, true)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["animation", "loop"]
+    },
+    {
+      "id": "gfx_sprite_create",
+      "name": "Sprite create + add to display list",
+      "category": "graphics",
+      "when_to_use": "Anything that moves. Sprites only redraw when moved/invalidated — way cheaper than full-screen redraws. Add to list with :add().",
+      "example_lua": "local s = playdate.graphics.sprite.new(img); s:moveTo(100,100); s:add()",
+      "imports": ["CoreLibs/sprites"],
+      "snippets": {
+        "imports": "import \"CoreLibs/sprites\"",
+        "state_init": "",
+        "setup": "    state.sprite = playdate.graphics.sprite.new(state.bg)\n    state.sprite:moveTo(200,120)\n    state.sprite:add()",
+        "input_bindings": "",
+        "update_tick": "    playdate.graphics.sprite.update()",
+        "cleanup": "    state.sprite:remove()"
+      },
+      "tags": ["sprite", "displaylist"]
+    },
+    {
+      "id": "gfx_sprite_move",
+      "name": "Sprite move + collision",
+      "category": "graphics",
+      "when_to_use": "moveWithCollisions returns actual position plus collision list. Use for any sprite that should block against other sprites.",
+      "example_lua": "local x, y, colls = s:moveWithCollisions(nx, ny)",
+      "imports": ["CoreLibs/sprites"],
+      "snippets": {
+        "imports": "import \"CoreLibs/sprites\"",
+        "state_init": "",
+        "setup": "    state.sprite:setCollideRect(0, 0, state.sprite:getSize())",
+        "input_bindings": "",
+        "update_tick": "    local nx, ny, colls = state.sprite:moveWithCollisions(state.sprite.x + state.vx, state.sprite.y + state.vy)\n    state.colls = colls",
+        "cleanup": ""
+      },
+      "tags": ["sprite", "collision"]
+    },
+    {
+      "id": "gfx_set_clip",
+      "name": "Set clip rect for partial redraw",
+      "category": "graphics",
+      "when_to_use": "Constrain drawing to a region. Use for HUD overlays that shouldn't redraw the world.",
+      "example_lua": "playdate.graphics.setClipRect(0,0,400,40); playdate.graphics.clearClipRect()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["clip", "perf"]
+    },
+    {
+      "id": "gfx_set_display_scale",
+      "name": "2x display scale toggle",
+      "category": "graphics",
+      "when_to_use": "Chunky 200x120 effective resolution. Trade detail for legibility. Set once in init, not per frame.",
+      "example_lua": "playdate.display.setScale(2)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.display.setScale(2)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    playdate.display.setScale(1)"
+      },
+      "tags": ["display", "scale"]
+    },
+    {
+      "id": "gfx_set_inverted",
+      "name": "Invert display",
+      "category": "graphics",
+      "when_to_use": "Flip black/white for accessibility / night mode / damage flash. System-level invert respected by all draws.",
+      "example_lua": "playdate.display.setInverted(true)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    playdate.display.setInverted(false)"
+      },
+      "tags": ["display", "invert"]
+    },
+    {
+      "id": "gfx_set_refresh_rate",
+      "name": "Set refresh rate",
+      "category": "graphics",
+      "when_to_use": "Default 30. 20 fine for board / dialog. 50 only when motion needs it (curved trajectories) — costs 40% more CPU.",
+      "example_lua": "playdate.display.setRefreshRate(30)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.display.setRefreshRate(30)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["refresh", "fps"]
+    },
+    {
+      "id": "gfx_pushcontext",
+      "name": "Draw into an offscreen image",
+      "category": "graphics",
+      "when_to_use": "Pre-render compound art (combine background + portrait + overlay) once. Push image, draw, pop. Cache result.",
+      "example_lua": "playdate.graphics.pushContext(img); ...; playdate.graphics.popContext()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.composite = playdate.graphics.image.new(400, 240)\n    playdate.graphics.pushContext(state.composite)\n    -- draw into composite\n    playdate.graphics.popContext()",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["offscreen", "cache"]
+    },
+    {
+      "id": "gfx_draw_with_offset",
+      "name": "Camera offset",
+      "category": "graphics",
+      "when_to_use": "Scroll the whole world by an offset without moving every sprite. Use for camera follow in side-scroll / top-down.",
+      "example_lua": "playdate.graphics.setDrawOffset(-camera_x, -camera_y)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "    state.camera_x, state.camera_y = 0, 0",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    playdate.graphics.setDrawOffset(-state.camera_x, -state.camera_y)",
+        "cleanup": "    playdate.graphics.setDrawOffset(0,0)"
+      },
+      "tags": ["camera", "scroll"]
+    },
+    {
+      "id": "gfx_tilemap",
+      "name": "Tilemap render",
+      "category": "graphics",
+      "when_to_use": "Repeating grid art: floors, walls, level geometry. Drive from imagetable + index list. Recommend 32x32 tiles.",
+      "example_lua": "local tm = playdate.graphics.tilemap.new(); tm:setImageTable(it); tm:setTiles(indices, w)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.tilemap = playdate.graphics.tilemap.new()\n    state.tilemap:setImageTable(state.frames)\n    state.tilemap:setTiles(state.tile_indices, state.tile_w)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["tilemap", "grid"]
+    },
+    {
+      "id": "ui_gridview",
+      "name": "Gridview list/grid UI widget",
+      "category": "ui",
+      "when_to_use": "Standard scrollable list or grid (inventory, dialog choices, level select). Avoids reimplementing scroll math.",
+      "example_lua": "local gv = playdate.ui.gridview.new(0, 28)",
+      "imports": ["CoreLibs/ui"],
+      "snippets": {
+        "imports": "import \"CoreLibs/ui\"",
+        "state_init": "",
+        "setup": "    state.gridview = playdate.ui.gridview.new(0, 28)\n    state.gridview:setNumberOfRows(#state.items)\n    function state.gridview:drawCell(section, row, column, selected, x, y, w, h)\n        if selected then playdate.graphics.fillRect(x,y,w,h) end\n        playdate.graphics.drawText(state.items[row], x+4, y+6)\n    end",
+        "input_bindings": "",
+        "update_tick": "    state.gridview:drawInRect(8, 20, 240, 200)",
+        "cleanup": ""
+      },
+      "tags": ["gridview", "list", "ui"]
+    },
+    {
+      "id": "ui_menu_item",
+      "name": "System menu item",
+      "category": "ui",
+      "when_to_use": "Add pause-menu rows (music on/off, restart). Players access via the OS button. Limited to ~3 custom rows.",
+      "example_lua": "playdate.getSystemMenu():addMenuItem(\"reset\", function() ... end)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.menu_item = playdate.getSystemMenu():addMenuItem(\"reset\", function() state.reset() end)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    playdate.getSystemMenu():removeMenuItem(state.menu_item)"
+      },
+      "tags": ["menu", "system"]
+    },
+    {
+      "id": "ui_checkmark_menu",
+      "name": "Checkmark menu item",
+      "category": "ui",
+      "when_to_use": "Toggleable pause-menu row (music on/off, hard mode). Persists checked state.",
+      "example_lua": "playdate.getSystemMenu():addCheckmarkMenuItem(\"music\", true, function(v) ... end)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.getSystemMenu():addCheckmarkMenuItem(\"music\", save_state.get_music_enabled(), function(v)\n        save_state.set_music_enabled(v)\n    end)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["menu", "toggle"]
+    },
+    {
+      "id": "ui_options_menu",
+      "name": "Options menu item",
+      "category": "ui",
+      "when_to_use": "Pause-menu row with discrete value cycler (font size, difficulty).",
+      "example_lua": "playdate.getSystemMenu():addOptionsMenuItem(\"size\", {\"small\",\"big\"}, \"small\", function(v) ... end)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.getSystemMenu():addOptionsMenuItem(\"size\", {\"small\",\"medium\",\"big\"}, \"medium\", function(v) state.size = v end)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["menu", "options"]
+    },
+    {
+      "id": "ui_set_menu_image",
+      "name": "Custom pause-menu image",
+      "category": "ui",
+      "when_to_use": "Image shown left of the pause menu. Use it as a second view: inventory, map, stats screen.",
+      "example_lua": "playdate.setMenuImage(img)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.setMenuImage(state.menu_image)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["menu", "image"]
+    },
+    {
+      "id": "ui_qr_code",
+      "name": "Generate QR code",
+      "category": "ui",
+      "when_to_use": "Show long URLs or game-generated data (run code, share link). Pair with text URL fallback.",
+      "example_lua": "playdate.graphics.generateQRCode(\"https://play.date\", 160, function(img) qr = img end)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.graphics.generateQRCode(\"https://play.date\", 160, function(img) state.qr = img end)",
+        "input_bindings": "",
+        "update_tick": "    if state.qr then state.qr:draw(120, 40) end",
+        "cleanup": ""
+      },
+      "tags": ["qr", "share"]
+    },
+    {
+      "id": "sound_sampleplayer",
+      "name": "Sample player (one-shot wav)",
+      "category": "sound",
+      "when_to_use": "Short SFX. Loads sample, calls :play(loops). Cache the sample, not the player, if reused often.",
+      "example_lua": "local s = playdate.sound.sampleplayer.new(\"sfx/click\"); s:play(1)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.sfx_click = playdate.sound.sampleplayer.new(\"sfx/{SCENE_ID}_click\")",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    if state.sfx_click then state.sfx_click:stop() end"
+      },
+      "tags": ["sfx", "wav"]
+    },
+    {
+      "id": "sound_fileplayer",
+      "name": "File player (streaming music)",
+      "category": "sound",
+      "when_to_use": "Long looping music. Streams from disk so RAM-light. Set volume; respect save_state.get_music_volume().",
+      "example_lua": "local f = playdate.sound.fileplayer.new(\"music/theme\"); f:play(0)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.music = playdate.sound.fileplayer.new(\"music/{SCENE_ID}_theme\")\n    if state.music then\n        state.music:setVolume(save_state.get_music_volume()/10)\n        state.music:play(0)\n    end",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    if state.music then state.music:stop() end"
+      },
+      "tags": ["music", "stream"]
+    },
+    {
+      "id": "sound_synth",
+      "name": "Synth note",
+      "category": "sound",
+      "when_to_use": "Procedural beep/blip/melody when sample assets are overkill. Pass waveform + envelope.",
+      "example_lua": "local syn = playdate.sound.synth.new(playdate.sound.kWaveSquare); syn:playNote(\"C4\", 1.0, 0.25)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.synth = playdate.sound.synth.new(playdate.sound.kWaveSquare)\n    state.synth:setADSR(0.01, 0.05, 0.5, 0.1)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["synth", "procedural"]
+    },
+    {
+      "id": "sound_micinput",
+      "name": "Microphone input",
+      "category": "sound",
+      "when_to_use": "Voice / breath / loudness detection. startListening with a level callback.",
+      "example_lua": "playdate.sound.micinput.startListening(function(level) ... end)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    playdate.sound.micinput.startListening(function(level)\n        state.mic_level = level\n    end)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    playdate.sound.micinput.stopListening()"
+      },
+      "tags": ["mic", "audio"]
+    },
+    {
+      "id": "sound_channel",
+      "name": "Sound channel with effect",
+      "category": "sound",
+      "when_to_use": "Group sources into a channel, apply lowpass/ringmod/bitcrusher. Use for underwater / damage / radio FX.",
+      "example_lua": "local ch = playdate.sound.channel.new(); ch:addEffect(playdate.sound.lowpassfilter.new(0.4))",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.fx_channel = playdate.sound.channel.new()\n    state.fx_lowpass = playdate.sound.lowpassfilter.new(0.3)\n    state.fx_channel:addEffect(state.fx_lowpass)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["audio", "effect", "channel"]
+    },
+    {
+      "id": "timer_new",
+      "name": "Frame-based timer",
+      "category": "timers",
+      "when_to_use": "Delay an action by N ms, run a callback. Set timerEndedCallback. Requires CoreLibs/timer + playdate.timer.updateTimers().",
+      "example_lua": "playdate.timer.new(500, function() ... end)",
+      "imports": ["CoreLibs/timer"],
+      "snippets": {
+        "imports": "import \"CoreLibs/timer\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    playdate.timer.updateTimers()",
+        "cleanup": ""
+      },
+      "tags": ["timer", "delay"]
+    },
+    {
+      "id": "timer_value_animator",
+      "name": "Value-tweening timer",
+      "category": "timers",
+      "when_to_use": "Animate a number from A to B over N ms with an easing function. Read .value each frame.",
+      "example_lua": "local t = playdate.timer.new(800, 0, 100, playdate.easingFunctions.outQuad)",
+      "imports": ["CoreLibs/timer", "CoreLibs/easing"],
+      "snippets": {
+        "imports": "import \"CoreLibs/timer\"\nimport \"CoreLibs/easing\"",
+        "state_init": "",
+        "setup": "    state.tween = playdate.timer.new(800, 0, 100, playdate.easingFunctions.outQuad)",
+        "input_bindings": "",
+        "update_tick": "    playdate.timer.updateTimers()\n    if state.tween then state.progress = state.tween.value end",
+        "cleanup": ""
+      },
+      "tags": ["timer", "easing", "tween"]
+    },
+    {
+      "id": "frame_timer",
+      "name": "Frame-counting timer",
+      "category": "timers",
+      "when_to_use": "Timing in frames rather than ms (consistent across refresh-rate changes). Use for sprite animation cadence.",
+      "example_lua": "playdate.frameTimer.new(60, function() ... end)",
+      "imports": ["CoreLibs/frameTimer"],
+      "snippets": {
+        "imports": "import \"CoreLibs/frameTimer\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    playdate.frameTimer.updateTimers()",
+        "cleanup": ""
+      },
+      "tags": ["frame", "timer"]
+    },
+    {
+      "id": "easing_functions",
+      "name": "Easing function set",
+      "category": "timers",
+      "when_to_use": "Pass to value-timer constructors: linear, inOutQuad, outBack, outElastic etc. Avoid linear for organic motion.",
+      "example_lua": "playdate.easingFunctions.outBack",
+      "imports": ["CoreLibs/easing"],
+      "snippets": {
+        "imports": "import \"CoreLibs/easing\"",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["easing", "animation"]
+    },
+    {
+      "id": "system_update_hook",
+      "name": "playdate.update hook",
+      "category": "system",
+      "when_to_use": "Required. Called once per frame. Drives all gameplay + sprite updates + timer updates. Single update function per game; scenes route through it.",
+      "example_lua": "function playdate.update() ... end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "function playdate.update()\n    playdate.graphics.sprite.update()\n    playdate.timer.updateTimers()\nend",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["update", "frame"]
+    },
+    {
+      "id": "system_gameWillTerminate",
+      "name": "gameWillTerminate save hook",
+      "category": "system",
+      "when_to_use": "MANDATORY for any game with save state. Fires when launcher kills the game; flush datastore here.",
+      "example_lua": "function playdate.gameWillTerminate() save_state.flush() end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "function playdate.gameWillTerminate()\n    save_state.flush()\nend",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["save", "lifecycle"]
+    },
+    {
+      "id": "system_deviceWillSleep",
+      "name": "deviceWillSleep save hook",
+      "category": "system",
+      "when_to_use": "Fires when device auto-sleeps. Flush save state. Pair with gameWillTerminate.",
+      "example_lua": "function playdate.deviceWillSleep() save_state.flush() end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "function playdate.deviceWillSleep()\n    save_state.flush()\nend",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["save", "lifecycle"]
+    },
+    {
+      "id": "system_gameWillPause",
+      "name": "gameWillPause hook",
+      "category": "system",
+      "when_to_use": "Fires when player opens the system menu. Pause music, gameplay timers. Pair with gameWillResume.",
+      "example_lua": "function playdate.gameWillPause() ... end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "function playdate.gameWillPause()\n    if state.music then state.music:pause() end\nend\nfunction playdate.gameWillResume()\n    if state.music then state.music:play(0) end\nend",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["pause", "lifecycle"]
+    },
+    {
+      "id": "system_get_time_ms",
+      "name": "Current time milliseconds",
+      "category": "system",
+      "when_to_use": "Monotonic millisecond clock. Use for delta-time computation and RNG seeding.",
+      "example_lua": "local ms = playdate.getCurrentTimeMilliseconds()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "    state.boot_ms = playdate.getCurrentTimeMilliseconds()",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["time", "clock"]
+    },
+    {
+      "id": "system_battery_level",
+      "name": "Battery level read",
+      "category": "system",
+      "when_to_use": "Show a battery indicator or trigger low-power mode. Returns 0..1.",
+      "example_lua": "local lvl = playdate.getBatteryPercentage()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    state.battery = playdate.getBatteryPercentage()",
+        "cleanup": ""
+      },
+      "tags": ["battery", "system"]
+    },
+    {
+      "id": "system_reduce_flashing",
+      "name": "Reduce-flashing accessibility flag",
+      "category": "system",
+      "when_to_use": "Respect player Settings preference; skip strobe FX when true. Required for accessibility compliance.",
+      "example_lua": "if playdate.getReduceFlashing() then ... end",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.reduce_flashing = playdate.getReduceFlashing()",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["accessibility", "flashing"]
+    },
+    {
+      "id": "files_datastore",
+      "name": "Datastore read/write",
+      "category": "files",
+      "when_to_use": "Persistent save data. JSON-like table in/out. Slot name keeps multiple stores apart.",
+      "example_lua": "playdate.datastore.write({k=1},\"slot\"); local d = playdate.datastore.read(\"slot\")",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.save = playdate.datastore.read(\"{SCENE_ID}\") or {}",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": "    playdate.datastore.write(state.save, \"{SCENE_ID}\")"
+      },
+      "tags": ["save", "datastore"]
+    },
+    {
+      "id": "files_file_open",
+      "name": "Raw file open",
+      "category": "files",
+      "when_to_use": "Read text-format levels, dialog scripts, CSV data shipped with the pdx. Read-only inside the bundle.",
+      "example_lua": "local f = playdate.file.open(\"data/levels.txt\")",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    local f = playdate.file.open(\"data/{SCENE_ID}.txt\")\n    if f then\n        state.raw = f:read(1024)\n        f:close()\n    end",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["file", "data"]
+    },
+    {
+      "id": "geometry_point",
+      "name": "Geometry point",
+      "category": "geometry",
+      "when_to_use": "Typed point with arithmetic + distance. Cleaner than raw x,y pairs for vector math.",
+      "example_lua": "local p = playdate.geometry.point.new(10,20)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["geometry", "point"]
+    },
+    {
+      "id": "geometry_rect",
+      "name": "Geometry rect + intersection",
+      "category": "geometry",
+      "when_to_use": "Bounds checking, hotspot detection, collision rects.",
+      "example_lua": "local r = playdate.geometry.rect.new(0,0,32,32); r:intersects(other)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["geometry", "rect"]
+    },
+    {
+      "id": "geometry_affineTransform",
+      "name": "Affine transform",
+      "category": "geometry",
+      "when_to_use": "Rotate/scale/translate a polygon for procedurally placed art. PRE-render results, do not transform per frame on hot path.",
+      "example_lua": "local t = playdate.geometry.affineTransform.new(); t:rotate(45)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["geometry", "transform"]
+    },
+    {
+      "id": "geometry_polygon",
+      "name": "Geometry polygon",
+      "category": "geometry",
+      "when_to_use": "Filled or stroked polygon path. Use for level geometry, custom shapes, masks.",
+      "example_lua": "local poly = playdate.geometry.polygon.new(0,0, 50,0, 25,40); poly:close()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["geometry", "polygon"]
+    },
+    {
+      "id": "pathfinder_graph",
+      "name": "Pathfinder graph + A*",
+      "category": "pathfinding",
+      "when_to_use": "A* over a grid or node graph for enemy navigation. Build node list, connect, request path.",
+      "example_lua": "local g = playdate.pathfinder.graph.new(node_count, coord_table)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.graph = playdate.pathfinder.graph.new2DGrid(20, 12, true, state.blocked)",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["pathfinding", "ai"]
+    },
+    {
+      "id": "string_localized",
+      "name": "Localized string lookup",
+      "category": "localization",
+      "when_to_use": "When intake localization includes >1 language. Lookup key in .strings file matching system locale.",
+      "example_lua": "local s = playdate.graphics.getLocalizedText(\"hello\")",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["i18n", "string"]
+    },
+    {
+      "id": "system_getLanguage",
+      "name": "Read system language",
+      "category": "localization",
+      "when_to_use": "Branch dialog or fonts based on user OS language preference.",
+      "example_lua": "local lang = playdate.getSystemLanguage()",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "    state.lang = playdate.getSystemLanguage()",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["i18n", "language"]
+    },
+    {
+      "id": "network_http",
+      "name": "HTTP request (network)",
+      "category": "networking",
+      "when_to_use": "Server-backed leaderboard / catalog fetch. Wifi only. Bundle a fallback for offline play.",
+      "example_lua": "playdate.network.http.requestGetJSON(url, function(ok, body) ... end)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["network", "http"]
+    },
+    {
+      "id": "debug_print",
+      "name": "Console print",
+      "category": "debug",
+      "when_to_use": "Standard print() routes to the simulator console / device log. Strip from shipping builds.",
+      "example_lua": "print(\"hello\")",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["debug", "log"]
+    },
+    {
+      "id": "debug_fps",
+      "name": "FPS display",
+      "category": "debug",
+      "when_to_use": "Draws current FPS in top-left. Dev only; remove for shipping.",
+      "example_lua": "playdate.drawFPS(0,0)",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "    if state.debug_fps then playdate.drawFPS(0,0) end",
+        "cleanup": ""
+      },
+      "tags": ["debug", "fps"]
+    },
+    {
+      "id": "debug_assert",
+      "name": "Assertion",
+      "category": "debug",
+      "when_to_use": "Lua's standard assert(). Will halt + log on failure. Use for invariants the autopilot is supposed to maintain.",
+      "example_lua": "assert(type(scene.update) == \"function\")",
+      "imports": [],
+      "snippets": {
+        "imports": "",
+        "state_init": "",
+        "setup": "",
+        "input_bindings": "",
+        "update_tick": "",
+        "cleanup": ""
+      },
+      "tags": ["debug", "assert"]
+    }
+  ]
+}
