@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import {
   FolderTree, MessageSquare, ScrollText,
-  Download, PlayCircle, Hammer, Loader2
+  Download, PlayCircle, Hammer, Loader2, Pencil
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
@@ -161,6 +161,10 @@ function SdkBuildBar({ project }) {
         <span className={`pill-dot ${stateDot}`} />
         <span className="font-mono">{stateLabel}</span>
       </span>
+      <a href={`/project/${project.id}/sdk/edit`} className="btn text-xs"
+         title="edit scenes, characters, prompts; regenerate assets">
+        <Pencil className="w-3 h-3" /> edit
+      </a>
       <button type="button" className="btn text-xs" onClick={doExport} disabled={building}>
         {building ? <Loader2 className="w-3 h-3 animate-spin" /> : <Hammer className="w-3 h-3" />}
         {building ? 'building' : 'build .pdx'}

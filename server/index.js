@@ -70,10 +70,23 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       'default-src': ["'self'"],
-      'script-src': ["'self'", PROXY_BOOT_HASH],
-      'script-src-elem': ["'self'", PROXY_BOOT_HASH],
+      // Allow CF beacon injected by Cloudflare when served via tunnel +
+      // CF Access — they bolt static.cloudflareinsights.com onto every
+      // origin response. Listing it here prevents a noisy CSP error in
+      // the console without us giving up first-party isolation.
+      'script-src': ["'self'", PROXY_BOOT_HASH, 'https://static.cloudflareinsights.com'],
+      'script-src-elem': ["'self'", PROXY_BOOT_HASH, 'https://static.cloudflareinsights.com'],
+      // PWA manifest may be re-fetched through the CF Access challenge
+      // when an unauthenticated session expires; allow the CF Access
+      // host so the redirect doesn't trigger a console violation.
+      'manifest-src': ["'self'", 'https://hackdev.cloudflareaccess.com'],
       'style-src': ["'self'", "'unsafe-inline'"],
-      'connect-src': ["'self'", 'ws:', 'wss:'],
+      // The studio bundles its own Inter font copy via @font-face
+      // (added at build time); we don't need to call out to rsms.me
+      // anymore. Leave style-src tight.
+      'connect-src': ["'self'", 'ws:', 'wss:',
+                      'https://static.cloudflareinsights.com',
+                      'https://cloudflareinsights.com'],
       'img-src': ["'self'", 'data:'],
       'object-src': ["'none'"],
       'base-uri': ["'self'"],

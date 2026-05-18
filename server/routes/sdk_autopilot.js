@@ -1,10 +1,15 @@
 'use strict';
 
 const express = require('express');
+const fs = require('fs');
+const fsp = require('fs/promises');
+const path = require('path');
 const { WebSocketServer } = require('ws');
 const sdkAutopilot = require('../services/sdk_autopilot');
 const sdkExport = require('../services/sdk_export');
 const sdkPreview = require('../services/sdk_preview');
+const projects = require('../services/projects');
+const pulpAi = require('../services/pulp_ai');
 
 const router = express.Router();
 
@@ -289,6 +294,168 @@ function installPreviewWs(server) {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   });
 }
+
+// ----- SDK project editor -------------------------------------------------
+//
+// Inline editing of sdk_data/project.json (title, description, per-scene
+// name/description/style_reference, character bio/portrait_prompt) +
+// per-asset regen endpoints. The autopilot drops the canonical project
+// state at <local_path>/sdk_data/project.json; we read + mutate it here.
+
+async function readSdkProject(projectId) {
+  const project = await projects.getProject(projectId);
+  if (!project) { const e = new Error('not_found'); e.status = 404; throw e; }
+  if (project.game_type !== 'sdk') { const e = new Error('not_sdk'); e.status = 400; throw e; }
+  if (!project.local_path) { const e = new Error('no_local_path'); e.status = 500; throw e; }
+  const sdkFile = path.join(project.local_path, 'sdk_data', 'project.json');
+  if (!fs.existsSync(sdkFile)) return { project, sdkFile, data: { scenes: [], characters: [] } };
+  const data = JSON.parse(await fsp.readFile(sdkFile, 'utf8'));
+  return { project, sdkFile, data };
+}
+
+async function writeSdkProject(sdkFile, data) {
+  await fsp.writeFile(sdkFile, JSON.stringify(data, null, 2));
+}
+
+// GET /api/projects/:id/sdk/project — full editable snapshot
+router.get('/:id/sdk/project', async (req, res) => {
+  try {
+    const { project, data } = await readSdkProject(req.params.id);
+    res.json({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      local_path: project.local_path,
+      startup_scene: data.startup_scene || null,
+      scenes: (data.scenes || []).map((s) => ({
+        id: s.id, name: s.name, description: s.description,
+        style_reference: s.style_reference || null,
+        bgm_track_id: s.bgm_track_id || null,
+        bgm_file: s.bgm_file || null,
+        has_lua: !!(s.lua && s.lua.length > 0)
+      })),
+      characters: (data.characters || []).map((c) => ({
+        id: c.id, name: c.name, role: c.role, bio: c.bio,
+        portrait_prompt: c.portrait_prompt || ''
+      })),
+      outline: data.outline || '',
+      brainstorm: data.brainstorm || ''
+    });
+  } catch (e) { sendErr(res, e); }
+});
+
+// PATCH /api/projects/:id/sdk/project — partial update
+// Body shape (all optional):
+//   { name?, description?, startup_scene?, scenes?: [{id, name?, description?, style_reference?}], characters?: [{id, name?, role?, bio?, portrait_prompt?}] }
+router.patch('/:id/sdk/project', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const { project, sdkFile, data } = await readSdkProject(req.params.id);
+
+    // Project-level fields persisted to the projects.json registry, not sdk_data.
+    const projPatch = {};
+    if (typeof body.name === 'string') projPatch.name = body.name.slice(0, 256);
+    if (typeof body.description === 'string') projPatch.description = body.description.slice(0, 4000);
+    if (Object.keys(projPatch).length > 0) {
+      await projects.patchProject(project.id, projPatch);
+    }
+
+    if (typeof body.startup_scene === 'string') data.startup_scene = body.startup_scene;
+
+    // Scene patches indexed by id.
+    if (Array.isArray(body.scenes)) {
+      const byId = new Map((data.scenes || []).map((s, i) => [s.id, i]));
+      for (const patch of body.scenes) {
+        if (!patch || !patch.id || !byId.has(patch.id)) continue;
+        const idx = byId.get(patch.id);
+        const s = data.scenes[idx];
+        if (typeof patch.name === 'string') s.name = patch.name.slice(0, 256);
+        if (typeof patch.description === 'string') s.description = patch.description.slice(0, 4000);
+        if (typeof patch.style_reference === 'string' || patch.style_reference === null) {
+          s.style_reference = patch.style_reference || null;
+        }
+      }
+    }
+
+    if (Array.isArray(body.characters)) {
+      const byId = new Map((data.characters || []).map((c, i) => [c.id, i]));
+      for (const patch of body.characters) {
+        if (!patch || !patch.id || !byId.has(patch.id)) continue;
+        const idx = byId.get(patch.id);
+        const c = data.characters[idx];
+        if (typeof patch.name === 'string') c.name = patch.name.slice(0, 256);
+        if (typeof patch.role === 'string') c.role = patch.role.slice(0, 256);
+        if (typeof patch.bio === 'string') c.bio = patch.bio.slice(0, 4000);
+        if (typeof patch.portrait_prompt === 'string') c.portrait_prompt = patch.portrait_prompt.slice(0, 4000);
+      }
+    }
+
+    await writeSdkProject(sdkFile, data);
+    res.json({ ok: true });
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/scenes/:sceneId/regen-bg
+// Re-runs pulpAi.generateScene with the current (possibly edited) scene
+// description and overwrites sdk_data/scenes/<sceneId>.png.
+router.post('/:id/sdk/scenes/:sceneId/regen-bg', async (req, res) => {
+  try {
+    const { project, data } = await readSdkProject(req.params.id);
+    const scene = (data.scenes || []).find((s) => s.id === req.params.sceneId);
+    if (!scene) return res.status(404).json({ error: 'scene_not_found' });
+    const prompt = `${scene.name}. ${scene.description || ''} ` +
+      `IMPORTANT: this is an EMPTY scene background — NO human figure, NO player, ` +
+      `NO NPC, NO character visible anywhere. Only architecture, props, lighting, dither textures.` +
+      (scene.style_reference ? ` Match the silhouette + dither density of HAKCD's ${scene.style_reference} reference scene.` : '');
+    const r = await pulpAi.generateScene({ prompt, dim: [400, 240] });
+    if (!r.pngBuffer) return res.status(502).json({ error: 'no_image_returned' });
+    const destPng = path.join(project.local_path, 'sdk_data', 'scenes', scene.id + '.png');
+    await fsp.mkdir(path.dirname(destPng), { recursive: true });
+    await fsp.writeFile(destPng, r.pngBuffer);
+    res.json({ ok: true, bytes: r.pngBuffer.length, path: destPng });
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/characters/:charId/regen-portrait
+router.post('/:id/sdk/characters/:charId/regen-portrait', async (req, res) => {
+  try {
+    const { project, data } = await readSdkProject(req.params.id);
+    const c = (data.characters || []).find((x) => x.id === req.params.charId);
+    if (!c) return res.status(404).json({ error: 'character_not_found' });
+    const prompt = c.portrait_prompt || `${c.name} — ${c.role}`;
+    const r = await pulpAi.generatePortrait({ prompt, dim: 64 });
+    if (!r.pngBuffer) return res.status(502).json({ error: 'no_image_returned' });
+    const destPng = path.join(project.local_path, 'sdk_data', 'characters', c.id + '.png');
+    await fsp.mkdir(path.dirname(destPng), { recursive: true });
+    await fsp.writeFile(destPng, r.pngBuffer);
+    res.json({ ok: true, bytes: r.pngBuffer.length, path: destPng });
+  } catch (e) { sendErr(res, e); }
+});
+
+// GET /api/projects/:id/sdk/scenes/:sceneId/asset — serve the current
+// scene background PNG (or 404). Convenience for the editor UI thumbnails.
+router.get('/:id/sdk/scenes/:sceneId/asset', async (req, res) => {
+  try {
+    const { project } = await readSdkProject(req.params.id);
+    const p = path.join(project.local_path, 'sdk_data', 'scenes', req.params.sceneId + '.png');
+    if (!fs.existsSync(p)) return res.status(404).end();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'private, max-age=10');
+    fs.createReadStream(p).pipe(res);
+  } catch (e) { sendErr(res, e); }
+});
+
+// GET /api/projects/:id/sdk/characters/:charId/asset
+router.get('/:id/sdk/characters/:charId/asset', async (req, res) => {
+  try {
+    const { project } = await readSdkProject(req.params.id);
+    const p = path.join(project.local_path, 'sdk_data', 'characters', req.params.charId + '.png');
+    if (!fs.existsSync(p)) return res.status(404).end();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'private, max-age=10');
+    fs.createReadStream(p).pipe(res);
+  } catch (e) { sendErr(res, e); }
+});
 
 module.exports = router;
 module.exports.installPreviewWs = installPreviewWs;
