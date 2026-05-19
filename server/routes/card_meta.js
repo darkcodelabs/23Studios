@@ -50,14 +50,37 @@ async function countByExt(absDir, suffix, depth = 6) {
 }
 
 async function pickTitleImage(base, projectId) {
-  // Search order: sdk_data/scenes/title_*.png → source/images/title_screen.png
-  // → assets/title.png. Returns the /api/projects/:id/file/raw URL so the
-  // browser can pull it through the existing file route (CSP-safe, cookie-
-  // authenticated, path-validated).
+  // Search order tuned for desktop card hero — prefer the high-detail
+  // source artwork (pre-1-bit dither) over the device-ready image.
+  // The 1-bit dithered title_screen.png looks crushed on a desktop card;
+  // *_pixel_collection/title.png is the original render the dither was
+  // derived from and looks like the actual painting.
+  //
+  //   1. *_pixel_collection/title.png         (original render)
+  //   2. art_source/title.png                 (alt convention)
+  //   3. sdk_data/scenes/title_*.png          (autopilot output)
+  //   4. source/images/title_screen.png       (device-ready, dithered)
+  //   5. assets/title.png                     (fallback)
   const fileRawUrl = (rel) =>
     `/api/projects/${projectId}/file/raw?path=${encodeURIComponent(rel)}`;
 
-  // 1. sdk_data/scenes/title_*.png
+  // 1. <project>_pixel_collection/title.png  (e.g. hakcd_pixel_collection)
+  const topEnts = await readDirSafe(base);
+  const collectionDir = topEnts.find(
+    (e) => e.isDirectory() && /_pixel_collection$/i.test(e.name)
+  );
+  if (collectionDir) {
+    const candidate = path.join(base, collectionDir.name, 'title.png');
+    if (fs.existsSync(candidate)) {
+      return fileRawUrl(path.posix.join(collectionDir.name, 'title.png'));
+    }
+  }
+
+  // 2. art_source/title.png
+  const as = path.join(base, 'art_source', 'title.png');
+  if (fs.existsSync(as)) return fileRawUrl('art_source/title.png');
+
+  // 3. sdk_data/scenes/title_*.png
   const scenesDir = path.join(base, 'sdk_data', 'scenes');
   const sceneEnts = await readDirSafe(scenesDir);
   const titleMatch = sceneEnts
@@ -68,11 +91,11 @@ async function pickTitleImage(base, projectId) {
     return fileRawUrl(path.posix.join('sdk_data', 'scenes', titleMatch[0]));
   }
 
-  // 2. source/images/title_screen.png
+  // 4. source/images/title_screen.png  (device-ready, dithered)
   const ss = path.join(base, 'source', 'images', 'title_screen.png');
   if (fs.existsSync(ss)) return fileRawUrl('source/images/title_screen.png');
 
-  // 3. assets/title.png
+  // 5. assets/title.png
   const at = path.join(base, 'assets', 'title.png');
   if (fs.existsSync(at)) return fileRawUrl('assets/title.png');
 

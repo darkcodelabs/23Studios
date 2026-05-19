@@ -131,39 +131,41 @@ export default function SdkPlayPage() {
           ref={attachCanvas}
           alt="sdk preview"
           style={{
-            maxWidth: '95vw',
-            maxHeight: 'calc(100vh - 180px)',
+            maxWidth: '100vw',
+            maxHeight: 'calc(100vh - 220px)',
             imageRendering: 'pixelated',
             display: 'block',
             background: '#000',
             objectFit: 'contain'
           }}
+          className="md:max-h-[calc(100vh-180px)]"
         />
 
-        <div className="flex items-center gap-6">
-          <div className="grid grid-cols-3 grid-rows-3 gap-1">
+        {/* Controls — desktop: one row; mobile: 3 stacked rows full-width */}
+        <div className="w-full max-w-3xl px-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-8">
+          <div className="grid grid-cols-3 gap-2 mx-auto sm:mx-0 w-44">
             <span />
-            <button type="button" className="btn p-2" onClick={() => sendAction('up')}><ArrowUp className="w-4 h-4" /></button>
+            <button type="button" className="btn aspect-square text-xl active:bg-accent/30" onClick={() => sendAction('up')}><ArrowUp className="w-5 h-5 mx-auto" /></button>
             <span />
-            <button type="button" className="btn p-2" onClick={() => sendAction('left')}><ArrLeft className="w-4 h-4" /></button>
+            <button type="button" className="btn aspect-square text-xl active:bg-accent/30" onClick={() => sendAction('left')}><ArrLeft className="w-5 h-5 mx-auto" /></button>
             <span />
-            <button type="button" className="btn p-2" onClick={() => sendAction('right')}><ArrowRight className="w-4 h-4" /></button>
+            <button type="button" className="btn aspect-square text-xl active:bg-accent/30" onClick={() => sendAction('right')}><ArrowRight className="w-5 h-5 mx-auto" /></button>
             <span />
-            <button type="button" className="btn p-2" onClick={() => sendAction('down')}><ArrowDown className="w-4 h-4" /></button>
+            <button type="button" className="btn aspect-square text-xl active:bg-accent/30" onClick={() => sendAction('down')}><ArrowDown className="w-5 h-5 mx-auto" /></button>
             <span />
           </div>
-          <div className="flex gap-2">
-            <button type="button" className="btn h-12 w-12 rounded-full text-lg" onClick={() => sendAction('b')}>B</button>
-            <button type="button" className="btn h-12 w-12 rounded-full text-lg" onClick={() => sendAction('a')}>A</button>
+          <div className="flex gap-4 justify-center">
+            <button type="button" className="btn h-14 w-14 rounded-full text-lg active:bg-accent/30" onClick={() => sendAction('b')}>B</button>
+            <button type="button" className="btn h-14 w-14 rounded-full text-lg active:bg-accent/30" onClick={() => sendAction('a')}>A</button>
           </div>
-          <div className="flex gap-2">
-            <button type="button" className="btn p-2" title="crank CCW (,)" onClick={() => sendAction('crank_ccw')}><RotateCcw className="w-4 h-4" /></button>
-            <button type="button" className="btn p-2" title="crank CW (.)" onClick={() => sendAction('crank_cw')}><RotateCw className="w-4 h-4" /></button>
-            <button type="button" className="btn px-3 text-xs" onClick={() => sendAction('dock')}>DOCK</button>
+          <div className="flex gap-2 justify-center">
+            <button type="button" className="btn p-3 active:bg-accent/30" title="crank CCW (,)" onClick={() => sendAction('crank_ccw')}><RotateCcw className="w-5 h-5" /></button>
+            <button type="button" className="btn p-3 active:bg-accent/30" title="crank CW (.)" onClick={() => sendAction('crank_cw')}><RotateCw className="w-5 h-5" /></button>
+            <button type="button" className="btn px-3 text-xs active:bg-accent/30" onClick={() => sendAction('dock')}>DOCK</button>
           </div>
         </div>
 
-        <div className="text-[10px] text-ink-500 font-mono text-center">
+        <div className="hidden sm:block text-[10px] text-ink-500 font-mono text-center">
           keys: arrows · Z/X = A/B · , . = crank · real PlaydateSimulator on server
         </div>
       </main>
