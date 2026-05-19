@@ -502,9 +502,28 @@ const QA_CHECKS = [
     run: (scene) => {
       const lua = String(scene && scene.lua || '');
       if (!/(play_music|playMusic|audio_manager\.play_music)/.test(lua)) return null;
-      // exit() block must include stop_music.
-      const exitMatch = lua.match(/:exit\s*\(\s*\)[\s\S]*?\bend\b/);
-      const exitBody = exitMatch ? exitMatch[0] : '';
+      // exit() block must include stop_music. Balanced match: track nested
+      // `do/then/function ... end` blocks instead of stopping at the first
+      // `end`, which previously fired on inner `if t.remove then ... end`
+      // even when stop_music sat at the bottom of exit() proper.
+      const startIdx = lua.search(/:exit\s*\(\s*\)/);
+      if (startIdx < 0) return null;
+      const after = lua.slice(startIdx);
+      const tokens = after.matchAll(/\b(function|if|for|while|do|repeat|end|until)\b/g);
+      let depth = 1;
+      let exitEnd = -1;
+      for (const m of tokens) {
+        const tok = m[1];
+        if (tok === 'function' || tok === 'if' || tok === 'for' || tok === 'while' || tok === 'do') {
+          // `do` after `for`/`while` is already accounted for by the opening keyword
+          if (tok === 'do' && /\b(for|while)[^;]*\bdo$/.test(after.slice(0, m.index + 2))) continue;
+          depth += 1;
+        } else if (tok === 'end' || tok === 'until') {
+          depth -= 1;
+          if (depth === 0) { exitEnd = m.index; break; }
+        }
+      }
+      const exitBody = exitEnd > 0 ? after.slice(0, exitEnd) : after;
       if (!/(stop_music|stopMusic)/.test(exitBody)) {
         return 'music started but exit() does not call audio_manager.stop_music';
       }
