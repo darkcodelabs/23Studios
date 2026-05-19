@@ -76,7 +76,18 @@ async function pickTitleImage(base, projectId) {
     }
   }
 
-  // 2. art_source/title.png
+  // 2. art_source/scenes/title*.png  (autopilot now mirrors the original
+  //    OpenRouter render here, pre-dither)
+  const artSrcScenes = path.join(base, 'art_source', 'scenes');
+  const artEnts = await readDirSafe(artSrcScenes);
+  const artTitle = artEnts
+    .filter((e) => e.isFile() && /^title.*\.png$/i.test(e.name))
+    .map((e) => e.name)
+    .sort();
+  if (artTitle.length > 0) {
+    return fileRawUrl(path.posix.join('art_source', 'scenes', artTitle[0]));
+  }
+  // 2b. art_source/title.png (top-level fallback)
   const as = path.join(base, 'art_source', 'title.png');
   if (fs.existsSync(as)) return fileRawUrl('art_source/title.png');
 
