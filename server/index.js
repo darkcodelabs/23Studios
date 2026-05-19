@@ -116,6 +116,22 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
+// Strip code-server's `/proxy/<port>/` prefix before any route matches.
+// When the user accesses the studio via hakc.dev/proxy/8090/... (code-server
+// tunnel), URLs like /proxy/8090/assets/index.css fall through the static
+// mount (which serves /assets/*) and hit the SPA fallback — which returns
+// text/html. Browser sees CSS request returning HTML, refuses to apply,
+// blank page. Same for /proxy/8090/manifest.webmanifest. Rewrite at the
+// edge so the rest of the app sees the canonical path.
+app.use((req, _res, next) => {
+  const m = req.url.match(/^\/proxy\/\d+(\/.*)?$/);
+  if (m) {
+    req.url = m[1] || '/';
+    if (req.originalUrl) req.originalUrl = req.url;
+  }
+  next();
+});
+
 app.use(express.json({ limit: '128kb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 app.use(cookieParser(SESSION_SECRET));
