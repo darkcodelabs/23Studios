@@ -422,7 +422,13 @@ function checkFlagConsistency(design) {
  * @returns {Promise<object>} structured report
  */
 async function validate(projectId, sdkRoot) {
-  const compiledPath = path.join(sdkRoot, 'sdk_data', 'compiled_design.json');
+  // sdkRoot may be either <project>/sdk_data (the modern contract used by
+  // routes/design.js + sdk_design_compiler) or <project> (older callers).
+  // Probe both shapes so we don't 404 when the file exists.
+  let compiledPath = path.join(sdkRoot, 'compiled_design.json');
+  if (!fs.existsSync(compiledPath)) {
+    compiledPath = path.join(sdkRoot, 'sdk_data', 'compiled_design.json');
+  }
 
   if (!fs.existsSync(compiledPath)) {
     return {
@@ -468,10 +474,10 @@ async function validate(projectId, sdkRoot) {
     checks
   };
 
-  // Persist as side-effect.
+  // Persist next to the compiled_design.json we just read.
   try {
-    const outPath = path.join(sdkRoot, 'sdk_data', 'design_validation.json');
-    await fsp.mkdir(path.join(sdkRoot, 'sdk_data'), { recursive: true });
+    const outPath = path.join(path.dirname(compiledPath), 'design_validation.json');
+    await fsp.mkdir(path.dirname(outPath), { recursive: true });
     await fsp.writeFile(outPath, JSON.stringify(report, null, 2), { mode: 0o600 });
   } catch (_e) {
     // Non-fatal — still return the report.
