@@ -2,6 +2,7 @@
 
 const express = require('express');
 const openrouter = require('../services/openrouter');
+const openrouterSpend = require('../services/openrouter_spend');
 const claude = require('../services/claude');
 const projects = require('../services/projects');
 const { validateId } = require('../services/validation');
@@ -23,6 +24,15 @@ router.post('/chat', async (req, res, next) => {
       if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
       const p = await projects.getProject(project_id);
       if (!p) return res.status(404).json({ error: 'project_not_found' });
+      // Hard cap: if the project has burned past its OpenRouter cap, refuse
+      // new calls until the operator raises the cap or archives.
+      try { await openrouterSpend.assertCapNotExceeded(project_id); }
+      catch (capErr) {
+        if (capErr && capErr.code === 'cost_cap_exceeded') {
+          return res.status(402).json({ error: 'cost_cap_exceeded', detail: capErr.message });
+        }
+        throw capErr;
+      }
     }
     if (typeof model !== 'string') return res.status(400).json({ error: 'bad_request', detail: 'model required' });
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -49,7 +59,9 @@ router.post('/chat', async (req, res, next) => {
         model,
         messages,
         signal: controller.signal,
-        onDelta: (d) => send('chunk', { text: d })
+        onDelta: (d) => send('chunk', { text: d }),
+        projectId: project_id || null,
+        stage: 'chat'
       });
       if (project_id) {
         await claude.appendHistory(project_id, { role: 'user', content: userText, backend: 'openrouter', model });

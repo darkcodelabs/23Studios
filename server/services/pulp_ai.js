@@ -13,7 +13,7 @@ const projects = require('./projects');
 const pulp = require('./pulp_project');
 const playdateSpec = require('./playdate_spec');
 const playdateValidator = require('./playdate_validator');
-const groundingGuard = require('./grounding_guard');
+const driftDetect = require('./drift_detect');
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -23,34 +23,52 @@ const API_KEY = process.env.OPENROUTER_API_KEY || '';
 // proxy doesn't reliably pass DALL-E 3 through; the chat-completions path
 // returns images in message.images[0].image_url.url as base64 data URLs.
 // The right OpenAI model on OpenRouter for this is `openai/gpt-image-1`.
-async function generateImageViaOpenRouter({ prompt, model, sizeHint, grounding }) {
+async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectContext }) {
   if (!API_KEY) {
     const e = new Error('openrouter_unavailable');
     e.code = 'openrouter_unavailable';
     throw e;
   }
 
-  // Phase 6 C4: reference grounding. If the caller passes a grounding object,
-  // it must either cite anchor_refs OR set { no_anchor:true, rationale }.
-  // assertGrounded throws (code='ungrounded' or 'ungrounded_no_rationale',
-  // status=409) when neither is satisfied. The composed preamble is appended
-  // to the prompt body so the model also sees the anchor cite verbatim.
-  // Enforcement is opt-in per call site via the grounding arg; missing means
-  // "legacy caller, don't enforce". Set STUDIO_GROUNDING=required to force
-  // every image-gen call to provide grounding.
-  let groundedPrompt = prompt;
-  if (grounding != null) {
-    const norm = groundingGuard.assertGrounded(grounding);
-    if (norm.no_anchor) {
-      groundedPrompt = prompt + groundingGuard.renderNoAnchorPreamble(norm.rationale);
-    } else {
-      groundedPrompt = prompt + groundingGuard.renderAnchorPreamble(norm.anchor_refs);
+  // Phase 6 C3: pre-send drift check. Always runs the forbidden-token sweep
+  // (those phrases are corporate-safety reflex contamination — they should
+  // never leak regardless of project state). Required-token check + canon-
+  // derived vocabulary only fire when projectContext is supplied. Set
+  // STUDIO_DRIFT_DETECT=off to disable, or .mode='log' to record-without-block.
+  const driftMode = String(process.env.STUDIO_DRIFT_DETECT || 'block').toLowerCase();
+  if (driftMode !== 'off') {
+    const ctx = projectContext || {};
+    const drift = await driftDetect.checkPromptDrift({
+      projectId: ctx.projectId || null,
+      prompt_body: (prompt || '') + (sizeHint ? `\n\nRender at ${sizeHint}.` : ''),
+      filter_trip_words: ctx.filter_trip_words || [],
+      require_anchor_citation: !!ctx.require_anchor_citation
+    });
+    if (!drift.passes) {
+      // Always persist a drift flag so the dashboard can show this.
+      if (ctx.projectId) {
+        try {
+          await driftDetect.appendDriftFlag(ctx.projectId, {
+            kind: 'pre_send',
+            stage: ctx.stage || null,
+            scene_id: ctx.scene_id || null,
+            agent: ctx.agent || null,
+            required_missing: drift.required_missing,
+            forbidden_present: drift.forbidden_present,
+            anchor_missing: drift.anchor_missing,
+            drift_score: drift.drift_score,
+            mode: driftMode
+          });
+        } catch (_e) { /* never let logging fail the call */ }
+      }
+      if (driftMode !== 'log') {
+        const e = new Error(`drift_blocked: missing=${drift.required_missing.length} forbidden=${drift.forbidden_present.length}`);
+        e.code = 'drift_blocked';
+        e.status = 409;
+        e.detail = drift;
+        throw e;
+      }
     }
-  } else if (String(process.env.STUDIO_GROUNDING || '').toLowerCase() === 'required') {
-    const e = new Error('grounding_guard: STUDIO_GROUNDING=required — caller must pass { grounding: { anchor_refs:[...] } } or { grounding: { no_anchor:true, rationale } }');
-    e.code = 'ungrounded';
-    e.status = 409;
-    throw e;
   }
 
   const sizeLine = sizeHint ? `\n\nRender at ${sizeHint}.` : '';
@@ -76,6 +94,25 @@ async function generateImageViaOpenRouter({ prompt, model, sizeHint, grounding }
     throw e;
   }
   const body = await res.json();
+
+  // Record spend BEFORE extracting the image. Image-gen sometimes returns
+  // usage in the response body (`usage.prompt_tokens` + `completion_tokens`)
+  // but we also fall back to the flat per-image cost if not present.
+  if (projectId) {
+    const usage = body && body.usage;
+    try {
+      await openrouterSpend.recordCall({
+        projectId,
+        model,
+        stage: stage || 'scene',
+        scene_id: sceneId || null,
+        kind: kind || 'image',
+        prompt_tokens: usage && usage.prompt_tokens,
+        completion_tokens: usage && usage.completion_tokens
+      });
+    } catch (_e) { /* best-effort */ }
+  }
+
   const msg = body && body.choices && body.choices[0] && body.choices[0].message;
   if (!msg) throw new Error('no_choices');
   const imgs = Array.isArray(msg.images) ? msg.images : [];
@@ -334,7 +371,10 @@ async function generateTileArt({ projectId, prompt, model, style, tileDim }) {
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
         model: requestedModel,
-        sizeHint: 'square 1024x1024, sharp 1-bit pixel art'
+        sizeHint: 'square 1024x1024, sharp 1-bit pixel art',
+        projectId,
+        stage: 'tile-art',
+        kind: 'tile-art'
       });
       usedModel = `openrouter:${requestedModel}`;
       finalPng = await to1bitTilePng(imgBuf, dim);
@@ -471,7 +511,7 @@ const SCENE_STYLE_LOCK =
  * - Falls back to a deterministic dithered placeholder if OPENROUTER_API_KEY
  *   is unset or the image call fails.
  */
-async function generateScene({ prompt, model, dim }) {
+async function generateScene({ prompt, model, dim, projectId, sceneId, stage }) {
   const cleanPrompt = sanitizePrompt(prompt);
   if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
   const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
@@ -509,7 +549,11 @@ async function generateScene({ prompt, model, dim }) {
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
         model: requestedModel,
-        sizeHint: 'landscape 1792x1024 (5:3 aspect), Playdate 400x240 native target'
+        sizeHint: 'landscape 1792x1024 (5:3 aspect), Playdate 400x240 native target',
+        projectId: projectId || null,
+        sceneId: sceneId || null,
+        stage: stage || 'scene',
+        kind: 'scene'
       });
       usedModel = `openrouter:${requestedModel}`;
       pngBuffer = await toScenePng(imgBuf, dw, dh);
@@ -588,7 +632,7 @@ async function toPortraitPng(buf, width, height) {
  * the signature so the service surface stays uniform.
  */
 // eslint-disable-next-line no-unused-vars
-async function generatePortrait({ prompt, model, dim, dither, threshold, contrast, brightness }) {
+async function generatePortrait({ prompt, model, dim, dither, threshold, contrast, brightness, projectId, sceneId, stage }) {
   const cleanPrompt = sanitizePrompt(prompt);
   if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
   const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
@@ -623,7 +667,11 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
         model: requestedModel,
-        sizeHint: 'square 1024x1024, head-and-shoulders portrait, 1-bit dithered'
+        sizeHint: 'square 1024x1024, head-and-shoulders portrait, 1-bit dithered',
+        projectId: projectId || null,
+        sceneId: sceneId || null,
+        stage: stage || 'portrait',
+        kind: 'portrait'
       });
       usedModel = `openrouter:${requestedModel}`;
       pngBuffer = await toPortraitPng(imgBuf, dw, dh);

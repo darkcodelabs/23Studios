@@ -16,6 +16,7 @@ const { csrfProtection, csrfErrorHandler } = require('./middleware/csrf');
 const { apiLimiter } = require('./middleware/rateLimit');
 const authRouter = require('./routes/auth');
 const projectsRouter = require('./routes/projects');
+const extractRouter = require('./routes/extract');
 const filesRouter = require('./routes/files');
 const pulpRouter = require('./routes/pulp');
 const pulpAiRouter = require('./routes/pulp_ai');
@@ -26,13 +27,18 @@ const pulpExportRouter = require('./routes/pulp_export');
 const pulpWorkflowRouter = require('./routes/pulp_workflow');
 const pulpAutopilotRouter = require('./routes/pulp_autopilot');
 const sdkAutopilotRouter = require('./routes/sdk_autopilot');
+const phase6Router = require('./routes/phase6');
 const stylesRouter = require('./routes/styles');
 const assetLibraryRouter = require('./routes/asset_library');
+const referencesRouter = require('./routes/references');
 const lateAddRouter = require('./routes/late_add');
 const npcRouter = require('./routes/npc');
 const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
+const decisionsRouter = require('./routes/decisions');
+const driftRouter = require('./routes/drift');
 const openrouterRouter = require('./routes/openrouter');
+const costRouter = require('./routes/cost');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -138,6 +144,7 @@ app.use('/api', requireAuth, csrfProtection);
 app.use(csrfErrorHandler);
 
 app.use('/api/projects', projectsRouter);
+app.use('/api/projects', extractRouter);
 app.use('/api/projects', filesRouter);
 app.use('/api/projects', pulpRouter);
 app.use('/api/projects', pulpAiRouter);
@@ -148,15 +155,21 @@ app.use('/api/projects', pulpExportRouter);
 app.use('/api/projects', pulpWorkflowRouter);
 app.use('/api/projects', pulpAutopilotRouter);
 app.use('/api/projects', sdkAutopilotRouter);
+// Phase 6 — storyboard / scene-manager / authoring IDE endpoints.
+app.use('/api/projects', phase6Router);
 // Phase 3 routers. styles + asset_library + late_add + npc + levels + minigames
 // mix /api/styles top-level + /api/projects/:id/... endpoints, so all mount at /api.
 app.use('/api', stylesRouter);
 app.use('/api', assetLibraryRouter);
+app.use('/api', referencesRouter);
 app.use('/api', lateAddRouter);
 app.use('/api', npcRouter);
 app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
+app.use('/api', decisionsRouter);
+app.use('/api', driftRouter);
 app.use('/api/openrouter', openrouterRouter);
+app.use('/api', costRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
