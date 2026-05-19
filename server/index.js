@@ -35,6 +35,7 @@ const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const decisionsRouter = require('./routes/decisions');
 const openrouterRouter = require('./routes/openrouter');
+const canonRouter = require('./routes/canon');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -161,6 +162,10 @@ app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api', decisionsRouter);
 app.use('/api/openrouter', openrouterRouter);
+// Phase 6 B4: canon viewer + editor. Canon edits ship a markdown body
+// that can easily exceed the global 128kb json cap, so this router uses
+// its own larger parser.
+app.use('/api', express.json({ limit: '2mb' }), canonRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
