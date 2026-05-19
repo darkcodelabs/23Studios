@@ -92,11 +92,10 @@ import PulpEditor from './pages/PulpEditor.jsx';
 import ComposerV2 from './pages/ComposerV2.jsx';
 import StylePicker from './pages/StylePicker.jsx';
 import AssetLibraryBrowser from './pages/AssetLibraryBrowser.jsx';
-import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
-import DecisionsLog from './pages/DecisionsLog.jsx';
+import Coverage from './pages/Coverage.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -122,11 +121,10 @@ export default function App() {
         <Route path="/project/:id/composer" element={<RequireAuth><ComposerV2 /></RequireAuth>} />
         <Route path="/project/:id/styles/:axisId" element={<RequireAuth><StylePicker /></RequireAuth>} />
         <Route path="/project/:id/asset-library" element={<RequireAuth><AssetLibraryBrowser /></RequireAuth>} />
-        <Route path="/project/:id/references" element={<RequireAuth><ReferenceLibrary /></RequireAuth>} />
         <Route path="/project/:id/npcs" element={<RequireAuth><NpcDialogEditor /></RequireAuth>} />
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
-        <Route path="/project/:id/decisions" element={<RequireAuth><DecisionsLog /></RequireAuth>} />
+        <Route path="/project/:id/requirements/coverage" element={<RequireAuth><Coverage /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
