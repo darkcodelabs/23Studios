@@ -29,14 +29,17 @@ const projects = require('./projects');
 const sdkExport = require('./sdk_export');
 
 const DEFAULT_FPS = 15;
-const CAPTURE_W = 400;
-const CAPTURE_H = 240;
-// Sim window LCD inset on default Linux skin (SDK 3.0.6, 482x480 window):
-// title+menu ~58px, chassis top ~80px, chassis side ~41px. The sim window
-// is found dynamically per-DISPLAY so multi-project previews don't fight
-// over a hardcoded root crop.
-const SIM_LCD_DX = Number(process.env.PLAYDATE_SIM_LCD_DX || 41);
-const SIM_LCD_DY = Number(process.env.PLAYDATE_SIM_LCD_DY || 80);
+// PlaydateSimulator on Linux always renders inside its chassis skin —
+// there's no --no-skin flag, no separate LCD subwindow we can grab. So
+// we capture the whole sim window as-is (chassis + LCD) and let the
+// client render it at its natural aspect. If a tighter crop is wanted
+// per skin, set the override envs.
+const SIM_LCD_DX = process.env.PLAYDATE_SIM_LCD_DX != null
+  ? Number(process.env.PLAYDATE_SIM_LCD_DX) : null;
+const SIM_LCD_DY = process.env.PLAYDATE_SIM_LCD_DY != null
+  ? Number(process.env.PLAYDATE_SIM_LCD_DY) : null;
+const SIM_LCD_W = Number(process.env.PLAYDATE_SIM_LCD_W || 400);
+const SIM_LCD_H = Number(process.env.PLAYDATE_SIM_LCD_H || 240);
 
 const SIM_PATH_CANDIDATES = [
   process.env.PLAYDATE_SDK_PATH && path.join(process.env.PLAYDATE_SDK_PATH, 'bin', 'PlaydateSimulator'),
@@ -168,11 +171,12 @@ async function start({ projectId }) {
         const buf = await new Promise((resolve, reject) => {
           const args = ['-display', display];
           if (simWinId) {
-            args.push('-window', simWinId, '-crop',
-                      `${CAPTURE_W}x${CAPTURE_H}+${SIM_LCD_DX}+${SIM_LCD_DY}`);
+            args.push('-window', simWinId);
+            if (SIM_LCD_DX != null && SIM_LCD_DY != null) {
+              args.push('-crop', `${SIM_LCD_W}x${SIM_LCD_H}+${SIM_LCD_DX}+${SIM_LCD_DY}`);
+            }
           } else {
-            args.push('-window', 'root', '-crop',
-                      `${CAPTURE_W}x${CAPTURE_H}+0+0`);
+            args.push('-window', 'root');
           }
           args.push('-silent', 'png:-');
           const imp = spawn('import', args, { stdio: ['ignore', 'pipe', 'pipe'] });
