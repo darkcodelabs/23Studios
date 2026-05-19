@@ -5,6 +5,7 @@ import {
   Hammer, Download, PlayCircle, MessageSquare, ChevronRight, ChevronDown
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
+import ShipButton from '../components/ShipButton.jsx';
 import { api } from '../lib/api.js';
 
 // SDK editor — read sdk_data/project.json, expose every scene + character
@@ -155,6 +156,7 @@ export default function SdkEditPage() {
           <div className="flex-1" />
           <BuildBar build={build} ready={ready} building={building}
                     onBuild={doBuild} onPlay={() => { window.location.href = `/project/${id}/sdk/play`; }} />
+          <ShipButton projectId={id} />
           <button type="button" onClick={save}
                   className="btn-primary text-xs disabled:opacity-50"
                   disabled={!dirty || saving}>

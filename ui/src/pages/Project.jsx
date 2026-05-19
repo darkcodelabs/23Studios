@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
+import ShipButton from '../components/ShipButton.jsx';
 import FileTree from '../components/FileTree.jsx';
 import FileViewer from '../components/FileViewer.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
@@ -75,6 +76,7 @@ export default function Project() {
                 <ImageIcon className="w-3 h-3" /> references
               </Link>
               {project?.game_type === 'sdk' ? <SdkBuildBar project={project} /> : null}
+              {project ? <ShipButton projectId={project.id} /> : null}
               <GameTypeToggle project={project} onChange={setProject} />
               {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
             </div>
