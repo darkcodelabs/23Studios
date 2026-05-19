@@ -1,9 +1,13 @@
 'use strict';
 
-// design.js — Routes for the Game Design Compiler (Step 3 of canonical pipeline).
+// design.js — Routes for the Game Design Compiler (Step 3) + QA Critic (Step 8).
 //
-// POST /api/projects/:id/design/compile — run compiler, write compiled_design.json, return JSON
-// GET  /api/projects/:id/design        — serve compiled_design.json (404 if not yet compiled)
+// POST /api/projects/:id/design/compile        — run compiler, write compiled_design.json
+// GET  /api/projects/:id/design                — serve compiled_design.json
+// POST /api/projects/:id/design/validate       — run static validator
+// GET  /api/projects/:id/design/validate/latest — latest validator report
+// POST /api/projects/:id/qa/critique           — run 5-persona AI critic, return report
+// GET  /api/projects/:id/qa/critique/latest    — return persisted qa_critic.json
 
 const express = require('express');
 const fs = require('fs');
@@ -12,6 +16,7 @@ const path = require('path');
 const projects = require('../services/projects');
 const compiler = require('../services/sdk_design_compiler');
 const validator = require('../services/sdk_static_validator');
+const critic = require('../services/sdk_qa_pass');
 
 const router = express.Router();
 
@@ -107,6 +112,40 @@ router.get('/:id/design/validate/latest', async (req, res) => {
     }
     const raw = await fsp.readFile(fp, 'utf8');
     res.json(JSON.parse(raw));
+  } catch (e) {
+    sendErr(res, e);
+  }
+});
+
+// POST /api/projects/:id/qa/critique
+// Runs the 5-persona AI critic pass. Writes qa_critic.json + qa_critic.md to
+// sdk_data/ and returns the full report. Can take 30-90 s (5 Claude calls).
+router.post('/:id/qa/critique', async (req, res) => {
+  try {
+    const project = await projects.getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: 'project_not_found' });
+    if (!project.local_path) {
+      return res.status(422).json({ error: 'project_has_no_local_path' });
+    }
+    const report = await critic.critique(project.id, project.local_path);
+    res.json(report);
+  } catch (e) {
+    sendErr(res, e);
+  }
+});
+
+// GET /api/projects/:id/qa/critique/latest
+// Returns the most recent persisted qa_critic.json, or 404 if not yet run.
+router.get('/:id/qa/critique/latest', async (req, res) => {
+  try {
+    const project = await projects.getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: 'project_not_found' });
+    if (!project.local_path) {
+      return res.status(422).json({ error: 'project_has_no_local_path' });
+    }
+    const report = await critic.readLatest(project.local_path);
+    if (!report) return res.status(404).json({ error: 'no_critique_yet' });
+    res.json(report);
   } catch (e) {
     sendErr(res, e);
   }

@@ -32,6 +32,7 @@ const assetLibrary = require('./asset_library');
 const mvpAutopilot = require('./mvp_autopilot');
 const designCompiler = require('./sdk_design_compiler');
 const sdkReviewBoard = require('./sdk_review_board');
+const assetBatches = require('./sdk_asset_batches');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -357,43 +358,106 @@ function formatLockPreamble(locked) {
 }
 
 // Generate each scene's 400x240 background PNG via pulp_ai.generateScene.
+// When opts.skipBatchGates is false (default), splits scenes into 3 batches,
+// emits a gate event after each batch, and halts if the gate is not approved.
+// Set SKIP_BATCH_GATES=1 env or opts.skipBatchGates=true to use the legacy
+// all-at-once behaviour (useful for tests and power users).
 async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
-                                storyBible, intake, bibleVars, activePicks, locked }) {
+                                storyBible, intake, bibleVars, activePicks, locked,
+                                skipBatchGates }) {
   const scenes = sdk.scenes || [];
-  for (let i = 0; i < scenes.length; i++) {
+  const useBatches = !skipBatchGates && !process.env.SKIP_BATCH_GATES;
+
+  if (!useBatches) {
+    // Legacy path: generate all scenes in one pass.
+    for (let i = 0; i < scenes.length; i++) {
+      if (job && job.cancelled) break;
+      const s = scenes[i];
+      if (!s || !s.id) continue;
+      const destPng = path.join(sdkRoot, 'scenes', s.id + '.png');
+      if (fs.existsSync(destPng)) {
+        ev('asset', { kind: 'scene', id: s.id, skipped: 'exists' });
+        continue;
+      }
+      try {
+        const { brief } = buildSceneBurstPrompt({
+          scene: s, storyBible, intake, bibleVars, activePicks, locked
+        });
+        const r = await pulpAi.generateScene({
+          prompt: brief, dim: [400, 240],
+          projectId, sceneId: s.id, stage: 'scene_bursts'
+        });
+        if (!r.pngBuffer) throw new Error('no png returned');
+        await fsp.writeFile(destPng, r.pngBuffer);
+        if (r.sourceBuffer) {
+          const srcDir = path.join(sdkRoot, 'art_source', 'scenes');
+          await fsp.mkdir(srcDir, { recursive: true });
+          await fsp.writeFile(path.join(srcDir, s.id + '.png'), r.sourceBuffer);
+        }
+        ev('asset', { kind: 'scene', id: s.id, bytes: r.pngBuffer.length });
+      } catch (e) {
+        ev('log', { text: `scene ${s.id} failed: ${e.message}` });
+        if (s.style_reference) {
+          await tryReferenceFallback(s, destPng, ev);
+        }
+      }
+    }
+    return;
+  }
+
+  // Batch path: 3 batches with per-batch contact sheets and gate files.
+  const batches = assetBatches.planBatches(scenes);
+
+  for (const batch of batches) {
     if (job && job.cancelled) break;
-    const s = scenes[i];
-    if (!s || !s.id) continue;
-    const destPng = path.join(sdkRoot, 'scenes', s.id + '.png');
-    if (fs.existsSync(destPng)) {
-      ev('asset', { kind: 'scene', id: s.id, skipped: 'exists' });
-      continue;
+
+    // Check if this batch gate is already approved (re-entry after a prior run).
+    const existingGate = await assetBatches.readBatchGate(sdkRoot, batch.batch_id);
+    if (existingGate && existingGate.chosen === 'approved') {
+      ev('log', { text: `scene batch ${batch.batch_id}: gate already approved — continuing` });
+    } else if (existingGate && existingGate.chosen === 'revise') {
+      ev('log', { text: `scene batch ${batch.batch_id}: gate says revise — re-generating` });
+    } else if (existingGate && existingGate.chosen === null && existingGate.status === 'awaiting_review') {
+      // Gate was written but not yet acted on — halt here and wait.
+      ev('gate', { gate: `batch_${batch.batch_id}`, kind: 'scene', status: 'awaiting_review',
+                   awaiting_batch: batch.batch_id });
+      ev('log', { text: `scene batch ${batch.batch_id}: awaiting review — halting autopilot` });
+      return;
     }
-    try {
+
+    // Build the prompt function for this scene kind.
+    const promptFn = (scene) => {
       const { brief } = buildSceneBurstPrompt({
-        scene: s, storyBible, intake, bibleVars, activePicks, locked
+        scene, storyBible, intake, bibleVars, activePicks, locked
       });
-      const r = await pulpAi.generateScene({
-        prompt: brief, dim: [400, 240],
-        projectId, sceneId: s.id, stage: 'scene_bursts'
-      });
-      if (!r.pngBuffer) throw new Error('no png returned');
-      await fsp.writeFile(destPng, r.pngBuffer);
-      // Mirror the pre-dither OpenRouter render under art_source/ so the
-      // dashboard card hero, README, store page, etc. can show the high-
-      // detail original — not the brutally-dithered 400x240 device PNG.
-      if (r.sourceBuffer) {
-        const srcDir = path.join(sdkRoot, 'art_source', 'scenes');
-        await fsp.mkdir(srcDir, { recursive: true });
-        await fsp.writeFile(path.join(srcDir, s.id + '.png'), r.sourceBuffer);
-      }
-      ev('asset', { kind: 'scene', id: s.id, bytes: r.pngBuffer.length });
-    } catch (e) {
-      ev('log', { text: `scene ${s.id} failed: ${e.message}` });
-      if (s.style_reference) {
-        await tryReferenceFallback(s, destPng, ev);
-      }
-    }
+      return brief;
+    };
+
+    // Attach dim hint so runBatch uses the right size.
+    const batchItems = batch.items.map((s) => ({ ...s, _dim: [400, 240] }));
+
+    const manifestInfo = await assetBatches.runBatch(
+      projectId, sdkRoot, 'scene',
+      { ...batch, items: batchItems },
+      { emit: ev, job, promptFn }
+    );
+
+    // Write gate file.
+    const gate = await assetBatches.gateForBatch(projectId, sdkRoot, batch.batch_id, manifestInfo);
+
+    ev('gate', {
+      gate: `batch_${batch.batch_id}`,
+      kind: 'scene',
+      batch_id: batch.batch_id,
+      status: 'awaiting_review',
+      contact_sheet_path: gate.contact_sheet_path,
+      manifest_path: gate.manifest_path
+    });
+
+    ev('log', { text: `scene batch ${batch.batch_id}: contact sheet ready — awaiting review` });
+
+    // Halt; next run() invocation will find the gate and either continue or revise.
+    return;
   }
 }
 
@@ -429,38 +493,89 @@ async function tryReferenceFallback(scene, destPng, ev) {
 }
 
 async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job, activePicks,
-                                   storyBible, intake, bibleVars }) {
-  for (let i = 0; i < characters.length; i++) {
-    if (job && job.cancelled) break;
-    const c = characters[i];
-    if (!c || !c.id) continue;
-    const destPng = path.join(sdkRoot, 'characters', c.id + '.png');
-    if (fs.existsSync(destPng)) {
-      ev('asset', { kind: 'portrait', id: c.id, skipped: 'exists' });
-      continue;
-    }
-    try {
-      // Section 8: visual_anchor must lead. Fall back to portrait_prompt or
-      // a minimal description if either is missing.
-      const anchor = c.visual_anchor || `${c.role || 'character'} anchor`;
-      const promptText = (c.portrait_prompt && c.portrait_prompt.includes(anchor))
-        ? c.portrait_prompt
-        : `${anchor}. ${c.portrait_prompt || (c.name + ' - ' + c.role)}`;
-      const r = await pulpAi.generatePortrait({
-        prompt: promptText, dim: 64,
-        projectId, sceneId: c.id, stage: 'portrait_bursts'
-      });
-      if (!r.pngBuffer) throw new Error('no png returned');
-      await fsp.writeFile(destPng, r.pngBuffer);
-      if (r.sourceBuffer) {
-        const srcDir = path.join(sdkRoot, 'art_source', 'characters');
-        await fsp.mkdir(srcDir, { recursive: true });
-        await fsp.writeFile(path.join(srcDir, c.id + '.png'), r.sourceBuffer);
+                                   storyBible, intake, bibleVars, skipBatchGates }) {
+  const useBatches = !skipBatchGates && !process.env.SKIP_BATCH_GATES;
+
+  if (!useBatches) {
+    // Legacy path.
+    for (let i = 0; i < characters.length; i++) {
+      if (job && job.cancelled) break;
+      const c = characters[i];
+      if (!c || !c.id) continue;
+      const destPng = path.join(sdkRoot, 'characters', c.id + '.png');
+      if (fs.existsSync(destPng)) {
+        ev('asset', { kind: 'portrait', id: c.id, skipped: 'exists' });
+        continue;
       }
-      ev('asset', { kind: 'portrait', id: c.id, bytes: r.pngBuffer.length });
-    } catch (e) {
-      ev('log', { text: `portrait ${c.id} failed: ${e.message}` });
+      try {
+        const anchor = c.visual_anchor || `${c.role || 'character'} anchor`;
+        const promptText = (c.portrait_prompt && c.portrait_prompt.includes(anchor))
+          ? c.portrait_prompt
+          : `${anchor}. ${c.portrait_prompt || (c.name + ' - ' + c.role)}`;
+        const r = await pulpAi.generatePortrait({
+          prompt: promptText, dim: 64,
+          projectId, sceneId: c.id, stage: 'portrait_bursts'
+        });
+        if (!r.pngBuffer) throw new Error('no png returned');
+        await fsp.writeFile(destPng, r.pngBuffer);
+        if (r.sourceBuffer) {
+          const srcDir = path.join(sdkRoot, 'art_source', 'characters');
+          await fsp.mkdir(srcDir, { recursive: true });
+          await fsp.writeFile(path.join(srcDir, c.id + '.png'), r.sourceBuffer);
+        }
+        ev('asset', { kind: 'portrait', id: c.id, bytes: r.pngBuffer.length });
+      } catch (e) {
+        ev('log', { text: `portrait ${c.id} failed: ${e.message}` });
+      }
     }
+    return;
+  }
+
+  // Batch path: 3 batches with contact sheets + gate files.
+  // Portrait batch gates use 'pb1'/'pb2'/'pb3' to avoid colliding with scene batches.
+  const batches = assetBatches.planBatches(characters).map((b) => ({
+    ...b,
+    batch_id: 'p' + b.batch_id   // pb1, pb2, pb3
+  }));
+
+  const promptFn = (c) => {
+    const anchor = c.visual_anchor || `${c.role || 'character'} anchor`;
+    return (c.portrait_prompt && c.portrait_prompt.includes(anchor))
+      ? c.portrait_prompt
+      : `${anchor}. ${c.portrait_prompt || (c.name + ' - ' + c.role)}`;
+  };
+
+  for (const batch of batches) {
+    if (job && job.cancelled) break;
+
+    const existingGate = await assetBatches.readBatchGate(sdkRoot, batch.batch_id);
+    if (existingGate && existingGate.chosen === 'approved') {
+      ev('log', { text: `portrait batch ${batch.batch_id}: gate already approved — continuing` });
+    } else if (existingGate && existingGate.chosen === null && existingGate.status === 'awaiting_review') {
+      ev('gate', { gate: `batch_${batch.batch_id}`, kind: 'portrait', status: 'awaiting_review',
+                   awaiting_batch: batch.batch_id });
+      ev('log', { text: `portrait batch ${batch.batch_id}: awaiting review — halting autopilot` });
+      return;
+    }
+
+    const manifestInfo = await assetBatches.runBatch(
+      projectId, sdkRoot, 'portrait', batch,
+      { emit: ev, job, promptFn }
+    );
+
+    const gate = await assetBatches.gateForBatch(projectId, sdkRoot, batch.batch_id, manifestInfo);
+
+    ev('gate', {
+      gate: `batch_${batch.batch_id}`,
+      kind: 'portrait',
+      batch_id: batch.batch_id,
+      status: 'awaiting_review',
+      contact_sheet_path: gate.contact_sheet_path,
+      manifest_path: gate.manifest_path
+    });
+
+    ev('log', { text: `portrait batch ${batch.batch_id}: contact sheet ready — awaiting review` });
+    return;
   }
 }
 
@@ -764,12 +879,13 @@ async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, int
 const _jobs = new Map();
 function isRunning(pid) { return _jobs.has(pid) && _jobs.get(pid).running; }
 
-function startSdkAutopilot({ projectId, pitch, onEvent }) {
+function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }) {
   if (isRunning(projectId)) {
     const e = new Error('sdk_autopilot_already_running');
     e.status = 409; e.code = 'autopilot_already_running'; throw e;
   }
   const job = { projectId, pitch, running: true, cancelled: false,
+                skipBatchGates: skipBatchGates || !!process.env.SKIP_BATCH_GATES,
                 started_at: Date.now(), summary: { stages_complete: 0, stages_failed: 0 } };
   _jobs.set(projectId, job);
 
@@ -870,13 +986,15 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       ev('phase', { id: 'scene_bursts' });
       await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
                              storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks,
-                             locked });
+                             locked, skipBatchGates: job.skipBatchGates });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
 
       ev('phase', { id: 'portrait_bursts' });
       await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters,
-                                 emit: ev, job, storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks });
+                                 emit: ev, job, storyBible, intake, bibleVars,
+                                 activePicks: claudeCtx.activePicks,
+                                 skipBatchGates: job.skipBatchGates });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
 
