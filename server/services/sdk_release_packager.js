@@ -99,7 +99,7 @@ function storyBibleExcerpt(sdkRoot) {
 
 // Build README.md content.
 function buildReadme(opts) {
-  const { title, description, controls, sdkVersion, tag, developer, name } = opts;
+  const { title, description, controls, sdkVersion, tag, developer, name, zipName } = opts;
   const lines = [
     `# ${title}`,
     '',
@@ -111,7 +111,7 @@ function buildReadme(opts) {
     '',
     '## Installation',
     '',
-    '1. Download `' + name + '-' + tag + '.pdx.zip`.',
+    '1. Download `' + (zipName || (name + '-' + tag + '.pdx.zip')) + '`.',
     '2. Unzip to get `' + name + '.pdx/`.',
     '3. Sideload via the [Playdate Simulator](https://sdk.play.date/3.0.6/) or drag onto a USB-connected device.',
     '',
@@ -327,7 +327,11 @@ async function pack(projectId, opts = {}) {
 
   // --- 3. Latest .pdx ---
   const pdxSrc = latestPdxPath(projectId);
-  const zipName = `${pdxName}-${tag}.pdx.zip`;
+  // Bake build timestamp into the zip filename so back-to-back packs of
+  // the same tag don't shadow each other in /Downloads or in the GitHub
+  // Release assets list.
+  const buildStamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+  const zipName = `${pdxName}-${tag}-${buildStamp}.pdx.zip`;
   const zipDest = path.join(releaseDir, zipName);
 
   if (pdxSrc) {
@@ -384,7 +388,7 @@ async function pack(projectId, opts = {}) {
   // --- 5. README.md ---
   const readmePath = path.join(releaseDir, 'README.md');
   await fsp.writeFile(readmePath, buildReadme({
-    title, description, controls, sdkVersion, tag, developer, name: pdxName
+    title, description, controls, sdkVersion, tag, developer, name: pdxName, zipName
   }), 'utf8');
   trackFile(readmePath, 'readme');
 
