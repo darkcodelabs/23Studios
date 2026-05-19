@@ -110,6 +110,8 @@ import DesignValidator from './pages/DesignValidator.jsx';
 import ConceptPicker from './pages/ConceptPicker.jsx';
 import Milestones from './pages/Milestones.jsx';
 import PerfAudit from './pages/PerfAudit.jsx';
+import QaCritic from './pages/QaCritic.jsx';
+import Architecture from './pages/Architecture.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -203,6 +205,8 @@ export default function App() {
         <Route path="/project/:id/concepts" element={<RequireAuth><ConceptPicker /></RequireAuth>} />
         <Route path="/project/:id/milestones" element={<RequireAuth><Milestones /></RequireAuth>} />
         <Route path="/project/:id/perf" element={<RequireAuth><PerfAudit /></RequireAuth>} />
+        <Route path="/project/:id/qa-critic" element={<RequireAuth><QaCritic /></RequireAuth>} />
+        <Route path="/project/:id/architecture" element={<RequireAuth><Architecture /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
