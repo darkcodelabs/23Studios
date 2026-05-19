@@ -14,6 +14,7 @@ const pulp = require('./pulp_project');
 const playdateSpec = require('./playdate_spec');
 const playdateValidator = require('./playdate_validator');
 const driftDetect = require('./drift_detect');
+const ditherMod = require('./dither');
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -482,16 +483,70 @@ async function placeholderScenePng(prompt, width = 400, height = 240) {
     .toBuffer();
 }
 
-async function toScenePng(buf, width, height) {
-  const w = Math.max(8, Math.min(2048, (width || SCENE_DIM_DEFAULT[0]) | 0));
-  const h = Math.max(8, Math.min(2048, (height || SCENE_DIM_DEFAULT[1]) | 0));
-  return await sharp(buf)
-    .resize(w, h, { fit: 'cover', position: 'centre' })
+// Env-configurable dither mode selectors.
+// PULP_AI_SCENE_DITHER   — default: atkinson
+// PULP_AI_PORTRAIT_DITHER — default: bayer4
+// Values: atkinson | bayer4 | bayer2 | ordered8 | floyd | threshold
+// 'threshold' is the legacy hard-cutoff fallback.
+// 'bayer2' is an alias for 'bayer4' (no 2x2 matrix in dither.js).
+const VALID_DITHER_MODES = new Set(['atkinson', 'bayer4', 'bayer2', 'ordered8', 'floyd', 'threshold']);
+
+function resolveDitherMode(envVal, defaultMode) {
+  const v = (envVal || '').trim().toLowerCase();
+  if (!v || !VALID_DITHER_MODES.has(v)) return defaultMode;
+  return v;
+}
+
+/**
+ * ditherTo1bit(buf, w, h, mode)
+ *
+ * Encodes `buf` (any sharp-compatible image buffer, pre-resized to w×h) as a
+ * 1-bit b-w PNG using ordered or error-diffusion dither instead of the
+ * destructive threshold(128) hard-cutoff.
+ *
+ * @param {Buffer} buf    - Input image buffer (any colour; will be greyscaled)
+ * @param {number} w      - Target width in pixels (already resized by caller)
+ * @param {number} h      - Target height in pixels
+ * @param {string} mode   - Dither algorithm: atkinson|bayer4|bayer2|ordered8|floyd|threshold
+ * @returns {Promise<Buffer>} 1-bit b-w PNG buffer
+ */
+async function ditherTo1bit(buf, w, h, mode) {
+  // Step 1: greyscale + extract raw 8-bit single-channel pixels.
+  const greyRaw = await sharp(buf)
     .greyscale()
-    .threshold(128)
+    .raw()
+    .toBuffer();
+
+  // Step 2: run the chosen dither algorithm over the raw luma buffer.
+  let dithered;
+  if (mode === 'threshold') {
+    // Legacy hard-cutoff path — kept for env opt-out.
+    dithered = ditherMod.threshold(greyRaw, w, h, 128);
+  } else if (mode === 'bayer2') {
+    // bayer2 is an alias for bayer4 (no 2x2 matrix implemented in dither.js).
+    dithered = ditherMod.bayer4(greyRaw, w, h, 128);
+  } else if (ditherMod.isValidAlgo(mode)) {
+    dithered = ditherMod.dither(mode, greyRaw, w, h, 128);
+  } else {
+    // Should not happen given resolveDitherMode guard, but safe fallback.
+    dithered = ditherMod.atkinson(greyRaw, w, h, 128);
+  }
+
+  // Step 3: re-encode as 1-bit b-w PNG.
+  return await sharp(Buffer.from(dithered), { raw: { width: w, height: h, channels: 1 } })
     .toColourspace('b-w')
     .png()
     .toBuffer();
+}
+
+async function toScenePng(buf, width, height) {
+  const w = Math.max(8, Math.min(2048, (width || SCENE_DIM_DEFAULT[0]) | 0));
+  const h = Math.max(8, Math.min(2048, (height || SCENE_DIM_DEFAULT[1]) | 0));
+  const mode = resolveDitherMode(process.env.PULP_AI_SCENE_DITHER, 'atkinson');
+  const resized = await sharp(buf)
+    .resize(w, h, { fit: 'cover', position: 'centre' })
+    .toBuffer();
+  return ditherTo1bit(resized, w, h, mode);
 }
 
 const SCENE_STYLE_LOCK =
@@ -608,13 +663,13 @@ async function toPortraitPng(buf, width, height) {
   const h = clampPortraitDim(height, PORTRAIT_DIM_DEFAULT[1]);
   // Square-ish bust: use cover-fit so the AI's full image is cropped to the
   // tight character canvas without letterboxing.
-  return await sharp(buf)
+  // Bayer 4x4 default per PORTRAIT_STYLE_LOCK: crisp regular grid reads
+  // better than error-diffusion at 64x64 portrait size.
+  const mode = resolveDitherMode(process.env.PULP_AI_PORTRAIT_DITHER, 'bayer4');
+  const resized = await sharp(buf)
     .resize(w, h, { fit: 'cover', position: 'centre', kernel: 'nearest' })
-    .greyscale()
-    .threshold(128)
-    .toColourspace('b-w')
-    .png()
     .toBuffer();
+  return ditherTo1bit(resized, w, h, mode);
 }
 
 /**
@@ -999,6 +1054,8 @@ module.exports = {
     to1bitTilePng,
     to1bit16x16Png,
     deterministicBitsFromPrompt,
+    ditherTo1bit,
+    resolveDitherMode,
     SCENE_STYLE_LOCK,
     PORTRAIT_STYLE_LOCK
   }
