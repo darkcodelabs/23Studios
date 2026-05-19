@@ -55,6 +55,7 @@ const releasesRouter = require('./routes/releases');
 const cardMetaRouter = require('./routes/card_meta');
 const designRouter = require('./routes/design');
 const conceptsRouter = require('./routes/concepts');
+const milestonesRouter = require('./routes/milestones');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -237,6 +238,7 @@ app.use('/api/projects', releasesRouter);
 app.use('/api/projects', cardMetaRouter);
 app.use('/api/projects', designRouter);
 app.use('/api/projects', conceptsRouter);
+app.use('/api/projects', milestonesRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
