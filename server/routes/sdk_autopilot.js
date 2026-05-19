@@ -249,6 +249,74 @@ router.post('/:id/sdk/preview/stop', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/projects/:id/sdk/preview/run_scene  body: { scene_id }
+//   Updates sdk_data/project.json startup_scene to scene_id, kicks a fresh
+//   build, then (re)starts the preview against the rebuilt .pdx. Used by
+//   the B2 SceneManager "Run" button to jump straight into the scene under
+//   edit. Returns { ok, scene_id, job_id, status_url }.
+router.post('/:id/sdk/preview/run_scene', async (req, res) => {
+  try {
+    const sceneId = String((req.body && req.body.scene_id) || '').trim();
+    if (!sceneId) return res.status(400).json({ error: 'bad_request', detail: 'scene_id required' });
+    const { project, sdkFile, data } = await readSdkProject(req.params.id);
+    const sceneExists = (data.scenes || []).some((s) => s.id === sceneId);
+    if (!sceneExists) return res.status(404).json({ error: 'scene_not_found', detail: sceneId });
+    data.startup_scene = sceneId;
+    await writeSdkProject(sdkFile, data);
+    // Stop any active preview so the next start picks up the rebuilt pdx.
+    sdkPreview.stop(project.id);
+    const job = await sdkExport.startExport({ projectId: project.id });
+    res.json({
+      ok: true,
+      scene_id: sceneId,
+      job_id: job.id,
+      status_url: `/api/projects/${project.id}/sdk/export/jobs/${job.id}`
+    });
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/preview/record_session  body: { duration_s }
+//   Records the running preview for duration_s (1-60), encodes a gif via
+//   ImageMagick and an mp4 via ffmpeg. Returns absolute paths + a server-
+//   relative download URL the UI can hit.
+router.post('/:id/sdk/preview/record_session', async (req, res) => {
+  try {
+    const durationS = Number((req.body && req.body.duration_s) || 6);
+    const r = await sdkPreview.recordSession({ projectId: req.params.id, durationS });
+    res.json({
+      ok: true,
+      frame_count: r.frameCount,
+      duration_ms: r.durationMs,
+      gif_url: r.gifPath ? `/api/projects/${req.params.id}/sdk/preview/recording/gif?ts=${Date.now()}` : null,
+      mp4_url: r.mp4Path ? `/api/projects/${req.params.id}/sdk/preview/recording/mp4?ts=${Date.now()}` : null,
+      gif_path: r.gifPath, mp4_path: r.mp4Path
+    });
+    // Stash the latest recording paths on the preview state so the GET
+    // routes below can find them again.
+    const st = sdkPreview.get(req.params.id);
+    if (st) st.lastRecording = { gif: r.gifPath, mp4: r.mp4Path };
+  } catch (e) { sendErr(res, e); }
+});
+
+router.get('/:id/sdk/preview/recording/:fmt', (req, res) => {
+  const st = sdkPreview.get(req.params.id);
+  if (!st || !st.lastRecording) return res.status(404).end();
+  const p = req.params.fmt === 'gif' ? st.lastRecording.gif : st.lastRecording.mp4;
+  if (!p || !fs.existsSync(p)) return res.status(404).end();
+  res.setHeader('Content-Type', req.params.fmt === 'gif' ? 'image/gif' : 'video/mp4');
+  res.setHeader('Cache-Control', 'private, max-age=60');
+  fs.createReadStream(p).pipe(res);
+});
+
+// GET /api/projects/:id/sdk/preview/last_frame -> PNG of most recent frame.
+router.get('/:id/sdk/preview/last_frame', (req, res) => {
+  const st = sdkPreview.get(req.params.id);
+  if (!st || !st.lastFrame) return res.status(404).end();
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'no-store');
+  res.end(st.lastFrame);
+});
+
 // POST /api/projects/:id/sdk/preview/input  body: { action: 'a'|'b'|'up'|... }
 router.post('/:id/sdk/preview/input', (req, res) => {
   try {

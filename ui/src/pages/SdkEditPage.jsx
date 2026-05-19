@@ -5,6 +5,7 @@ import {
   Hammer, Download, PlayCircle, MessageSquare, ChevronRight, ChevronDown
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
+import SimPanel from '../components/SimPanel.jsx';
 import { api } from '../lib/api.js';
 
 // SDK editor — read sdk_data/project.json, expose every scene + character
@@ -86,6 +87,11 @@ export default function SdkEditPage() {
     finally { setSaving(false); }
   }
 
+  async function runScene(sceneId) {
+    try { await api.post(`/api/projects/${id}/sdk/preview/run_scene`, { scene_id: sceneId }); }
+    catch (e) { setErr(e); }
+  }
+
   async function regenScene(sceneId) {
     setBusyId(sceneId);
     try { await api.post(`/api/projects/${id}/sdk/scenes/${sceneId}/regen-bg`, {}); }
@@ -145,6 +151,7 @@ export default function SdkEditPage() {
   return (
     <div className="h-screen flex flex-col bg-ink-900 text-ink-100">
       <Nav subtitle={draft.name || id} showSiderailToggle={false} />
+      <SimPanel projectId={id} />
 
       <div className="border-b border-ink-800">
         <div className="px-4 h-10 flex items-center gap-2">
@@ -201,6 +208,7 @@ export default function SdkEditPage() {
                   busy={busyId === s.id}
                   onPatch={(p) => patchScene(s.id, p)}
                   onRegen={() => regenScene(s.id)}
+                  onRun={() => runScene(s.id)}
                 />
               ))}
             </div>
@@ -283,7 +291,7 @@ function StartupSelect({ draft, onChange }) {
   );
 }
 
-function SceneRow({ scene, projectId, open, onToggle, busy, onPatch, onRegen }) {
+function SceneRow({ scene, projectId, open, onToggle, busy, onPatch, onRegen, onRun }) {
   const [thumbBust, setThumbBust] = useState(0);
   async function fireRegen() {
     await onRegen();
@@ -331,6 +339,10 @@ function SceneRow({ scene, projectId, open, onToggle, busy, onPatch, onRegen }) 
                     className="btn text-xs disabled:opacity-50">
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
               {busy ? 'regenerating' : 'regenerate background'}
+            </button>
+            <button type="button" onClick={onRun}
+                    className="btn text-xs" title="rebuild + run sim from this scene">
+              <PlayCircle className="w-3 h-3" /> Run scene
             </button>
             <span className="text-[11px] text-ink-500">~ 60-90 sec via OpenRouter</span>
           </div>
