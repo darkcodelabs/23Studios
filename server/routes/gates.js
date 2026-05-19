@@ -122,4 +122,15 @@ router.post('/:id/gates/:gateId/status', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 
+// POST /api/projects/:id/gates/auto_sign
+// Run the auto-gate rules and sign every canonical gate whose objective
+// signal is green. Returns { signed: [...], skipped: [...] }.
+router.post('/:id/gates/auto_sign', async (req, res) => {
+  try {
+    const autoGate = require('../services/sdk_auto_gate');
+    const r = await autoGate.autoSignIfGreen(req.params.id);
+    res.json(r);
+  } catch (e) { sendErr(res, e); }
+});
+
 module.exports = router;
