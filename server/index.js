@@ -90,9 +90,15 @@ app.use(helmet({
       // The studio bundles its own Inter font copy via @font-face
       // (added at build time); we don't need to call out to rsms.me
       // anymore. Leave style-src tight.
+      // hackdev.cloudflareaccess.com allowed because CF Access wraps every
+      // hakc.dev request and may redirect fetch() / SW requests through
+      // its auth flow mid-session. Listing it stops the console from
+      // throwing CSP errors on the redirect chain (manifest.webmanifest
+      // is the most visible victim through the /proxy/8090/ path).
       'connect-src': ["'self'", 'ws:', 'wss:',
                       'https://static.cloudflareinsights.com',
-                      'https://cloudflareinsights.com'],
+                      'https://cloudflareinsights.com',
+                      'https://hackdev.cloudflareaccess.com'],
       'img-src': ["'self'", 'data:'],
       'object-src': ["'none'"],
       'base-uri': ["'self'"],
