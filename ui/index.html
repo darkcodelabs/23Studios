@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+(function() {
+  var KILL_VERSION = 'passthrough-2026-05-19';
+  var stored = localStorage.getItem('sw_kill_version');
+  if (stored === KILL_VERSION) return;
+
+  Promise.all([
+    navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function(regs) {
+      return Promise.all(regs.map(function(r) { return r.unregister(); }));
+    }) : Promise.resolve(),
+    window.caches ? caches.keys().then(function(keys) {
+      return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+    }) : Promise.resolve()
+  ]).then(function() {
+    localStorage.setItem('sw_kill_version', KILL_VERSION);
+    location.reload();
+  });
+})();
+</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />

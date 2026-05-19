@@ -80,6 +80,23 @@ const PROXY_BOOT_JS =
 const PROXY_BOOT_HASH =
   "'sha256-" + crypto.createHash('sha256').update(PROXY_BOOT_JS).digest('base64') + "'";
 
+// Self-healing kill switch lives in ui/index.html — read it at boot, hash it,
+// add to CSP so it can run. Lets us bump the KILL_VERSION inside that script
+// without manually updating the CSP whitelist.
+function computeKillSwitchHash() {
+  try {
+    const html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    if (!m) return null;
+    return "'sha256-" + crypto.createHash('sha256').update(m[1]).digest('base64') + "'";
+  } catch (_e) { return null; }
+}
+const KILL_SWITCH_HASH = computeKillSwitchHash();
+const INLINE_SCRIPT_HASHES = [PROXY_BOOT_HASH];
+if (KILL_SWITCH_HASH && KILL_SWITCH_HASH !== PROXY_BOOT_HASH) {
+  INLINE_SCRIPT_HASHES.push(KILL_SWITCH_HASH);
+}
+
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: true,
@@ -89,8 +106,8 @@ app.use(helmet({
       // CF Access — they bolt static.cloudflareinsights.com onto every
       // origin response. Listing it here prevents a noisy CSP error in
       // the console without us giving up first-party isolation.
-      'script-src': ["'self'", PROXY_BOOT_HASH, 'https://static.cloudflareinsights.com'],
-      'script-src-elem': ["'self'", PROXY_BOOT_HASH, 'https://static.cloudflareinsights.com'],
+      'script-src': ["'self'", ...INLINE_SCRIPT_HASHES, 'https://static.cloudflareinsights.com'],
+      'script-src-elem': ["'self'", ...INLINE_SCRIPT_HASHES, 'https://static.cloudflareinsights.com'],
       // PWA manifest may be re-fetched through the CF Access challenge
       // when an unauthenticated session expires; allow the CF Access
       // host so the redirect doesn't trigger a console violation.
