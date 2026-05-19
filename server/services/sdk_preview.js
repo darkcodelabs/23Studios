@@ -133,8 +133,8 @@ async function start({ projectId }) {
   // Spawn the simulator inside the virtual display, with the pdx as arg.
   const env = { ...process.env, DISPLAY: display };
   const sim = spawn(simBin, [pdx], { env, detached: false, stdio: ['ignore', 'pipe', 'pipe'] });
-  sim.stdout.on('data', () => { /* swallow */ });
-  sim.stderr.on('data', () => { /* swallow */ });
+  sim.stdout.on('data', (b) => { process.stderr.write(`[sim:${projectId}] ${b}`); });
+  sim.stderr.on('data', (b) => { process.stderr.write(`[sim:${projectId}] ${b}`); });
 
   // Give the sim a couple seconds to render its window.
   await new Promise((res) => setTimeout(res, 1500));
@@ -149,6 +149,15 @@ async function start({ projectId }) {
     return ids[ids.length - 1] || null;
   }
   const simWinId = findSimWindow();
+  // Focus the sim window so xdotool keys go to it (Xvfb has no window
+  // manager so no implicit focus). Without this, keys land nowhere and
+  // the game appears frozen.
+  if (simWinId) {
+    spawnSync('xdotool', ['windowactivate', '--sync', simWinId],
+              { env: { ...process.env, DISPLAY: display } });
+    spawnSync('xdotool', ['windowfocus', simWinId],
+              { env: { ...process.env, DISPLAY: display } });
+  }
 
   const subscribers = new Set();
   let lastFrameMs = 0;
@@ -213,17 +222,22 @@ async function start({ projectId }) {
       ws.on('close', () => subscribers.delete(ws));
     },
     sendKey(key) {
-      try {
-        spawnSync('xdotool', ['key', '--clearmodifiers', key], { env });
-      } catch (_e) { /* swallow */ }
+      const args = ['key', '--clearmodifiers'];
+      if (simWinId) args.push('--window', simWinId);
+      args.push(key);
+      try { spawnSync('xdotool', args, { env }); } catch (_e) { /* swallow */ }
     },
     sendKeyDown(key) {
-      try { spawnSync('xdotool', ['keydown', '--clearmodifiers', key], { env }); }
-      catch (_e) { /* */ }
+      const args = ['keydown', '--clearmodifiers'];
+      if (simWinId) args.push('--window', simWinId);
+      args.push(key);
+      try { spawnSync('xdotool', args, { env }); } catch (_e) { /* */ }
     },
     sendKeyUp(key) {
-      try { spawnSync('xdotool', ['keyup', '--clearmodifiers', key], { env }); }
-      catch (_e) { /* */ }
+      const args = ['keyup', '--clearmodifiers'];
+      if (simWinId) args.push('--window', simWinId);
+      args.push(key);
+      try { spawnSync('xdotool', args, { env }); } catch (_e) { /* */ }
     },
     stop() {
       this.stopped = stopped = true;

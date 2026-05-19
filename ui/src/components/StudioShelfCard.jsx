@@ -140,7 +140,10 @@ export default function StudioShelfCard({ project }) {
                  hover:ring-accent/40 hover:shadow-[0_0_0_3px_rgba(157,255,206,0.06)]
                  transition-all duration-150 overflow-hidden"
     >
-      {/* hero — full-width 3:2, pixelated rendering on top */}
+      {/* hero — full-width 3:2, smooth render so original art shows
+          without nearest-neighbor crush. Dithered Playdate-ready PNGs
+          still look right under smooth scaling because dither is the
+          art, not the rendering. */}
       <Link to={href} className="block relative" aria-label={`Open ${project.name}`}>
         <div className="relative w-full aspect-[3/2] bg-ink-800 overflow-hidden">
           {heroUrl ? (
@@ -149,7 +152,7 @@ export default function StudioShelfCard({ project }) {
               alt={`${project.name} title screen`}
               loading="lazy"
               onError={() => setHeroError(true)}
-              className="absolute inset-0 w-full h-full object-cover pixelated
+              className="absolute inset-0 w-full h-full object-cover
                          transition-transform duration-200 group-hover:scale-[1.02]"
             />
           ) : (
