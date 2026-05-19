@@ -260,7 +260,7 @@ export default function Architecture() {
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-4" ref={mermaidRef}>
 
           {/* Header */}
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-base font-semibold text-ink-100">Architecture Diagram</h1>
               <p className="text-[12px] text-ink-500 mt-0.5">
@@ -271,7 +271,7 @@ export default function Architecture() {
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="btn btn-primary flex items-center gap-2 text-sm"
+              className="btn btn-primary flex items-center gap-2 text-sm self-start sm:self-auto"
             >
               {generating
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -294,14 +294,25 @@ export default function Architecture() {
             </div>
           )}
 
-          {/* Not generated yet */}
+          {/* Not generated yet — first-run CTA */}
           {!loading && !md && !err && (
-            <div className="rounded-md bg-ink-900 border border-ink-800 px-4 py-6 text-center space-y-2">
+            <div className="rounded-md bg-ink-900 border border-ink-800 px-4 py-8 text-center space-y-3">
               <FileText className="w-8 h-8 text-ink-600 mx-auto" />
-              <p className="text-sm text-ink-400">No architecture diagram yet.</p>
-              <p className="text-[12px] text-ink-600">
-                Click &quot;Regenerate&quot; above — requires compiled_design.json.
+              <p className="text-sm text-ink-300 font-medium">No architecture diagram yet.</p>
+              <p className="text-[12px] text-ink-500">
+                Generate the architecture from the design compiler output.
               </p>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent hover:bg-accent/90 text-white text-sm font-medium disabled:opacity-50"
+                >
+                  {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Generate architecture
+                </button>
+              </div>
             </div>
           )}
 

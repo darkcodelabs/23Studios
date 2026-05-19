@@ -217,7 +217,7 @@ export default function Releases() {
   return (
     <div className="flex flex-col h-full min-h-0">
       <Nav subtitle="Releases" />
-      <div className="px-4 py-2 border-b border-ink-800 bg-ink-900 flex items-center gap-3 text-sm">
+      <div className="px-4 py-2 border-b border-ink-800 bg-ink-900 flex items-center gap-3 text-sm flex-wrap">
         <Link to={`/project/${projectId}`} className="text-ink-400 hover:text-ink-200">← project</Link>
         <span className="text-ink-500">·</span>
         {data?.repo && (
