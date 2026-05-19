@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   RefreshCw, Loader2, AlertTriangle, Search, Filter as FilterIcon,
-  Image as ImageIcon, Layers
+  Image as ImageIcon, Layers, BookOpen
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
+import LinkedDocPane from '../components/LinkedDocPane.jsx';
 import { api } from '../lib/api.js';
 
 // Phase 6 B1 — Storyboard.
@@ -94,6 +95,8 @@ export default function Storyboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [characterFilter, setCharacterFilter] = useState('all');
   const [mechanicFilter, setMechanicFilter] = useState('all');
+  const [docPaneOpen, setDocPaneOpen] = useState(false);
+  const [focusedScene, setFocusedScene] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
@@ -210,10 +213,22 @@ export default function Storyboard() {
           <span><span className="text-amber-300">{counts.in_progress || 0}</span> in progress</span>
           <span><span className="text-ink-300">{counts.pending || 0}</span> pending</span>
           {counts.failed ? <span><span className="text-red-300">{counts.failed}</span> failed</span> : null}
+          <button
+            type="button"
+            onClick={() => setDocPaneOpen((v) => !v)}
+            className={
+              'inline-flex items-center gap-1 px-2 py-1 rounded text-xs ' +
+              (docPaneOpen ? 'bg-ink-700 text-ink-100' : 'bg-ink-800 hover:bg-ink-700 text-ink-200')
+            }
+            title="toggle linked-doc pane (bible / canon / SKILL.md)"
+          >
+            <BookOpen className="w-3 h-3" /> docs
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 min-h-0 flex">
+        <div className="flex-1 overflow-auto p-3">
         {loading && !board ? (
           <div className="h-full flex items-center justify-center text-ink-400 text-sm gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> loading scenes…
@@ -238,9 +253,23 @@ export default function Storyboard() {
                 key={s.scene_id}
                 projectId={id}
                 scene={s}
-                onClick={() => navigate(`/project/${id}/scenes/${encodeURIComponent(s.scene_id)}`)}
+                onClick={() => {
+                  setFocusedScene(s);
+                  navigate(`/project/${id}/scenes/${encodeURIComponent(s.scene_id)}`);
+                }}
               />
             ))}
+          </div>
+        )}
+        </div>
+        {docPaneOpen && (
+          <div className="w-[28rem] flex-shrink-0 min-h-0">
+            <LinkedDocPane
+              projectId={id}
+              sceneId={focusedScene?.scene_id || null}
+              sceneTitle={focusedScene?.title || null}
+              onCloseDock={() => setDocPaneOpen(false)}
+            />
           </div>
         )}
       </div>
