@@ -30,6 +30,7 @@ const spec = require('./playdate_spec');
 const assembly = require('./sdk_prompt_assembly');
 const assetLibrary = require('./asset_library');
 const mvpAutopilot = require('./mvp_autopilot');
+const designCompiler = require('./sdk_design_compiler');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -427,12 +428,39 @@ async function runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake,
     ev('log', { text: 'scene_lua: no feature_manifest.seed.json — using basic template' });
   }
 
+  // Run the design compiler once before iterating scenes.  The compiled
+  // design gives each scene's Lua emitter a validated game model: room exits,
+  // the puzzle DAG it participates in, and the state flags it can read/write.
+  // This is the "magic layer" (Step 3 of canonical workflow) that prevents
+  // runSceneLua from freestyling into broken code.
+  let compiled = null;
+  try {
+    compiled = await designCompiler.compile(claudeCtx.projectId, sdkRoot);
+    const warnCount = (compiled.compiler_warnings || []).length;
+    ev('log', {
+      text: `design_compiler: rooms=${Object.keys(compiled.rooms_graph || {}).length} ` +
+            `puzzles=${(compiled.puzzle_dag || []).length} ` +
+            `flags=${(compiled.state_flags || []).length} ` +
+            `warnings=${warnCount}`
+    });
+  } catch (e) {
+    ev('log', { text: 'design_compiler failed (scene_lua will proceed without compiled context): ' + e.message });
+  }
+
   for (const s of sdk.scenes || []) {
     if (job && job.cancelled) break;
     if (!s || !s.id) continue;
     let featureSet = [];
 
     if (featureIds.length) {
+      // Build the compiled_design context slice for this scene.  Includes the
+      // room graph entry (exits + objects), any puzzles the scene participates
+      // in, the full state flags list, and save schema so the Lua emitter can
+      // write correct save_state.get/set calls.
+      const sceneDesign = compiled
+        ? designCompiler.compiledSectionForScene(compiled, s.id)
+        : {};
+
       const sys = assembly.assembleSystemPrompt({
         stageId: 'scene_lua',
     activePicks: claudeCtx.activePicks,
@@ -441,7 +469,8 @@ async function runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake,
           intake: intake || {},
           bible: bibleVars || {},
           scene: s,
-          feature_manifest_ids: featureIds.join(', ')
+          feature_manifest_ids: featureIds.join(', '),
+          compiled_design: sceneDesign
         },
         extras: 'You output STRICT JSON only.'
       });
