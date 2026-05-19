@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  Loader2, Check, X, AlertTriangle, Clock, Rocket, RefreshCw, Download
+  Loader2, Check, X, AlertTriangle, Clock, Rocket, RefreshCw, Download, ShieldCheck
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import { api } from '../lib/api.js';
@@ -113,6 +113,14 @@ export default function ShipStatus() {
       <Nav subtitle="Ship status" />
       <div className="px-4 py-2 border-b border-ink-800 bg-ink-900 flex items-center gap-3 text-sm">
         <Link to={`/project/${projectId}`} className="text-ink-400 hover:text-ink-200">← project</Link>
+        <span className="text-ink-500">·</span>
+        <Link
+          to={`/project/${projectId}/design-validate`}
+          className="inline-flex items-center gap-1 text-ink-400 hover:text-ink-200 text-xs"
+          title="Static design validator"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" /> design validator
+        </Link>
         <span className="text-ink-500">·</span>
         {jobId ? (
           <span className="text-ink-300 font-mono text-xs">{jobId}</span>
