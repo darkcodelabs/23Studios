@@ -1,15 +1,21 @@
 'use strict';
 
-// gates.js — Phase 6 B9 gate framework.
+// gates.js — Phase 6 B9 gate framework + Step 9 canonical gates.
 //
 // A "gate" is a user-blocking checkpoint in the work graph. Per spec:
 //   - GATE 1 (scope/bible review)
 //   - GATE 2 (visual ship)
 //   - GATE 3 (smoke test)
 //
+// Step 9 adds 6 canonical human-review gates that are seeded into every project.
+// See CANONICAL_GATES below.
+//
 // Storage: <project>/sdk_data/gates/<gate_id>.json
 //   { id, name, status, sub_decisions: [{ id, label, required, decision, decided_by, ts }],
 //     description, signed_off_by, signed_off_at }
+//
+// Canonical gates use a flat schema (no sub_decisions):
+//   { id, name, phase, blocks, status, notes, signed_off_at, signed_off_by, created_at }
 //
 // status: 'pending' (not yet active) | 'active' (awaiting user) | 'signed_off'
 //
@@ -70,6 +76,9 @@ async function gatesDir(projectId) {
   await fsp.mkdir(dir, { recursive: true });
   return { dir, project };
 }
+
+// Exported alias for routes that need direct dir access without the full project fetch.
+const gatesDirFor = gatesDir;
 
 async function ensureSeed(dir) {
   for (const seed of DEFAULT_GATES) {
@@ -191,6 +200,107 @@ async function activeGate(projectId) {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Step 9 — Canonical human-review gates
+// ---------------------------------------------------------------------------
+//
+// These 6 gates are seeded into every project on creation (and can be
+// re-seeded via POST /api/projects/:id/gates/seed). They use a simpler flat
+// schema (no sub_decisions) and are stored alongside the DEFAULT_GATES.
+//
+// The `blocks` field lists the milestone / release targets this gate prevents
+// from running until it is 'signed_off'.
+
+const CANONICAL_GATES = [
+  { id: 'core_mechanic',   name: 'Core Mechanic Approval',  phase: 4, blocks: ['production'] },
+  { id: 'visual_identity', name: 'Visual Identity Approval', phase: 3, blocks: ['asset_batches'] },
+  { id: 'first_playable',  name: 'First Playable Review',    phase: 5, blocks: ['milestone_m04'] },
+  { id: 'puzzle_sanity',   name: 'Puzzle Sanity Check',      phase: 6, blocks: ['milestone_m06'] },
+  { id: 'difficulty',      name: 'Difficulty Balance',       phase: 8, blocks: ['release_candidate'] },
+  { id: 'vibe_check',      name: 'Final Vibe Check',         phase: 9, blocks: ['release'] }
+];
+
+// Seed the 6 canonical gates into <sdkRoot>/sdk_data/gates/<id>.json.
+// Idempotent: skips any gate whose file already exists.
+async function seedCanonicalGates(projectId, sdkRoot) {
+  const dir = path.join(sdkRoot, 'sdk_data', 'gates');
+  await fsp.mkdir(dir, { recursive: true });
+  const now = new Date().toISOString();
+  for (const g of CANONICAL_GATES) {
+    const p = path.join(dir, g.id + '.json');
+    if (fs.existsSync(p)) continue;
+    const record = {
+      id: g.id,
+      name: g.name,
+      phase: g.phase,
+      blocks: g.blocks,
+      status: 'pending',
+      notes: null,
+      signed_off_at: null,
+      signed_off_by: null,
+      created_at: now
+    };
+    await fsp.writeFile(p, JSON.stringify(record, null, 2));
+  }
+}
+
+// Sign off a canonical gate directly (no sub_decisions required).
+// body: { notes?, signed_off_by? }
+async function signOffCanonical({ projectId, gateId, notes, signedOffBy }) {
+  const { dir } = await gatesDir(projectId);
+  const p = path.join(dir, gateId + '.json');
+  if (!fs.existsSync(p)) {
+    const e = new Error('gate_not_found'); e.status = 404; throw e;
+  }
+  const gate = JSON.parse(await fsp.readFile(p, 'utf8'));
+  if (gate.status === 'signed_off') return gate;
+  gate.status = 'signed_off';
+  gate.signed_off_at = new Date().toISOString();
+  gate.signed_off_by = signedOffBy || 'user';
+  if (notes !== undefined && notes !== null) {
+    gate.notes = String(notes).slice(0, 4000);
+  }
+  await fsp.writeFile(p, JSON.stringify(gate, null, 2));
+  return gate;
+}
+
+// Read all canonical gate statuses for a project (best-effort, never throws).
+async function readCanonicalGates(sdkRoot) {
+  const dir = path.join(sdkRoot, 'sdk_data', 'gates');
+  const out = [];
+  for (const g of CANONICAL_GATES) {
+    const p = path.join(dir, g.id + '.json');
+    try {
+      const raw = await fsp.readFile(p, 'utf8');
+      out.push(JSON.parse(raw));
+    } catch (_e) {
+      // Gate file not present — return stub with pending status.
+      out.push({ id: g.id, name: g.name, phase: g.phase, blocks: g.blocks,
+                 status: 'pending', notes: null, signed_off_at: null, signed_off_by: null });
+    }
+  }
+  return out;
+}
+
+// Check whether any canonical gate blocks a given target (milestone/release id).
+// Returns the first blocking gate object, or null if the target is clear.
+//
+// A gate blocks if:
+//   - Its `blocks` array contains the target string
+//   - Its status is NOT 'signed_off'
+async function blocking(projectId, target) {
+  const project = await projects.getProject(projectId);
+  if (!project || !project.local_path) return null;
+  const gates = await readCanonicalGates(project.local_path);
+  for (const g of gates) {
+    if (Array.isArray(g.blocks) && g.blocks.includes(target) && g.status !== 'signed_off') {
+      return g;
+    }
+  }
+  return null;
+}
+
 module.exports = {
-  listGates, getGate, decide, signOff, summarize, activeGate, DEFAULT_GATES
+  listGates, getGate, decide, signOff, signOffCanonical, summarize, activeGate, DEFAULT_GATES,
+  CANONICAL_GATES, seedCanonicalGates, blocking, readCanonicalGates, gatesDirFor
 };

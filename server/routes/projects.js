@@ -9,8 +9,17 @@ const projects = require('../services/projects');
 const intakeForm = require('../services/intake_form');
 const intakeUpload = require('../services/intake_upload');
 const { validateProjectCreate, validateProjectPatch, validateId } = require('../services/validation');
+const gates = require('../services/gates');
 
 const router = express.Router();
+
+// Best-effort canonical gate seed. Never throws; errors are swallowed so they
+// do not fail project creation.
+async function tryGateSeed(projectId, localPath) {
+  try {
+    await gates.seedCanonicalGates(projectId, localPath);
+  } catch (_e) { /* best-effort */ }
+}
 
 // Slugify a pitch into a safe project id.
 function slugifyPitch(pitch) {
@@ -96,6 +105,7 @@ router.post('/quick', async (req, res, next) => {
       return res.status(400).json({ error: 'validation_failed', detail: errors });
     }
     const created = await projects.createProject(input);
+    await tryGateSeed(created.id, localPath);
     res.status(201).json({ project: created });
   } catch (e) {
     if (e && e.status === 409) return res.status(409).json({ error: e.code || 'conflict' });
@@ -173,6 +183,7 @@ router.post('/intake', async (req, res, next) => {
       return res.status(400).json({ error: 'validation_failed', detail: errors });
     }
     const created = await projects.createProject(input);
+    await tryGateSeed(created.id, localPath);
     res.status(201).json({
       project: created,
       intake_summary: { fields_provided, fields_inferred }
@@ -188,6 +199,7 @@ router.post('/', async (req, res, next) => {
     const errors = validateProjectCreate(req.body || {});
     if (errors.length) return res.status(400).json({ error: 'validation_failed', detail: errors });
     const created = await projects.createProject(req.body);
+    if (created.local_path) await tryGateSeed(created.id, created.local_path);
     res.status(201).json({ project: created });
   } catch (e) {
     if (e && e.status === 409) return res.status(409).json({ error: e.code || 'conflict' });
@@ -371,6 +383,17 @@ router.delete('/:id/intake/sources/refs/:name', async (req, res, next) => {
     if (e && e.status) return res.status(e.status).json({ error: e.code || 'error' });
     next(e);
   }
+});
+
+// POST /api/projects/:id/gates/seed
+// Re-seed canonical gates for an existing project (idempotent — skips existing files).
+router.post('/:id/gates/seed', async (req, res, next) => {
+  try {
+    const proj = await loadProjectOr404(req, res);
+    if (!proj) return;
+    await gates.seedCanonicalGates(proj.id, proj.local_path);
+    res.json({ ok: true, seeded: gates.CANONICAL_GATES.map((g) => g.id) });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

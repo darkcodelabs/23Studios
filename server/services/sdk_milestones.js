@@ -15,6 +15,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const projects = require('./projects');
+const gates = require('./gates');
 
 // ---------------------------------------------------------------------------
 // Canonical milestone definitions
@@ -189,6 +190,24 @@ function findPdc() {
 }
 
 // ---------------------------------------------------------------------------
+// Gate-target mapping
+// ---------------------------------------------------------------------------
+//
+// Map a milestone id to the canonical gate blocking target.
+// Returns null if this milestone has no gate guard.
+//
+// The CANONICAL_GATES blocks field uses: 'milestone_m04', 'milestone_m06',
+// 'release_candidate'. Milestone ids use: 'm04_inventory', 'm06_puzzles',
+// 'release_candidate'.
+
+function milestoneIdToGateTarget(milestoneId) {
+  if (milestoneId === 'release_candidate') return 'release_candidate';
+  const m = milestoneId.match(/^(m\d+)_/);
+  if (m) return 'milestone_' + m[1];
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Core: runMilestone
 // ---------------------------------------------------------------------------
 
@@ -222,6 +241,27 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
           bytes: null,
           errors: []
         };
+      }
+    }
+
+    // Check canonical gate blocking — unless skip_gate_check=true.
+    if (!opts.skip_gate_check) {
+      const gateTarget = milestoneIdToGateTarget(milestoneId);
+      if (gateTarget) {
+        const blocker = await gates.blocking(projectId, gateTarget);
+        if (blocker) {
+          return {
+            milestone: milestoneId,
+            ok: false,
+            error: 'gate_blocked',
+            detail: { gate_id: blocker.id, gate_name: blocker.name },
+            boots: false,
+            built_at: null,
+            pdx_path: null,
+            bytes: null,
+            errors: [`Gate '${blocker.name}' must be signed off before running ${milestoneId}`]
+          };
+        }
       }
     }
   }
