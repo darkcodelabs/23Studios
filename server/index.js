@@ -82,8 +82,8 @@ app.set('trust proxy', 'loopback');
 // Hash is added to CSP so the strict 'script-src' allows just this one inline.
 const PROXY_BOOT_JS =
   "(function(){var m=location.pathname.match(/^(.*\\/proxy\\/\\d+)(\\/|$)/);" +
-  "var b=m?m[1]+'/':'';if(b){var e=document.createElement('base');" +
-  "e.setAttribute('href',b);document.head.insertBefore(e,document.head.firstChild);}" +
+  "var b=m?m[1]+'/':'/';var e=document.createElement('base');" +
+  "e.setAttribute('href',b);document.head.insertBefore(e,document.head.firstChild);" +
   "window.__APP_BASE__=m?m[1]:'';})();";
 const PROXY_BOOT_HASH =
   "'sha256-" + crypto.createHash('sha256').update(PROXY_BOOT_JS).digest('base64') + "'";
