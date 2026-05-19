@@ -36,7 +36,7 @@ const CAPTURE_H = 240;
 // is found dynamically per-DISPLAY so multi-project previews don't fight
 // over a hardcoded root crop.
 const SIM_LCD_DX = Number(process.env.PLAYDATE_SIM_LCD_DX || 41);
-const SIM_LCD_DY = Number(process.env.PLAYDATE_SIM_LCD_DY || 138);
+const SIM_LCD_DY = Number(process.env.PLAYDATE_SIM_LCD_DY || 80);
 
 const SIM_PATH_CANDIDATES = [
   process.env.PLAYDATE_SDK_PATH && path.join(process.env.PLAYDATE_SDK_PATH, 'bin', 'PlaydateSimulator'),
