@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  Loader2, Check, X, AlertTriangle, Clock, Rocket, RefreshCw, Download, ShieldCheck
+  Loader2, Check, X, AlertTriangle, Clock, Rocket, RefreshCw, Download, ShieldCheck, CheckCircle2, Circle
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import { api } from '../lib/api.js';
@@ -60,6 +60,151 @@ function StepRow({ step }) {
         </div>
         {detail && <div className="text-[11px] text-ink-500 mt-0.5 font-mono break-words">{detail}</div>}
       </div>
+    </div>
+  );
+}
+
+function GateChecklist({ projectId }) {
+  const [gates, setGates] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [openId, setOpenId] = useState(null);
+  const [notes, setNotes] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      const r = await api.get(`/api/projects/${projectId}/gates`);
+      const list = Array.isArray(r?.gates) ? r.gates : (Array.isArray(r) ? r : []);
+      setGates(list.filter((g) => Array.isArray(g.blocks)));
+    } catch (_e) { setGates([]); }
+  }, [projectId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function signOff(gateId) {
+    setBusy(gateId);
+    try {
+      await api.post(`/api/projects/${projectId}/gates/${gateId}/signoff`,
+        { notes: notes || null, signed_off_by: 'cory' });
+      setOpenId(null);
+      setNotes('');
+      await load();
+    } catch (e) { /* surface inline below */ }
+    finally { setBusy(null); }
+  }
+
+  async function seed() {
+    setBusy('__seed');
+    try { await api.post(`/api/projects/${projectId}/gates/seed`, {}); await load(); }
+    catch (_e) { /* noop */ }
+    finally { setBusy(null); }
+  }
+
+  if (gates === null) {
+    return (
+      <div className="bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-ink-400 text-xs flex items-center gap-2">
+        <Loader2 className="w-3 h-3 animate-spin" /> loading gates…
+      </div>
+    );
+  }
+
+  if (gates.length === 0) {
+    return (
+      <div className="bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+        <span className="text-ink-400">no canonical gates seeded for this project.</span>
+        <button
+          type="button"
+          onClick={seed}
+          disabled={busy === '__seed'}
+          className="ml-auto px-2 py-0.5 rounded bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-50"
+        >
+          {busy === '__seed' ? 'seeding…' : 'seed 6 gates'}
+        </button>
+      </div>
+    );
+  }
+
+  const done = gates.filter((g) => g.status === 'signed_off').length;
+
+  return (
+    <div className="bg-ink-800 border border-ink-700 rounded-lg">
+      <div className="px-3 py-2 border-b border-ink-700 flex items-center gap-2">
+        <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+        <span className="text-sm text-ink-100">Human review gates</span>
+        <span className="text-[11px] text-ink-500">{done}/{gates.length} signed off</span>
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={load}
+          className="text-[11px] text-ink-400 hover:text-ink-200 inline-flex items-center gap-1"
+        >
+          <RefreshCw className="w-3 h-3" /> refresh
+        </button>
+      </div>
+      <ul>
+        {gates.map((g) => {
+          const signed = g.status === 'signed_off';
+          const open = openId === g.id;
+          return (
+            <li key={g.id} className="border-b border-ink-800 last:border-b-0">
+              <div className="flex items-start gap-3 px-3 py-2">
+                {signed
+                  ? <CheckCircle2 className="w-4 h-4 mt-0.5 text-emerald-400 flex-shrink-0" />
+                  : <Circle className="w-4 h-4 mt-0.5 text-ink-500 flex-shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-ink-100">{g.name}</span>
+                    <span className="text-[10px] text-ink-500 font-mono">phase {g.phase}</span>
+                    {Array.isArray(g.blocks) && g.blocks.length > 0 && (
+                      <span className="text-[10px] text-amber-300 font-mono">
+                        blocks: {g.blocks.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                  {g.notes && (
+                    <div className="text-[11px] text-ink-500 mt-0.5 font-mono break-words">{g.notes}</div>
+                  )}
+                  {signed && g.signed_off_at && (
+                    <div className="text-[10px] text-emerald-400/80 mt-0.5">
+                      signed {new Date(g.signed_off_at).toLocaleString()} by {g.signed_off_by || 'unknown'}
+                    </div>
+                  )}
+                </div>
+                {!signed && (
+                  <button
+                    type="button"
+                    onClick={() => { setOpenId(open ? null : g.id); setNotes(g.notes || ''); }}
+                    className="text-[11px] px-2 py-0.5 rounded bg-accent/15 text-accent hover:bg-accent/25"
+                  >
+                    {open ? 'cancel' : 'sign off'}
+                  </button>
+                )}
+              </div>
+              {open && !signed && (
+                <div className="px-3 pb-3 -mt-1 space-y-2">
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="optional notes — what convinced you?"
+                    className="w-full text-xs bg-ink-900 border border-ink-700 rounded px-2 py-1 text-ink-100 font-mono"
+                    rows={2}
+                  />
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => signOff(g.id)}
+                      disabled={busy === g.id}
+                      className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs hover:bg-emerald-500/30 disabled:opacity-50 inline-flex items-center gap-1"
+                    >
+                      {busy === g.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      confirm sign-off
+                    </button>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -159,7 +304,10 @@ export default function ShipStatus() {
           <Loader2 className="w-4 h-4 mr-2 animate-spin" /> loading…
         </div>
       ) : !jobId ? (
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-4 space-y-3">
+          <div className="max-w-2xl mx-auto">
+            <GateChecklist projectId={projectId} />
+          </div>
           <div className="max-w-2xl mx-auto bg-ink-800 border border-ink-700 rounded-lg">
             <div className="px-3 py-2 border-b border-ink-700 text-[11px] uppercase tracking-wide text-ink-400">
               recent ship jobs
@@ -198,6 +346,7 @@ export default function ShipStatus() {
       ) : (
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-2xl mx-auto space-y-3">
+            <GateChecklist projectId={projectId} />
             <div className="bg-ink-800 border border-ink-700 rounded-lg">
               <div className="px-3 py-2 border-b border-ink-700 flex items-center gap-2">
                 <Rocket className="w-3.5 h-3.5 text-accent" />
