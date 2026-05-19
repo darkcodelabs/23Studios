@@ -1,17 +1,20 @@
 'use strict';
 
-// GET /api/projects/:id/releases
-// Pulls GitHub releases for the project's repo via `gh release list` so the
-// UI download dropdown can link straight to release asset URLs (bypassing
-// CF Access + tunnel chain — GitHub CDN serves direct).
+// releases.js
+//
+// GET  /api/projects/:id/releases              — GitHub releases list (existing)
+// POST /api/projects/:id/releases/pack         — trigger local release packaging (Step 10)
+// GET  /api/projects/:id/releases/pack/latest  — most recently packed release manifest
 
 const express = require('express');
 const { spawn } = require('child_process');
 const projects = require('../services/projects');
+const packager = require('../services/sdk_release_packager');
 
 const router = express.Router();
 const ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,63}$/;
 const REPO_RE = /github\.com[:/]([\w.-]+)\/([\w.-]+?)(?:\.git)?$/;
+const TAG_RE = /^[a-zA-Z0-9._+/-]{1,64}$/;
 
 function ghJson(args, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
@@ -61,6 +64,40 @@ router.get('/:id/releases', async (req, res) => {
     res.json({ repo: slug, releases: out });
   } catch (e) {
     res.status(500).json({ error: 'gh_failed', detail: String(e).slice(0, 200) });
+  }
+});
+
+// POST /api/projects/:id/releases/pack
+// Body: { tag: string, include_screenshots?: bool, force?: bool }
+// Returns: { release_dir, tag, files, screenshots_copied, pdx_zipped }
+router.post('/:id/releases/pack', async (req, res) => {
+  try {
+    if (!ID_RE.test(req.params.id)) return res.status(400).json({ error: 'bad_id' });
+    const body = req.body || {};
+    const tag = String(body.tag || 'v0.1.0');
+    if (!TAG_RE.test(tag)) return res.status(400).json({ error: 'invalid_tag', detail: 'tag must match [a-zA-Z0-9._+/-]{1,64}' });
+    const result = await packager.pack(req.params.id, {
+      tag,
+      force: !!body.force,
+      include_screenshots: body.include_screenshots !== false
+    });
+    res.json(result);
+  } catch (e) {
+    const status = e.status || 500;
+    res.status(status).json({ error: e.message || 'pack_failed', detail: String(e).slice(0, 400) });
+  }
+});
+
+// GET /api/projects/:id/releases/pack/latest
+// Returns the manifest of the most recently packed local release.
+router.get('/:id/releases/pack/latest', async (req, res) => {
+  try {
+    if (!ID_RE.test(req.params.id)) return res.status(400).json({ error: 'bad_id' });
+    const result = await packager.getLatestPack(req.params.id);
+    if (!result) return res.status(404).json({ error: 'no_pack_found' });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: 'pack_latest_failed', detail: String(e).slice(0, 400) });
   }
 });
 
