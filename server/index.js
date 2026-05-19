@@ -37,6 +37,7 @@ const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const decisionsRouter = require('./routes/decisions');
 const driftRouter = require('./routes/drift');
+const interviewRouter = require('./routes/interview');
 const openrouterRouter = require('./routes/openrouter');
 const costRouter = require('./routes/cost');
 const lintRouter = require('./routes/lint');
@@ -169,6 +170,8 @@ app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api', decisionsRouter);
 app.use('/api', driftRouter);
+// Phase 6 A5 — interactive interview (under /api/projects/:id/interview/...).
+app.use('/api/projects', interviewRouter);
 app.use('/api/openrouter', openrouterRouter);
 app.use('/api', costRouter);
 app.use('/api', lintRouter);
