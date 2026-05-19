@@ -56,6 +56,7 @@ const cardMetaRouter = require('./routes/card_meta');
 const designRouter = require('./routes/design');
 const conceptsRouter = require('./routes/concepts');
 const milestonesRouter = require('./routes/milestones');
+const architectureRouter = require('./routes/architecture');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -239,6 +240,7 @@ app.use('/api/projects', cardMetaRouter);
 app.use('/api/projects', designRouter);
 app.use('/api/projects', conceptsRouter);
 app.use('/api/projects', milestonesRouter);
+app.use('/api/projects', architectureRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
