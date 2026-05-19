@@ -51,6 +51,7 @@ const linkedDocsRouter = require('./routes/linked_docs');
 const scopeRouter = require('./routes/scope');
 const shipRouter = require('./routes/ship');
 const releasesRouter = require('./routes/releases');
+const cardMetaRouter = require('./routes/card_meta');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -229,6 +230,7 @@ app.use('/api', linkedDocsRouter);
 app.use('/api/projects', scopeRouter);
 app.use('/api', shipRouter);
 app.use('/api/projects', releasesRouter);
+app.use('/api/projects', cardMetaRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
