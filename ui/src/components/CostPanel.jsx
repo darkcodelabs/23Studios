@@ -91,7 +91,7 @@ export default function CostPanel() {
   if (!projectId) return null;
 
   return (
-    <div className="fixed top-2 right-2 z-50 w-[320px] font-mono text-xs text-ink-100 pointer-events-auto">
+    <div className="fixed bottom-2 left-2 z-40 w-[240px] font-mono text-xs text-ink-100 pointer-events-auto">
       <div className={`rounded border ${classForPct(pct)} shadow-lg shadow-black/50`}>
         <button
           type="button"

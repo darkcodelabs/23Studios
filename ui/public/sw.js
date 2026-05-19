@@ -6,7 +6,7 @@
  *   - /api/* and /ws/*: ALWAYS network, never cached (auth + CSRF + live data).
  * Bump CACHE_VERSION on every breaking change.
  */
-const CACHE_VERSION = 'v18-2026-05-19-skip-proxy-paths';
+const CACHE_VERSION = 'v19-2026-05-19-cost-left-rail';
 const SHELL_CACHE = `studio-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `studio-assets-${CACHE_VERSION}`;
 
