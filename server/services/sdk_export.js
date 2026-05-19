@@ -367,7 +367,22 @@ async function startExport({ projectId, onEvent }) {
       const pdcBin = findPdc();
       if (!pdcBin) throw new Error('pdc not found — set PLAYDATE_SDK_PATH');
       const projectIdSafe = (project.id || 'sdk_game').replace(/[^A-Za-z0-9._-]/g, '_');
-      const outPdx = path.join(buildDir, `${projectIdSafe}.pdx`);
+      // Build identity baked into the filename so 3 builds in /Downloads
+      // never have the same name. Pattern: <id>-v<version>-<YYYYMMDDHHmmss>.pdx
+      // Version comes from pdxinfo when readable, else 'dev'. Timestamp
+      // comes from `now()` because builds may share commit shas (rebuilds).
+      let version = 'dev';
+      try {
+        const pdxinfoPath = path.join(sourceDir, 'pdxinfo');
+        if (fs.existsSync(pdxinfoPath)) {
+          const raw = fs.readFileSync(pdxinfoPath, 'utf8');
+          const m = raw.match(/^version\s*=\s*([^\s\n]+)/im);
+          if (m) version = String(m[1]).trim().replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 32);
+        }
+      } catch (_e) { /* fall back to 'dev' */ }
+      const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+      const buildName = `${projectIdSafe}-v${version}-${ts}`;
+      const outPdx = path.join(buildDir, `${buildName}.pdx`);
       log(onEvent, `pdc: ${pdcBin}`);
       await runPdc(pdcBin, sourceDir, outPdx, onEvent);
 

@@ -290,7 +290,11 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
     return status;
   }
 
-  const pdxName = projectId + '.pdx';
+  // Bake milestone id + timestamp into the filename so back-to-back rebuilds
+  // are distinguishable in the user's downloads / Releases.
+  // Pattern: <projectId>-<milestoneId>-<YYYYMMDDHHmmss>.pdx
+  const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+  const pdxName = `${projectId}-${milestoneId}-${ts}.pdx`;
   const pdxOut = path.join(stagedRoot, 'build', pdxName);
   await fsp.mkdir(path.join(stagedRoot, 'build'), { recursive: true });
 
