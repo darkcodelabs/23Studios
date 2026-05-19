@@ -105,6 +105,7 @@ import AgentsDashboard from './pages/AgentsDashboard.jsx';
 import AssetApprover from './pages/AssetApprover.jsx';
 import ShipStatus from './pages/ShipStatus.jsx';
 import MvpWorkflow from './pages/MvpWorkflow.jsx';
+import Releases from './pages/Releases.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -193,6 +194,7 @@ export default function App() {
         <Route path="/project/:id/interview" element={<RequireAuth><Interview /></RequireAuth>} />
         <Route path="/project/:id/mvp" element={<RequireAuth><MvpWorkflow /></RequireAuth>} />
         <Route path="/project/:id/approve" element={<RequireAuth><AssetApprover /></RequireAuth>} />
+        <Route path="/project/:id/releases" element={<RequireAuth><Releases /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
