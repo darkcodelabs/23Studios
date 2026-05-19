@@ -117,6 +117,23 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
+// Strip code-server's `/proxy/<port>/` prefix before any route matches.
+// When the user accesses the studio via hakc.dev/proxy/8090/... (code-server
+// tunnel), URLs like /proxy/8090/assets/index.css fall through the static
+// mount (which serves /assets/*) and hit the SPA fallback — which returns
+// text/html. Browser sees CSS request returning HTML, refuses to apply,
+// blank page. Same for /proxy/8090/manifest.webmanifest. Rewrite at the
+// edge so the rest of the app sees the canonical path.
+app.use((req, _res, next) => {
+  const m = req.url.match(/^(\/proxy\/\d+)(\/.*)?$/);
+  if (m) {
+    req.proxyPrefix = m[1];                 // stash for HTML rewriter
+    req.url = m[2] || '/';
+    if (req.originalUrl) req.originalUrl = req.url;
+  }
+  next();
+});
+
 app.use(express.json({ limit: '128kb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 app.use(cookieParser(SESSION_SECRET));
@@ -203,8 +220,19 @@ if (fs.existsSync(PUBLIC_DIR)) {
     '<head>',
     `<head><script>${PROXY_BOOT_JS}</script>`
   );
-  app.get(/^\/(?!api|ws).*/, (_req, res) => {
+  app.get(/^\/(?!api|ws).*/, (req, res) => {
     res.setHeader('Cache-Control', 'no-store, must-revalidate');
+    // When the request came in via /proxy/<port>/..., the CF Access policy
+    // only allows that prefix — bare /assets/* gets 302'd to login. Rewrite
+    // every src/href starting with "/" to include the proxy prefix so the
+    // browser asks /proxy/<port>/assets/... which CF Access lets through.
+    if (req.proxyPrefix) {
+      const prefix = req.proxyPrefix;
+      const rewritten = bootedHtml
+        .replace(/(src|href)="\/(?!\/)/g, `$1="${prefix}/`)
+        .replace(/href="manifest\.webmanifest"/g, `href="${prefix}/manifest.webmanifest"`);
+      return res.type('html').send(rewritten);
+    }
     res.type('html').send(bootedHtml);
   });
 }
