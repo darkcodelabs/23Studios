@@ -9,7 +9,10 @@ const { validateId, validateRelativePath } = require('../services/validation');
 
 const router = express.Router({ mergeParams: true });
 
+// Text file cap stays at 1 MB. Image cap is higher because reference PNGs
+// in hakcd_pixel_collection/ are commonly 1.5-4 MB sources.
 const MAX_FILE_BYTES = 1024 * 1024;
+const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
 const EXCLUDED_NAMES = new Set(['.env', '.git', 'node_modules', '.DS_Store']);
 const BINARY_EXTS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.tiff',
@@ -163,7 +166,7 @@ router.get('/:id/file/raw', async (req, res, next) => {
     const stat = await fsp.lstat(abs);
     if (stat.isSymbolicLink()) return res.status(403).json({ error: 'forbidden' });
     if (!stat.isFile()) return res.status(400).json({ error: 'not_a_file' });
-    if (stat.size > MAX_FILE_BYTES) return res.status(413).json({ error: 'file_too_large', max: MAX_FILE_BYTES });
+    if (stat.size > MAX_IMAGE_BYTES) return res.status(413).json({ error: 'file_too_large', max: MAX_IMAGE_BYTES });
 
     const ext = path.extname(abs).toLowerCase();
     if (!IMAGE_EXTS.has(ext)) return res.status(415).json({ error: 'not_image' });
