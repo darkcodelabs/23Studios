@@ -136,7 +136,7 @@ app.use(helmet({
                       'https://static.cloudflareinsights.com',
                       'https://cloudflareinsights.com',
                       'https://hackdev.cloudflareaccess.com'],
-      'img-src': ["'self'", 'data:'],
+      'img-src': ["'self'", 'data:', 'blob:'],
       'object-src': ["'none'"],
       'base-uri': ["'self'"],
       'frame-ancestors': ["'self'"]

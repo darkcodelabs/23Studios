@@ -11,7 +11,13 @@ function stripCrossoriginPlugin() {
   return {
     name: 'strip-crossorigin',
     transformIndexHtml(html) {
-      return html.replace(/ crossorigin(=[^ >]+)?/g, '');
+      // Keep crossorigin on <link rel="manifest"> — needs use-credentials
+      // so the browser sends the CF Access JWT cookie when fetching the PWA
+      // manifest; without it CF Access 302s to its login (CORS-blocked).
+      return html.replace(/<(script|link)\b[^>]*>/g, (tag) => {
+        if (/rel=["']manifest["']/.test(tag)) return tag;
+        return tag.replace(/ crossorigin(=[^ >]+)?/g, '');
+      });
     }
   };
 }
