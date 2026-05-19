@@ -253,8 +253,10 @@ if (fs.existsSync(PUBLIC_DIR)) {
     '<head>',
     `<head><script>${PROXY_BOOT_JS}</script>`
   );
+  const BUILD_MARKER = new Date().toISOString();
   app.get(/^\/(?!api|ws).*/, (req, res) => {
     res.setHeader('Cache-Control', 'no-store, must-revalidate');
+    res.setHeader('X-Build-Marker', BUILD_MARKER);
     // When the request came in via /proxy/<port>/..., the CF Access policy
     // only allows that prefix — bare /assets/* gets 302'd to login. Rewrite
     // every src/href starting with "/" to include the proxy prefix so the
