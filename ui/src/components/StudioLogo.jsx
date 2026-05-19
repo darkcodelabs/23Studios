@@ -13,9 +13,9 @@
 //   alt?  override alt text (default '23 Studios')
 
 const VARIANTS = {
-  sm: { src: '/icons/studio-logo-sm.png', w: 64, h: 43 },
-  md: { src: '/icons/studio-logo-md.png', w: 180, h: 120 },
-  lg: { src: '/icons/studio-logo.png',    w: 600, h: 400 }
+  sm: { src: '/icons/studio-logo-sm.png', w: 64,  h: 46  },
+  md: { src: '/icons/studio-logo-md.png', w: 180, h: 128 },
+  lg: { src: '/icons/studio-logo.png',    w: 600, h: 428 }
 };
 
 export default function StudioLogo({ size = 'sm', className = '', alt = '23 Studios' }) {
