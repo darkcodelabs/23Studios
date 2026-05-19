@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LogOut, PanelLeftClose, PanelLeftOpen, Users } from 'lucide-react';
 import { useAuth } from '../App.jsx';
 import StudioLogo from './StudioLogo.jsx';
 import ThemePicker from './ThemePicker.jsx';
@@ -54,6 +54,9 @@ export default function Nav({ subtitle, showSiderailToggle = true }) {
           </>
         ) : null}
         <div className="flex-1" />
+        <Link to="/agents" className="btn-icon" title="agent dashboard" aria-label="agents">
+          <Users className="w-4 h-4" />
+        </Link>
         <ThemePicker />
         <button onClick={onLogout} className="btn-icon" title="log out" aria-label="log out">
           <LogOut className="w-4 h-4" />
