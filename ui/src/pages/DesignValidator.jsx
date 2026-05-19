@@ -170,7 +170,7 @@ export default function DesignValidator() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-base font-semibold text-ink-100">Static Design Validator</h1>
               <p className="text-[12px] text-ink-500 mt-0.5">
@@ -181,7 +181,7 @@ export default function DesignValidator() {
               type="button"
               onClick={runValidation}
               disabled={running}
-              className="btn btn-primary flex items-center gap-2 text-sm"
+              className="btn btn-primary flex items-center gap-2 text-sm self-start sm:self-auto"
             >
               {running
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -204,13 +204,33 @@ export default function DesignValidator() {
             </div>
           )}
 
-          {/* No report yet */}
+          {/* No report yet — first-run CTA */}
           {!loading && !report && !err && (
-            <div className="rounded-md bg-ink-900 border border-ink-800 px-4 py-6 text-center space-y-2">
-              <p className="text-sm text-ink-400">No validation report yet.</p>
-              <p className="text-[12px] text-ink-600">
-                Run the design compiler, then click "Run validation" above.
+            <div className="rounded-md bg-ink-900 border border-ink-800 px-4 py-8 text-center space-y-3">
+              <p className="text-sm text-ink-300 font-medium">No compiled design yet.</p>
+              <p className="text-[12px] text-ink-500">
+                Run the compiler first — it reads the game_design JSONs and emits compiled_design.json.
               </p>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setRunning(true);
+                    setErr(null);
+                    try {
+                      await api.post(`/api/projects/${projectId}/design/compile`, {});
+                      await loadLatest();
+                    } catch (e) {
+                      setErr(e.message || 'compile failed');
+                    } finally { setRunning(false); }
+                  }}
+                  disabled={running}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent hover:bg-accent/90 text-white text-sm font-medium disabled:opacity-50"
+                >
+                  {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Run the compiler first
+                </button>
+              </div>
             </div>
           )}
 

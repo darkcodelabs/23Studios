@@ -48,6 +48,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: false
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Split heavy/infrequently-changed deps into separate chunks so the
+        // main app shell can be cached independently. mermaid is only loaded
+        // on the Architecture page via dynamic import — keeping it separate
+        // means first load for every other page doesn't pay the ~500 KB cost.
+        manualChunks: {
+          react:   ['react', 'react-dom', 'react-router-dom'],
+          mermaid: ['mermaid'],
+          icons:   ['lucide-react']
+        }
+      }
+    }
   }
 });

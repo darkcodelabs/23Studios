@@ -274,9 +274,16 @@ export default function AssetBatches() {
         )}
 
         {!loading && batches.length === 0 && !err && (
-          <div className="flex flex-col items-center justify-center py-24 text-ink-500 text-sm gap-3">
-            <Clock className="w-8 h-8 opacity-30" />
-            <p>No batches yet. Start the autopilot to generate assets in 3 reviewable batches.</p>
+          <div className="flex flex-col items-center justify-center py-16 text-ink-500 text-sm gap-4 text-center">
+            <Clock className="w-10 h-10 opacity-30" />
+            <div className="space-y-1">
+              <p className="text-ink-300 font-medium text-base">No asset batches generated yet.</p>
+              <p className="text-ink-500 text-[13px] max-w-sm mx-auto">
+                Batches happen during the <span className="font-mono text-ink-400">scene_bursts</span> and{' '}
+                <span className="font-mono text-ink-400">portrait_bursts</span> autopilot stages.
+                Run the autopilot from the project dashboard to generate assets.
+              </p>
+            </div>
           </div>
         )}
 

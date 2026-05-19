@@ -243,7 +243,7 @@ export default function QaCritic() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-base font-semibold text-ink-100">Multi-Persona AI Game Critic</h1>
               <p className="text-[12px] text-ink-500 mt-0.5">
@@ -254,7 +254,7 @@ export default function QaCritic() {
               type="button"
               onClick={runCritique}
               disabled={running}
-              className="btn btn-primary flex items-center gap-2 text-sm"
+              className="btn btn-primary flex items-center gap-2 text-sm self-start sm:self-auto"
             >
               {running
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -285,13 +285,24 @@ export default function QaCritic() {
             </div>
           )}
 
-          {/* No report yet */}
+          {/* No report yet — first-run CTA */}
           {!loading && !running && !report && !err && (
-            <div className="rounded-md bg-ink-900 border border-ink-800 px-4 py-8 text-center space-y-2">
-              <p className="text-sm text-ink-400">No critique report yet.</p>
-              <p className="text-[12px] text-ink-600">
-                Click "Run critique" to fire 5 AI personas against your game design.
+            <div className="rounded-md bg-ink-900 border border-ink-800 px-4 py-8 text-center space-y-3">
+              <p className="text-sm text-ink-300 font-medium">No critique report yet.</p>
+              <p className="text-[12px] text-ink-500">
+                Run the 5-persona AI critic pass. This calls Claude 5 times — small cost.
               </p>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={runCritique}
+                  disabled={running}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent hover:bg-accent/90 text-white text-sm font-medium disabled:opacity-50"
+                >
+                  {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Run the 5-persona AI critic pass
+                </button>
+              </div>
             </div>
           )}
 

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle2, XCircle, Circle, Loader2, AlertTriangle, RefreshCw, Play, FileText, ChevronRight } from 'lucide-react';
+import {
+  CheckCircle2, XCircle, Circle, Loader2, AlertTriangle, RefreshCw,
+  Play, FileText, ChevronRight, ChevronDown, SkipForward, RotateCcw
+} from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import { api } from '../lib/api.js';
 
@@ -36,6 +39,124 @@ function fmtTs(s) {
   if (!s) return '—';
   return new Date(s).toLocaleString();
 }
+
+// ---------------------------------------------------------------------------
+// Smoketest detail card
+// ---------------------------------------------------------------------------
+
+function SmokePill({ st }) {
+  if (st.skipped) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-ink-800 border border-ink-700 text-ink-400">
+        <SkipForward className="w-3 h-3" /> skipped
+        {st.reason && <span className="text-ink-500 ml-1">({st.reason})</span>}
+      </span>
+    );
+  }
+  if (st.ok && st.booted) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-emerald-900/40 border border-emerald-700 text-emerald-300">
+        <CheckCircle2 className="w-3 h-3" /> booted
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-red-900/40 border border-red-700 text-red-300">
+      <XCircle className="w-3 h-3" /> crashed
+    </span>
+  );
+}
+
+function SmoketestCard({ st, projectId, milestone }) {
+  const [open, setOpen] = useState(!st.ok);
+  const [rerunning, setRerunning] = useState(false);
+  const [rerunErr, setRerunErr] = useState(null);
+
+  async function handleRerun() {
+    setRerunning(true);
+    setRerunErr(null);
+    try {
+      await api.post(`/api/projects/${projectId}/milestones/${milestone}/smoketest`, {});
+    } catch (e) {
+      setRerunErr(e?.message || 'smoketest failed');
+    } finally {
+      setRerunning(false);
+    }
+  }
+
+  const hasErrors   = st.errors   && st.errors.length > 0;
+  const hasWarnings = st.warnings && st.warnings.length > 0;
+  const durationSec = st.duration_ms != null ? (st.duration_ms / 1000).toFixed(1) + 's' : null;
+
+  return (
+    <div className="border-t border-ink-800 bg-ink-950/50">
+      <div className="flex items-center gap-2 px-3 py-1.5 text-[11px]">
+        <span className="text-ink-500 select-none">smoketest</span>
+        <SmokePill st={st} />
+        {durationSec && <span className="text-ink-500">{durationSec}</span>}
+        {st.est_fps != null && <span className="text-ink-500">{st.est_fps} fps</span>}
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={handleRerun}
+          disabled={rerunning}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-ink-800 hover:bg-ink-700 text-ink-300 text-[11px] disabled:opacity-50"
+        >
+          {rerunning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+          Re-run smoketest
+        </button>
+        {(hasErrors || hasWarnings) && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="text-ink-500 hover:text-ink-300"
+          >
+            {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          </button>
+        )}
+      </div>
+
+      {rerunErr && (
+        <div className="px-3 pb-1.5 flex items-center gap-1.5 text-[11px] text-red-400">
+          <AlertTriangle className="w-3 h-3" /> {rerunErr}
+        </div>
+      )}
+
+      {open && (hasErrors || hasWarnings) && (
+        <div className="px-3 pb-2 space-y-1.5">
+          {hasErrors && (
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-red-500">Errors</span>
+              <ul className="mt-0.5 space-y-0.5">
+                {st.errors.map((e, i) => (
+                  <li key={i} className="text-[11px] text-red-300 font-mono pl-2 border-l border-red-800">
+                    {e}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {hasWarnings && (
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-amber-500">Warnings</span>
+              <ul className="mt-0.5 space-y-0.5">
+                {st.warnings.map((w, i) => (
+                  <li key={i} className="text-[11px] text-amber-300 font-mono pl-2 border-l border-amber-800">
+                    {w}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Milestone row
+// ---------------------------------------------------------------------------
 
 function MilestoneRow({ m, projectId, onBuildDone }) {
   const [building, setBuilding] = useState(false);
@@ -74,15 +195,15 @@ function MilestoneRow({ m, projectId, onBuildDone }) {
   }
 
   return (
-    <div className={`border border-ink-800 border-l-2 ${toneRow} rounded-md bg-ink-900`}>
-      <div className="flex items-center gap-3 px-3 py-2.5">
+    <div className={`border border-ink-800 border-l-2 ${toneRow} rounded-md bg-ink-900 overflow-hidden`}>
+      <div className="flex items-center gap-3 px-3 py-2.5 flex-wrap sm:flex-nowrap">
         <StatusDot boots={m.boots} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-ink-100">{LABELS[m.milestone] || m.milestone}</span>
             <span className="text-[10px] text-ink-500 font-mono">{m.milestone}</span>
           </div>
-          <div className="text-[11px] text-ink-500 mt-0.5 flex items-center gap-3">
+          <div className="text-[11px] text-ink-500 mt-0.5 flex items-center gap-3 flex-wrap">
             <span>built: {fmtTs(m.built_at)}</span>
             <span>size: {fmtBytes(m.bytes)}</span>
             {m.errors && m.errors.length > 0 && (
@@ -90,7 +211,7 @@ function MilestoneRow({ m, projectId, onBuildDone }) {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap gap-y-1">
           <button
             type="button"
             onClick={handleBuild}
@@ -110,6 +231,7 @@ function MilestoneRow({ m, projectId, onBuildDone }) {
           </button>
         </div>
       </div>
+
       {showLog && (
         <div className="border-t border-ink-800 px-3 py-2">
           {log == null && logErr == null && (
@@ -129,9 +251,22 @@ function MilestoneRow({ m, projectId, onBuildDone }) {
           )}
         </div>
       )}
+
+      {/* Smoketest detail card — shown when status.smoketest is present */}
+      {m.status && m.status.smoketest && (
+        <SmoketestCard
+          st={m.status.smoketest}
+          projectId={projectId}
+          milestone={m.milestone}
+        />
+      )}
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function Milestones() {
   const { id: projectId } = useParams();
@@ -171,7 +306,7 @@ export default function Milestones() {
     <div className="flex flex-col h-full min-h-0">
       <Nav subtitle="Milestones" />
 
-      <div className="px-4 py-2 border-b border-ink-800 bg-ink-900 flex items-center gap-3 text-sm flex-wrap">
+      <div className="px-4 py-2 border-b border-ink-800 bg-ink-900 flex items-center gap-3 text-sm flex-wrap gap-y-2">
         <Link to={`/project/${projectId}`} className="text-ink-400 hover:text-ink-200 text-xs">
           <ChevronRight className="w-3 h-3 inline rotate-180" /> project
         </Link>
@@ -211,7 +346,7 @@ export default function Milestones() {
         </div>
       ) : (
         <div className="flex-1 overflow-auto p-4">
-          <div className="max-w-2xl mx-auto space-y-2">
+          <div className="w-full max-w-2xl mx-auto space-y-2">
             {(milestones || []).map((m) => (
               <MilestoneRow
                 key={m.milestone}

@@ -391,6 +391,24 @@ export default function ReviewBoard() {
           </div>
         )}
 
+        {!loading && !board && !err && (
+          <div className="py-12 text-center space-y-3">
+            <p className="text-ink-300 font-medium">Review board is empty.</p>
+            <p className="text-ink-500 text-[13px] max-w-sm mx-auto">
+              Sync to scan gates, concepts, and batches and populate the board.
+            </p>
+            <button
+              type="button"
+              onClick={doSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent hover:bg-accent/90 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Sync to scan gates + concepts + batches
+            </button>
+          </div>
+        )}
+
         {/* Items by phase */}
         {!loading && phaseNums.map((ph) => (
           <div key={ph} className="mb-6">
@@ -413,8 +431,20 @@ export default function ReviewBoard() {
         ))}
 
         {!loading && board && (!board.items || board.items.length === 0) && (
-          <div className="py-10 text-center text-ink-500 text-sm">
-            No review items yet. Run the autopilot to generate content, then sync.
+          <div className="py-12 text-center space-y-3">
+            <p className="text-ink-300 font-medium">Review board is empty.</p>
+            <p className="text-ink-500 text-[13px] max-w-sm mx-auto">
+              Sync to scan gates, concepts, and batches and populate the board.
+            </p>
+            <button
+              type="button"
+              onClick={doSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent hover:bg-accent/90 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Sync to scan gates + concepts + batches
+            </button>
           </div>
         )}
 
