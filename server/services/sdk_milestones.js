@@ -383,6 +383,34 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
   await fsp.writeFile(statusFile(localPath, milestoneId), JSON.stringify(status, null, 2));
   await fsp.writeFile(logFile(localPath, milestoneId), logLines.join('\n') + '\n');
 
+  // Auto-pack release on release_candidate green boot. Best-effort —
+  // packager failures don't fail the milestone. Disable with
+  // STUDIO_NO_AUTO_PACK=1.
+  if (boots && milestoneId === 'release_candidate' && process.env.STUDIO_NO_AUTO_PACK !== '1') {
+    try {
+      // First try to clear any blocking gates via the auto-gate service.
+      try {
+        const autoGate = require('./sdk_auto_gate');
+        await autoGate.autoSignIfGreen(projectId);
+      } catch (_e) { /* gate service optional */ }
+
+      const packager = require('./sdk_release_packager');
+      const result = await packager.pack(projectId, {
+        force: true,
+        skipSmoketest: true, // milestone just ran one
+        skip_gate_check: process.env.STUDIO_AUTO_SIGN_GATES === '1'
+      });
+      status.auto_packed = {
+        release_dir: result.release_dir, tag: result.tag, files: result.files.length
+      };
+      // Update the persisted status with the auto-pack result.
+      await fsp.writeFile(statusFile(localPath, milestoneId), JSON.stringify(status, null, 2));
+    } catch (e) {
+      status.auto_pack_error = String(e.message || e).slice(0, 300);
+      await fsp.writeFile(statusFile(localPath, milestoneId), JSON.stringify(status, null, 2));
+    }
+  }
+
   return status;
 }
 

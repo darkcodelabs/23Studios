@@ -217,7 +217,23 @@ function fileBytes(filePath) {
 
 // Core pack function.
 async function pack(projectId, opts = {}) {
-  const { tag = 'v0.1.0', force = false, include_screenshots = true } = opts;
+  let { tag, force = false, include_screenshots = true } = opts;
+  // Auto-derive a tag when caller doesn't provide one (auto-pack mode).
+  // Pattern: v<version-from-pdxinfo>-<YYYYMMDDHHmmss>. Falls back to v0.1.0.
+  if (!tag) {
+    try {
+      const pdxinfoPath = (await projects.getProject(projectId))?.local_path
+        && path.join((await projects.getProject(projectId)).local_path, 'source', 'pdxinfo');
+      if (pdxinfoPath && fs.existsSync(pdxinfoPath)) {
+        const m = fs.readFileSync(pdxinfoPath, 'utf8').match(/^version\s*=\s*([^\s\n]+)/im);
+        const v = m ? String(m[1]).trim() : '0.1.0';
+        const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+        tag = `v${v}-${ts}`;
+      } else {
+        tag = 'v0.1.0';
+      }
+    } catch (_e) { tag = 'v0.1.0'; }
+  }
 
   const project = await projects.getProject(projectId);
   if (!project) {
