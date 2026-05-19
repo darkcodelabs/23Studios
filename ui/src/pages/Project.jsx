@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import {
   FolderTree, MessageSquare, ScrollText,
-  PlayCircle, Hammer, Loader2, Pencil, Image as ImageIcon
+  PlayCircle, Hammer, Loader2, Pencil, Image as ImageIcon,
+  ClipboardList
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
@@ -77,6 +78,7 @@ export default function Project() {
                 <ImageIcon className="w-3 h-3" /> references
               </Link>
               {project?.game_type === 'sdk' ? <SdkBuildBar project={project} /> : null}
+              {project?.game_type === 'sdk' ? <ReviewBadge projectId={id} /> : null}
               <ShipButton projectId={id} variant="slim" />
               <GameTypeToggle project={project} onChange={setProject} />
               {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
@@ -194,4 +196,35 @@ function formatBytes(n) {
   if (n < 1024) return n + ' B';
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
   return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Small badge linking to the review board. Fetches pending count once on mount.
+function ReviewBadge({ projectId }) {
+  const [pending, setPending] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.get(`/api/projects/${projectId}/review`)
+      .then((r) => { if (alive) setPending(r && r.counts && r.counts.pending != null ? r.counts.pending : null); })
+      .catch(() => { /* silent — badge is non-critical */ });
+    return () => { alive = false; };
+  }, [projectId]);
+
+  const hasPending = typeof pending === 'number' && pending > 0;
+
+  return (
+    <a
+      href={`/project/${projectId}/review`}
+      className={`btn text-xs relative ${hasPending ? 'text-yellow-300' : ''}`}
+      title={`Review board${hasPending ? ` — ${pending} pending` : ''}`}
+    >
+      <ClipboardList className="w-3 h-3" />
+      review
+      {hasPending && (
+        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-yellow-500 text-black text-[10px] font-bold leading-none">
+          {pending > 99 ? '99+' : pending}
+        </span>
+      )}
+    </a>
+  );
 }
