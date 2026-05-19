@@ -136,7 +136,9 @@ async function start({ projectId }) {
 
   const subscribers = new Set();
   let lastFrameMs = 0;
+  let lastFrameBuf = null;
   let stopped = false;
+  const recorders = new Set(); // each: { frames: [{ts, buf}] }
 
   // Capture loop. Uses ImageMagick `import` since it's installed; pipe to
   // base64 + push to subscribers.
@@ -166,6 +168,7 @@ async function start({ projectId }) {
           });
           imp.on('error', reject);
         });
+        lastFrameBuf = buf;
         // Send PNG as a binary frame — no JSON wrap, no base64 expansion,
         // no chance of permessage-deflate flipping RSV1 on a text payload.
         // Browser decodes via URL.createObjectURL(new Blob([data])).
@@ -173,13 +176,18 @@ async function start({ projectId }) {
           try { ws.send(buf, { compress: false, binary: true }); }
           catch (_e) { /* dropped */ }
         }
+        for (const rec of recorders) {
+          rec.frames.push({ ts: Date.now(), buf });
+          if (rec.frames.length > 1800) rec.frames.shift(); // cap ~2min @ 15fps
+        }
       } catch (_e) { /* skip frame */ }
     }
   }
 
   const state = {
     projectId, display, simBin, pdxPath: pdx,
-    xvfb, sim, subscribers, stopped: false,
+    xvfb, sim, subscribers, recorders, stopped: false,
+    get lastFrame() { return lastFrameBuf; },
     subscribe(ws) {
       subscribers.add(ws);
       ws.on('close', () => subscribers.delete(ws));
@@ -236,6 +244,73 @@ const KEY_MAP = Object.freeze({
 
 function mapKey(action) { return KEY_MAP[action] || null; }
 
+// Record a session of `durationS` seconds against a running preview.
+// Returns { gifPath, mp4Path, frameCount, durationMs }.
+// Falls back gracefully when ffmpeg or ImageMagick (convert) are absent —
+// emits whichever output succeeded; gifPath/mp4Path may be null.
+async function recordSession({ projectId, durationS = 6 }) {
+  const st = _previews.get(projectId);
+  if (!st) {
+    const e = new Error('preview_not_running');
+    e.status = 409;
+    throw e;
+  }
+  const dur = Math.max(1, Math.min(60, Math.floor(durationS) || 6));
+  const rec = { frames: [] };
+  st.recorders.add(rec);
+  const startedAt = Date.now();
+  await new Promise((r) => setTimeout(r, dur * 1000));
+  st.recorders.delete(rec);
+  const elapsed = Date.now() - startedAt;
+  if (rec.frames.length === 0) {
+    return { gifPath: null, mp4Path: null, frameCount: 0, durationMs: elapsed };
+  }
+
+  const outDir = path.join(os.tmpdir(), `23studios-record-${projectId}-${startedAt}`);
+  fs.mkdirSync(outDir, { recursive: true });
+  for (let i = 0; i < rec.frames.length; i++) {
+    const name = String(i).padStart(5, '0') + '.png';
+    fs.writeFileSync(path.join(outDir, name), rec.frames[i].buf);
+  }
+  // Compute effective fps from real timestamps for accurate playback speed.
+  const fps = Math.max(1, Math.round((rec.frames.length / elapsed) * 1000));
+
+  const mp4Path = path.join(outDir, 'session.mp4');
+  const gifPath = path.join(outDir, 'session.gif');
+
+  // mp4 via ffmpeg
+  const hasFfmpeg = spawnSync('which', ['ffmpeg']).status === 0;
+  if (hasFfmpeg) {
+    const r = spawnSync('ffmpeg', [
+      '-y', '-framerate', String(fps),
+      '-i', path.join(outDir, '%05d.png'),
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast',
+      mp4Path
+    ], { stdio: 'ignore' });
+    if (r.status !== 0) try { fs.unlinkSync(mp4Path); } catch (_e) { /* */ }
+  }
+
+  // gif via ImageMagick convert
+  const hasConvert = spawnSync('which', ['convert']).status === 0;
+  if (hasConvert) {
+    const r = spawnSync('convert', [
+      '-delay', String(Math.max(2, Math.round(100 / fps))),
+      '-loop', '0',
+      path.join(outDir, '*.png'),
+      gifPath
+    ], { stdio: 'ignore' });
+    if (r.status !== 0) try { fs.unlinkSync(gifPath); } catch (_e) { /* */ }
+  }
+
+  return {
+    gifPath: fs.existsSync(gifPath) ? gifPath : null,
+    mp4Path: fs.existsSync(mp4Path) ? mp4Path : null,
+    frameCount: rec.frames.length,
+    durationMs: elapsed,
+    outDir
+  };
+}
+
 module.exports = {
-  start, stop, get, findSimulator, mapKey
+  start, stop, get, findSimulator, mapKey, recordSession
 };
