@@ -92,12 +92,10 @@ import PulpEditor from './pages/PulpEditor.jsx';
 import ComposerV2 from './pages/ComposerV2.jsx';
 import StylePicker from './pages/StylePicker.jsx';
 import AssetLibraryBrowser from './pages/AssetLibraryBrowser.jsx';
-import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
-import DecisionsLog from './pages/DecisionsLog.jsx';
-import Canon from './pages/Canon.jsx';
+import Storyboard from './pages/Storyboard.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -110,10 +108,13 @@ function PulpComingSoon({ name }) {
 export default function App() {
   return (
     <AuthProvider>
+      {/* CostPanel renders itself only when location matches /project/:id/* */}
+      <CostPanel />
       <Routes>
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/agents" element={<RequireAuth><AgentsDashboard /></RequireAuth>} />
         <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
         <Route path="/project/:id/files" element={<RequireAuth><Project /></RequireAuth>} />
         <Route path="/project/:id/edit" element={<RequireAuth><PulpEditor /></RequireAuth>} />
@@ -123,12 +124,10 @@ export default function App() {
         <Route path="/project/:id/composer" element={<RequireAuth><ComposerV2 /></RequireAuth>} />
         <Route path="/project/:id/styles/:axisId" element={<RequireAuth><StylePicker /></RequireAuth>} />
         <Route path="/project/:id/asset-library" element={<RequireAuth><AssetLibraryBrowser /></RequireAuth>} />
-        <Route path="/project/:id/references" element={<RequireAuth><ReferenceLibrary /></RequireAuth>} />
         <Route path="/project/:id/npcs" element={<RequireAuth><NpcDialogEditor /></RequireAuth>} />
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
-        <Route path="/project/:id/decisions" element={<RequireAuth><DecisionsLog /></RequireAuth>} />
-        <Route path="/project/:id/canon" element={<RequireAuth><Canon /></RequireAuth>} />
+        <Route path="/project/:id/storyboard" element={<RequireAuth><Storyboard /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
