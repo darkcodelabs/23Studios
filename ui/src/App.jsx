@@ -108,6 +108,8 @@ function PulpComingSoon({ name }) {
 export default function App() {
   return (
     <AuthProvider>
+      {/* CostPanel renders itself only when location matches /project/:id/* */}
+      <CostPanel />
       <Routes>
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
