@@ -92,6 +92,7 @@ import PulpEditor from './pages/PulpEditor.jsx';
 import ComposerV2 from './pages/ComposerV2.jsx';
 import StylePicker from './pages/StylePicker.jsx';
 import AssetLibraryBrowser from './pages/AssetLibraryBrowser.jsx';
+import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
@@ -120,6 +121,7 @@ export default function App() {
         <Route path="/project/:id/composer" element={<RequireAuth><ComposerV2 /></RequireAuth>} />
         <Route path="/project/:id/styles/:axisId" element={<RequireAuth><StylePicker /></RequireAuth>} />
         <Route path="/project/:id/asset-library" element={<RequireAuth><AssetLibraryBrowser /></RequireAuth>} />
+        <Route path="/project/:id/references" element={<RequireAuth><ReferenceLibrary /></RequireAuth>} />
         <Route path="/project/:id/npcs" element={<RequireAuth><NpcDialogEditor /></RequireAuth>} />
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
