@@ -96,6 +96,7 @@ import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
 import Storyboard from './pages/Storyboard.jsx';
+import SceneManager from './pages/SceneManager.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -125,6 +126,7 @@ export default function App() {
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
         <Route path="/project/:id/storyboard" element={<RequireAuth><Storyboard /></RequireAuth>} />
+        <Route path="/project/:id/scenes/:sceneId" element={<RequireAuth><SceneManager /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
