@@ -244,6 +244,12 @@ if (fs.existsSync(PUBLIC_DIR)) {
     // every src/href starting with "/" to include the proxy prefix so the
     // browser asks /proxy/<port>/assets/... which CF Access lets through.
     if (req.proxyPrefix) {
+      // Force-bust the browser's HTTP cache + storage for the origin on
+      // the next HTML fetch via /proxy/<port>/. Triggers a full wipe of
+      // cached HTML, SW, IndexedDB, etc. — equivalent to DevTools "Clear
+      // site data" but server-driven. Set only on tunnel HTML responses,
+      // never on assets (would nuke the asset itself).
+      res.setHeader('Clear-Site-Data', '"cache", "storage"');
       const prefix = req.proxyPrefix;
       const rewritten = bootedHtml
         .replace(/(src|href)="\/(?!\/)/g, `$1="${prefix}/`)
