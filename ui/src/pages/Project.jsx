@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import {
   FolderTree, MessageSquare, ScrollText,
-  Download, PlayCircle, Hammer, Loader2, Pencil, Image as ImageIcon
+  PlayCircle, Hammer, Loader2, Pencil, Image as ImageIcon
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
@@ -12,6 +12,7 @@ import ChatPanel from '../components/ChatPanel.jsx';
 import ModelSelector, { CLAUDE_OPTION } from '../components/ModelSelector.jsx';
 import GameTypeToggle from '../components/GameTypeToggle.jsx';
 import ShipButton from '../components/ShipButton.jsx';
+import ReleasesDropdown from '../components/ReleasesDropdown.jsx';
 import { api } from '../lib/api.js';
 import { useSiderail } from '../lib/use_siderail.js';
 
@@ -178,16 +179,7 @@ function SdkBuildBar({ project }) {
         {building ? <Loader2 className="w-3 h-3 animate-spin" /> : <Hammer className="w-3 h-3" />}
         {building ? 'building' : 'build .pdx'}
       </button>
-      {ready ? (
-        <a
-          href={build.download_url}
-          download={`${project.id}.pdx.zip`}
-          className="btn text-xs"
-          title={`download ${formatBytes(build.cached_tar_bytes)} pdx tarball`}
-        >
-          <Download className="w-3 h-3" /> download
-        </a>
-      ) : null}
+      <ReleasesDropdown projectId={project.id} />
       <button type="button" className="btn text-xs" onClick={doSim} disabled={launching || !ready}>
         {launching ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
         simulator
