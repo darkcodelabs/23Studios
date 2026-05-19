@@ -22,23 +22,11 @@ root.render(
   </React.StrictMode>
 );
 
-// PWA service worker. Dev hot-reload + SW caching conflict, so prod only.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register(`${APP_BASE}/sw.js`, { scope: `${APP_BASE}/` })
-      .then((reg) => {
-        // Force an update check on every page load so version bumps land
-        // without the user having to clear site data. When a new SW takes
-        // control of the page, reload once to pull fresh asset hashes.
-        reg.update().catch(() => {});
-        let reloaded = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (reloaded) return;
-          reloaded = true;
-          window.location.reload();
-        });
-      })
-      .catch((err) => console.warn('SW registration failed:', err));
-  });
+// SW was retired — public/sw.js is a self-unregistering tombstone that
+// fires on the next update check. Sweep any leftover registrations here
+// too so a user who never reloads still gets cleaned up.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    for (const r of regs) r.unregister().catch(() => {});
+  }).catch(() => {});
 }
