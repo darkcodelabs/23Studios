@@ -13,6 +13,7 @@ const projects = require('./projects');
 const pulp = require('./pulp_project');
 const playdateSpec = require('./playdate_spec');
 const playdateValidator = require('./playdate_validator');
+const groundingGuard = require('./grounding_guard');
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -22,16 +23,40 @@ const API_KEY = process.env.OPENROUTER_API_KEY || '';
 // proxy doesn't reliably pass DALL-E 3 through; the chat-completions path
 // returns images in message.images[0].image_url.url as base64 data URLs.
 // The right OpenAI model on OpenRouter for this is `openai/gpt-image-1`.
-async function generateImageViaOpenRouter({ prompt, model, sizeHint }) {
+async function generateImageViaOpenRouter({ prompt, model, sizeHint, grounding }) {
   if (!API_KEY) {
     const e = new Error('openrouter_unavailable');
     e.code = 'openrouter_unavailable';
     throw e;
   }
+
+  // Phase 6 C4: reference grounding. If the caller passes a grounding object,
+  // it must either cite anchor_refs OR set { no_anchor:true, rationale }.
+  // assertGrounded throws (code='ungrounded' or 'ungrounded_no_rationale',
+  // status=409) when neither is satisfied. The composed preamble is appended
+  // to the prompt body so the model also sees the anchor cite verbatim.
+  // Enforcement is opt-in per call site via the grounding arg; missing means
+  // "legacy caller, don't enforce". Set STUDIO_GROUNDING=required to force
+  // every image-gen call to provide grounding.
+  let groundedPrompt = prompt;
+  if (grounding != null) {
+    const norm = groundingGuard.assertGrounded(grounding);
+    if (norm.no_anchor) {
+      groundedPrompt = prompt + groundingGuard.renderNoAnchorPreamble(norm.rationale);
+    } else {
+      groundedPrompt = prompt + groundingGuard.renderAnchorPreamble(norm.anchor_refs);
+    }
+  } else if (String(process.env.STUDIO_GROUNDING || '').toLowerCase() === 'required') {
+    const e = new Error('grounding_guard: STUDIO_GROUNDING=required — caller must pass { grounding: { anchor_refs:[...] } } or { grounding: { no_anchor:true, rationale } }');
+    e.code = 'ungrounded';
+    e.status = 409;
+    throw e;
+  }
+
   const sizeLine = sizeHint ? `\n\nRender at ${sizeHint}.` : '';
   const payload = {
     model,
-    messages: [{ role: 'user', content: prompt + sizeLine }],
+    messages: [{ role: 'user', content: groundedPrompt + sizeLine }],
     modalities: ['image', 'text']
   };
   const res = await fetch(`${BASE_URL}/chat/completions`, {
