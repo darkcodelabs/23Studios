@@ -74,7 +74,7 @@ async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectCont
   const sizeLine = sizeHint ? `\n\nRender at ${sizeHint}.` : '';
   const payload = {
     model,
-    messages: [{ role: 'user', content: prompt + sizeLine }],
+    messages: [{ role: 'user', content: groundedPrompt + sizeLine }],
     modalities: ['image', 'text']
   };
   const res = await fetch(`${BASE_URL}/chat/completions`, {
