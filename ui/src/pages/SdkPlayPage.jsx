@@ -10,8 +10,8 @@ import StudioLogo from '../components/StudioLogo.jsx';
 export default function SdkPlayPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const canvasRef = useRef(null);
-  const ctxRef = useRef(null);
+  const imgRef = useRef(null);
+  const lastUrlRef = useRef(null);
   const wsRef = useRef(null);
 
   const [status, setStatus] = useState('connecting');
@@ -44,37 +44,24 @@ export default function SdkPlayPage() {
         }
         return;
       }
-      // Binary frame.
+      // Binary frame -> swap <img src>. Revoke the prior blob URL so we
+      // don't leak per frame.
       const blob = new Blob([e.data], { type: 'image/png' });
       const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => {
-        if (ctxRef.current) {
-          ctxRef.current.imageSmoothingEnabled = false;
-          ctxRef.current.drawImage(img, 0, 0, 400, 240);
-        }
-        URL.revokeObjectURL(url);
-      };
-      img.src = url;
+      const prev = lastUrlRef.current;
+      lastUrlRef.current = url;
+      if (imgRef.current) imgRef.current.src = url;
+      if (prev) URL.revokeObjectURL(prev);
     };
 
     return () => {
       try { ws.close(); } catch (_e) { /* */ }
-      // Best-effort stop on unmount.
+      if (lastUrlRef.current) { URL.revokeObjectURL(lastUrlRef.current); lastUrlRef.current = null; }
       api.post(`/api/projects/${id}/sdk/preview/stop`, {}).catch(() => {});
     };
   }, [id]);
 
-  // Bind canvas ctx ref.
-  const attachCanvas = useCallback((node) => {
-    canvasRef.current = node;
-    if (node) {
-      const ctx = node.getContext('2d');
-      ctxRef.current = ctx;
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, 400, 240);
-    }
-  }, []);
+  const attachCanvas = useCallback((node) => { imgRef.current = node; }, []);
 
   // Input bridge — POST per press.
   const sendAction = useCallback(async (action) => {
@@ -140,16 +127,16 @@ export default function SdkPlayPage() {
           </div>
         ) : null}
 
-        <canvas
+        <img
           ref={attachCanvas}
-          width={400}
-          height={240}
+          alt="sdk preview"
           style={{
-            width: 'min(95vw, calc((100vh - 200px) * 1.6667))',
-            aspectRatio: '400 / 240',
+            maxWidth: '95vw',
+            maxHeight: 'calc(100vh - 180px)',
             imageRendering: 'pixelated',
             display: 'block',
-            background: '#000'
+            background: '#000',
+            objectFit: 'contain'
           }}
         />
 
