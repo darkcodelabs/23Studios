@@ -199,7 +199,41 @@ router.post('/', async (req, res, next) => {
     const errors = validateProjectCreate(req.body || {});
     if (errors.length) return res.status(400).json({ error: 'validation_failed', detail: errors });
     const created = await projects.createProject(req.body);
-    if (created.local_path) await tryGateSeed(created.id, created.local_path);
+    if (created.local_path) {
+      await tryGateSeed(created.id, created.local_path);
+      // Seed the modular story-bible sections + compile to story_bible.md so
+      // every Claude call has substance from the first autopilot run.
+      // Empty/missing sections show up as a TODO scaffolding for the user.
+      try {
+        const bibleTemplate = require('../services/story_bible_template');
+        const sdkBible = require('../services/sdk_bible');
+        // Per-section files. If a section already exists (re-creation) it is
+        // preserved untouched.
+        if (created.game_type !== 'pulp') {
+          await bibleTemplate.writeSeed(created.local_path, {
+            name: created.name,
+            description: created.description,
+            developer: created.developer,
+            mechanic_hook: (req.body && req.body.mechanic_hook) || null
+          });
+          // Concat to canonical story_bible.md (idempotent).
+          await sdkBible.compile(created.local_path);
+        }
+        // If caller passed an inline `bible_sections: { filename: content }`
+        // map, write those too (lets ProjectForm submit a custom premise + cast
+        // in one shot). Filenames validated by sdkBible.write.
+        const sections = req.body && req.body.bible_sections;
+        if (sections && typeof sections === 'object') {
+          for (const [filename, content] of Object.entries(sections)) {
+            try { await sdkBible.write(created.local_path, filename, content); }
+            catch (_e) { /* skip invalid */ }
+          }
+          await sdkBible.compile(created.local_path);
+        }
+      } catch (_e) {
+        // Bible seed is best-effort; don't fail project create on it.
+      }
+    }
     res.status(201).json({ project: created });
   } catch (e) {
     if (e && e.status === 409) return res.status(409).json({ error: e.code || 'conflict' });
