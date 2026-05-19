@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, createContext, useContext } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { api, setCsrfToken } from './lib/api.js';
 
 const AuthCtx = createContext(null);
@@ -95,11 +95,64 @@ import AssetLibraryBrowser from './pages/AssetLibraryBrowser.jsx';
 import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
+import GateBanner from './components/GateBanner.jsx';
+import GateReview from './pages/GateReview.jsx';
 
 function PulpComingSoon({ name }) {
   return (
     <div className="h-full flex items-center justify-center text-ink-500 text-sm">
       {name} arrives in Phase 2 Wave 2
+    </div>
+  );
+}
+
+function GatesIndex() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [list, setList] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.get(`/api/projects/${id}/gates`).then((r) => {
+      if (!cancelled) setList((r && r.gates) || []);
+    }).catch(() => { if (!cancelled) setList([]); });
+    return () => { cancelled = true; };
+  }, [id]);
+  if (list === null) return <div className="p-4 text-ink-400 text-sm">loading gates…</div>;
+  return (
+    <div className="max-w-3xl mx-auto p-4 space-y-2">
+      <h1 className="text-base font-semibold text-ink-100 mb-2">Gates</h1>
+      {list.length === 0 && <div className="text-ink-500 text-sm">no gates configured</div>}
+      {list.map((g) => (
+        <button
+          key={g.id}
+          type="button"
+          onClick={() => navigate(`/project/${id}/gates/${g.id}`)}
+          className="w-full text-left px-3 py-2.5 rounded-md bg-ink-900 ring-1 ring-ink-800 hover:ring-ink-700 flex items-center gap-3"
+        >
+          <span className={
+            'pill ' + (g.status === 'signed_off' ? 'pill-ok' : g.status === 'active' ? 'pill-warn' : '')
+          }>{g.status}</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm text-ink-100 truncate">{g.name}</div>
+            <div className="text-[11px] text-ink-500">
+              {g.required_resolved}/{g.required_total} required decisions
+              {g.signed_off_at ? ` · signed ${new Date(g.signed_off_at).toLocaleDateString()}` : ''}
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Shell wraps every project route with the cross-app GateBanner. Banner
+// renders nothing when there's no active gate, so it's free on signed-off
+// projects.
+function ProjectShell({ children }) {
+  return (
+    <div className="flex flex-col h-screen overflow-hidden">
+      <GateBanner />
+      <div className="flex-1 min-h-0 overflow-auto">{children}</div>
     </div>
   );
 }
@@ -111,18 +164,20 @@ export default function App() {
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
-        <Route path="/project/:id/files" element={<RequireAuth><Project /></RequireAuth>} />
-        <Route path="/project/:id/edit" element={<RequireAuth><PulpEditor /></RequireAuth>} />
-        <Route path="/project/:id/play" element={<RequireAuth><PulpPlayPage /></RequireAuth>} />
-        <Route path="/project/:id/sdk/play" element={<RequireAuth><SdkPlayPage /></RequireAuth>} />
-        <Route path="/project/:id/sdk/edit" element={<RequireAuth><SdkEditPage /></RequireAuth>} />
-        <Route path="/project/:id/composer" element={<RequireAuth><ComposerV2 /></RequireAuth>} />
-        <Route path="/project/:id/styles/:axisId" element={<RequireAuth><StylePicker /></RequireAuth>} />
-        <Route path="/project/:id/asset-library" element={<RequireAuth><AssetLibraryBrowser /></RequireAuth>} />
-        <Route path="/project/:id/npcs" element={<RequireAuth><NpcDialogEditor /></RequireAuth>} />
-        <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
-        <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
+        <Route path="/project/:id" element={<RequireAuth><ProjectShell><Project /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/files" element={<RequireAuth><ProjectShell><Project /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/edit" element={<RequireAuth><ProjectShell><PulpEditor /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/play" element={<RequireAuth><ProjectShell><PulpPlayPage /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/sdk/play" element={<RequireAuth><ProjectShell><SdkPlayPage /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/sdk/edit" element={<RequireAuth><ProjectShell><SdkEditPage /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/composer" element={<RequireAuth><ProjectShell><ComposerV2 /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/styles/:axisId" element={<RequireAuth><ProjectShell><StylePicker /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/asset-library" element={<RequireAuth><ProjectShell><AssetLibraryBrowser /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/npcs" element={<RequireAuth><ProjectShell><NpcDialogEditor /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/levels" element={<RequireAuth><ProjectShell><LevelEditor /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/late-add" element={<RequireAuth><ProjectShell><LateAddPanel /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/gates" element={<RequireAuth><ProjectShell><GatesIndex /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/gates/:gateId" element={<RequireAuth><ProjectShell><GateReview /></ProjectShell></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
