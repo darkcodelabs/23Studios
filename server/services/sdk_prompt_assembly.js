@@ -277,6 +277,19 @@ Scene runtime contract (Phase 3 — stack-based scene_manager):
     scene_manager.replace(require("scenes." .. target_id), { spawn = "..." })
   NEVER call any other scene_manager API (no .goto, no .switch, no .set).
 
+Available runtime globals (all loaded once in main.lua — NEVER import them again in scenes):
+scene_manager, save_state, sprite_base, input, animation, audio_manager,
+inventory, collision, interaction, debug_overlay.
+
+Usage rules:
+- NEVER write: local foo = import "concepts/foo" -- this captures nil on hardware.
+- CORRECT: use globals unqualified, e.g. inventory.add("key", 1), collision.queryAt(x, y),
+  interaction.dispatch("chest", "use", ctx), debug_overlay.addLine("hit!").
+- inventory: backed by save_state; persists across scenes automatically.
+- collision: iterates gfx.sprite.getAllSprites() -- call only when needed, not every frame.
+- interaction: call interaction.clearAll() in scene:exit() to remove stale handlers.
+- debug_overlay: already called in main playdate.update(); do NOT call draw() again in scenes.
+
 Scene context:
 - id: {scene.id}
 - type: {scene.type}

@@ -18,6 +18,14 @@ import "runtime/sprite_base"
 import "runtime/scene_manager"
 import "runtime/scene_transition"
 
+-- Concept modules: imported in dependency order.
+-- save_state must be loaded before inventory (inventory reads/writes through it).
+import "concepts/inventory"
+import "concepts/collision"
+import "concepts/interaction"
+-- debug_overlay last: no downstream deps; call draw() after gfx.sprite.update().
+import "concepts/debug_overlay"
+
 -- game_data.lua is emitted by the exporter and provides:
 --   game_data.startup_scene  (string id, optional — falls back to "title")
 --   game_data.scenes         (table id -> require path)
@@ -77,5 +85,6 @@ function playdate.update()
     end
     playdate.timer.updateTimers()
     gfx.sprite.update()
+    debug_overlay.draw()
     scene_transition.draw()
 end
