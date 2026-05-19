@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import {
   FolderTree, MessageSquare, ScrollText,
-  Download, PlayCircle, Hammer, Loader2, Pencil
+  Download, PlayCircle, Hammer, Loader2, Pencil, Image as ImageIcon
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
@@ -67,6 +67,13 @@ export default function Project() {
                 {TABS.find((t) => t.id === tab)?.label || ''}
               </h2>
               <div className="flex-1" />
+              <Link
+                to={`/project/${id}/references`}
+                className="btn text-xs"
+                title="reference image library"
+              >
+                <ImageIcon className="w-3 h-3" /> references
+              </Link>
               {project?.game_type === 'sdk' ? <SdkBuildBar project={project} /> : null}
               <GameTypeToggle project={project} onChange={setProject} />
               {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}

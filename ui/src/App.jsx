@@ -95,8 +95,7 @@ import AssetLibraryBrowser from './pages/AssetLibraryBrowser.jsx';
 import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
-import GateBanner from './components/GateBanner.jsx';
-import GateReview from './pages/GateReview.jsx';
+import Storyboard from './pages/Storyboard.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -160,24 +159,26 @@ function ProjectShell({ children }) {
 export default function App() {
   return (
     <AuthProvider>
+      {/* CostPanel renders itself only when location matches /project/:id/* */}
+      <CostPanel />
       <Routes>
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/project/:id" element={<RequireAuth><ProjectShell><Project /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/files" element={<RequireAuth><ProjectShell><Project /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/edit" element={<RequireAuth><ProjectShell><PulpEditor /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/play" element={<RequireAuth><ProjectShell><PulpPlayPage /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/sdk/play" element={<RequireAuth><ProjectShell><SdkPlayPage /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/sdk/edit" element={<RequireAuth><ProjectShell><SdkEditPage /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/composer" element={<RequireAuth><ProjectShell><ComposerV2 /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/styles/:axisId" element={<RequireAuth><ProjectShell><StylePicker /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/asset-library" element={<RequireAuth><ProjectShell><AssetLibraryBrowser /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/npcs" element={<RequireAuth><ProjectShell><NpcDialogEditor /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/levels" element={<RequireAuth><ProjectShell><LevelEditor /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/late-add" element={<RequireAuth><ProjectShell><LateAddPanel /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/gates" element={<RequireAuth><ProjectShell><GatesIndex /></ProjectShell></RequireAuth>} />
-        <Route path="/project/:id/gates/:gateId" element={<RequireAuth><ProjectShell><GateReview /></ProjectShell></RequireAuth>} />
+        <Route path="/agents" element={<RequireAuth><AgentsDashboard /></RequireAuth>} />
+        <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
+        <Route path="/project/:id/files" element={<RequireAuth><Project /></RequireAuth>} />
+        <Route path="/project/:id/edit" element={<RequireAuth><PulpEditor /></RequireAuth>} />
+        <Route path="/project/:id/play" element={<RequireAuth><PulpPlayPage /></RequireAuth>} />
+        <Route path="/project/:id/sdk/play" element={<RequireAuth><SdkPlayPage /></RequireAuth>} />
+        <Route path="/project/:id/sdk/edit" element={<RequireAuth><SdkEditPage /></RequireAuth>} />
+        <Route path="/project/:id/composer" element={<RequireAuth><ComposerV2 /></RequireAuth>} />
+        <Route path="/project/:id/styles/:axisId" element={<RequireAuth><StylePicker /></RequireAuth>} />
+        <Route path="/project/:id/asset-library" element={<RequireAuth><AssetLibraryBrowser /></RequireAuth>} />
+        <Route path="/project/:id/npcs" element={<RequireAuth><NpcDialogEditor /></RequireAuth>} />
+        <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
+        <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
+        <Route path="/project/:id/storyboard" element={<RequireAuth><Storyboard /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />

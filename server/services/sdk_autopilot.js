@@ -277,7 +277,10 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
       const { brief } = buildSceneBurstPrompt({
         scene: s, storyBible, intake, bibleVars, activePicks
       });
-      const r = await pulpAi.generateScene({ prompt: brief, dim: [400, 240] });
+      const r = await pulpAi.generateScene({
+        prompt: brief, dim: [400, 240],
+        projectId, sceneId: s.id, stage: 'scene_bursts'
+      });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(destPng, r.pngBuffer);
       ev('asset', { kind: 'scene', id: s.id, bytes: r.pngBuffer.length });
@@ -339,7 +342,10 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
       const promptText = (c.portrait_prompt && c.portrait_prompt.includes(anchor))
         ? c.portrait_prompt
         : `${anchor}. ${c.portrait_prompt || (c.name + ' - ' + c.role)}`;
-      const r = await pulpAi.generatePortrait({ prompt: promptText, dim: 64 });
+      const r = await pulpAi.generatePortrait({
+        prompt: promptText, dim: 64,
+        projectId, sceneId: c.id, stage: 'portrait_bursts'
+      });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(destPng, r.pngBuffer);
       ev('asset', { kind: 'portrait', id: c.id, bytes: r.pngBuffer.length });
@@ -542,7 +548,7 @@ async function runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
 // Section 12 — launcher stage. Asks Claude for card/icon/launchImage image
 // prompts + optional animation.txt, then generates the 3 PNGs at correct
 // dims via pulp_ai.generateScene. Writes them under sdk_data/launcher/.
-async function runLauncher({ sdkRoot, sdk, claudeCtx, storyBible, intake,
+async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, intake,
                              bibleVars, emit: ev, job }) {
   const dest = path.join(sdkRoot, 'launcher');
   fs.mkdirSync(dest, { recursive: true });
@@ -588,7 +594,10 @@ async function runLauncher({ sdkRoot, sdk, claudeCtx, storyBible, intake,
       continue;
     }
     try {
-      const r = await pulpAi.generateScene({ prompt: t.prompt, dim: t.dim });
+      const r = await pulpAi.generateScene({
+        prompt: t.prompt, dim: t.dim,
+        projectId, sceneId: t.name, stage: 'launcher'
+      });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(out, r.pngBuffer);
       ev('asset', { kind: 'launcher', id: t.name, bytes: r.pngBuffer.length });
@@ -717,7 +726,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       job.summary.stages_complete++;
 
       ev('phase', { id: 'launcher' });
-      await runLauncher({ sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
+      await runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
                           emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
