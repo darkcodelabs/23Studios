@@ -246,6 +246,31 @@ async function pack(projectId, opts = {}) {
     }
   }
 
+  // Sim boot-probe on the latest pdx before packaging. Mirrors the
+  // milestone smoketest. Skips gracefully when sim/Xvfb absent on host.
+  if (!opts.skipSmoketest && process.env.SKIP_SIM_SMOKETEST !== '1') {
+    const pdxForProbe = latestPdxPath(projectId);
+    if (pdxForProbe) try {
+      const smoketestSvc = require('./sdk_smoketest');
+      const probe = await smoketestSvc.probe(pdxForProbe, {
+        durationMs: Number(process.env.SIM_SMOKETEST_MS) || 8000,
+        skipIfMissing: true
+      });
+      if (!probe.skipped && !probe.ok) {
+        const e = new Error(`smoketest_failed: ${probe.errors.join(' ; ')}`);
+        e.status = 409;
+        e.code = 'smoketest_failed';
+        e.detail = probe;
+        throw e;
+      }
+    } catch (e) {
+      if (e && e.code === 'smoketest_failed') throw e;
+      // Other crashes inside the smoketest service: log via console, don't block.
+      // eslint-disable-next-line no-console
+      console.error('[release_packager] smoketest crashed:', e && e.message);
+    }
+  }
+
   // --- Read source data ---
 
   // 1. sdk_data/project.json
