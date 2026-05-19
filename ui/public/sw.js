@@ -6,7 +6,7 @@
  *   - /api/* and /ws/*: ALWAYS network, never cached (auth + CSRF + live data).
  * Bump CACHE_VERSION on every breaking change.
  */
-const CACHE_VERSION = 'v17-2026-05-18-csp-cfaccess-connect';
+const CACHE_VERSION = 'v18-2026-05-19-skip-proxy-paths';
 const SHELL_CACHE = `studio-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `studio-assets-${CACHE_VERSION}`;
 
@@ -47,6 +47,12 @@ self.addEventListener('fetch', (event) => {
 
   // Never cache the API or sockets.
   if (isApi(url)) return;
+
+  // Skip code-server's /proxy/<port>/ paths entirely. CF Access wraps every
+  // request to hakc.dev; when SW intercepts a manifest fetch under /proxy/,
+  // the redirect chain triggers CORS preflight against hackdev.cloudflareaccess.com
+  // and the browser blows up with TypeErrors. Let browser fetch native instead.
+  if (url.pathname.startsWith('/proxy/')) return;
 
   if (isAsset(url)) {
     event.respondWith((async () => {
