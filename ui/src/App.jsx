@@ -1,3 +1,4 @@
+if (typeof window !== 'undefined') { window.__BUILD = 1779196716; }
 import React, { useEffect, useState, useCallback, createContext, useContext } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { api, setCsrfToken } from './lib/api.js';
