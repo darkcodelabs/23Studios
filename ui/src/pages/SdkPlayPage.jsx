@@ -100,7 +100,7 @@ export default function SdkPlayPage() {
   }, [sendAction]);
 
   return (
-    <div className="h-screen overflow-auto bg-ink-900 text-ink-100">
+    <div className="h-screen flex flex-col overflow-hidden bg-ink-900 text-ink-100">
       <header className="flex items-center justify-between px-3 h-11 border-b border-ink-800 bg-ink-900">
         <div className="flex items-center gap-2 min-w-0">
           <button
@@ -128,7 +128,7 @@ export default function SdkPlayPage() {
         </div>
       </header>
 
-      <main className="p-4 md:p-8 flex flex-col items-center gap-4">
+      <main className="flex-1 flex flex-col items-center justify-center gap-4 p-2">
         {status === 'error' ? (
           <div className="card max-w-xl text-sm space-y-2">
             <div className="text-red-400 font-medium">simulator preview failed</div>
@@ -140,16 +140,20 @@ export default function SdkPlayPage() {
           </div>
         ) : null}
 
-        <div className="ring-1 ring-ink-700 bg-black p-2 rounded">
-          <canvas
-            ref={attachCanvas}
-            width={400}
-            height={240}
-            style={{ width: 800, height: 480, imageRendering: 'pixelated', display: 'block' }}
-          />
-        </div>
+        <canvas
+          ref={attachCanvas}
+          width={400}
+          height={240}
+          style={{
+            width: 'min(95vw, calc((100vh - 200px) * 1.6667))',
+            aspectRatio: '400 / 240',
+            imageRendering: 'pixelated',
+            display: 'block',
+            background: '#000'
+          }}
+        />
 
-        <div className="flex items-center gap-6 mt-2">
+        <div className="flex items-center gap-6">
           <div className="grid grid-cols-3 grid-rows-3 gap-1">
             <span />
             <button type="button" className="btn p-2" onClick={() => sendAction('up')}><ArrowUp className="w-4 h-4" /></button>
