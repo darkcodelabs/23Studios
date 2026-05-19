@@ -33,6 +33,7 @@ const npcRouter = require('./routes/npc');
 const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const openrouterRouter = require('./routes/openrouter');
+const costRouter = require('./routes/cost');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -157,6 +158,7 @@ app.use('/api', npcRouter);
 app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api/openrouter', openrouterRouter);
+app.use('/api', costRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {

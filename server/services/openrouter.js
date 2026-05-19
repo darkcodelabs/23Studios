@@ -2,6 +2,17 @@
 
 const OpenAI = require('openai');
 
+// Lazy-required to break a circular: openrouter_spend pulls `./openrouter`
+// for pricing fallback. Loading it inside streamChat keeps the cycle
+// resolvable.
+let _spend = null;
+function spend() {
+  if (_spend) return _spend;
+  try { _spend = require('./openrouter_spend'); }
+  catch (_e) { _spend = { recordCall: async () => null }; }
+  return _spend;
+}
+
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
 
@@ -43,7 +54,7 @@ async function listModels() {
   return list;
 }
 
-async function streamChat({ model, messages, signal, onDelta }) {
+async function streamChat({ model, messages, signal, onDelta, projectId, stage, sceneId }) {
   if (typeof model !== 'string' || model.length === 0 || model.length > 200) {
     throw new Error('invalid model');
   }
@@ -55,19 +66,43 @@ async function streamChat({ model, messages, signal, onDelta }) {
     content: String(m.content || '').slice(0, 200000)
   }));
 
+  // Stream the response and ask OpenRouter to include usage in the final
+  // chunk; it's the only way to get prompt/completion token counts for a
+  // streaming chat call. The shape lands in part.usage on the last chunk.
   const stream = await client().chat.completions.create({
     model,
     messages: safeMessages,
-    stream: true
+    stream: true,
+    stream_options: { include_usage: true }
   }, { signal });
 
   let full = '';
+  let usage = null;
   for await (const part of stream) {
     const delta = part?.choices?.[0]?.delta?.content;
     if (typeof delta === 'string' && delta.length > 0) {
       full += delta;
       onDelta(delta);
     }
+    if (part && part.usage) usage = part.usage;
+  }
+
+  // Best-effort spend record. recordCall is a no-op when projectId is
+  // falsy or the project can't be resolved, so anonymous/system chats
+  // (e.g. internal pipeline calls) silently skip logging instead of
+  // failing the stream.
+  if (projectId) {
+    try {
+      await spend().recordCall({
+        projectId,
+        model,
+        stage: stage || 'chat',
+        scene_id: sceneId || null,
+        kind: 'chat',
+        prompt_tokens: usage && usage.prompt_tokens,
+        completion_tokens: usage && usage.completion_tokens
+      });
+    } catch (_e) { /* logging is best-effort */ }
   }
   return full;
 }
