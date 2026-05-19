@@ -23,7 +23,12 @@ export default defineConfig({
   // when the SW caches a stale shell without the boot script, relative
   // './assets/...' paths resolved against /proxy/8090/project/<id>/ and
   // returned text/html via SPA fallback. Absolute paths bypass that entirely.
-  base: '/',
+  // Relative base so <link href="./assets/..."> and <script src="./assets/...">
+  // emit. The inline boot script in index.html (server/index.js PROXY_BOOT_JS)
+  // sets <base href> per request context — '/proxy/<port>/' when behind
+  // code-server tunnel, '/' direct. Relative + base href = correct resolution
+  // for both deployment paths from ONE bundle.
+  base: './',
   plugins: [react(), stripCrossoriginPlugin()],
   server: {
     host: '127.0.0.1',
