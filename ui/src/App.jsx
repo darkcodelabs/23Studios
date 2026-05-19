@@ -107,6 +107,7 @@ import ShipStatus from './pages/ShipStatus.jsx';
 import MvpWorkflow from './pages/MvpWorkflow.jsx';
 import Releases from './pages/Releases.jsx';
 import DesignValidator from './pages/DesignValidator.jsx';
+import ConceptPicker from './pages/ConceptPicker.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -197,6 +198,7 @@ export default function App() {
         <Route path="/project/:id/approve" element={<RequireAuth><AssetApprover /></RequireAuth>} />
         <Route path="/project/:id/releases" element={<RequireAuth><Releases /></RequireAuth>} />
         <Route path="/project/:id/design-validate" element={<RequireAuth><DesignValidator /></RequireAuth>} />
+        <Route path="/project/:id/concepts" element={<RequireAuth><ConceptPicker /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
