@@ -31,6 +31,7 @@ const assembly = require('./sdk_prompt_assembly');
 const assetLibrary = require('./asset_library');
 const mvpAutopilot = require('./mvp_autopilot');
 const designCompiler = require('./sdk_design_compiler');
+const sdkReviewBoard = require('./sdk_review_board');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -38,6 +39,11 @@ function emit(onEvent, evt, data) {
   if (typeof onEvent === 'function') {
     try { onEvent(evt, data); } catch (_e) { /* ignore */ }
   }
+}
+
+// Fire-and-forget review board sync after each stage. Never fails the stage.
+function syncReviewBoard(projectId, sdkRoot) {
+  sdkReviewBoard.sync(projectId, sdkRoot).catch((_e) => { /* non-fatal */ });
 }
 
 function ensureDirs(localPath) {
@@ -851,6 +857,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       await writeSdk(project.local_path, sdk);
       ev('log', { text: 'story: ' + sdk.scenes.length + ' scenes; startup=' + sdk.startup_scene });
       job.summary.stages_complete++;
+      syncReviewBoard(projectId, sdkRoot);
 
       ev('phase', { id: 'characters' });
       const chars = await runCharacters({ pitch, story, claudeCtx, storyBible, intake });
@@ -858,23 +865,27 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       await writeSdk(project.local_path, sdk);
       ev('log', { text: 'characters: ' + sdk.characters.length });
       job.summary.stages_complete++;
+      syncReviewBoard(projectId, sdkRoot);
 
       ev('phase', { id: 'scene_bursts' });
       await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
                              storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks,
                              locked });
       job.summary.stages_complete++;
+      syncReviewBoard(projectId, sdkRoot);
 
       ev('phase', { id: 'portrait_bursts' });
       await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters,
                                  emit: ev, job, storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks });
       job.summary.stages_complete++;
+      syncReviewBoard(projectId, sdkRoot);
 
       ev('phase', { id: 'scene_lua' });
       await runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
                           emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
+      syncReviewBoard(projectId, sdkRoot);
 
       ev('phase', { id: 'sfx' });
       await runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
@@ -894,6 +905,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
 
+      syncReviewBoard(projectId, sdkRoot);
       ev('done', { summary: job.summary });
     } catch (e) {
       ev('error', { message: e && e.message || String(e), code: e && e.code });

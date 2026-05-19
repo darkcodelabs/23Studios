@@ -109,6 +109,7 @@ import Releases from './pages/Releases.jsx';
 import DesignValidator from './pages/DesignValidator.jsx';
 import ConceptPicker from './pages/ConceptPicker.jsx';
 import Milestones from './pages/Milestones.jsx';
+import ReviewBoard from './pages/ReviewBoard.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -201,6 +202,7 @@ export default function App() {
         <Route path="/project/:id/design-validate" element={<RequireAuth><DesignValidator /></RequireAuth>} />
         <Route path="/project/:id/concepts" element={<RequireAuth><ConceptPicker /></RequireAuth>} />
         <Route path="/project/:id/milestones" element={<RequireAuth><Milestones /></RequireAuth>} />
+        <Route path="/project/:id/review" element={<RequireAuth><ReviewBoard /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
