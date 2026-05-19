@@ -29,6 +29,7 @@ const claude = require('./claude');
 const spec = require('./playdate_spec');
 const assembly = require('./sdk_prompt_assembly');
 const assetLibrary = require('./asset_library');
+const mvpAutopilot = require('./mvp_autopilot');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -238,21 +239,25 @@ character's visual_anchor string verbatim.`,
 // Build the image prompt for one scene using section 7's visual lock. The
 // stage augment text + bible + universal directive are concatenated for
 // pulp_ai.generateScene; the JS layer adds the specific scene's vars.
-function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars, activePicks }) {
+//
+// If `locked` is supplied (MVP vibe-lock manifest), the locked anchors and
+// directive are prepended to the brief so every scene inherits the
+// approved-MVP style.
+function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars, activePicks, locked }) {
   const styleRefHint = scene.style_reference
     ? ` Match the silhouette + dither density of HAKCD's ${scene.style_reference} reference scene.`
     : '';
   const sys = assembly.assembleSystemPrompt({
     stageId: 'scene_bursts',
-    activePicks: claudeCtx.activePicks,
+    activePicks,
     storyBible,
-    vars: { intake: intake || {}, bible: bibleVars || {}, scene },
-    activePicks
+    vars: { intake: intake || {}, bible: bibleVars || {}, scene }
   });
   // pulp_ai.generateScene takes a single prompt string; we collapse the
   // system block into a leading style brief, then end with the concrete
   // scene line. The image model gets the visual lock + the scene subject.
-  const brief = `${scene.name}. ${scene.description || ''} ` +
+  const lockPreamble = formatLockPreamble(locked);
+  const brief = `${lockPreamble}${scene.name}. ${scene.description || ''} ` +
     `EMPTY scene background — NO human figure, NO player, NO NPC, ` +
     `NO character visible anywhere in the frame. Architecture, props, ` +
     `lighting, dither textures only. The sprite layer is composited on ` +
@@ -260,9 +265,26 @@ function buildSceneBurstPrompt({ scene, storyBible, intake, bibleVars, activePic
   return { sys, brief };
 }
 
+// Render the MVP lock directive + anchor list as a prompt preamble. Empty
+// string when no lock exists. Anchor labels are listed so the image model
+// understands what it is matching against; output_paths are NOT readable by
+// the model but provided for human inspection in the prompt logs.
+function formatLockPreamble(locked) {
+  if (!locked || !Array.isArray(locked.anchors) || locked.anchors.length === 0) return '';
+  const lines = locked.anchors.map((a) =>
+    `  - ${a.kind} '${a.target_label || a.target_id}' (ref: ${a.output_path})`);
+  return [
+    '[MVP-LOCKED ANCHORS]',
+    locked.directive || 'Style locked to MVP — match anchors.',
+    ...lines,
+    '',
+    ''
+  ].join('\n');
+}
+
 // Generate each scene's 400x240 background PNG via pulp_ai.generateScene.
 async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
-                                storyBible, intake, bibleVars, activePicks }) {
+                                storyBible, intake, bibleVars, activePicks, locked }) {
   const scenes = sdk.scenes || [];
   for (let i = 0; i < scenes.length; i++) {
     if (job && job.cancelled) break;
@@ -275,7 +297,7 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
     }
     try {
       const { brief } = buildSceneBurstPrompt({
-        scene: s, storyBible, intake, bibleVars, activePicks
+        scene: s, storyBible, intake, bibleVars, activePicks, locked
       });
       const r = await pulpAi.generateScene({
         prompt: brief, dim: [400, 240],
@@ -674,6 +696,14 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       const intake = (sdk && sdk.intake) || {};
       const bibleVars = parseBibleVars(storyBible);
 
+      // MVP vibe-lock: if Cory ran /project/:id/mvp and clicked "Lock vibe",
+      // load the locked anchors so every scene_burst inherits the approved
+      // style. No lock = full autopilot proceeds without anchors.
+      const locked = await mvpAutopilot.readLocked(project.local_path);
+      if (locked) {
+        ev('log', { text: `mvp_lock: ${locked.anchors.length} anchors will be prepended to every scene prompt (locked_at=${locked.locked_at})` });
+      }
+
       ev('phase', { id: 'brainstorm' });
       const brainstorm = await runBrainstorm({ pitch, claudeCtx, storyBible, intake });
       sdk.brainstorm = brainstorm.text;
@@ -699,7 +729,8 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
 
       ev('phase', { id: 'scene_bursts' });
       await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
-                             storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks });
+                             storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks,
+                             locked });
       job.summary.stages_complete++;
 
       ev('phase', { id: 'portrait_bursts' });
