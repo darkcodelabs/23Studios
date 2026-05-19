@@ -103,7 +103,10 @@ export default function SdkPlayPage() {
           <span className="text-sm text-ink-100 truncate">{id}</span>
           <span className="pill">sdk preview</span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-3 text-xs">
+          <span className="hidden sm:inline text-ink-500 font-mono">
+            arrows · z/x = A/B · , . = crank · d = dock
+          </span>
           {status === 'streaming' ? (
             <span className="inline-flex items-center text-ink-300">
               <span className="pill-dot bg-accent" /> live

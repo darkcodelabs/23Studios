@@ -573,6 +573,7 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage }) 
 
   return {
     pngBuffer,
+    sourceBuffer: imgBuf, // raw OpenRouter render (~1024-1792 wide) for art_source/
     model: usedModel,
     prompt: cleanPrompt,
     fallback: false,
@@ -691,6 +692,7 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
 
   return {
     pngBuffer,
+    sourceBuffer: imgBuf, // raw OpenRouter render for art_source/
     model: usedModel,
     prompt: cleanPrompt,
     fallback: false,

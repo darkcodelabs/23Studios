@@ -305,6 +305,14 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
       });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(destPng, r.pngBuffer);
+      // Mirror the pre-dither OpenRouter render under art_source/ so the
+      // dashboard card hero, README, store page, etc. can show the high-
+      // detail original — not the brutally-dithered 400x240 device PNG.
+      if (r.sourceBuffer) {
+        const srcDir = path.join(sdkRoot, 'art_source', 'scenes');
+        await fsp.mkdir(srcDir, { recursive: true });
+        await fsp.writeFile(path.join(srcDir, s.id + '.png'), r.sourceBuffer);
+      }
       ev('asset', { kind: 'scene', id: s.id, bytes: r.pngBuffer.length });
     } catch (e) {
       ev('log', { text: `scene ${s.id} failed: ${e.message}` });
@@ -370,6 +378,11 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
       });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(destPng, r.pngBuffer);
+      if (r.sourceBuffer) {
+        const srcDir = path.join(sdkRoot, 'art_source', 'characters');
+        await fsp.mkdir(srcDir, { recursive: true });
+        await fsp.writeFile(path.join(srcDir, c.id + '.png'), r.sourceBuffer);
+      }
       ev('asset', { kind: 'portrait', id: c.id, bytes: r.pngBuffer.length });
     } catch (e) {
       ev('log', { text: `portrait ${c.id} failed: ${e.message}` });
@@ -622,6 +635,11 @@ async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, int
       });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(out, r.pngBuffer);
+      if (r.sourceBuffer) {
+        const srcDir = path.join(sdkRoot, 'art_source', 'launcher');
+        await fsp.mkdir(srcDir, { recursive: true });
+        await fsp.writeFile(path.join(srcDir, t.name), r.sourceBuffer);
+      }
       ev('asset', { kind: 'launcher', id: t.name, bytes: r.pngBuffer.length });
     } catch (e) {
       ev('log', { text: `launcher ${t.name} failed: ${e.message}` });
