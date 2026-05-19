@@ -42,6 +42,14 @@ const openrouterRouter = require('./routes/openrouter');
 const costRouter = require('./routes/cost');
 const lintRouter = require('./routes/lint');
 const approvalsRouter = require('./routes/approvals');
+const agentsRouter = require('./routes/agents');
+const canonRouter = require('./routes/canon');
+const coverageRouter = require('./routes/coverage');
+const gatesRouter = require('./routes/gates');
+const graphRouter = require('./routes/graph');
+const linkedDocsRouter = require('./routes/linked_docs');
+const scopeRouter = require('./routes/scope');
+const shipRouter = require('./routes/ship');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -194,6 +202,14 @@ app.use('/api/openrouter', openrouterRouter);
 app.use('/api', costRouter);
 app.use('/api', lintRouter);
 app.use('/api', approvalsRouter);
+app.use('/api', agentsRouter);
+app.use('/api', canonRouter);
+app.use('/api/projects', coverageRouter);
+app.use('/api/projects', gatesRouter);
+app.use('/api/projects', graphRouter);
+app.use('/api', linkedDocsRouter);
+app.use('/api/projects', scopeRouter);
+app.use('/api', shipRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
