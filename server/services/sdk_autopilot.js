@@ -42,7 +42,7 @@ function emit(onEvent, evt, data) {
 
 function ensureDirs(localPath) {
   const root = path.join(localPath, SDK_DATA_REL);
-  for (const sub of ['', 'scenes', 'characters', 'sfx_baseline', 'scene_music']) {
+  for (const sub of ['', 'scenes', 'characters', 'sfx_baseline', 'scene_music', 'concepts', 'gates']) {
     fs.mkdirSync(path.join(root, sub), { recursive: true });
   }
   return root;
@@ -143,19 +143,86 @@ function safeParseJson(text) {
   return null;
 }
 
-async function runBrainstorm({ pitch, claudeCtx, storyBible, intake }) {
+const TONE_SEEDS = [
+  'darker / more grounded',
+  'whimsical / lighthearted',
+  'mysterious / atmospheric',
+];
+
+// runBrainstorm — fan-out to 3 parallel Claude calls, one per tone seed.
+// Writes concept_01/02/03.json + cards.md + concept_pick gate file.
+// Returns { concepts: [...], gate: 'concept_pick' }.
+async function runBrainstorm({ pitch, claudeCtx, storyBible, intake, localPath }) {
   const sys = assembly.assembleSystemPrompt({
     stageId: 'brainstorm',
     activePicks: claudeCtx.activePicks,
     storyBible,
     vars: { intake: intake || {} },
-    extras: 'You are a Playdate game design consultant. Keep it punchy and concrete.'
+    extras: 'You are a Playdate game design consultant. Keep it punchy and concrete. ' +
+            'Respond ONLY with a JSON object matching: ' +
+            '{ "title_suggestion": string, "genre": string, "mechanic_hook": string, "pitch_text": string }'
   });
-  const text = await askClaude(claudeCtx,
-    'Pitch: ' + pitch + '\n\nFlesh out a one-page brainstorm tied to the story bible above. Plain text, no markdown.',
-    sys
+
+  const conceptsDir = path.join(localPath, SDK_DATA_REL, 'concepts');
+  const gatesDir = path.join(localPath, SDK_DATA_REL, 'gates');
+
+  const results = await Promise.all(TONE_SEEDS.map(async (seed, i) => {
+    const n = i + 1;
+    const id = `concept_0${n}`;
+    const text = await askClaude(claudeCtx,
+      `Pitch: ${pitch}\n\nTone direction: ${seed}\n\n` +
+      'Flesh out a one-page concept tied to this tone. Output STRICT JSON only, no prose outside the JSON block.',
+      sys
+    );
+    const parsed = safeParseJson(text) || {};
+    const concept = {
+      id,
+      tone_seed: seed,
+      pitch_text: parsed.pitch_text || text.slice(0, 1000),
+      title_suggestion: parsed.title_suggestion || '',
+      genre: parsed.genre || '',
+      mechanic_hook: parsed.mechanic_hook || '',
+    };
+    await fsp.writeFile(path.join(conceptsDir, id + '.json'), JSON.stringify(concept, null, 2));
+    return concept;
+  }));
+
+  // Human-readable cards.md for all 3 concepts.
+  const cardsLines = results.map((c) => [
+    `## ${c.id}: ${c.title_suggestion || '(untitled)'}`,
+    `**Tone:** ${c.tone_seed}  |  **Genre:** ${c.genre}  |  **Mechanic:** ${c.mechanic_hook}`,
+    '',
+    c.pitch_text,
+    '',
+  ].join('\n'));
+  await fsp.writeFile(
+    path.join(conceptsDir, 'cards.md'),
+    '# Concept Cards\n\n' + cardsLines.join('\n---\n\n')
   );
-  return { text };
+
+  // Gate file — blocks downstream until user picks.
+  const gate = {
+    status: 'awaiting_pick',
+    concepts: results.map((c) => c.id),
+    chosen: null,
+    hybridized_from: null,
+  };
+  await fsp.writeFile(path.join(gatesDir, 'concept_pick.json'), JSON.stringify(gate, null, 2));
+
+  return { concepts: results, gate: 'concept_pick' };
+}
+
+// Read concept gate + resolve chosen concept text. Returns null if gate
+// is not yet locked (caller should halt the run).
+async function resolveConceptGate(localPath) {
+  const gatePath = path.join(localPath, SDK_DATA_REL, 'gates', 'concept_pick.json');
+  if (!fs.existsSync(gatePath)) return null;
+  const gate = JSON.parse(await fsp.readFile(gatePath, 'utf8'));
+  if (!gate.chosen) return null;
+  const conceptPath = path.join(localPath, SDK_DATA_REL, 'concepts', gate.chosen + '.json');
+  if (!fs.existsSync(conceptPath)) return null;
+  const concept = JSON.parse(await fsp.readFile(conceptPath, 'utf8'));
+  return { gate, concept };
 }
 
 // Backfill story scene fields added in section 5 (type/mood/music_intent/
@@ -752,11 +819,29 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
       }
 
       ev('phase', { id: 'brainstorm' });
-      const brainstorm = await runBrainstorm({ pitch, claudeCtx, storyBible, intake });
-      sdk.brainstorm = brainstorm.text;
-      await writeSdk(project.local_path, sdk);
-      ev('log', { text: 'brainstorm: ' + brainstorm.text.slice(0, 200) + '...' });
-      job.summary.stages_complete++;
+      // Check if concepts gate is already locked from a prior run. If so, skip
+      // re-running the fan-out and go straight to story with the chosen concept.
+      let brainstormText;
+      const priorGate = await resolveConceptGate(project.local_path);
+      if (priorGate) {
+        brainstormText = priorGate.concept.pitch_text;
+        ev('log', { text: `concept_pick gate locked: using ${priorGate.gate.chosen}` });
+        job.summary.stages_complete++;
+      } else {
+        const brainstorm = await runBrainstorm({
+          pitch, claudeCtx, storyBible, intake, localPath: project.local_path
+        });
+        sdk.concepts_gate = 'concept_pick';
+        await writeSdk(project.local_path, sdk);
+        ev('gate', { gate: 'concept_pick', concepts: brainstorm.concepts.map((c) => c.id) });
+        ev('log', { text: `brainstorm: ${brainstorm.concepts.length} concepts generated — awaiting pick` });
+        job.summary.stages_complete++;
+        // Gate not yet resolved — halt here. Next run() call re-enters after
+        // the user picks and will find the locked gate above.
+        ev('done', { summary: job.summary, awaiting_gate: 'concept_pick' });
+        return;
+      }
+      const brainstorm = { text: brainstormText };
 
       ev('phase', { id: 'story' });
       const story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake });
@@ -824,5 +909,5 @@ function startSdkAutopilot({ projectId, pitch, onEvent }) {
 module.exports = {
   startSdkAutopilot,
   isRunning,
-  _internals: { buildSceneLua, safeParseJson }
+  _internals: { buildSceneLua, safeParseJson, runBrainstorm, resolveConceptGate, TONE_SEEDS }
 };
