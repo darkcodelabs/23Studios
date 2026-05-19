@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import Siderail from '../components/Siderail.jsx';
-import ProjectCard from '../components/ProjectCard.jsx';
+import StudioShelfCard from '../components/StudioShelfCard.jsx';
 import ProjectForm from '../components/ProjectForm.jsx';
 import IntakeForm from '../components/IntakeForm.jsx';
 import StudioLogo from '../components/StudioLogo.jsx';
@@ -61,7 +61,7 @@ export default function Dashboard() {
         />
 
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="max-w-4xl mx-auto w-full px-6 py-8 space-y-8">
+          <div className="max-w-6xl mx-auto w-full px-6 py-8 space-y-8">
             <MakeAGameCard
               onCreated={(p) => {
                 navigate(`/project/${p.id}/edit?tab=workflow`);
@@ -93,8 +93,8 @@ export default function Dashboard() {
                   No projects yet. Type a pitch above or click <span className="text-ink-200">new project</span>.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {projects.map((p) => <ProjectCard key={p.id} project={p} />)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {projects.map((p) => <StudioShelfCard key={p.id} project={p} />)}
                 </div>
               )}
             </section>
