@@ -98,6 +98,9 @@ import LateAddPanel from './pages/LateAddPanel.jsx';
 import Storyboard from './pages/Storyboard.jsx';
 import DecisionsLog from './pages/DecisionsLog.jsx';
 import Interview from './pages/Interview.jsx';
+import CostPanel from './components/CostPanel.jsx';
+import GateBanner from './components/GateBanner.jsx';
+import AgentsDashboard from './pages/AgentsDashboard.jsx';
 
 function PulpComingSoon({ name }) {
   return (
