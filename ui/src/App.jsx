@@ -95,6 +95,7 @@ import AssetLibraryBrowser from './pages/AssetLibraryBrowser.jsx';
 import NpcDialogEditor from './pages/NpcDialogEditor.jsx';
 import LevelEditor from './pages/LevelEditor.jsx';
 import LateAddPanel from './pages/LateAddPanel.jsx';
+import AgentsDashboard from './pages/AgentsDashboard.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -111,6 +112,7 @@ export default function App() {
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/agents" element={<RequireAuth><AgentsDashboard /></RequireAuth>} />
         <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
         <Route path="/project/:id/files" element={<RequireAuth><Project /></RequireAuth>} />
         <Route path="/project/:id/edit" element={<RequireAuth><PulpEditor /></RequireAuth>} />

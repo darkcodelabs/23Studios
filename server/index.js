@@ -33,6 +33,7 @@ const npcRouter = require('./routes/npc');
 const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const openrouterRouter = require('./routes/openrouter');
+const agentsRouter = require('./routes/agents');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -157,6 +158,9 @@ app.use('/api', npcRouter);
 app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api/openrouter', openrouterRouter);
+// Global agent dashboard (not per-project). Reads ~/.claude/teams/* — useful
+// across every project the operator has running.
+app.use('/api', agentsRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
