@@ -30,6 +30,7 @@ const { spawnSync } = require('child_process');
 
 const projects = require('./projects');
 const sdkExport = require('./sdk_export');
+const gates = require('./gates');
 
 // Parse a pdxinfo key=value file into an object.
 function parsePdxinfo(raw) {
@@ -229,6 +230,21 @@ async function pack(projectId, opts = {}) {
   }
 
   const sdkRoot = project.local_path;
+
+  // --- Gate blocking checks ---
+  // Both 'release_candidate' and 'release' gates must be signed off before packaging.
+  if (!opts.skip_gate_check) {
+    for (const gateTarget of ['release_candidate', 'release']) {
+      const blocker = await gates.blocking(projectId, gateTarget);
+      if (blocker) {
+        const e = new Error(`gate_blocked: gate '${blocker.name}' must be signed off before release packaging`);
+        e.status = 409;
+        e.code = 'gate_blocked';
+        e.detail = { gate_id: blocker.id, gate_name: blocker.name };
+        throw e;
+      }
+    }
+  }
 
   // --- Read source data ---
 
