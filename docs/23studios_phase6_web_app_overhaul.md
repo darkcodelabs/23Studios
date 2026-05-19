@@ -64,12 +64,15 @@ This whole section runs BEFORE any image generation, Lua emission, or build burn
 ### Purpose
 Single entry point for all source material. Replaces the current pattern of "user hands paths to the orchestrator via chat."
 
-### Inputs
+### Inputs (v1)
 - Story bible (markdown, plain text, or PDF — the app parses to text)
 - Style canon (markdown — the prompt-language spec)
 - SKILL.md (or equivalent platform constraints file)
 - Reference image library (folder upload or git-tracked path)
 - OPTIONAL: supplementary references — URLs, videos (with frame-extraction toggle), music references, anecdote/note files
+
+### Inputs (deferred to v1.5)
+- **Voice notes as pre-uploaded artifacts** (audio file → transcript on upload). Rationale: A5 interview already supports live voice input (Web Speech), which covers the same need without requiring a transcribe-on-upload pipeline. Defer the upload-and-transcribe path until v1.5 once usage patterns show it's needed.
 
 ### UX skeleton
 - New project flow: 4-step wizard (Bible → Canon → SKILL → References) OR drag-and-drop a project folder with auto-detection
@@ -271,7 +274,12 @@ Close coverage gaps by interrogating the user with specific, pointed questions. 
 - Per-question actions: `Answer` | `Skip for now` | `Let autopilot decide` | `I need to think` | `Defer to v0.2`
 - **Live doc update**: each answer mutates the requirements doc in real time; user sees the doc evolving
 - **Decision tracking**: every gap resolution tagged (user-answered, canon-derived, autopilot-decided, deferred)
-- **Re-ask escalation**: if "let autopilot decide" picks something high-stakes (new character voice, major mechanic, budget hit > $X), it pops back into the queue for explicit user sign-off
+- **Re-ask escalation**: if "let autopilot decide" picks something high-stakes, it pops back into the queue for explicit user sign-off. High-stakes = ANY of:
+  1. Introduces a NEW named character voice not in bible
+  2. Defines a NEW mechanic spec not previously locked
+  3. Single-call cost > $1.00 OR projected adds > 5% to remaining budget
+  4. Creates a NEW canon section (vs citing an existing one)
+  5. Adds a scene outside the locked scope (scope creep)
 - **Voice input**: Web Speech API transcription accepted as answer text; user confirms transcript before commit
 
 ### Output
@@ -614,15 +622,24 @@ SKILL.md rules enforced inline. Edit scene_lua in the browser; lint blocks save 
 ### UX skeleton
 - Per-scene editor at `/project/<id>/scenes/<sceneId>/lua`
 - Monaco-based, Lua syntax highlighting
-- Lint rules from SKILL.md (live, per-keystroke):
-  - A = confirm (not B) — flag `AButtonDown` triggering destructive actions
-  - 400×240 only — flag any hardcoded resolution mismatches
-  - `name-table-W-H.png` imagetable naming — flag references to PNGs that don't match
-  - `setRefreshRate(30)` present — flag if missing or set to wrong rate
-  - `playdate.update()` mandatory — flag missing
-  - `gfx.sprite.update()` + `timer.updateTimers()` present when sprites/timers used — flag missing
-  - Crank + B (not A) — flag crank+A combinations
-  - Bootstrap pattern `_G.<name> = M` + `return M` — flag missing
+- Lint rules from SKILL.md (live, per-keystroke). Coverage = RUNTIME-LUA-LINTABLE subset; asset-side rules live in B3/image-gen pipeline; rule 13 (launcher name baked in) lives in B11; rule 15 (simulator lies) is operational guidance not lintable.
+  - **SKILL.md #2** 400×240 only — flag hardcoded resolution mismatches
+  - **SKILL.md #6** `setRefreshRate(30)` present — flag if missing or set wrong
+  - **SKILL.md #8** `name-table-W-H.png` imagetable naming — flag PNG refs that don't match
+  - **SKILL.md #9** No runtime rotate/scale of large sprites — flag in main-loop transforms
+  - **SKILL.md #11** Crank + B (not A) — flag crank+A combinations
+  - **SKILL.md #12** A = confirm, B = cancel — flag `AButtonDown` triggering destructive actions
+  - **SKILL.md #14** Sprite system usage — flag full-screen redraws when sprite system would suffice
+  - **Mandatory call presence**: `playdate.update()` + (if sprites) `gfx.sprite.update()` + (if timers) `timer.updateTimers()` — flag any missing
+  - **Bootstrap pattern** `_G.<name> = M` + `return M` — flag missing or wrong
+- Asset-side SKILL.md rules enforced elsewhere (NOT in B10):
+  - **#1** 1-bit pure black/white/alpha — enforced in B3 on generated images (drift detector C3 + asset approver)
+  - **#4** Tile minimum 16×16 — enforced in B3 on sprite/tile imports
+  - **#5** Text minimums (14px dialog / 10px HUD / 8px floor) — enforced in B3 on rendered text-bearing images
+  - **#7** Audio 44.1 kHz — enforced in B3 on WAV imports
+  - **#10** Dither flashing (scroll-by-even-pixels OR mask-and-redraw) — enforced in B3 on animation imagetables
+  - **#13** Launcher card name baked in — enforced in B11 build pipeline
+  - **#15** Simulator lies — operational guidance surfaced in B7 sim-integration tooltip
 - Lint severity: error blocks save; warning is overridable with reason note (logged)
 - Auto-fix actions for trivial fixes (add missing `setRefreshRate`, fix bootstrap pattern)
 - Diff view against the last autopilot-generated version
@@ -874,7 +891,7 @@ Re-run the HAKCD Phase 4 build from scratch using only Phase 6 v1 — no orchest
 
 ```
 A1 (Intake)
-  └─> A2 (Parse + Extract)
+  └─> A2 (Parse + Extract) [internally parallel: bible | canon | reference-image extraction = 3 workers]
         ├─> A3 (Requirements Derivation)
         │     └─> A4 (Coverage Gap Analysis)
         │           └─> A5 (Interactive Interview)
@@ -893,9 +910,20 @@ A1 (Intake)
         │                                   ├─> C2 (Decision Log)
         │                                   ├─> C3 (Drift Detector)
         │                                   └─> C4 (Reference Grounding)
-        ├─> B4 (Canon Viewer) ── feeds back into A3+A5
-        ├─> B5 (Reference Library) ── feeds back into A4
-        └─> B12 (Linked Doc Viewer)
+        ├─> B4 (Canon Viewer) ── feeds back into A3+A5  [can start dev parallel with A3-A7]
+        ├─> B5 (Reference Library) ── feeds back into A4  [can start dev parallel with A3-A7]
+        └─> B12 (Linked Doc Viewer)                       [can start dev parallel with A3-A7]
+
+Critical path to v1: A1 → A2 → A3 → A4 → A5 → A6 → A7 (7 sequential nodes).
+Parallelization wins:
+  - Within A2: bible/canon/refs extraction in 3 parallel Claude calls
+  - After A2 done: B4, B5, B12 can develop in parallel with A3-A7
+  - After A7 done: B1, B2, B3, B6, B7, B8, B9, B10, B11 + C2, C3, C4 all parallelize
+
+Time estimate (2-3 focused devs):
+  Upstream critical path A1-A7:       ~16 days
+  Downstream parallel (B + C):        ~12 days (after A7)
+  v1 total:                           ~6 weeks; 8-week target = 2-week safety margin
 
 Cross-cutting (D1-D6): cut into every B/C surface.
 ```
