@@ -37,6 +37,7 @@ const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const decisionsRouter = require('./routes/decisions');
 const driftRouter = require('./routes/drift');
+const scopeRouter = require('./routes/scope');
 const openrouterRouter = require('./routes/openrouter');
 const costRouter = require('./routes/cost');
 const chatWs = require('./routes/chat');
@@ -168,6 +169,8 @@ app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api', decisionsRouter);
 app.use('/api', driftRouter);
+// Phase 6 A6 — scope proposal + lock (under /api/projects/:id/scope/...).
+app.use('/api/projects', scopeRouter);
 app.use('/api/openrouter', openrouterRouter);
 app.use('/api', costRouter);
 
