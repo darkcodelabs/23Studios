@@ -4,8 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
 const express = require('express');
+const multer = require('multer');
 const projects = require('../services/projects');
 const intakeForm = require('../services/intake_form');
+const intakeUpload = require('../services/intake_upload');
 const { validateProjectCreate, validateProjectPatch, validateId } = require('../services/validation');
 
 const router = express.Router();
@@ -213,6 +215,162 @@ router.delete('/:id', async (req, res, next) => {
     if (!ok) return res.status(404).json({ error: 'not_found' });
     res.json({ ok: true });
   } catch (e) { next(e); }
+});
+
+// -----------------------------------------------------------------------------
+// Phase 6 A1 — intake sources endpoints
+// -----------------------------------------------------------------------------
+// POST /api/projects/:id/intake/sources
+//   multipart/form-data fields:
+//     bible            text/markdown (file)        OR  bible_text (form field)
+//     canon            text/markdown (file)        OR  canon_text
+//     skill_md         text/markdown (file)        OR  skill_text
+//     reference_images files[] (PNG/JPG)
+//     reference_meta   JSON string: [{filename, tag?, subject_hint?}, ...]
+//     urls             JSON string: [{url, tag?, subject_hint?}, ...]
+//     notes            JSON string: [{text, tag?}, ...]
+//
+// GET    /api/projects/:id/intake/sources             -> current manifest + lists
+// DELETE /api/projects/:id/intake/sources/refs/:name  -> drop a reference image
+
+const SOURCES_FIELD_LIMITS = {
+  fileSize: 16 * 1024 * 1024,
+  files: 64,
+  fields: 32
+};
+
+const sourcesUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: SOURCES_FIELD_LIMITS
+}).fields([
+  { name: 'bible', maxCount: 1 },
+  { name: 'canon', maxCount: 1 },
+  { name: 'skill_md', maxCount: 1 },
+  { name: 'reference_images', maxCount: 64 }
+]);
+
+function wrapMulter(handler) {
+  return (req, res, next) => {
+    handler(req, res, (err) => {
+      if (!err) return next();
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'file_too_large' });
+      if (err.code === 'LIMIT_FILE_COUNT') return res.status(400).json({ error: 'too_many_files' });
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') return res.status(400).json({ error: 'unexpected_field' });
+      return next(err);
+    });
+  };
+}
+
+function parseJsonField(raw, fallback) {
+  if (raw == null) return fallback;
+  if (typeof raw !== 'string') return fallback;
+  try { return JSON.parse(raw); }
+  catch (_e) { return fallback; }
+}
+
+async function loadProjectOr404(req, res) {
+  const idErr = validateId(req.params.id);
+  if (idErr) { res.status(400).json({ error: 'bad_request', detail: idErr }); return null; }
+  const proj = await projects.getProject(req.params.id);
+  if (!proj) { res.status(404).json({ error: 'not_found' }); return null; }
+  if (!proj.local_path) { res.status(400).json({ error: 'no_local_path' }); return null; }
+  return proj;
+}
+
+router.post('/:id/intake/sources', wrapMulter(sourcesUpload), async (req, res, next) => {
+  try {
+    const proj = await loadProjectOr404(req, res);
+    if (!proj) return;
+
+    const files = req.files || {};
+    const body = req.body || {};
+
+    const spec = {};
+
+    // text docs — prefer file upload over text body, but support both.
+    function pickText(field, textField) {
+      const f = (files[field] && files[field][0]) || null;
+      if (f && f.buffer) return { content: f.buffer };
+      const t = body[textField];
+      if (typeof t === 'string' && t.trim().length > 0) return { content: t };
+      return null;
+    }
+    const bible = pickText('bible', 'bible_text');
+    if (bible) spec.bible = bible;
+    const canon = pickText('canon', 'canon_text');
+    if (canon) spec.canon = canon;
+    const skill = pickText('skill_md', 'skill_text');
+    if (skill) spec.skill_md = skill;
+
+    // reference images + their meta sidecar
+    const refMeta = parseJsonField(body.reference_meta, []);
+    const metaByName = new Map();
+    if (Array.isArray(refMeta)) {
+      for (const m of refMeta) {
+        if (m && typeof m.filename === 'string') metaByName.set(m.filename, m);
+      }
+    }
+    const refImgs = files.reference_images || [];
+    if (refImgs.length > 0) {
+      spec.reference_images = refImgs.map((f) => {
+        const meta = metaByName.get(f.originalname) || {};
+        return {
+          filename: f.originalname,
+          content: f.buffer,
+          tag: typeof meta.tag === 'string' ? meta.tag : '',
+          subject_hint: typeof meta.subject_hint === 'string' ? meta.subject_hint : ''
+        };
+      });
+    }
+
+    const urls = parseJsonField(body.urls, null);
+    if (Array.isArray(urls)) spec.urls = urls;
+    const notes = parseJsonField(body.notes, null);
+    if (Array.isArray(notes)) spec.notes = notes;
+
+    if (!spec.bible && !spec.canon && !spec.skill_md && !spec.reference_images && !spec.urls && !spec.notes) {
+      return res.status(400).json({ error: 'bad_request', detail: 'no source material provided' });
+    }
+
+    const result = await intakeUpload.ingest(proj.local_path, spec);
+    res.json({
+      ok: true,
+      manifest: result.manifest,
+      diff: result.diff,
+      written: {
+        bible: !!result.written.bible,
+        canon: !!result.written.canon,
+        skill_md: !!result.written.skill_md,
+        reference_images: result.written.reference_images.length,
+        urls: result.written.urls,
+        notes: result.written.notes
+      }
+    });
+  } catch (e) {
+    if (e && e.status) return res.status(e.status).json({ error: e.code || 'error', detail: e.message });
+    next(e);
+  }
+});
+
+router.get('/:id/intake/sources', async (req, res, next) => {
+  try {
+    const proj = await loadProjectOr404(req, res);
+    if (!proj) return;
+    const summary = await intakeUpload.listSources(proj.local_path);
+    res.json({ ok: true, sources: summary });
+  } catch (e) { next(e); }
+});
+
+router.delete('/:id/intake/sources/refs/:name', async (req, res, next) => {
+  try {
+    const proj = await loadProjectOr404(req, res);
+    if (!proj) return;
+    const result = await intakeUpload.removeReferenceImage(proj.local_path, req.params.name);
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    if (e && e.status) return res.status(e.status).json({ error: e.code || 'error' });
+    next(e);
+  }
 });
 
 module.exports = router;
