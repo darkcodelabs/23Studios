@@ -32,6 +32,10 @@ const SAVE_STATE_WARN_LINES = 200;
 // Regex used for draw-call counting — counts gfx.draw, sprite:draw, :draw(
 const DRAW_RE = /gfx\.draw|sprite:draw|:draw\(/g;
 
+// Regex for Playdate imagetable canonical filename: name-table-W-H.png
+// Capture groups: 1=frame_w, 2=frame_h
+const IMAGETABLE_RE = /^.+-table-(\d+)-(\d+)\.png$/;
+
 // ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
@@ -100,9 +104,69 @@ async function analyzeImages(pngPaths) {
       // unreadable — record 0s, still list it
     }
     const tooBig = bytes > PNG_SIZE_WARN_BYTES;
-    const tooBigDim = w > PNG_DIM_WARN_PX || h > PNG_DIM_WARN_PX;
+
+    // For imagetable sheets, the per-frame dimensions (from the filename) are what
+    // matter — the sheet can legitimately exceed 800 px on either axis.
+    const itMatch = IMAGETABLE_RE.exec(path.basename(fp));
+    let tooBigDim;
+    if (itMatch) {
+      const frameW = parseInt(itMatch[1], 10);
+      const frameH = parseInt(itMatch[2], 10);
+      tooBigDim = frameW > PNG_DIM_WARN_PX || frameH > PNG_DIM_WARN_PX;
+    } else {
+      tooBigDim = w > PNG_DIM_WARN_PX || h > PNG_DIM_WARN_PX;
+    }
+
     const severity = sev(false, tooBig || tooBigDim);
-    results.push({ path: fp, bytes, w, h, severity });
+    results.push({ path: fp, bytes, w, h, severity, is_imagetable: !!itMatch });
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Check: imagetable geometry (sheet must tile evenly by frame dimensions)
+// ---------------------------------------------------------------------------
+
+/**
+ * For each PNG whose filename matches *-table-W-H.png, verify:
+ *   file_w % W == 0  AND  file_h % H == 0
+ * Returns an array of entries — one per imagetable PNG, regardless of outcome.
+ * severity: 'ok' if tiling is clean, 'fail' if remainder non-zero.
+ */
+async function checkImagetableGeometry(pngPaths) {
+  const results = [];
+  for (const fp of pngPaths) {
+    const base = path.basename(fp);
+    const m = IMAGETABLE_RE.exec(base);
+    if (!m) continue;
+
+    const frameW = parseInt(m[1], 10);
+    const frameH = parseInt(m[2], 10);
+    let fileW = 0;
+    let fileH = 0;
+    try {
+      const meta = await sharp(fp).metadata();
+      fileW = meta.width || 0;
+      fileH = meta.height || 0;
+    } catch (_e) {
+      // unreadable — skip geometry check
+      continue;
+    }
+
+    const remW = fileW % frameW;
+    const remH = fileH % frameH;
+    const tilesEvenly = remW === 0 && remH === 0;
+    const severity = tilesEvenly ? 'ok' : 'fail';
+    results.push({
+      path: fp,
+      frame_w: frameW,
+      frame_h: frameH,
+      file_w: fileW,
+      file_h: fileH,
+      remainder_w: remW,
+      remainder_h: remH,
+      severity
+    });
   }
   return results;
 }
@@ -227,20 +291,37 @@ async function checkSaveState(sourceDir) {
 // Fix hints assembler
 // ---------------------------------------------------------------------------
 
-function buildFixes({ imageSizes, memEst, drawCalls, loadTimes, duplications, placeholders, saveState }) {
+function buildFixes({ imageSizes, imagetableGeometry, memEst, drawCalls, loadTimes, duplications, placeholders, saveState }) {
   const fixes = [];
 
-  // Image size warnings
+  // Image size warnings — imagetable sheets get a different recommendation
   for (const img of imageSizes) {
     if (img.severity !== 'ok') {
       const reasons = [];
       if (img.bytes > PNG_SIZE_WARN_BYTES) reasons.push(`${(img.bytes / 1024).toFixed(0)} KB exceeds 200 KB limit`);
-      if (img.w > PNG_DIM_WARN_PX || img.h > PNG_DIM_WARN_PX) reasons.push(`${img.w}×${img.h} exceeds 800×800`);
+      if (!img.is_imagetable && (img.w > PNG_DIM_WARN_PX || img.h > PNG_DIM_WARN_PX)) {
+        reasons.push(`${img.w}×${img.h} exceeds 800×800`);
+      }
+      const recommendation = img.is_imagetable
+        ? 'Compress imagetable sheet (file size exceeds 200 KB)'
+        : 'Resize or split into an image table';
       fixes.push({
         severity: 'warn',
         item: path.basename(img.path),
-        recommendation: 'Resize or split into an image table',
+        recommendation,
         fix_hint: reasons.join('; ')
+      });
+    }
+  }
+
+  // Imagetable geometry failures
+  for (const ig of (imagetableGeometry || [])) {
+    if (ig.severity !== 'ok') {
+      fixes.push({
+        severity: 'fail',
+        item: path.basename(ig.path),
+        recommendation: 'Fix imagetable sheet dimensions so they tile evenly',
+        fix_hint: `sheet doesn't tile evenly: file ${ig.file_w}×${ig.file_h}, frame ${ig.frame_w}×${ig.frame_h}, remainder ${ig.remainder_w}×${ig.remainder_h}`
       });
     }
   }
@@ -421,9 +502,10 @@ async function audit(projectId, sdkRoot) {
   const pngPaths = await walkDir(imagesDir, '.png');
 
   // Run all checks.
-  const [imageSizes, memEst, drawCalls, loadTimes, duplications, placeholders, saveState] =
+  const [imageSizes, imagetableGeometry, memEst, drawCalls, loadTimes, duplications, placeholders, saveState] =
     await Promise.all([
       analyzeImages(pngPaths),
+      checkImagetableGeometry(pngPaths),
       estimateMemory(imagesDir, soundsDir),
       analyzeDrawCalls(scenesDir),
       analyzeLoadTimes(scenesDir),
@@ -435,7 +517,7 @@ async function audit(projectId, sdkRoot) {
   const spriteCount = countSprites(pngPaths);
   const sceneCount  = drawCalls.length;
 
-  const fixes = buildFixes({ imageSizes, memEst, drawCalls, loadTimes, duplications, placeholders, saveState });
+  const fixes = buildFixes({ imageSizes, imagetableGeometry, memEst, drawCalls, loadTimes, duplications, placeholders, saveState });
 
   const warnings = fixes.filter((f) => f.severity === 'warn').length;
   const errors   = fixes.filter((f) => f.severity === 'fail').length;
@@ -452,6 +534,7 @@ async function audit(projectId, sdkRoot) {
       errors
     },
     image_sizes: imageSizes,
+    imagetable_geometry: imagetableGeometry,
     draw_calls: drawCalls,
     load_times: loadTimes,
     memory_estimate: memEst,
