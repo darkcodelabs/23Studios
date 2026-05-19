@@ -312,15 +312,40 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
   logLines.push(`[exit] ${result.status}`);
   logLines.push(`[finished] ${new Date().toISOString()}`);
 
-  const boots = result.status === 0;
+  const pdcOk = result.status === 0;
   const errors = [];
-  if (!boots) {
+  if (!pdcOk) {
     const detail = result.stderr || result.stdout || ('pdc exit ' + result.status);
     errors.push(detail.trim());
   }
 
+  // Sim boot-probe: only if pdc passed. Skip the smoketest when the host
+  // lacks Xvfb/PlaydateSimulator (CI environments) — degrade to "pdc-only"
+  // boots instead of failing the milestone outright.
+  let smoketest = null;
+  let boots = pdcOk;
+  if (pdcOk && process.env.SKIP_SIM_SMOKETEST !== '1') {
+    try {
+      const smoketestSvc = require('./sdk_smoketest');
+      smoketest = await smoketestSvc.probe(pdxOut, {
+        durationMs: Number(process.env.SIM_SMOKETEST_MS) || 8000,
+        skipIfMissing: true
+      });
+      logLines.push('[smoketest] ' + JSON.stringify(smoketest));
+      if (smoketest.skipped) {
+        // pdc-only gate when sim infra absent.
+      } else if (!smoketest.ok) {
+        boots = false;
+        for (const e of smoketest.errors) errors.push('smoketest: ' + e);
+      }
+    } catch (e) {
+      logLines.push('[smoketest] crashed: ' + (e && e.message || String(e)));
+      // smoketest infra crash != pdx broken — degrade gracefully.
+    }
+  }
+
   let bytes = null;
-  if (boots && fs.existsSync(pdxOut)) {
+  if (pdcOk && fs.existsSync(pdxOut)) {
     // pdx is a directory — sum file sizes.
     try {
       function sumDir(d) {
@@ -347,6 +372,7 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
     bytes,
     boots,
     errors,
+    smoketest,
     depends_on: milestone.requires
   };
 

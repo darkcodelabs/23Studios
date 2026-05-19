@@ -65,4 +65,31 @@ router.get('/:id/milestones/:milestone/log', async (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 
+// POST /api/projects/:id/milestones/:milestone/smoketest
+// Re-run the sim boot-probe against an existing milestone's pdx and return
+// the structured probe report. Useful for ad-hoc verification after a flaky
+// sim environment without re-running pdc.
+router.post('/:id/milestones/:milestone/smoketest', async (req, res) => {
+  try {
+    const project = await projects.getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: 'not_found' });
+    if (!project.local_path) return res.status(500).json({ error: 'no_local_path' });
+    const statusPath = path.join(
+      project.local_path, 'sdk_data', 'milestones',
+      req.params.milestone, 'status.json'
+    );
+    if (!fs.existsSync(statusPath)) return res.status(404).json({ error: 'no_status' });
+    const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+    if (!status.pdx_path || !fs.existsSync(status.pdx_path)) {
+      return res.status(409).json({ error: 'no_pdx' });
+    }
+    const smoketestSvc = require('../services/sdk_smoketest');
+    const probe = await smoketestSvc.probe(status.pdx_path, {
+      durationMs: Number(req.body && req.body.duration_ms) || 8000,
+      skipIfMissing: req.body && req.body.skip_if_missing === true
+    });
+    res.json(probe);
+  } catch (e) { sendErr(res, e); }
+});
+
 module.exports = router;
