@@ -1,24 +1,16 @@
-/* 23 Studios service worker — pass-through NO-OP with cache nuke.
+/* 23 Studios service worker — self-unregistering tombstone.
  *
- * Prior SW versions cached the SPA shell HTML with /assets/... absolute paths
- * from before the proxy-prefix rewriter shipped. Clients still running v17-v21
- * serve stale HTML on every load, asset fetches hit CF Access redirect, 404.
+ * The PWA SW caused more bugs than it solved (stale HTML through tunnel,
+ * blob: image caching, no-op fetch handler overhead warnings). Strategy:
+ *   1. install: skipWaiting
+ *   2. activate: claim clients, delete every cache, then unregister self.
+ *      Existing tabs reload to drop into a no-SW state.
  *
- * Strategy:
- *   1. install: skipWaiting — new SW activates immediately, doesn't wait
- *      for existing tabs to close
- *   2. activate: clients.claim() so this SW controls all existing clients
- *      RIGHT NOW (not just future loads); then delete every cache
- *   3. fetch: ALWAYS network. No cache lookup, no respondWith branches that
- *      could fall back to stale content. Browser native cache + server
- *      Cache-Control take over.
+ * No fetch handler at all — Chrome stops flagging "no-op fetch handler".
  *
- * Effect: next page load, this SW intercepts every fetch and passes it
- * straight through to network. No more stale HTML, no more cached /assets
- * paths from the broken absolute-base era.
+ * main.jsx no longer registers a SW. This file stays so already-installed
+ * clients pick it up on next update check and self-destruct.
  */
-const VERSION = 'passthrough-2026-05-19';
-
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -28,9 +20,10 @@ self.addEventListener('activate', (event) => {
     await self.clients.claim();
     const keys = await caches.keys();
     await Promise.all(keys.map((k) => caches.delete(k)));
+    try {
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: 'window' });
+      for (const c of clients) c.navigate(c.url);
+    } catch (_e) { /* ignore */ }
   })());
-});
-
-self.addEventListener('fetch', (event) => {
-  // Don't intercept. Browser does default fetch. Server Cache-Control wins.
 });

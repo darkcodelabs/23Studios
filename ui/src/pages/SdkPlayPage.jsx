@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, ArrowUp, ArrowDown, ArrowLeft as ArrLeft, ArrowRight, RotateCcw, RotateCw } from 'lucide-react';
 import { api } from '../lib/api.js';
-import PlaydateChassis from '../components/PlaydateChassis.jsx';
 import StudioLogo from '../components/StudioLogo.jsx';
 
 // Streams the server-side Playdate Simulator's framebuffer over WebSocket
@@ -83,22 +82,22 @@ export default function SdkPlayPage() {
     catch (_e) { /* dropped */ }
   }, [id]);
 
-  const onDpadPress = useCallback((dir) => sendAction(dir), [sendAction]);
-  const onDpadRelease = useCallback(() => {}, []);
-  const onABPress = useCallback((which) => sendAction(which === 'a' ? 'a' : 'b'), [sendAction]);
-  const onABRelease = useCallback(() => {}, []);
-
-  // Crank ticks: aggregate degrees, fire CCW/CW key per CRANK_DEG threshold.
-  const crankAccumRef = useRef(0);
-  const onCrankRotate = useCallback((deltaDeg) => {
-    crankAccumRef.current += deltaDeg;
-    while (Math.abs(crankAccumRef.current) >= 18) {
-      const dir = crankAccumRef.current > 0 ? 'crank_cw' : 'crank_ccw';
-      sendAction(dir);
-      crankAccumRef.current -= Math.sign(crankAccumRef.current) * 18;
-    }
+  // Keyboard bindings: arrows + zx for A/B, comma/period for crank.
+  useEffect(() => {
+    const onKey = (e) => {
+      const m = {
+        ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+        z: 'a', Z: 'a', x: 'b', X: 'b',
+        ',': 'crank_ccw', '.': 'crank_cw'
+      };
+      const a = m[e.key];
+      if (!a) return;
+      e.preventDefault();
+      sendAction(a);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [sendAction]);
-  const onCrankDock = useCallback(() => sendAction('dock'), [sendAction]);
 
   return (
     <div className="h-screen overflow-auto bg-ink-900 text-ink-100">
@@ -141,22 +140,40 @@ export default function SdkPlayPage() {
           </div>
         ) : null}
 
-        <div className="relative w-full" style={{ maxWidth: 780, paddingRight: 70 }}>
-          <PlaydateChassis
+        <div className="ring-1 ring-ink-700 bg-black p-2 rounded">
+          <canvas
             ref={attachCanvas}
-            canvasW={400}
-            canvasH={240}
-            onDpadPress={onDpadPress}
-            onDpadRelease={onDpadRelease}
-            onABPress={onABPress}
-            onABRelease={onABRelease}
-            onCrankRotate={onCrankRotate}
-            onCrankDock={onCrankDock}
+            width={400}
+            height={240}
+            style={{ width: 800, height: 480, imageRendering: 'pixelated', display: 'block' }}
           />
         </div>
 
+        <div className="flex items-center gap-6 mt-2">
+          <div className="grid grid-cols-3 grid-rows-3 gap-1">
+            <span />
+            <button type="button" className="btn p-2" onClick={() => sendAction('up')}><ArrowUp className="w-4 h-4" /></button>
+            <span />
+            <button type="button" className="btn p-2" onClick={() => sendAction('left')}><ArrLeft className="w-4 h-4" /></button>
+            <span />
+            <button type="button" className="btn p-2" onClick={() => sendAction('right')}><ArrowRight className="w-4 h-4" /></button>
+            <span />
+            <button type="button" className="btn p-2" onClick={() => sendAction('down')}><ArrowDown className="w-4 h-4" /></button>
+            <span />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" className="btn h-12 w-12 rounded-full text-lg" onClick={() => sendAction('b')}>B</button>
+            <button type="button" className="btn h-12 w-12 rounded-full text-lg" onClick={() => sendAction('a')}>A</button>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" className="btn p-2" title="crank CCW (,)" onClick={() => sendAction('crank_ccw')}><RotateCcw className="w-4 h-4" /></button>
+            <button type="button" className="btn p-2" title="crank CW (.)" onClick={() => sendAction('crank_cw')}><RotateCw className="w-4 h-4" /></button>
+            <button type="button" className="btn px-3 text-xs" onClick={() => sendAction('dock')}>DOCK</button>
+          </div>
+        </div>
+
         <div className="text-[10px] text-ink-500 font-mono text-center">
-          touch d-pad / a / b / crank · running real PlaydateSimulator on the server
+          keys: arrows · Z/X = A/B · , . = crank · real PlaydateSimulator on server
         </div>
       </main>
     </div>
