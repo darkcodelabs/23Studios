@@ -31,10 +31,12 @@ const sdkExport = require('./sdk_export');
 const DEFAULT_FPS = 15;
 const CAPTURE_W = 400;
 const CAPTURE_H = 240;
-// Sim chrome offsets — measured empirically from a default-skin sim window.
-// May drift across SDK versions; if so, expose as env override.
-const CAPTURE_X = 1;
-const CAPTURE_Y = 1;
+// Sim window LCD inset on default Linux skin (SDK 3.0.6, 482x480 window):
+// title+menu ~58px, chassis top ~80px, chassis side ~41px. The sim window
+// is found dynamically per-DISPLAY so multi-project previews don't fight
+// over a hardcoded root crop.
+const SIM_LCD_DX = Number(process.env.PLAYDATE_SIM_LCD_DX || 41);
+const SIM_LCD_DY = Number(process.env.PLAYDATE_SIM_LCD_DY || 138);
 
 const SIM_PATH_CANDIDATES = [
   process.env.PLAYDATE_SDK_PATH && path.join(process.env.PLAYDATE_SDK_PATH, 'bin', 'PlaydateSimulator'),
@@ -134,6 +136,17 @@ async function start({ projectId }) {
   // Give the sim a couple seconds to render its window.
   await new Promise((res) => setTimeout(res, 1500));
 
+  // Resolve the sim window id once. Capture relative to it so LCD offsets
+  // are window-local (chassis position within the Xvfb canvas can drift).
+  function findSimWindow() {
+    const r = spawnSync('xdotool', ['search', '--name', '^Playdate Simulator$'],
+                        { env: { ...process.env, DISPLAY: display }, encoding: 'utf8' });
+    if (r.status !== 0) return null;
+    const ids = (r.stdout || '').trim().split(/\s+/).filter(Boolean);
+    return ids[ids.length - 1] || null;
+  }
+  const simWinId = findSimWindow();
+
   const subscribers = new Set();
   let lastFrameMs = 0;
   let lastFrameBuf = null;
@@ -153,13 +166,16 @@ async function start({ projectId }) {
       lastFrameMs = Date.now();
       try {
         const buf = await new Promise((resolve, reject) => {
-          const imp = spawn('import', [
-            '-display', display,
-            '-window', 'root',
-            '-crop', `${CAPTURE_W}x${CAPTURE_H}+${CAPTURE_X}+${CAPTURE_Y}`,
-            '-silent',
-            'png:-'
-          ], { stdio: ['ignore', 'pipe', 'pipe'] });
+          const args = ['-display', display];
+          if (simWinId) {
+            args.push('-window', simWinId, '-crop',
+                      `${CAPTURE_W}x${CAPTURE_H}+${SIM_LCD_DX}+${SIM_LCD_DY}`);
+          } else {
+            args.push('-window', 'root', '-crop',
+                      `${CAPTURE_W}x${CAPTURE_H}+0+0`);
+          }
+          args.push('-silent', 'png:-');
+          const imp = spawn('import', args, { stdio: ['ignore', 'pipe', 'pipe'] });
           const chunks = [];
           imp.stdout.on('data', (b) => chunks.push(b));
           imp.on('close', (code) => {
