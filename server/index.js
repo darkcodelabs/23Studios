@@ -37,6 +37,7 @@ const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const decisionsRouter = require('./routes/decisions');
 const openrouterRouter = require('./routes/openrouter');
+const approvalsRouter = require('./routes/approvals');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -167,6 +168,8 @@ app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api', decisionsRouter);
 app.use('/api/openrouter', openrouterRouter);
+// Phase 6 B3: asset approver queue + decide endpoints.
+app.use('/api', approvalsRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
