@@ -36,6 +36,7 @@ const npcRouter = require('./routes/npc');
 const levelsRouter = require('./routes/levels');
 const minigamesRouter = require('./routes/minigames');
 const decisionsRouter = require('./routes/decisions');
+const driftRouter = require('./routes/drift');
 const openrouterRouter = require('./routes/openrouter');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
@@ -166,6 +167,7 @@ app.use('/api', npcRouter);
 app.use('/api', levelsRouter);
 app.use('/api', minigamesRouter);
 app.use('/api', decisionsRouter);
+app.use('/api', driftRouter);
 app.use('/api/openrouter', openrouterRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
