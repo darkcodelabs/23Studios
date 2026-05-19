@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, RefreshCw, Save, Loader2, AlertTriangle, Image as ImageIcon,
-  Hammer, Download, PlayCircle, MessageSquare, ChevronRight, ChevronDown
+  Hammer, Download, PlayCircle, MessageSquare, ChevronRight, ChevronDown, Play
 } from 'lucide-react';
 import Nav from '../components/Nav.jsx';
 import { api } from '../lib/api.js';
@@ -331,6 +331,14 @@ function SceneRow({ scene, projectId, open, onToggle, busy, onPatch, onRegen }) 
                     className="btn text-xs disabled:opacity-50">
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
               {busy ? 'regenerating' : 'regenerate background'}
+            </button>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('simpanel:open', { detail: { sceneId: scene.id } }))}
+              className="btn text-xs"
+              title="re-export with this scene as startup + open sim panel"
+            >
+              <Play className="w-3 h-3" /> run in sim
             </button>
             <span className="text-[11px] text-ink-500">~ 60-90 sec via OpenRouter</span>
           </div>

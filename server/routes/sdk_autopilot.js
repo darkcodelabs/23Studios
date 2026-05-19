@@ -262,6 +262,112 @@ router.post('/:id/sdk/preview/input', (req, res) => {
   } catch (e) { sendErr(res, e); }
 });
 
+// GET /api/projects/:id/sdk/preview/screenshot -> latest captured frame
+// (image/png). 404 if no preview is running or no frame yet.
+router.get('/:id/sdk/preview/screenshot', (req, res) => {
+  const st = sdkPreview.get(req.params.id);
+  if (!st || !st.lastFrame) return res.status(404).end();
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(st.lastFrame);
+});
+
+// POST /api/projects/:id/sdk/preview/run_scene  body: { scene_id }
+// Re-export the .pdx with startup_scene swapped, restart the sim, stream
+// returns when the build is done.
+router.post('/:id/sdk/preview/run_scene', async (req, res) => {
+  try {
+    const sceneId = String((req.body && req.body.scene_id) || '').trim();
+    if (!sceneId) return res.status(400).json({ error: 'bad_request', detail: 'scene_id required' });
+    const r = await sdkPreview.runScene({ projectId: req.params.id, sceneId });
+    // Re-start the preview against the freshly-built pdx.
+    let preview = null;
+    try {
+      preview = await sdkPreview.start({ projectId: req.params.id });
+    } catch (e) {
+      return res.json({ ok: true, ...r, preview_started: false, preview_error: e.message });
+    }
+    res.json({ ok: true, ...r, preview_started: true, display: preview.display });
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/preview/restore_scene
+// Restore startup_scene to the originally-locked value (no rebuild).
+router.post('/:id/sdk/preview/restore_scene', async (req, res) => {
+  try {
+    const r = await sdkPreview.restoreScene({ projectId: req.params.id });
+    res.json(r);
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/preview/record_session  body: { duration_s }
+// Start a recording window. Returns recording id; frames stream until
+// duration_s elapses or the sim stops. Poll the status endpoint to know
+// when out.gif + out.mp4 are encoded.
+router.post('/:id/sdk/preview/record_session', (req, res) => {
+  try {
+    const st = sdkPreview.get(req.params.id);
+    if (!st) return res.status(409).json({ error: 'preview_not_running' });
+    const durationS = Number((req.body && req.body.duration_s) || 10);
+    const r = st.startRecording(durationS);
+    res.json({ ok: true, ...r });
+  } catch (e) { sendErr(res, e); }
+});
+
+// POST /api/projects/:id/sdk/preview/record_session/stop
+// Force-finish the current recording immediately (encodes from frames so far).
+router.post('/:id/sdk/preview/record_session/stop', (req, res) => {
+  try {
+    const st = sdkPreview.get(req.params.id);
+    if (!st) return res.status(409).json({ error: 'preview_not_running' });
+    const r = st.finishRecording();
+    res.json({ ok: true, finished: !!(r && r.finished), encodeError: r && r.encodeError || null,
+               gif: !!(r && r.gifPath), mp4: !!(r && r.mp4Path), frame_count: r && r.frame_count || 0 });
+  } catch (e) { sendErr(res, e); }
+});
+
+// GET /api/projects/:id/sdk/preview/record_session/status
+router.get('/:id/sdk/preview/record_session/status', (req, res) => {
+  const st = sdkPreview.get(req.params.id);
+  if (!st) return res.status(409).json({ error: 'preview_not_running' });
+  const rec = st.recording;
+  if (!rec) return res.json({ recording: false });
+  res.json({
+    recording: true,
+    id: rec.id,
+    finished: !!rec.finished,
+    duration_s: rec.duration_s,
+    started_at: rec.started_at,
+    elapsed_ms: Date.now() - rec.started_at,
+    frame_count: rec.frame_count || (rec.frames ? rec.frames.length : 0),
+    gif: !!rec.gifPath,
+    mp4: !!rec.mp4Path,
+    encode_error: rec.encodeError || null,
+    gif_url: rec.gifPath ? `/api/projects/${req.params.id}/sdk/preview/record_session/gif` : null,
+    mp4_url: rec.mp4Path ? `/api/projects/${req.params.id}/sdk/preview/record_session/mp4` : null
+  });
+});
+
+// GET /api/projects/:id/sdk/preview/record_session/gif
+router.get('/:id/sdk/preview/record_session/gif', (req, res) => {
+  const st = sdkPreview.get(req.params.id);
+  if (!st || !st.recording || !st.recording.gifPath) return res.status(404).end();
+  if (!fs.existsSync(st.recording.gifPath)) return res.status(404).end();
+  res.setHeader('Content-Type', 'image/gif');
+  res.setHeader('Cache-Control', 'no-store');
+  fs.createReadStream(st.recording.gifPath).pipe(res);
+});
+
+// GET /api/projects/:id/sdk/preview/record_session/mp4
+router.get('/:id/sdk/preview/record_session/mp4', (req, res) => {
+  const st = sdkPreview.get(req.params.id);
+  if (!st || !st.recording || !st.recording.mp4Path) return res.status(404).end();
+  if (!fs.existsSync(st.recording.mp4Path)) return res.status(404).end();
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Cache-Control', 'no-store');
+  fs.createReadStream(st.recording.mp4Path).pipe(res);
+});
+
 // WS install — separate from the express router; the index.js bootstrap
 // reaches in via installPreviewWs(server) below.
 function installPreviewWs(server) {

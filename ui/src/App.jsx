@@ -74,6 +74,7 @@ function RequireAuth({ children }) {
   return children;
 }
 
+import SimPanel from './components/SimPanel.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Project from './pages/Project.jsx';
@@ -105,6 +106,18 @@ function PulpComingSoon({ name }) {
   );
 }
 
+// Wrap a project page with the persistent SimPanel above it. Cheap shim so
+// the panel survives navigation between /project/:id/* without forcing a
+// re-connect on each page mount.
+function ProjectShell({ children }) {
+  return (
+    <div className="flex flex-col h-screen overflow-hidden">
+      <SimPanel />
+      <div className="flex-1 min-h-0 overflow-auto">{children}</div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -125,6 +138,18 @@ export default function App() {
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
         <Route path="/project/:id/requirements" element={<RequireAuth><Requirements /></RequireAuth>} />
+        <Route path="/project/:id" element={<RequireAuth><ProjectShell><Project /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/files" element={<RequireAuth><ProjectShell><Project /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/edit" element={<RequireAuth><ProjectShell><PulpEditor /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/play" element={<RequireAuth><ProjectShell><PulpPlayPage /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/sdk/play" element={<RequireAuth><ProjectShell><SdkPlayPage /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/sdk/edit" element={<RequireAuth><ProjectShell><SdkEditPage /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/composer" element={<RequireAuth><ProjectShell><ComposerV2 /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/styles/:axisId" element={<RequireAuth><ProjectShell><StylePicker /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/asset-library" element={<RequireAuth><ProjectShell><AssetLibraryBrowser /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/npcs" element={<RequireAuth><ProjectShell><NpcDialogEditor /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/levels" element={<RequireAuth><ProjectShell><LevelEditor /></ProjectShell></RequireAuth>} />
+        <Route path="/project/:id/late-add" element={<RequireAuth><ProjectShell><LateAddPanel /></ProjectShell></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />

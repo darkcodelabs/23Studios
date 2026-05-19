@@ -23,6 +23,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 
 const projects = require('./projects');
@@ -173,13 +174,25 @@ async function start({ projectId }) {
           try { ws.send(buf, { compress: false, binary: true }); }
           catch (_e) { /* dropped */ }
         }
+        // Stash latest frame for screenshot endpoint + recording.
+        state.lastFrame = buf;
+        if (state.recording && !state.recording.finished) {
+          state.recording.frames.push(buf);
+          if (state.recording.frames.length >= 900) {
+            try { state.finishRecording(); } catch (_e) { /* */ }
+          }
+        }
       } catch (_e) { /* skip frame */ }
     }
   }
 
+  const recDir = path.join(os.tmpdir(), '23studios_sim_rec', projectId);
+
   const state = {
     projectId, display, simBin, pdxPath: pdx,
     xvfb, sim, subscribers, stopped: false,
+    lastFrame: null,
+    recording: null,
     subscribe(ws) {
       subscribers.add(ws);
       ws.on('close', () => subscribers.delete(ws));
@@ -196,6 +209,92 @@ async function start({ projectId }) {
     sendKeyUp(key) {
       try { spawnSync('xdotool', ['keyup', '--clearmodifiers', key], { env }); }
       catch (_e) { /* */ }
+    },
+    startRecording(durationS) {
+      if (this.recording && !this.recording.finished) {
+        const e = new Error('already_recording'); e.status = 409; throw e;
+      }
+      try { fs.mkdirSync(recDir, { recursive: true }); } catch (_e) { /* */ }
+      try {
+        for (const f of fs.readdirSync(recDir)) {
+          if (/^frame\d+\.png$/.test(f) || /^out\.(gif|mp4)$/.test(f)) {
+            try { fs.unlinkSync(path.join(recDir, f)); } catch (_e) { /* */ }
+          }
+        }
+      } catch (_e) { /* */ }
+      const dur = Math.max(1, Math.min(60, Number(durationS) || 10));
+      this.recording = {
+        id: crypto.randomBytes(4).toString('hex'),
+        started_at: Date.now(),
+        duration_s: dur,
+        frames: [],
+        dir: recDir,
+        finished: false,
+        gifPath: null,
+        mp4Path: null,
+        encodeError: null
+      };
+      const self = this;
+      const t = setTimeout(() => {
+        if (self.recording && !self.recording.finished) {
+          try { self.finishRecording(); } catch (_e) { /* */ }
+        }
+      }, dur * 1000);
+      if (t.unref) t.unref();
+      return { id: this.recording.id, duration_s: dur };
+    },
+    finishRecording() {
+      if (!this.recording || this.recording.finished) {
+        return this.recording || null;
+      }
+      const rec = this.recording;
+      rec.finished = true;
+      for (let i = 0; i < rec.frames.length; i++) {
+        const p = path.join(rec.dir, `frame${String(i + 1).padStart(4, '0')}.png`);
+        try { fs.writeFileSync(p, rec.frames[i]); } catch (_e) { /* */ }
+      }
+      const count = rec.frames.length;
+      rec.frame_count = count;
+      rec.frames = [];
+      if (count === 0) {
+        rec.encodeError = 'no_frames_captured';
+        return rec;
+      }
+      const fps = DEFAULT_FPS;
+      const delayCs = Math.max(1, Math.round(100 / fps));
+      const gifPath = path.join(rec.dir, 'out.gif');
+      const mp4Path = path.join(rec.dir, 'out.mp4');
+      try {
+        const r1 = spawnSync('convert', [
+          '-delay', String(delayCs), '-loop', '0',
+          path.join(rec.dir, 'frame*.png'), gifPath
+        ], { encoding: 'utf8', shell: false });
+        if (r1.status === 0 && fs.existsSync(gifPath)) {
+          rec.gifPath = gifPath;
+          rec.gifBytes = fs.statSync(gifPath).size;
+        } else {
+          rec.encodeError = 'gif: ' + ((r1.stderr || '').slice(0, 200) || ('exit ' + r1.status));
+        }
+      } catch (e) { rec.encodeError = 'gif: ' + e.message; }
+      try {
+        const r2 = spawnSync('ffmpeg', [
+          '-y', '-framerate', String(fps),
+          '-i', path.join(rec.dir, 'frame%04d.png'),
+          '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+          '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+          mp4Path
+        ], { encoding: 'utf8', shell: false });
+        if (r2.status === 0 && fs.existsSync(mp4Path)) {
+          rec.mp4Path = mp4Path;
+          rec.mp4Bytes = fs.statSync(mp4Path).size;
+        } else {
+          rec.encodeError = (rec.encodeError ? rec.encodeError + ' | ' : '')
+            + 'mp4: ' + ((r2.stderr || '').slice(0, 200) || ('exit ' + r2.status));
+        }
+      } catch (e) {
+        rec.encodeError = (rec.encodeError ? rec.encodeError + ' | ' : '') + 'mp4: ' + e.message;
+      }
+      return rec;
     },
     stop() {
       this.stopped = stopped = true;
@@ -220,6 +319,68 @@ function stop(projectId) {
   if (s) s.stop();
 }
 
+// Switch the sim entry point to a specific scene.
+//
+// Reads <project>/sdk_data/project.json, stashes original startup_scene
+// to startup_scene_original (preserved across run_scene calls), sets
+// startup_scene = sceneId, re-runs sdk_export, restarts preview.
+//
+// Caller is expected to provide a sceneId that exists in scenes[]; we
+// only sanity-check existence and bail with 404 otherwise.
+async function runScene({ projectId, sceneId }) {
+  const project = await projects.getProject(projectId);
+  if (!project) { const e = new Error('not_found'); e.status = 404; throw e; }
+  if (project.game_type !== 'sdk') { const e = new Error('not_sdk'); e.status = 400; throw e; }
+  if (!project.local_path) { const e = new Error('no_local_path'); e.status = 500; throw e; }
+  const sdkFile = path.join(project.local_path, 'sdk_data', 'project.json');
+  if (!fs.existsSync(sdkFile)) { const e = new Error('no_sdk_data'); e.status = 409; throw e; }
+  const data = JSON.parse(fs.readFileSync(sdkFile, 'utf8'));
+  const exists = (data.scenes || []).some((s) => s && s.id === sceneId);
+  if (!exists) { const e = new Error('scene_not_found'); e.status = 404; throw e; }
+  // Preserve original startup_scene so /restore can put it back.
+  if (!data.startup_scene_original) {
+    data.startup_scene_original = data.startup_scene || (data.scenes[0] && data.scenes[0].id) || sceneId;
+  }
+  data.startup_scene = sceneId;
+  fs.writeFileSync(sdkFile, JSON.stringify(data, null, 2));
+  // Stop any current preview so the rebuild's pdx is loaded fresh.
+  stop(projectId);
+  // Kick off a fresh export. Wait for it to finish before returning so
+  // the caller knows the sim can be restarted with the new entry point.
+  const job = await sdkExport.startExport({ projectId });
+  // sdkExport.startExport returns the job spec; the actual build runs async.
+  // Poll the job until done OR fail OR 30s timeout.
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const j = sdkExport.getJob(job.id);
+    if (!j) break;
+    if (j.status === 'done') return { ok: true, job_id: job.id, scene_id: sceneId };
+    if (j.status === 'failed') {
+      const e = new Error('export_failed'); e.status = 500;
+      e.detail = j.error || 'unknown'; throw e;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  const e = new Error('export_timeout'); e.status = 504; throw e;
+}
+
+// Restore startup_scene to the originally-locked value (no rebuild kicked off;
+// caller restarts the sim if they want the change to take effect).
+async function restoreScene({ projectId }) {
+  const project = await projects.getProject(projectId);
+  if (!project) { const e = new Error('not_found'); e.status = 404; throw e; }
+  const sdkFile = path.join(project.local_path, 'sdk_data', 'project.json');
+  if (!fs.existsSync(sdkFile)) return { ok: true, noop: true };
+  const data = JSON.parse(fs.readFileSync(sdkFile, 'utf8'));
+  if (data.startup_scene_original) {
+    data.startup_scene = data.startup_scene_original;
+    delete data.startup_scene_original;
+    fs.writeFileSync(sdkFile, JSON.stringify(data, null, 2));
+    return { ok: true, restored_to: data.startup_scene };
+  }
+  return { ok: true, noop: true };
+}
+
 // Map abstract input to the SDK simulator's key bindings:
 //   arrows -> d-pad
 //   z       -> A
@@ -237,5 +398,5 @@ const KEY_MAP = Object.freeze({
 function mapKey(action) { return KEY_MAP[action] || null; }
 
 module.exports = {
-  start, stop, get, findSimulator, mapKey
+  start, stop, get, findSimulator, mapKey, runScene, restoreScene
 };
