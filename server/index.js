@@ -41,7 +41,7 @@ const interviewRouter = require('./routes/interview');
 const openrouterRouter = require('./routes/openrouter');
 const costRouter = require('./routes/cost');
 const lintRouter = require('./routes/lint');
-const linkedDocsRouter = require('./routes/linked_docs');
+const approvalsRouter = require('./routes/approvals');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -193,7 +193,7 @@ app.use('/api/projects', interviewRouter);
 app.use('/api/openrouter', openrouterRouter);
 app.use('/api', costRouter);
 app.use('/api', lintRouter);
-app.use('/api', linkedDocsRouter);
+app.use('/api', approvalsRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {

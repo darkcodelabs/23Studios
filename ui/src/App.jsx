@@ -101,6 +101,7 @@ import Interview from './pages/Interview.jsx';
 import CostPanel from './components/CostPanel.jsx';
 import GateBanner from './components/GateBanner.jsx';
 import AgentsDashboard from './pages/AgentsDashboard.jsx';
+import AssetApprover from './pages/AssetApprover.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -184,8 +185,10 @@ export default function App() {
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
         <Route path="/project/:id/storyboard" element={<RequireAuth><Storyboard /></RequireAuth>} />
+        <Route path="/project/:id/ship" element={<RequireAuth><ShipStatus /></RequireAuth>} />
         <Route path="/project/:id/decisions" element={<RequireAuth><DecisionsLog /></RequireAuth>} />
         <Route path="/project/:id/interview" element={<RequireAuth><Interview /></RequireAuth>} />
+        <Route path="/project/:id/approve" element={<RequireAuth><AssetApprover /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
