@@ -39,6 +39,7 @@ const decisionsRouter = require('./routes/decisions');
 const driftRouter = require('./routes/drift');
 const openrouterRouter = require('./routes/openrouter');
 const costRouter = require('./routes/cost');
+const lintRouter = require('./routes/lint');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -170,6 +171,7 @@ app.use('/api', decisionsRouter);
 app.use('/api', driftRouter);
 app.use('/api/openrouter', openrouterRouter);
 app.use('/api', costRouter);
+app.use('/api', lintRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
