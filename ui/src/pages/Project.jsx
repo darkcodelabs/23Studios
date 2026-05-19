@@ -11,6 +11,7 @@ import FileViewer from '../components/FileViewer.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import ModelSelector, { CLAUDE_OPTION } from '../components/ModelSelector.jsx';
 import GameTypeToggle from '../components/GameTypeToggle.jsx';
+import ShipButton from '../components/ShipButton.jsx';
 import { api } from '../lib/api.js';
 import { useSiderail } from '../lib/use_siderail.js';
 
@@ -75,6 +76,7 @@ export default function Project() {
                 <ImageIcon className="w-3 h-3" /> references
               </Link>
               {project?.game_type === 'sdk' ? <SdkBuildBar project={project} /> : null}
+              <ShipButton projectId={id} variant="slim" />
               <GameTypeToggle project={project} onChange={setProject} />
               {tab === 'chat' ? <ModelSelector value={model} onChange={setModel} /> : null}
             </div>

@@ -185,6 +185,7 @@ export default function App() {
         <Route path="/project/:id/levels" element={<RequireAuth><LevelEditor /></RequireAuth>} />
         <Route path="/project/:id/late-add" element={<RequireAuth><LateAddPanel /></RequireAuth>} />
         <Route path="/project/:id/storyboard" element={<RequireAuth><Storyboard /></RequireAuth>} />
+        <Route path="/project/:id/ship" element={<RequireAuth><ShipStatus /></RequireAuth>} />
         <Route path="/project/:id/decisions" element={<RequireAuth><DecisionsLog /></RequireAuth>} />
         <Route path="/project/:id/interview" element={<RequireAuth><Interview /></RequireAuth>} />
         <Route path="/project/:id/approve" element={<RequireAuth><AssetApprover /></RequireAuth>} />
