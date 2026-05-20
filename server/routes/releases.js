@@ -146,4 +146,32 @@ router.get('/:id/releases/pack/latest', async (req, res) => {
   }
 });
 
+// POST /api/projects/:id/releases/publish  body: { tag? }
+// Push an already-packed local release tree to GitHub via gh CLI.
+// Defaults to the latest packed release when tag omitted.
+router.post('/:id/releases/publish', async (req, res) => {
+  try {
+    if (!ID_RE.test(req.params.id)) return res.status(400).json({ error: 'bad_id' });
+    const tag = (req.body && req.body.tag) ? String(req.body.tag) : null;
+    let releaseDir;
+    let useTag = tag;
+    if (tag) {
+      const project = await projects.getProject(req.params.id);
+      if (!project || !project.local_path) return res.status(404).json({ error: 'not_found' });
+      releaseDir = require('path').join(project.local_path, 'release', tag);
+    } else {
+      const latest = await packager.getLatestPack(req.params.id);
+      if (!latest) return res.status(404).json({ error: 'no_packed_release',
+        detail: 'pack a release first via /releases/pack or wait for auto-pack' });
+      releaseDir = latest.release_dir;
+      useTag = latest.tag;
+    }
+    const r = await packager.publishToGitHub(req.params.id, releaseDir, useTag);
+    if (!r.ok) return res.status(409).json(r);
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ error: 'publish_failed', detail: String(e).slice(0, 200) });
+  }
+});
+
 module.exports = router;
