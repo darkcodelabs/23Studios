@@ -403,6 +403,18 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
       status.auto_packed = {
         release_dir: result.release_dir, tag: result.tag, files: result.files.length
       };
+
+      // Auto-publish to GitHub release if STUDIO_AUTO_PUBLISH=1 (default OFF).
+      // Best-effort — local pack always succeeds even if push fails.
+      if (process.env.STUDIO_AUTO_PUBLISH === '1') {
+        try {
+          const pub = await packager.publishToGitHub(projectId, result.release_dir, result.tag);
+          status.auto_published = pub;
+        } catch (e) {
+          status.auto_published = { ok: false, error: String(e.message).slice(0, 200) };
+        }
+      }
+
       // Update the persisted status with the auto-pack result.
       await fsp.writeFile(statusFile(localPath, milestoneId), JSON.stringify(status, null, 2));
     } catch (e) {

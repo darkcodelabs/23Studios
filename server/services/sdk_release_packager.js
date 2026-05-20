@@ -557,4 +557,128 @@ async function getLatestPack(projectId) {
   return { release_dir: releaseDir, tag: latest.name, files };
 }
 
-module.exports = { pack, getLatestPack, parsePdxinfo };
+/**
+ * publishToGitHub(projectId, releaseDir, tag) — uploads the packed
+ * release tree to a GitHub release on project.repo. Uses gh CLI.
+ *
+ * Steps (best-effort, each gracefully degrading):
+ *   1. Read project.repo, parse owner/name slug
+ *   2. Check `gh repo view <slug>` — if 404, return { ok: false, error: 'repo_not_on_github' }
+ *      with hint to `gh repo create`
+ *   3. `gh release view <tag>` — if exists, skip; if missing, create via
+ *      `gh release create <tag> --title <name> --notes-file README.md`
+ *   4. `gh release upload <tag>` every file in releaseDir (pdx.zip, presskit/*, etc.)
+ *
+ * Returns { ok, slug?, tag, url?, uploaded: [{name, bytes}], error?, hint? }.
+ */
+async function publishToGitHub(projectId, releaseDir, tag) {
+  const project = await projects.getProject(projectId);
+  if (!project) return { ok: false, error: 'project_not_found' };
+  if (!project.repo) return { ok: false, error: 'no_repo',
+    hint: 'set project.repo to a github.com URL' };
+
+  const REPO_RE = /github\.com[:/]([\w.-]+)\/([\w.-]+?)(?:\.git)?$/;
+  const m = String(project.repo).match(REPO_RE);
+  if (!m) return { ok: false, error: 'repo_not_github', hint: 'project.repo must be github.com URL' };
+  const slug = `${m[1]}/${m[2]}`;
+
+  const { spawn } = require('child_process');
+  function ghRun(args, opts = {}) {
+    return new Promise((resolve, reject) => {
+      const proc = spawn('gh', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      let out = '', err = '';
+      proc.stdout.on('data', (b) => { out += b; });
+      proc.stderr.on('data', (b) => { err += b; });
+      const timer = setTimeout(() => { proc.kill('SIGTERM'); reject(new Error('gh timeout')); }, opts.timeoutMs || 60000);
+      proc.on('close', (code) => {
+        clearTimeout(timer);
+        if (code !== 0) {
+          const e = new Error('gh ' + code + ': ' + err.slice(0, 400));
+          e.code = code; e.stderr = err;
+          return reject(e);
+        }
+        resolve({ stdout: out, stderr: err });
+      });
+      proc.on('error', reject);
+    });
+  }
+
+  // 1. Repo existence check
+  try {
+    await ghRun(['repo', 'view', slug, '--json', 'name'], { timeoutMs: 15000 });
+  } catch (e) {
+    if (/404|not found|could not resolve/i.test(e.stderr || e.message)) {
+      // Optionally auto-create when STUDIO_AUTO_CREATE_GH_REPO=1
+      if (process.env.STUDIO_AUTO_CREATE_GH_REPO === '1') {
+        try {
+          await ghRun(['repo', 'create', slug, '--public', '--description',
+            String(project.description || project.name || '').slice(0, 200),
+            '--confirm']);
+        } catch (e2) {
+          return { ok: false, error: 'repo_create_failed', detail: String(e2.message).slice(0, 200),
+            hint: `Run: gh repo create ${slug} --public` };
+        }
+      } else {
+        return { ok: false, error: 'repo_not_on_github', slug,
+          hint: `Run: gh repo create ${slug} --public  (or set STUDIO_AUTO_CREATE_GH_REPO=1)` };
+      }
+    } else if (/authentication|auth/i.test(e.stderr || e.message)) {
+      return { ok: false, error: 'gh_not_authenticated', hint: 'Run: gh auth login' };
+    } else {
+      return { ok: false, error: 'gh_failed', detail: String(e.message).slice(0, 200) };
+    }
+  }
+
+  // 2. Release exists?
+  let releaseExists = false;
+  try {
+    await ghRun(['release', 'view', tag, '--repo', slug, '--json', 'tagName'], { timeoutMs: 15000 });
+    releaseExists = true;
+  } catch (_e) { releaseExists = false; }
+
+  // 3. Create if missing
+  const readmePath = path.join(releaseDir, 'README.md');
+  if (!releaseExists) {
+    const args = ['release', 'create', tag, '--repo', slug, '--title', tag];
+    if (fs.existsSync(readmePath)) {
+      args.push('--notes-file', readmePath);
+    } else {
+      args.push('--notes', 'Auto-packed release.');
+    }
+    try {
+      await ghRun(args, { timeoutMs: 60000 });
+    } catch (e) {
+      return { ok: false, error: 'release_create_failed', detail: String(e.message).slice(0, 200) };
+    }
+  }
+
+  // 4. Upload every file
+  const uploaded = [];
+  const errors = [];
+  function listFiles(dir, prefix = '') {
+    const out = [];
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, e.name);
+      const rel = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.isDirectory()) out.push(...listFiles(full, rel));
+      else if (e.isFile()) out.push({ full, rel, bytes: fs.statSync(full).size });
+    }
+    return out;
+  }
+  const allFiles = listFiles(releaseDir);
+  for (const f of allFiles) {
+    // gh release upload <tag> <file>#<displayName>
+    try {
+      await ghRun(['release', 'upload', tag, f.full + '#' + f.rel.replace(/\//g, '_'),
+                   '--repo', slug, '--clobber'], { timeoutMs: 120000 });
+      uploaded.push({ name: f.rel, bytes: f.bytes });
+    } catch (e) {
+      errors.push({ name: f.rel, error: String(e.message).slice(0, 200) });
+    }
+  }
+
+  const url = `https://github.com/${slug}/releases/tag/${tag}`;
+  return { ok: errors.length === 0, slug, tag, url, uploaded, errors };
+}
+
+module.exports = { pack, getLatestPack, parsePdxinfo, publishToGitHub };

@@ -139,10 +139,23 @@ router.get('/:id/file', async (req, res, next) => {
 // Mirrors /file's safety checks (path resolution, EXCLUDED_NAMES, symlinks,
 // MAX_FILE_BYTES) but only allows image content types.
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.ico']);
+// Beyond images: release artifacts (pdx.zip, zip) + audio (mp3, wav, ogg) +
+// generated source files the user might want to inspect via the file panel
+// (lua, md, json, txt). Streamed with the right content-type so browsers
+// either render or trigger Save As. Reject everything else with 415.
+const DOWNLOAD_EXTS = new Set(['.zip', '.mp3', '.wav', '.ogg', '.aif', '.aiff',
+                                '.lua', '.md', '.json', '.txt']);
 const MIME_BY_EXT = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
-  '.svg': 'image/svg+xml', '.ico': 'image/x-icon'
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.zip': 'application/zip',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
+  '.aif': 'audio/aiff', '.aiff': 'audio/aiff',
+  '.lua': 'text/plain; charset=utf-8',
+  '.md':  'text/markdown; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8'
 };
 
 router.get('/:id/file/raw', async (req, res, next) => {
@@ -166,13 +179,23 @@ router.get('/:id/file/raw', async (req, res, next) => {
     const stat = await fsp.lstat(abs);
     if (stat.isSymbolicLink()) return res.status(403).json({ error: 'forbidden' });
     if (!stat.isFile()) return res.status(400).json({ error: 'not_a_file' });
-    if (stat.size > MAX_IMAGE_BYTES) return res.status(413).json({ error: 'file_too_large', max: MAX_IMAGE_BYTES });
 
     const ext = path.extname(abs).toLowerCase();
-    if (!IMAGE_EXTS.has(ext)) return res.status(415).json({ error: 'not_image' });
+    const isImage = IMAGE_EXTS.has(ext);
+    const isDownload = DOWNLOAD_EXTS.has(ext);
+    if (!isImage && !isDownload) return res.status(415).json({ error: 'unsupported_ext', ext });
+    // Image cap stays tight (browser-rendered, no streaming). Downloads
+    // permit larger — pdx.zip can be 50MB+. Reject pathological > 200MB.
+    const limit = isImage ? MAX_IMAGE_BYTES : 200 * 1024 * 1024;
+    if (stat.size > limit) return res.status(413).json({ error: 'file_too_large', max: limit });
 
     res.setHeader('Content-Type', MIME_BY_EXT[ext] || 'application/octet-stream');
     res.setHeader('Content-Length', stat.size);
+    if (isDownload && !['.lua', '.md', '.json', '.txt'].includes(ext)) {
+      // Binary download — trigger Save As with the leaf name.
+      res.setHeader('Content-Disposition',
+        'attachment; filename="' + baseName.replace(/[^A-Za-z0-9._-]/g, '_') + '"');
+    }
     res.setHeader('Cache-Control', 'private, max-age=60');
     require('fs').createReadStream(abs).pipe(res);
   } catch (e) {

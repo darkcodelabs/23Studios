@@ -73,18 +73,59 @@ function PackPanel({ projectId, tag }) {
     }
   }, [projectId, tag]);
 
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState(null);
+  const doPublish = useCallback(async () => {
+    setPublishing(true);
+    setErr(null);
+    try {
+      const r = await api.post(`/api/projects/${projectId}/releases/publish`,
+        result && result.tag ? { tag: result.tag } : {});
+      setPublishResult(r);
+    } catch (e) {
+      const detail = e?.detail || e?.message || 'publish failed';
+      const hint = e?.detail && typeof e.detail === 'object' ? (e.detail.hint || '') : '';
+      setErr(detail + (hint ? ' — ' + hint : ''));
+    } finally {
+      setPublishing(false);
+    }
+  }, [projectId, result]);
+
   return (
     <div className="mt-2">
       {!result && (
-        <button
-          type="button"
-          onClick={doPack}
-          disabled={packing}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent/20 hover:bg-accent/30 text-accent text-xs border border-accent/30 disabled:opacity-50"
-        >
-          {packing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Package className="w-3 h-3" />}
-          {packing ? 'Packaging…' : 'Pack release'}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={doPack}
+            disabled={packing}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent/20 hover:bg-accent/30 text-accent text-xs border border-accent/30 disabled:opacity-50"
+          >
+            {packing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Package className="w-3 h-3" />}
+            {packing ? 'Packaging…' : 'Pack release'}
+          </button>
+          <button
+            type="button"
+            onClick={doPublish}
+            disabled={publishing}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-ink-700 hover:bg-ink-600 text-ink-200 text-xs border border-ink-600 disabled:opacity-50"
+            title="Push latest packed release to GitHub via gh CLI"
+          >
+            {publishing ? <Loader2 className="w-3 h-3 animate-spin" /> : '↑'}
+            {publishing ? 'Publishing…' : 'Publish to GitHub'}
+          </button>
+        </div>
+      )}
+      {publishResult && (
+        <div className="mt-2 rounded border border-emerald-500/30 bg-emerald-500/10 p-2 text-xs">
+          <div className="text-emerald-300 font-medium">Published</div>
+          <div className="text-ink-300 font-mono mt-1 break-all">
+            {publishResult.url && <a href={publishResult.url} target="_blank" rel="noopener" className="text-accent hover:underline">{publishResult.url}</a>}
+          </div>
+          {Array.isArray(publishResult.uploaded) && (
+            <div className="text-ink-500 mt-1">uploaded {publishResult.uploaded.length} files</div>
+          )}
+        </div>
       )}
       {err && (
         <div className="mt-1.5 flex items-center gap-1.5 text-red-400 text-xs">
