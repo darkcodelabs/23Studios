@@ -284,14 +284,12 @@ No markdown fences in your response.`,
 }
 
 async function runCharacters({ pitch, story, claudeCtx, storyBible, intake }) {
-  const sys = assembly.assembleSystemPrompt({
-    stageId: 'characters',
-    activePicks: claudeCtx.activePicks,
-    storyBible,
-    vars: { intake: intake || {} },
-    extras: 'You output STRICT JSON only.'
-  });
-  const text = await askClaude(claudeCtx,
+  const baseExtras = 'You output STRICT JSON only.';
+  const retryExtras = baseExtras +
+    ' Your previous reply was NOT parseable JSON. Output ONLY a single JSON object ' +
+    '{ "characters": [...] } with no prose, no commentary, no markdown fences. ' +
+    'Begin the response with `{` and end with `}`.';
+  const userPrompt =
 `Pitch: ${pitch}
 Story outline: ${story.outline}
 Scenes: ${(story.scenes || []).map((s) => s.name).join(', ')}
@@ -299,11 +297,27 @@ Scenes: ${(story.scenes || []).map((s) => s.name).join(', ')}
 Output JSON matching the schema in the stage augment above. Generate
 3-6 characters. The protagonist + antagonist + mentor MUST match the
 bible's named cast. Every character.portrait_prompt MUST contain the
-character's visual_anchor string verbatim.`,
-    sys
-  );
-  const parsed = safeParseJson(text);
-  if (!parsed) throw new Error('characters stage: JSON parse failed');
+character's visual_anchor string verbatim.`;
+
+  // 3-attempt retry — Claude variance on JSON output is the leading cause
+  // of pipeline crashes. Each retry uses a sterner system extras.
+  let parsed = null;
+  let lastText = null;
+  for (let attempt = 0; attempt < 3 && !parsed; attempt++) {
+    const sys = assembly.assembleSystemPrompt({
+      stageId: 'characters',
+      activePicks: claudeCtx.activePicks,
+      storyBible,
+      vars: { intake: intake || {} },
+      extras: attempt === 0 ? baseExtras : retryExtras
+    });
+    lastText = await askClaude(claudeCtx, userPrompt, sys);
+    parsed = safeParseJson(lastText);
+  }
+  if (!parsed) {
+    const preview = (lastText || '').slice(0, 300).replace(/\s+/g, ' ');
+    throw new Error('characters stage: JSON parse failed after 3 attempts — preview: ' + preview);
+  }
   // Backfill visual_anchor if Claude forgot — derive a stable placeholder
   // from the role so downstream regen + QA pass.
   for (const c of (parsed.characters || [])) {
@@ -449,8 +463,16 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
       { emit: ev, job, promptFn }
     );
 
-    // Write gate file.
+    // Write gate file (preserves prior approval if set).
     const gate = await assetBatches.gateForBatch(projectId, sdkRoot, batch.batch_id, manifestInfo);
+
+    // If the gate is already approved (this run re-generated an
+    // approved batch), CONTINUE to the next batch — do not halt for
+    // re-review of work the human already signed off on.
+    if (gate && gate.chosen === 'approved') {
+      ev('log', { text: `scene batch ${batch.batch_id}: re-generated under prior approval — continuing` });
+      continue;
+    }
 
     ev('gate', {
       gate: `batch_${batch.batch_id}`,
@@ -571,6 +593,11 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
     );
 
     const gate = await assetBatches.gateForBatch(projectId, sdkRoot, batch.batch_id, manifestInfo);
+
+    if (gate && gate.chosen === 'approved') {
+      ev('log', { text: `portrait batch ${batch.batch_id}: re-generated under prior approval — continuing` });
+      continue;
+    }
 
     ev('gate', {
       gate: `batch_${batch.batch_id}`,
@@ -699,9 +726,141 @@ async function runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake,
 
     s.feature_set = featureSet;
     s.lua = assembly.buildSceneLuaFromFeatures(s, featureSet, recipeBody);
+
+    // Write to disk so milestone builds (sdk_milestones path) + pdc see it.
+    // sdk_export already does this during its own build flow, but milestones
+    // is a separate path and must not depend on sdk_export running first.
+    try {
+      const scenesDir = path.join(claudeCtx.cwd, 'source', 'scenes');
+      await fsp.mkdir(scenesDir, { recursive: true });
+      await fsp.writeFile(path.join(scenesDir, s.id + '.lua'), s.lua);
+    } catch (e) {
+      ev('log', { text: `scene_lua write ${s.id}.lua failed: ` + e.message });
+    }
+
     ev('asset', { kind: 'scene_lua', id: s.id,
                   bytes: s.lua.length, features: featureSet });
   }
+
+  // After all scenes emit, regen source/main.lua + wire assets into source/
+  // so pdc has a complete tree. Idempotent — safe to re-run.
+  try {
+    await wireSourceTree(claudeCtx.cwd, sdk, ev);
+  } catch (e) {
+    ev('log', { text: 'wireSourceTree failed: ' + e.message });
+  }
+}
+
+// wireSourceTree(localPath, sdk, ev)
+// - Regenerates <localPath>/source/main.lua importing all scenes
+// - Copies sdk_data/scenes/*.png  -> source/images/scenes/
+// - Copies sdk_data/characters/*.png -> source/images/portraits/
+// - Copies sdk_data/launcher/*    -> source/launcher/
+// - Copies sdk_data/sfx_baseline/*.wav -> source/sounds/sfx/
+// - Copies sdk_data/scene_music/<scene_id>.wav -> source/sounds/music/
+//   (only files matching a scene id, per sdk_export's bloat-guard policy)
+async function wireSourceTree(localPath, sdk, ev) {
+  const srcDir = path.join(localPath, 'source');
+  await fsp.mkdir(srcDir, { recursive: true });
+  await fsp.mkdir(path.join(srcDir, 'scenes'), { recursive: true });
+  await fsp.mkdir(path.join(srcDir, 'images', 'scenes'), { recursive: true });
+  await fsp.mkdir(path.join(srcDir, 'images', 'portraits'), { recursive: true });
+  await fsp.mkdir(path.join(srcDir, 'launcher'), { recursive: true });
+  await fsp.mkdir(path.join(srcDir, 'sounds', 'sfx'), { recursive: true });
+  await fsp.mkdir(path.join(srcDir, 'sounds', 'music'), { recursive: true });
+
+  // main.lua — import every scene + boot the startup scene
+  const startup = sdk.startup_scene || (sdk.scenes && sdk.scenes[0] && sdk.scenes[0].id) || 'title';
+  const sceneIds = (sdk.scenes || []).map((s) => s && s.id).filter(Boolean);
+  const mainLua = [
+    'import "CoreLibs/object"',
+    'import "CoreLibs/graphics"',
+    'import "CoreLibs/sprites"',
+    'import "CoreLibs/timer"',
+    'import "CoreLibs/crank"',
+    'import "CoreLibs/animation"',
+    '',
+    '-- 23studios autopilot-emitted main.lua — regenerated each scene_lua run',
+    '',
+    'local gfx <const> = playdate.graphics',
+    '',
+    '-- Scenes: imported once, bound to globals via _G in their module',
+    ...sceneIds.map((id) => `import "scenes/${id}"`),
+    '',
+    'local current_scene_id = ' + JSON.stringify(startup),
+    'local current_scene = _G[current_scene_id]',
+    'if current_scene and current_scene.init then current_scene.init() end',
+    'if current_scene and current_scene.enter then current_scene.enter() end',
+    '',
+    'function playdate.update()',
+    '    gfx.clear()',
+    '    if current_scene and current_scene.update then current_scene.update() end',
+    '    if current_scene and current_scene.draw then current_scene.draw() end',
+    '    playdate.timer.updateTimers()',
+    '    gfx.sprite.update()',
+    'end',
+    '',
+    'function playdate.AButtonDown()',
+    '    if current_scene and current_scene.input then current_scene.input("a") end',
+    'end',
+    'function playdate.BButtonDown()',
+    '    if current_scene and current_scene.input then current_scene.input("b") end',
+    'end',
+    'function playdate.upButtonDown()    if current_scene and current_scene.input then current_scene.input("up")    end end',
+    'function playdate.downButtonDown()  if current_scene and current_scene.input then current_scene.input("down")  end end',
+    'function playdate.leftButtonDown()  if current_scene and current_scene.input then current_scene.input("left")  end end',
+    'function playdate.rightButtonDown() if current_scene and current_scene.input then current_scene.input("right") end end',
+    'function playdate.cranked(change)   if current_scene and current_scene.crank then current_scene.crank(change) end end',
+    ''
+  ].join('\n');
+  await fsp.writeFile(path.join(srcDir, 'main.lua'), mainLua);
+  ev('asset', { kind: 'main_lua', bytes: mainLua.length });
+
+  // Copy assets
+  async function copyDir(srcRel, dstRel, extRe) {
+    const src = path.join(localPath, srcRel);
+    if (!fs.existsSync(src)) return 0;
+    const dst = path.join(srcDir, dstRel);
+    await fsp.mkdir(dst, { recursive: true });
+    let n = 0;
+    for (const f of fs.readdirSync(src)) {
+      if (extRe && !extRe.test(f)) continue;
+      const sp = path.join(src, f);
+      const stat = fs.statSync(sp);
+      if (!stat.isFile()) continue;
+      await fsp.copyFile(sp, path.join(dst, f));
+      n++;
+    }
+    return n;
+  }
+  const sceneCopied  = await copyDir('sdk_data/scenes',       'images/scenes',    /\.(png|gif)$/i);
+  const portraitCopied = await copyDir('sdk_data/characters', 'images/portraits', /\.(png|gif)$/i);
+  const launcherCopied = await copyDir('sdk_data/launcher',   'launcher',         /\.(png|gif|txt)$/i);
+  const sfxCopied    = await copyDir('sdk_data/sfx_baseline', 'sounds/sfx',       /\.(wav|mp3|aiff?)$/i);
+
+  // Music — only copy wavs whose stem matches a scene id (sdk_export bloat-guard policy)
+  const musicSrc = path.join(localPath, 'sdk_data', 'scene_music');
+  let musicCopied = 0;
+  if (fs.existsSync(musicSrc)) {
+    const referenced = new Set(sceneIds);
+    for (const f of fs.readdirSync(musicSrc)) {
+      if (!/\.wav$/i.test(f)) continue;
+      const stem = f.replace(/\.wav$/i, '');
+      if (!referenced.has(stem)) continue;
+      await fsp.copyFile(path.join(musicSrc, f), path.join(srcDir, 'sounds', 'music', f));
+      musicCopied++;
+    }
+  }
+
+  // pdxinfo: ensure exists. If missing, write a minimal one — pdc requires it.
+  const pdxinfo = path.join(srcDir, 'pdxinfo');
+  if (!fs.existsSync(pdxinfo)) {
+    const minimal = `name=${path.basename(localPath)}\nauthor=23 Studios\nversion=0.1.0\nbundleID=com.darkcode.${path.basename(localPath)}\nimagePath=launcher/card\n`;
+    await fsp.writeFile(pdxinfo, minimal);
+  }
+
+  ev('log', { text: `wire_source: scenes=${sceneCopied} portraits=${portraitCopied} ` +
+                    `launcher=${launcherCopied} sfx=${sfxCopied} music=${musicCopied}` });
 }
 
 // Legacy export kept for tests / external callers — wraps the new path.
@@ -886,7 +1045,7 @@ async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, int
 const _jobs = new Map();
 function isRunning(pid) { return _jobs.has(pid) && _jobs.get(pid).running; }
 
-function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }) {
+function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, forceRegen = false }) {
   if (isRunning(projectId)) {
     const e = new Error('sdk_autopilot_already_running');
     e.status = 409; e.code = 'autopilot_already_running'; throw e;
@@ -983,20 +1142,37 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
       const brainstorm = { text: brainstormText };
 
       ev('phase', { id: 'story' });
-      const story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake });
-      sdk.outline = story.outline;
-      sdk.startup_scene = story.startup_scene || (story.scenes && story.scenes[0] && story.scenes[0].id);
-      sdk.scenes = story.scenes || [];
-      await writeSdk(project.local_path, sdk);
-      ev('log', { text: 'story: ' + sdk.scenes.length + ' scenes; startup=' + sdk.startup_scene });
+      // Idempotency: if sdk.scenes already populated from a prior run,
+      // SKIP the Claude story call. Re-running story stage regenerates
+      // scene IDs every time, leaking unused PNGs across runs.
+      let story;
+      if (Array.isArray(sdk.scenes) && sdk.scenes.length > 0) {
+        story = { outline: sdk.outline || '', scenes: sdk.scenes,
+                  startup_scene: sdk.startup_scene };
+        ev('log', { text: 'story: skipped — ' + sdk.scenes.length + ' scenes already in project.json' });
+      } else {
+        story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake });
+        sdk.outline = story.outline;
+        sdk.startup_scene = story.startup_scene || (story.scenes && story.scenes[0] && story.scenes[0].id);
+        sdk.scenes = story.scenes || [];
+        await writeSdk(project.local_path, sdk);
+        ev('log', { text: 'story: ' + sdk.scenes.length + ' scenes; startup=' + sdk.startup_scene });
+      }
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'characters' });
-      const chars = await runCharacters({ pitch, story, claudeCtx, storyBible, intake });
-      sdk.characters = chars.characters || [];
-      await writeSdk(project.local_path, sdk);
+      // Same idempotency for characters.
+      let chars;
+      if (Array.isArray(sdk.characters) && sdk.characters.length > 0) {
+        chars = { characters: sdk.characters };
+        ev('log', { text: 'characters: skipped — ' + sdk.characters.length + ' already in project.json' });
+      } else {
+        chars = await runCharacters({ pitch, story, claudeCtx, storyBible, intake });
+        sdk.characters = chars.characters || [];
+        await writeSdk(project.local_path, sdk);
+      }
       ev('log', { text: 'characters: ' + sdk.characters.length });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
