@@ -896,7 +896,15 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
                 started_at: Date.now(), summary: { stages_complete: 0, stages_failed: 0 } };
   _jobs.set(projectId, job);
 
-  const ev = (kind, data) => emit(onEvent, kind, data);
+  // Wrap emit so we can intercept phase + gate events and store them on the
+  // job object — dashboard cards poll getJobSnapshot to render live progress.
+  const ev = (kind, data) => {
+    if (kind === 'phase' && data && data.id) job.phase = data.id;
+    if (kind === 'gate' && data && data.gate) job.awaitingGate = data.gate;
+    if (kind === 'done') { job.running = false; job.phase = null; job.awaitingGate = data && data.awaiting_gate || null; }
+    if (kind === 'error') { job.running = false; }
+    emit(onEvent, kind, data);
+  };
 
   const awaitDone = (async () => {
     try {
@@ -1051,8 +1059,52 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
   return { job, awaitDone };
 }
 
+// CANONICAL stage order — used by dashboard cards + project page to derive
+// percent-complete. Mirrors the runX functions in this file.
+const STAGES = [
+  'brainstorm', 'story', 'characters', 'scene_bursts', 'portrait_bursts',
+  'scene_lua', 'sfx', 'music', 'launcher'
+];
+
+// Return current job snapshot for a project, or last known state if no
+// active job. Reads from in-memory _jobs first, falls back to persisted
+// data (project.json + concept gate) so cards still show progress after
+// a server restart.
+function getJobSnapshot(projectId) {
+  const live = _jobs.get(projectId);
+  if (live) {
+    const stagesComplete = (live.summary && live.summary.stages_complete) || 0;
+    return {
+      project_id: projectId,
+      running: !!live.running,
+      phase: live.phase || null,
+      stages_complete: stagesComplete,
+      stages_total: STAGES.length,
+      stages_failed: (live.summary && live.summary.stages_failed) || 0,
+      percent: Math.round((stagesComplete / STAGES.length) * 100),
+      awaiting_gate: live.awaitingGate || null,
+      started_at: live.started_at || null,
+      cancelled: !!live.cancelled
+    };
+  }
+  return {
+    project_id: projectId,
+    running: false,
+    phase: null,
+    stages_complete: 0,
+    stages_total: STAGES.length,
+    stages_failed: 0,
+    percent: 0,
+    awaiting_gate: null,
+    started_at: null,
+    cancelled: false
+  };
+}
+
 module.exports = {
   startSdkAutopilot,
   isRunning,
+  getJobSnapshot,
+  STAGES,
   _internals: { buildSceneLua, safeParseJson, runBrainstorm, resolveConceptGate, TONE_SEEDS }
 };

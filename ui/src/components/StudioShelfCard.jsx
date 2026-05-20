@@ -104,6 +104,7 @@ function FallbackHero({ project }) {
 export default function StudioShelfCard({ project }) {
   const [meta, setMeta] = useState(null);
   const [heroError, setHeroError] = useState(false);
+  const [autopilot, setAutopilot] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -112,6 +113,25 @@ export default function StudioShelfCard({ project }) {
       .catch(() => { if (alive) setMeta({}); });
     return () => { alive = false; };
   }, [project.id]);
+
+  // Poll autopilot status every 2s while the card is visible so the build
+  // progress bar stays live. Stops polling when not running + nothing
+  // awaiting gate (saves request load on idle dashboards).
+  useEffect(() => {
+    if (project.game_type !== 'sdk') return undefined;
+    let alive = true;
+    let timer = null;
+    const tick = async () => {
+      try {
+        const r = await api.get(`/api/projects/${project.id}/sdk/autopilot/status`);
+        if (!alive) return;
+        setAutopilot(r);
+      } catch (_e) { /* ignore */ }
+    };
+    tick();
+    timer = setInterval(tick, 2000);
+    return () => { alive = false; if (timer) clearInterval(timer); };
+  }, [project.id, project.game_type]);
 
   const href = project.game_type === 'pulp'
     ? `/project/${project.id}/edit`
@@ -203,6 +223,50 @@ export default function StudioShelfCard({ project }) {
           </p>
         ) : (
           <p className="text-xs text-ink-600 italic">no synopsis yet</p>
+        )}
+
+        {/* Autopilot live progress — visible whenever a job is running OR
+            awaiting a gate (user needs to act). Hides on idle projects. */}
+        {autopilot && (autopilot.running || autopilot.awaiting_gate) && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[10px] font-mono">
+              <span className={
+                'inline-block w-1.5 h-1.5 rounded-full ' +
+                (autopilot.awaiting_gate ? 'bg-amber-300' : 'bg-accent animate-pulse')
+              } />
+              <span className="text-ink-200">
+                {autopilot.awaiting_gate
+                  ? `awaiting ${autopilot.awaiting_gate}`
+                  : (autopilot.phase || 'starting...')}
+              </span>
+              <span className="text-ink-500">
+                {autopilot.stages_complete}/{autopilot.stages_total}
+              </span>
+              <div className="flex-1" />
+              <span className="text-ink-300">{autopilot.percent}%</span>
+            </div>
+            <div className="w-full h-1 bg-ink-800 rounded overflow-hidden">
+              <div
+                className={
+                  'h-full transition-all duration-500 ' +
+                  (autopilot.awaiting_gate ? 'bg-amber-300' : 'bg-accent')
+                }
+                style={{ width: autopilot.percent + '%' }}
+              />
+            </div>
+            {autopilot.awaiting_gate && (
+              <Link
+                to={
+                  autopilot.awaiting_gate === 'concept_pick'
+                    ? `/project/${project.id}/concepts`
+                    : `/project/${project.id}/batches`
+                }
+                className="block text-[10px] text-amber-300 hover:text-amber-200"
+              >
+                → resolve gate
+              </Link>
+            )}
+          </div>
         )}
 
         {/* stat pills row — scenes · characters · vX.Y.Z · build size */}
