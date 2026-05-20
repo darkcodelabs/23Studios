@@ -80,16 +80,34 @@ async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectCont
     messages: [{ role: 'user', content: (prompt || '') + sizeLine }],
     modalities: ['image', 'text']
   };
-  const res = await fetch(`${BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://127.0.0.1',
-      'X-Title': '23 Studios'
-    },
-    body: JSON.stringify(payload)
-  });
+  // 120s hard timeout — OpenRouter image gen occasionally hangs forever
+  // on premium models. Without AbortController the autopilot wedges.
+  const FETCH_TIMEOUT_MS = Number(process.env.OPENROUTER_TIMEOUT_MS) || 120000;
+  const ac = new AbortController();
+  const to = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://127.0.0.1',
+        'X-Title': '23 Studios'
+      },
+      body: JSON.stringify(payload),
+      signal: ac.signal
+    });
+  } catch (e) {
+    if (e && e.name === 'AbortError') {
+      const err = new Error(`openrouter_timeout after ${FETCH_TIMEOUT_MS}ms`);
+      err.code = 'openrouter_timeout';
+      throw err;
+    }
+    throw e;
+  } finally {
+    clearTimeout(to);
+  }
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
     const e = new Error(`openrouter_${res.status}: ${txt.slice(0, 200)}`);
@@ -146,10 +164,25 @@ const DOCS_PATH = path.join(__dirname, '..', 'data', 'pulpscript_docs.md');
 
 // Verified against `GET /api/v1/models` on 2026-05-17. Image-output capable
 // models exposed on OpenRouter: openai/gpt-5-image, openai/gpt-5-image-mini,
-// openai/gpt-5.4-image-2, google/gemini-2.5-flash-image,
+// openai/gpt-5-image, google/gemini-2.5-flash-image,
 // google/gemini-3.1-flash-image-preview, google/gemini-3-pro-image-preview.
 // Default to the cheapest reliable OpenAI image model; callers can override.
-const DEFAULT_IMAGE_MODEL = 'openai/gpt-5-image-mini';
+// Default image model — top-tier on OpenRouter as of 2026-05.
+// openai/gpt-5-image has the best silhouette + dither preservation
+// + crispest 1-bit conversion in side-by-sides. Override with env
+// PULP_AI_IMAGE_MODEL=... (other premium picks: openai/gpt-5-image,
+// google/gemini-3-pro-image-preview).
+const DEFAULT_IMAGE_MODEL = process.env.PULP_AI_IMAGE_MODEL
+  || 'openai/gpt-5-image';
+
+// Best-of-N candidate generation. When > 1, generateScene/generatePortrait
+// fan out to N parallel models and pick the best output per the validator
+// (lowest placeholder score, highest contrast, most retained detail).
+// Set via PULP_AI_BEST_OF (default 1 — single generation).
+const BEST_OF_N = Math.max(1, Math.min(5, Number(process.env.PULP_AI_BEST_OF) || 1));
+const BEST_OF_MODELS = (process.env.PULP_AI_BEST_OF_MODELS
+  || 'openai/gpt-5-image,openai/gpt-5-image,google/gemini-3-pro-image-preview'
+).split(',').map((s) => s.trim()).filter(Boolean);
 
 const PROMPT_MAX = 4000;
 const PROJECT_STATE_MAX = 4 * 1024;
