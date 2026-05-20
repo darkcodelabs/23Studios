@@ -1,17 +1,20 @@
 'use strict';
 
-// bible.js — modular story bible section CRUD + compile.
+// bible.js — modular story bible section CRUD + compile + diff.
 //
 // GET    /api/projects/:id/bible              -> { sections: [...], compiled_bytes }
 // GET    /api/projects/:id/bible/:filename    -> raw markdown
 // POST   /api/projects/:id/bible/:filename    -> { content } upsert
 // DELETE /api/projects/:id/bible/:filename
 // POST   /api/projects/:id/bible/compile      -> concat into story_bible.md
+// POST   /api/projects/:id/bible/snapshot     -> take snapshot of current bible state
+// GET    /api/projects/:id/bible/diff         -> diff current vs latest snapshot
 
 const express = require('express');
 const fs = require('fs');
 const projects = require('../services/projects');
 const bible = require('../services/sdk_bible');
+const bibleDiff = require('../services/sdk_bible_diff');
 
 const router = express.Router();
 
@@ -75,6 +78,23 @@ router.post('/:id/bible/compile', async (req, res) => {
   try {
     const p = await loadProject(req, res); if (!p) return;
     const r = await bible.compile(p.local_path);
+    res.json(r);
+  } catch (e) { sendErr(res, e); }
+});
+
+router.post('/:id/bible/snapshot', async (req, res) => {
+  try {
+    const p = await loadProject(req, res); if (!p) return;
+    const r = await bibleDiff.snapshot(p.local_path);
+    res.json(r);
+  } catch (e) { sendErr(res, e); }
+});
+
+router.get('/:id/bible/diff', async (req, res) => {
+  try {
+    const p = await loadProject(req, res); if (!p) return;
+    const vs = req.query.vs || 'latest';
+    const r = await bibleDiff.diff(p.local_path, vs);
     res.json(r);
   } catch (e) { sendErr(res, e); }
 });
