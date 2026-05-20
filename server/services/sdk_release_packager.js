@@ -638,17 +638,71 @@ async function publishToGitHub(projectId, releaseDir, tag) {
 
   // 3. Create if missing
   const readmePath = path.join(releaseDir, 'README.md');
-  if (!releaseExists) {
+  async function tryCreateRelease() {
     const args = ['release', 'create', tag, '--repo', slug, '--title', tag];
-    if (fs.existsSync(readmePath)) {
-      args.push('--notes-file', readmePath);
-    } else {
-      args.push('--notes', 'Auto-packed release.');
+    if (fs.existsSync(readmePath)) args.push('--notes-file', readmePath);
+    else args.push('--notes', 'Auto-packed release.');
+    await ghRun(args, { timeoutMs: 60000 });
+  }
+  // Helper: bootstrap an empty GitHub repo with an initial commit from
+  // the project's local_path so release creation can proceed. GitHub
+  // rejects release creation on empty repos with HTTP 422.
+  async function bootstrapEmptyRepo() {
+    if (!project.local_path) throw new Error('no_local_path');
+    function gitRun(args, opts = {}) {
+      return new Promise((resolve, reject) => {
+        const proc = spawn('git', ['-C', project.local_path, ...args],
+          { stdio: ['ignore', 'pipe', 'pipe'] });
+        let out = '', err = '';
+        proc.stdout.on('data', (b) => { out += b; });
+        proc.stderr.on('data', (b) => { err += b; });
+        const t = setTimeout(() => { proc.kill('SIGTERM'); reject(new Error('git timeout')); },
+          opts.timeoutMs || 60000);
+        proc.on('close', (code) => {
+          clearTimeout(t);
+          if (code !== 0) {
+            const e = new Error('git ' + code + ': ' + err.slice(0, 200));
+            e.stderr = err; return reject(e);
+          }
+          resolve({ stdout: out, stderr: err });
+        });
+        proc.on('error', reject);
+      });
     }
+    // Ensure default branch exists + has at least one commit
+    try { await gitRun(['rev-parse', '--verify', 'HEAD'], { timeoutMs: 5000 }); }
+    catch (_e) {
+      // No commits yet — make an empty initial
+      await gitRun(['checkout', '-B', 'main']);
+      await gitRun(['commit', '--allow-empty', '-m', 'init: bootstrap for release publish']);
+    }
+    // Ensure 'origin' points at the GitHub repo
+    try { await gitRun(['remote', 'get-url', 'origin'], { timeoutMs: 5000 }); }
+    catch (_e) {
+      await gitRun(['remote', 'add', 'origin', `https://github.com/${slug}.git`]);
+    }
+    // Make sure current branch is main (or master) then push
+    const cur = (await gitRun(['symbolic-ref', '--short', 'HEAD']).catch(() => ({ stdout: 'main\n' }))).stdout.trim() || 'main';
+    await gitRun(['push', '-u', 'origin', cur], { timeoutMs: 90000 });
+  }
+
+  if (!releaseExists) {
     try {
-      await ghRun(args, { timeoutMs: 60000 });
+      await tryCreateRelease();
     } catch (e) {
-      return { ok: false, error: 'release_create_failed', detail: String(e.message).slice(0, 200) };
+      if (/Repository is empty/i.test(e.stderr || e.message)) {
+        // Bootstrap + retry once
+        try {
+          await bootstrapEmptyRepo();
+          await tryCreateRelease();
+        } catch (e2) {
+          return { ok: false, error: 'release_create_failed_after_bootstrap',
+            detail: String(e2.message || e2).slice(0, 300),
+            hint: 'gh auth may lack push permission to ' + slug };
+        }
+      } else {
+        return { ok: false, error: 'release_create_failed', detail: String(e.message).slice(0, 200) };
+      }
     }
   }
 
