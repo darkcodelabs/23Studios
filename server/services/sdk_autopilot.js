@@ -838,16 +838,46 @@ async function wireSourceTree(localPath, sdk, ev) {
   const launcherCopied = await copyDir('sdk_data/launcher',   'launcher',         /\.(png|gif|txt)$/i);
   const sfxCopied    = await copyDir('sdk_data/sfx_baseline', 'sounds/sfx',       /\.(wav|mp3|aiff?)$/i);
 
-  // Music — only copy wavs whose stem matches a scene id (sdk_export bloat-guard policy)
+  // Music — only copy wavs whose stem matches a scene id, COMPRESS via ffmpeg
+  // to mono 96kbps MP3 (~85% size drop). Without this the .pdx balloons to
+  // 80MB+ from tracker WAVs (one 21MB drake_basement.wav alone). Mirrors the
+  // bloat-guard policy in sdk_export.js.
   const musicSrc = path.join(localPath, 'sdk_data', 'scene_music');
   let musicCopied = 0;
   if (fs.existsSync(musicSrc)) {
     const referenced = new Set(sceneIds);
+    const { spawn } = require('child_process');
+    const which = (bin) => {
+      try { return require('child_process').execFileSync('which', [bin], { encoding: 'utf8' }).trim() || null; }
+      catch (_e) { return null; }
+    };
+    const ffmpegBin = which('ffmpeg');
     for (const f of fs.readdirSync(musicSrc)) {
       if (!/\.wav$/i.test(f)) continue;
       const stem = f.replace(/\.wav$/i, '');
       if (!referenced.has(stem)) continue;
-      await fsp.copyFile(path.join(musicSrc, f), path.join(srcDir, 'sounds', 'music', f));
+      const src = path.join(musicSrc, f);
+      // Skip if source larger than 1MB AND ffmpeg available — compress to MP3
+      const stat = fs.statSync(src);
+      if (ffmpegBin && stat.size > 1024 * 1024) {
+        const destMp3 = path.join(srcDir, 'sounds', 'music', stem + '.mp3');
+        try {
+          await new Promise((resolve, reject) => {
+            const ff = spawn(ffmpegBin, ['-y', '-loglevel', 'error',
+              '-i', src, '-ac', '1', '-ar', '44100', '-b:a', '96k', destMp3], { shell: false });
+            let err = '';
+            ff.stderr.on('data', (b) => { err += b.toString(); });
+            ff.on('close', (code) => code === 0 ? resolve()
+              : reject(new Error('ffmpeg ' + code + ': ' + err.slice(0, 200))));
+          });
+          musicCopied++;
+          continue;
+        } catch (e) {
+          ev('log', { text: `music compress ${stem} failed (${e.message}); falling back to wav copy` });
+        }
+      }
+      // Small file OR no ffmpeg — copy wav as-is
+      await fsp.copyFile(src, path.join(srcDir, 'sounds', 'music', f));
       musicCopied++;
     }
   }
