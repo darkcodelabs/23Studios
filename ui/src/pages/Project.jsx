@@ -161,7 +161,8 @@ function SdkBuildBar({ project }) {
   }
 
   function doSim() {
-    window.location.href = `/project/${project.id}/sdk/play`;
+    const base = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+    window.location.href = `${base}/project/${project.id}/sdk/play`;
   }
 
   const ready = build && build.has_build && build.pdx_exists;
@@ -180,10 +181,10 @@ function SdkBuildBar({ project }) {
         <span className={`pill-dot ${stateDot}`} />
         <span className="font-mono">{stateLabel}</span>
       </span>
-      <a href={`/project/${project.id}/sdk/edit`} className="btn text-xs"
+      <Link to={`/project/${project.id}/sdk/edit`} className="btn text-xs"
          title="edit scenes, characters, prompts; regenerate assets">
         <Pencil className="w-3 h-3" /> edit
-      </a>
+      </Link>
       <button type="button" className="btn text-xs" onClick={doExport} disabled={building}>
         {building ? <Loader2 className="w-3 h-3 animate-spin" /> : <Hammer className="w-3 h-3" />}
         {building ? 'building' : 'build .pdx'}
@@ -220,8 +221,8 @@ function ReviewBadge({ projectId }) {
   const hasPending = typeof pending === 'number' && pending > 0;
 
   return (
-    <a
-      href={`/project/${projectId}/review`}
+    <Link
+      to={`/project/${projectId}/review`}
       className={`btn text-xs relative ${hasPending ? 'text-yellow-300' : ''}`}
       title={`Review board${hasPending ? ` — ${pending} pending` : ''}`}
     >
@@ -232,7 +233,7 @@ function ReviewBadge({ projectId }) {
           {pending > 99 ? '99+' : pending}
         </span>
       )}
-    </a>
+    </Link>
   );
 }
 

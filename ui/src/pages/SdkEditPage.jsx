@@ -161,7 +161,10 @@ export default function SdkEditPage() {
           <h2 className="text-sm text-ink-200">Edit SDK Project</h2>
           <div className="flex-1" />
           <BuildBar build={build} ready={ready} building={building}
-                    onBuild={doBuild} onPlay={() => { window.location.href = `/project/${id}/sdk/play`; }} />
+                    onBuild={doBuild} onPlay={() => {
+                      const base = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+                      window.location.href = `${base}/project/${id}/sdk/play`;
+                    }} />
           <button type="button" onClick={save}
                   className="btn-primary text-xs disabled:opacity-50"
                   disabled={!dirty || saving}>
