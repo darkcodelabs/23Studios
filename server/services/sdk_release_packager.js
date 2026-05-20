@@ -638,11 +638,20 @@ async function publishToGitHub(projectId, releaseDir, tag) {
 
   // 3. Create if missing
   const readmePath = path.join(releaseDir, 'README.md');
-  async function tryCreateRelease() {
+  async function tryCreateRelease(targetBranch) {
     const args = ['release', 'create', tag, '--repo', slug, '--title', tag];
+    if (targetBranch) args.push('--target', targetBranch);
     if (fs.existsSync(readmePath)) args.push('--notes-file', readmePath);
     else args.push('--notes', 'Auto-packed release.');
     await ghRun(args, { timeoutMs: 60000 });
+  }
+  // Detect the GitHub repo default branch so --target points right.
+  async function defaultBranch() {
+    try {
+      const r = await ghRun(['repo', 'view', slug, '--json', 'defaultBranchRef',
+        '--jq', '.defaultBranchRef.name'], { timeoutMs: 10000 });
+      return (r.stdout || '').trim() || 'main';
+    } catch (_e) { return 'main'; }
   }
   // Helper: bootstrap an empty GitHub repo with an initial commit from
   // the project's local_path so release creation can proceed. GitHub
@@ -690,11 +699,14 @@ async function publishToGitHub(projectId, releaseDir, tag) {
     try {
       await tryCreateRelease();
     } catch (e) {
-      if (/Repository is empty/i.test(e.stderr || e.message)) {
-        // Bootstrap + retry once
+      const isEmpty = /Repository is empty/i.test(e.stderr || e.message);
+      const isInvalidTarget = /target_commitish is invalid|tag_name is not a valid tag/i.test(e.stderr || e.message);
+      if (isEmpty || isInvalidTarget) {
+        // Bootstrap (or re-bootstrap), then retry with explicit --target
         try {
-          await bootstrapEmptyRepo();
-          await tryCreateRelease();
+          if (isEmpty) await bootstrapEmptyRepo();
+          const branch = await defaultBranch();
+          await tryCreateRelease(branch);
         } catch (e2) {
           return { ok: false, error: 'release_create_failed_after_bootstrap',
             detail: String(e2.message || e2).slice(0, 300),
