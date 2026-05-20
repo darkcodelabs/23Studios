@@ -15,6 +15,7 @@ const playdateSpec = require('./playdate_spec');
 const playdateValidator = require('./playdate_validator');
 const driftDetect = require('./drift_detect');
 const ditherMod = require('./dither');
+const openrouterSpend = require('./openrouter_spend');
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -24,7 +25,8 @@ const API_KEY = process.env.OPENROUTER_API_KEY || '';
 // proxy doesn't reliably pass DALL-E 3 through; the chat-completions path
 // returns images in message.images[0].image_url.url as base64 data URLs.
 // The right OpenAI model on OpenRouter for this is `openai/gpt-image-1`.
-async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectContext }) {
+async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectContext,
+                                            projectId, sceneId, stage, kind }) {
   if (!API_KEY) {
     const e = new Error('openrouter_unavailable');
     e.code = 'openrouter_unavailable';
@@ -75,7 +77,7 @@ async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectCont
   const sizeLine = sizeHint ? `\n\nRender at ${sizeHint}.` : '';
   const payload = {
     model,
-    messages: [{ role: 'user', content: groundedPrompt + sizeLine }],
+    messages: [{ role: 'user', content: (prompt || '') + sizeLine }],
     modalities: ['image', 'text']
   };
   const res = await fetch(`${BASE_URL}/chat/completions`, {

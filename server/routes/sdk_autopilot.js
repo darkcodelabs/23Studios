@@ -18,6 +18,13 @@ function sendErr(res, e, fallback = 500) {
   res.status(status).json({ error: e && e.code || 'server_error', detail: e && e.message });
 }
 
+// GET /api/projects/:id/sdk/autopilot/status -> live job snapshot for cards
+router.get('/:id/sdk/autopilot/status', (req, res) => {
+  try {
+    res.json(sdkAutopilot.getJobSnapshot(req.params.id));
+  } catch (e) { sendErr(res, e); }
+});
+
 // POST /api/projects/:id/sdk/autopilot  body: { pitch }  -> SSE stream
 router.post('/:id/sdk/autopilot', (req, res) => {
   const projectId = req.params.id;

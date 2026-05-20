@@ -61,7 +61,7 @@ export default function Dashboard() {
         />
 
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="max-w-6xl mx-auto w-full px-6 py-8 space-y-8">
+          <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-8">
             <MakeAGameCard
               onCreated={(p) => {
                 navigate(`/project/${p.id}/edit?tab=workflow`);
@@ -93,7 +93,7 @@ export default function Dashboard() {
                   No projects yet. Type a pitch above or click <span className="text-ink-200">new project</span>.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
                   {projects.map((p) => <StudioShelfCard key={p.id} project={p} />)}
                 </div>
               )}

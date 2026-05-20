@@ -85,6 +85,13 @@ export default function Project() {
             </div>
           </div>
 
+          {/* Hero card + stage tab strip — gives the project page a single
+              navigable map across all autopilot surfaces. SDK projects only;
+              Pulp keeps the legacy tabs. */}
+          {project && project.game_type === 'sdk' ? (
+            <ProjectHero project={project} />
+          ) : null}
+
           <main className="flex-1 min-h-0 overflow-hidden">
             {!project ? (
               <div className="p-6 text-ink-400 text-sm">loading…</div>
@@ -226,5 +233,138 @@ function ReviewBadge({ projectId }) {
         </span>
       )}
     </a>
+  );
+}
+
+// Hero card + horizontal stage navigator. Lets the user jump between
+// every autopilot surface without going back to the dashboard. The card
+// reuses StudioShelfCard data for visual consistency.
+const STAGE_TABS = [
+  { path: '',                  label: 'Files / Chat' },
+  { path: '/concepts',         label: 'Concepts' },
+  { path: '/bible',            label: 'Bible' },
+  { path: '/batches',          label: 'Asset Batches' },
+  { path: '/storyboard',       label: 'Storyboard' },
+  { path: '/milestones',       label: 'Milestones' },
+  { path: '/design-validate',  label: 'Design Validate' },
+  { path: '/perf',             label: 'Perf Audit' },
+  { path: '/qa-critic',        label: 'QA Critic' },
+  { path: '/architecture',     label: 'Architecture' },
+  { path: '/review',           label: 'Review Board' },
+  { path: '/ship',             label: 'Ship' },
+  { path: '/releases',         label: 'Releases' },
+  { path: '/sdk/play',         label: 'Simulator' },
+  { path: '/mvp',              label: 'MVP Lock' }
+];
+
+function ProjectHero({ project }) {
+  const [autopilot, setAutopilot] = useState(null);
+  const [meta, setMeta] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.get(`/api/projects/${project.id}/card_meta`)
+      .then((r) => { if (alive) setMeta(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [project.id]);
+
+  useEffect(() => {
+    let alive = true;
+    const tick = async () => {
+      try {
+        const r = await api.get(`/api/projects/${project.id}/sdk/autopilot/status`);
+        if (alive) setAutopilot(r);
+      } catch (_e) { /* */ }
+    };
+    tick();
+    const t = setInterval(tick, 2500);
+    return () => { alive = false; clearInterval(t); };
+  }, [project.id]);
+
+  const base = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+  const hereSuffix = (typeof window !== 'undefined') ? window.location.pathname.replace(base, '').replace(`/project/${project.id}`, '') : '';
+
+  return (
+    <div className="bg-ink-900 border-b border-ink-800">
+      <div className="px-4 py-3 flex items-start gap-4">
+        {/* Hero thumbnail */}
+        <div className="w-28 h-20 flex-shrink-0 rounded ring-1 ring-ink-700 overflow-hidden bg-ink-800">
+          {meta && meta.title_image_url ? (
+            // eslint-disable-next-line jsx-a11y/img-redundant-alt
+            <img
+              src={base + meta.title_image_url}
+              alt="title"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-ink-600 text-[10px]">
+              no title art
+            </div>
+          )}
+        </div>
+        {/* Title + bylines + live autopilot pill */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-base text-ink-100 font-medium truncate">
+              {project.name}
+            </h1>
+            {meta && meta.version && (
+              <span className="text-[10px] font-mono text-ink-500">v{meta.version}</span>
+            )}
+            <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${
+              project.status === 'active' ? 'bg-accent/15 text-accent' :
+              project.status === 'paused' ? 'bg-amber-500/15 text-amber-300' :
+              'bg-ink-700 text-ink-400'
+            }`}>{project.status || 'active'}</span>
+            {autopilot && (autopilot.running || autopilot.awaiting_gate) && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                autopilot.awaiting_gate ? 'bg-amber-300/15 text-amber-300' : 'bg-accent/15 text-accent'
+              }`}>
+                {autopilot.awaiting_gate
+                  ? `gate: ${autopilot.awaiting_gate}`
+                  : `${autopilot.phase || 'starting'} · ${autopilot.percent}%`}
+              </span>
+            )}
+          </div>
+          {project.description && (
+            <p className="text-xs text-ink-400 mt-1 line-clamp-2">{project.description}</p>
+          )}
+          {autopilot && (autopilot.running || autopilot.awaiting_gate) && (
+            <div className="mt-2 w-full max-w-md h-1 bg-ink-800 rounded overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  autopilot.awaiting_gate ? 'bg-amber-300' : 'bg-accent'
+                }`}
+                style={{ width: autopilot.percent + '%' }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Stage nav strip — horizontal scroll on narrow viewports */}
+      <nav className="border-t border-ink-800 overflow-x-auto">
+        <ul className="flex items-stretch text-[11px] font-mono whitespace-nowrap px-2">
+          {STAGE_TABS.map((t) => {
+            const isActive = hereSuffix === t.path
+              || (t.path === '' && (hereSuffix === '' || hereSuffix === '/files'));
+            return (
+              <li key={t.path}>
+                <Link
+                  to={`/project/${project.id}${t.path}`}
+                  className={
+                    'inline-flex items-center px-3 py-2 border-b-2 transition-colors ' +
+                    (isActive
+                      ? 'border-accent text-accent'
+                      : 'border-transparent text-ink-400 hover:text-ink-100 hover:bg-ink-800/40')
+                  }
+                >
+                  {t.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
   );
 }
