@@ -21,7 +21,8 @@ const {
 const router = express.Router();
 
 const ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,63}$/;
-const BATCH_RE = /^b[1-3]$/;
+// Accept scene batches (b1/b2/b3) and portrait batches (pb1/pb2/pb3).
+const BATCH_RE = /^p?b[1-3]$/;
 
 function sendErr(res, e, fallback = 500) {
   const status = (e && e.status) ? e.status : fallback;

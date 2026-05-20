@@ -316,6 +316,23 @@ async function runBatch(projectId, sdkRoot, kind, batch, opts = {}) {
  */
 async function gateForBatch(projectId, sdkRoot, batch_id, manifestInfo = {}) {
   await ensureBatchDirs(sdkRoot);
+  const gatePath = path.join(gatesDir(sdkRoot), `batch_${batch_id}.json`);
+
+  // Preserve prior approval state across reruns. Without this guard a
+  // second autopilot pass would clobber gate.chosen='approved' back to
+  // null, and the batch would gate forever even though the human had
+  // already signed off.
+  let prior = null;
+  try {
+    if (fs.existsSync(gatePath)) prior = JSON.parse(fs.readFileSync(gatePath, 'utf8'));
+  } catch (_e) { /* ignore */ }
+  if (prior && (prior.chosen === 'approved' || prior.status === 'approved')) {
+    // Refresh manifest pointer in case it moved, leave approval intact.
+    prior.manifest_path = manifestInfo.manifest_path || prior.manifest_path || null;
+    prior.contact_sheet_path = manifestInfo.contact_sheet_path || prior.contact_sheet_path || null;
+    await fsp.writeFile(gatePath, JSON.stringify(prior, null, 2));
+    return prior;
+  }
 
   const gate = {
     status: 'awaiting_review',
@@ -328,7 +345,6 @@ async function gateForBatch(projectId, sdkRoot, batch_id, manifestInfo = {}) {
     revise_notes: null
   };
 
-  const gatePath = path.join(gatesDir(sdkRoot), `batch_${batch_id}.json`);
   await fsp.writeFile(gatePath, JSON.stringify(gate, null, 2));
   return gate;
 }
