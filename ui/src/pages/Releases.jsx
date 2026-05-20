@@ -285,7 +285,27 @@ export default function Releases() {
               </div>
             )}
 
-            {!loading && !err && releases.length === 0 && (
+            {!loading && !err && data?.warning && (
+              <div className="flex items-start gap-2 px-3 py-3 border-l-2 border-amber-300/60 bg-amber-300/5 text-amber-200 text-xs">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="font-mono">{data.warning}</div>
+                  {data.detail && <div className="text-amber-300/80 mt-0.5">{data.detail}</div>}
+                  {data.warning === 'repo_not_on_github' && data.repo && (
+                    <a
+                      href={`https://github.com/new`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 px-2 py-1 rounded bg-amber-300/15 text-amber-200 hover:bg-amber-300/25"
+                    >
+                      Create {data.repo} on GitHub →
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!loading && !err && !data?.warning && releases.length === 0 && (
               <div className="px-3 py-6 text-center text-ink-500 text-sm">
                 No GitHub releases found.
                 {!data?.repo && (
