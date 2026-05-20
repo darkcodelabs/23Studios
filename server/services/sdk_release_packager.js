@@ -46,7 +46,22 @@ function parsePdxinfo(raw) {
 }
 
 // Find the latest completed pdx path for a project (same logic as sdk_preview).
-function latestPdxPath(projectId) {
+function latestPdxPath(projectId, localPath) {
+  // Prefer the milestone release_candidate pdx when present — it's the
+  // freshest pdx after milestone build_all + has all wired assets.
+  // Fall back to sdk_export job history.
+  if (localPath) {
+    try {
+      const rcStatus = path.join(localPath, 'sdk_data', 'milestones',
+                                 'release_candidate', 'status.json');
+      if (fs.existsSync(rcStatus)) {
+        const s = JSON.parse(fs.readFileSync(rcStatus, 'utf8'));
+        if (s && s.boots && s.pdx_path && fs.existsSync(s.pdx_path)) {
+          return s.pdx_path;
+        }
+      }
+    } catch (_e) { /* fall through */ }
+  }
   const jobs = sdkExport.getJobsByProject(projectId);
   const done = jobs
     .filter((j) => j.status === 'done')
@@ -265,7 +280,7 @@ async function pack(projectId, opts = {}) {
   // Sim boot-probe on the latest pdx before packaging. Mirrors the
   // milestone smoketest. Skips gracefully when sim/Xvfb absent on host.
   if (!opts.skipSmoketest && process.env.SKIP_SIM_SMOKETEST !== '1') {
-    const pdxForProbe = latestPdxPath(projectId);
+    const pdxForProbe = latestPdxPath(projectId, project && project.local_path);
     if (pdxForProbe) try {
       const smoketestSvc = require('./sdk_smoketest');
       const probe = await smoketestSvc.probe(pdxForProbe, {
@@ -342,7 +357,7 @@ async function pack(projectId, opts = {}) {
   }
 
   // --- 3. Latest .pdx ---
-  const pdxSrc = latestPdxPath(projectId);
+  const pdxSrc = latestPdxPath(projectId, project.local_path);
   // Bake build timestamp into the zip filename so back-to-back packs of
   // the same tag don't shadow each other in /Downloads or in the GitHub
   // Release assets list.
