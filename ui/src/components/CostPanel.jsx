@@ -205,7 +205,8 @@ export default function CostPanel() {
             </div>
 
             <a
-              href={`/api/projects/${encodeURIComponent(projectId)}/cost/export.csv`}
+              href={((typeof window !== 'undefined' && window.__APP_BASE__) || '') +
+                `/api/projects/${encodeURIComponent(projectId)}/cost/export.csv`}
               className="flex items-center gap-1 text-ink-400 hover:text-ink-200"
             >
               <Download size={12} /> export csv

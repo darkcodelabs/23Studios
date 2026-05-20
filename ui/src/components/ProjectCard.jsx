@@ -90,7 +90,8 @@ function SdkActions({ project }) {
   }, [project.id]);
 
   function launchSim() {
-    window.location.href = `/project/${project.id}/sdk/play`;
+    const base = (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+    window.location.href = `${base}/project/${project.id}/sdk/play`;
   }
 
   if (err) return null;
