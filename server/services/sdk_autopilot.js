@@ -915,6 +915,8 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
         return;
       }
       const sdkRoot = ensureDirs(project.local_path);
+      // Stash localPath on the job so getJobSnapshot can verify gates on disk.
+      job.localPath = project.local_path;
       const sdk = await readSdk(project.local_path);
       const storyBible = readStoryBible(project.local_path);
       if (storyBible) {
@@ -1070,10 +1072,39 @@ const STAGES = [
 // active job. Reads from in-memory _jobs first, falls back to persisted
 // data (project.json + concept gate) so cards still show progress after
 // a server restart.
+//
+// IMPORTANT: awaiting_gate is the LIVE state, not the cached one. We
+// always verify against the gate file on disk so that a user clicking
+// approve / choose immediately clears the dashboard pill — even though
+// the autopilot orchestrator that set awaitingGate has long since
+// returned and won't see the approval until next run.
+function isGateAwaiting(localPath, gateName) {
+  if (!localPath || !gateName) return false;
+  try {
+    const fp = require('path').join(localPath, 'sdk_data', 'gates', gateName + '.json');
+    if (!fs.existsSync(fp)) return false;
+    const g = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    // Concept gate uses status='locked' once chosen; batch gates use
+    // chosen='approved' OR status='approved'. Any non-awaiting state
+    // means the human resolved it.
+    if (g.status === 'locked' || g.status === 'approved') return false;
+    if (g.chosen === 'approved' || g.chosen) return false;
+    return true;
+  } catch (_e) { return false; }
+}
+
 function getJobSnapshot(projectId) {
   const live = _jobs.get(projectId);
+  let localPath = null;
+  if (live && live.localPath) localPath = live.localPath;
   if (live) {
     const stagesComplete = (live.summary && live.summary.stages_complete) || 0;
+    // Check disk before trusting cached awaitingGate.
+    let awaitingGate = live.awaitingGate || null;
+    if (awaitingGate && !isGateAwaiting(localPath, awaitingGate)) {
+      awaitingGate = null;
+      live.awaitingGate = null; // cache the cleared state
+    }
     return {
       project_id: projectId,
       running: !!live.running,
@@ -1082,7 +1113,7 @@ function getJobSnapshot(projectId) {
       stages_total: STAGES.length,
       stages_failed: (live.summary && live.summary.stages_failed) || 0,
       percent: Math.round((stagesComplete / STAGES.length) * 100),
-      awaiting_gate: live.awaitingGate || null,
+      awaiting_gate: awaitingGate,
       started_at: live.started_at || null,
       cancelled: !!live.cancelled
     };
