@@ -47,6 +47,13 @@ function syncReviewBoard(projectId, sdkRoot) {
   sdkReviewBoard.sync(projectId, sdkRoot).catch((_e) => { /* non-fatal */ });
 }
 
+// Fire-and-forget bible snapshot after each autopilot stage. Gives the diff
+// service a baseline to compare against so incremental regen knows what changed.
+const bibleDiff = require('./sdk_bible_diff');
+function snapshotBible(localPath) {
+  bibleDiff.snapshot(localPath).catch((_e) => { /* non-fatal */ });
+}
+
 function ensureDirs(localPath) {
   const root = path.join(localPath, SDK_DATA_REL);
   for (const sub of ['', 'scenes', 'characters', 'sfx_baseline', 'scene_music', 'concepts', 'gates']) {
@@ -974,6 +981,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
       ev('log', { text: 'story: ' + sdk.scenes.length + ' scenes; startup=' + sdk.startup_scene });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'characters' });
       const chars = await runCharacters({ pitch, story, claudeCtx, storyBible, intake });
@@ -982,6 +990,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
       ev('log', { text: 'characters: ' + sdk.characters.length });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'scene_bursts' });
       await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
@@ -989,6 +998,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
                              locked, skipBatchGates: job.skipBatchGates });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'portrait_bursts' });
       await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters,
@@ -997,6 +1007,7 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
                                  skipBatchGates: job.skipBatchGates });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'scene_lua' });
       await runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
@@ -1004,24 +1015,28 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false }
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'sfx' });
       await runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
                               bibleVars, emit: ev });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'music' });
       await runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
                              bibleVars, emit: ev });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
+      snapshotBible(project.local_path);
 
       ev('phase', { id: 'launcher' });
       await runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
                           emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
+      snapshotBible(project.local_path);
 
       syncReviewBoard(projectId, sdkRoot);
       ev('done', { summary: job.summary });

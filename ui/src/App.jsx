@@ -114,6 +114,7 @@ import AssetBatches from './pages/AssetBatches.jsx';
 import PerfAudit from './pages/PerfAudit.jsx';
 import QaCritic from './pages/QaCritic.jsx';
 import Architecture from './pages/Architecture.jsx';
+import Bible from './pages/Bible.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -211,6 +212,7 @@ export default function App() {
         <Route path="/project/:id/perf" element={<RequireAuth><PerfAudit /></RequireAuth>} />
         <Route path="/project/:id/qa-critic" element={<RequireAuth><QaCritic /></RequireAuth>} />
         <Route path="/project/:id/architecture" element={<RequireAuth><Architecture /></RequireAuth>} />
+        <Route path="/project/:id/bible" element={<RequireAuth><Bible /></RequireAuth>} />
         <Route path="/project/:id/pulp" element={<RequireAuth><PulpLayout /></RequireAuth>}>
           <Route index element={<Navigate to="tiles" replace />} />
           <Route path="tiles" element={<PulpTiles />} />
