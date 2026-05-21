@@ -89,13 +89,16 @@ router.get('/:id/releases', async (req, res) => {
     const out = [];
     for (const tag of tags) {
       try {
+        // gh release view does NOT accept isLatest — only release list does.
+        // Use the list entry we already have for that bit.
+        const listEntry = list.find((r) => r.tagName === tag);
         const view = await ghJson(['release', 'view', tag, '--repo', slug, '--json',
-                                   'tagName,name,publishedAt,isLatest,isPrerelease,assets']);
+                                   'tagName,name,publishedAt,isPrerelease,assets']);
         out.push({
           tag: view.tagName,
           name: view.name || view.tagName,
           published_at: view.publishedAt,
-          is_latest: !!view.isLatest,
+          is_latest: !!(listEntry && listEntry.isLatest),
           is_prerelease: !!view.isPrerelease,
           assets: (view.assets || []).filter((a) => /\.pdx\.zip$|\.pdx$/.test(a.name)).map((a) => ({
             name: a.name,
