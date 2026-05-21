@@ -903,6 +903,14 @@ function buildSceneLuaFromFeatures(scene, featureSet, recipeBody) {
     // Expose exits table for read-only inspection by the editor / debug menu.
     `Scene_${ident}.exits = exits`,
     '',
+    // MANDATORY runtime bootstrap pattern (see CLAUDE.md): every module must
+    // self-bind to _G before return. main.lua resolves scenes via
+    // `_G[scene_id]`, and Playdate's `import` does not surface return values,
+    // so without this binding the current scene is nil and the game renders
+    // a blank screen with no input response.
+    `_G["${ident}"] = Scene_${ident}`,
+    `_G["Scene_${ident}"] = Scene_${ident}`,
+    '',
     `return Scene_${ident}`,
     ''
   ].join('\n');
