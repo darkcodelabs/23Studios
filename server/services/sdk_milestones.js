@@ -417,6 +417,13 @@ async function runMilestone(projectId, milestoneId, opts = {}) {
 
       // Update the persisted status with the auto-pack result.
       await fsp.writeFile(statusFile(localPath, milestoneId), JSON.stringify(status, null, 2));
+
+      // Refresh the review board so the new release row + cleared milestone
+      // failure show up without the user clicking "Sync now". Best-effort.
+      try {
+        const reviewBoard = require('./sdk_review_board');
+        await reviewBoard.sync(projectId, localPath);
+      } catch (_e) { /* non-fatal */ }
     } catch (e) {
       status.auto_pack_error = String(e.message || e).slice(0, 300);
       await fsp.writeFile(statusFile(localPath, milestoneId), JSON.stringify(status, null, 2));

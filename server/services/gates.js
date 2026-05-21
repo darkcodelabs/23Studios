@@ -109,7 +109,11 @@ async function listGates(projectId) {
   const out = [];
   for (const f of files) {
     try {
-      out.push(JSON.parse(await fsp.readFile(path.join(dir, f), 'utf8')));
+      const g = JSON.parse(await fsp.readFile(path.join(dir, f), 'utf8'));
+      // Skip non-gate artifacts that share this directory (e.g. concept_pick.json,
+      // which is a decision record, not a gate — has no `id` field).
+      if (!g || typeof g.id !== 'string' || !g.id) continue;
+      out.push(g);
     } catch (_e) { /* skip malformed */ }
   }
   return out;

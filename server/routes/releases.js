@@ -10,6 +10,14 @@ const express = require('express');
 const { spawn } = require('child_process');
 const projects = require('../services/projects');
 const packager = require('../services/sdk_release_packager');
+const reviewBoard = require('../services/sdk_review_board');
+
+async function syncReviewBoardSafe(projectId) {
+  try {
+    const p = await projects.getProject(projectId);
+    if (p && p.local_path) await reviewBoard.sync(projectId, p.local_path);
+  } catch (_e) { /* non-fatal */ }
+}
 
 const router = express.Router();
 const ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,63}$/;
@@ -129,6 +137,7 @@ router.post('/:id/releases/pack', async (req, res) => {
       force: !!body.force,
       include_screenshots: body.include_screenshots !== false
     });
+    syncReviewBoardSafe(req.params.id);
     res.json(result);
   } catch (e) {
     const status = e.status || 500;
@@ -171,6 +180,7 @@ router.post('/:id/releases/publish', async (req, res) => {
     }
     const r = await packager.publishToGitHub(req.params.id, releaseDir, useTag);
     if (!r.ok) return res.status(409).json(r);
+    syncReviewBoardSafe(req.params.id);
     res.json(r);
   } catch (e) {
     res.status(500).json({ error: 'publish_failed', detail: String(e).slice(0, 200) });
