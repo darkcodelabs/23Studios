@@ -133,7 +133,36 @@ async function pickCharacterCount(base) {
   ).length;
 }
 
+const TAG_RE = /^[a-zA-Z0-9._+-]{1,64}$/;
+
+// Walk <local>/release/<tag>/ for the newest *.pdx.zip across all tag dirs.
+// Returns { tag, name, size, mtimeMs } or null.
+async function findLatestReleasePdx(base) {
+  const releaseRoot = path.join(base, 'release');
+  const tagDirs = await readDirSafe(releaseRoot);
+  let newest = null;
+  for (const td of tagDirs) {
+    if (!td.isDirectory() || !TAG_RE.test(td.name)) continue;
+    const tagDir = path.join(releaseRoot, td.name);
+    const files = await readDirSafe(tagDir);
+    for (const f of files) {
+      if (!f.isFile() || !f.name.toLowerCase().endsWith('.pdx.zip')) continue;
+      try {
+        const s = await fsp.stat(path.join(tagDir, f.name));
+        if (!newest || s.mtimeMs > newest.mtimeMs) {
+          newest = { tag: td.name, name: f.name, size: s.size, mtimeMs: s.mtimeMs };
+        }
+      } catch (_e) { /* skip */ }
+    }
+  }
+  return newest;
+}
+
 async function pickVersion(base) {
+  // Prefer the newest packed release tag (authoritative — pdxinfo lags).
+  const latest = await findLatestReleasePdx(base);
+  if (latest) return latest.tag.replace(/^v/, '');
+  // Fallback to source/pdxinfo for projects that never packed.
   const pdx = path.join(base, 'source', 'pdxinfo');
   try {
     const raw = await fsp.readFile(pdx, 'utf8');
@@ -145,30 +174,35 @@ async function pickVersion(base) {
 }
 
 async function pickLatestBuild(base, projectId) {
-  // Newest *.pdx.zip in <local>/build/. Used for both the "last built" pill
-  // and the in-card download link — points at the dedicated download route
-  // below since /file/raw refuses .pdx.zip (blocked binary).
-  const buildDir = path.join(base, 'build');
-  const ents = await readDirSafe(buildDir);
-  let newest = null;
-  for (const ent of ents) {
-    if (!ent.isFile() || !ent.name.toLowerCase().endsWith('.pdx.zip')) continue;
-    const full = path.join(buildDir, ent.name);
-    try {
-      const s = await fsp.stat(full);
-      if (!newest || s.mtimeMs > newest.mtimeMs) {
-        newest = { name: ent.name, size: s.size, mtimeMs: s.mtimeMs };
-      }
-    } catch (_e) { /* skip */ }
+  // Newest *.pdx.zip across <local>/release/<tag>/ (auto-pack output) —
+  // legacy <local>/build/ is no longer written by the packager.
+  let newest = await findLatestReleasePdx(base);
+  let source = 'release';
+  if (!newest) {
+    // Fallback to legacy build/ dir for any pre-packager projects.
+    const buildDir = path.join(base, 'build');
+    const ents = await readDirSafe(buildDir);
+    for (const ent of ents) {
+      if (!ent.isFile() || !ent.name.toLowerCase().endsWith('.pdx.zip')) continue;
+      try {
+        const s = await fsp.stat(path.join(buildDir, ent.name));
+        if (!newest || s.mtimeMs > newest.mtimeMs) {
+          newest = { tag: null, name: ent.name, size: s.size, mtimeMs: s.mtimeMs };
+          source = 'build';
+        }
+      } catch (_e) { /* skip */ }
+    }
   }
   if (!newest) {
     return { last_build_at: null, last_build_size: null, latest_pdx_zip_url: null };
   }
+  const qs = source === 'release'
+    ? `tag=${encodeURIComponent(newest.tag)}&name=${encodeURIComponent(newest.name)}`
+    : `name=${encodeURIComponent(newest.name)}`;
   return {
     last_build_at: Math.round(newest.mtimeMs),
     last_build_size: newest.size,
-    latest_pdx_zip_url:
-      `/api/projects/${projectId}/card_meta/pdx?name=${encodeURIComponent(newest.name)}`
+    latest_pdx_zip_url: `/api/projects/${projectId}/card_meta/pdx?${qs}`
   };
 }
 
@@ -221,10 +255,11 @@ router.get('/:id/card_meta', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// GET /api/projects/:id/card_meta/pdx?name=<basename>
-// Streams a *.pdx.zip from <local_path>/build/. Filename-only (no path
-// traversal), extension-locked, size-capped, resolved through realpath so
-// a symlink in build/ can't redirect outside the project root.
+// GET /api/projects/:id/card_meta/pdx?name=<basename>[&tag=<tag>]
+// Streams a *.pdx.zip from <local_path>/release/<tag>/ when `tag` given,
+// else legacy <local_path>/build/. Filename-only (no path traversal),
+// extension-locked, size-capped, resolved through realpath so a symlink
+// can't redirect outside the project root.
 router.get('/:id/card_meta/pdx', async (req, res, next) => {
   try {
     const idErr = validateId(req.params.id);
@@ -234,20 +269,24 @@ router.get('/:id/card_meta/pdx', async (req, res, next) => {
     if (!project.local_path) return res.status(400).json({ error: 'no_local_path' });
 
     const rawName = String(req.query.name || '');
-    // Filename-only: reject any path separator + dotfile + anything not
-    // ending in .pdx.zip.
     if (!/^[\w.\- ]+\.pdx\.zip$/i.test(rawName) || rawName.includes('/') ||
         rawName.includes('\\') || rawName.startsWith('.')) {
       return res.status(400).json({ error: 'bad_filename' });
+    }
+    const rawTag = req.query.tag ? String(req.query.tag) : '';
+    if (rawTag && !TAG_RE.test(rawTag)) {
+      return res.status(400).json({ error: 'bad_tag' });
     }
 
     const base = await realPathSafe(project.local_path);
     if (!base) return res.status(404).json({ error: 'not_found' });
 
-    const buildDir = path.join(base, 'build');
-    const joined = path.join(buildDir, rawName);
+    const parentDir = rawTag
+      ? path.join(base, 'release', rawTag)
+      : path.join(base, 'build');
+    const joined = path.join(parentDir, rawName);
     const real = await realPathSafe(joined);
-    if (!real || !real.startsWith(buildDir + path.sep)) {
+    if (!real || !real.startsWith(parentDir + path.sep)) {
       return res.status(403).json({ error: 'forbidden' });
     }
 
