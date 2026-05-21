@@ -275,7 +275,9 @@ async function collectReleaseItems(projectId, localPath, repoUrl) {
         }
       }
     } catch (_e) {}
-    if (!pdxName) continue; // no zipped pdx in this tag dir — skip
+    // Skip empty stubs (< 1 KiB) — leftover from failed pack attempts that
+    // wrote a zero-byte zip before bailing.
+    if (!pdxName || pdxBytes < 1024) continue;
 
     const ghRel = ghByTag.get(tag);
     const published = !!ghRel;
