@@ -204,6 +204,112 @@ async function collectMilestoneItems(localPath) {
   return items;
 }
 
+// Cache of per-project gh release-list lookups so a sync that surfaces N
+// release rows doesn't fire N gh subprocesses.
+const _ghReleaseCache = new Map(); // projectId -> { ts, releases }
+
+async function ghListReleases(projectId, repoUrl) {
+  const cached = _ghReleaseCache.get(projectId);
+  if (cached && Date.now() - cached.ts < 30_000) return cached.releases;
+
+  const m = String(repoUrl || '').match(/github\.com[:/]([\w.-]+)\/([\w.-]+?)(?:\.git)?$/);
+  if (!m) return [];
+  const slug = `${m[1]}/${m[2]}`;
+  const { spawn } = require('child_process');
+  const releases = await new Promise((resolve) => {
+    let proc;
+    try {
+      proc = spawn('gh', ['release', 'list', '--repo', slug, '--limit', '20',
+                          '--json', 'tagName,name,publishedAt,isLatest'],
+                         { stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (_e) { return resolve([]); }
+    let out = '';
+    proc.stdout.on('data', (b) => { out += b; });
+    proc.stderr.on('data', () => {});
+    const timer = setTimeout(() => { try { proc.kill('SIGTERM'); } catch (_e) {} resolve([]); }, 5000);
+    proc.on('error', () => { clearTimeout(timer); resolve([]); });
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0) return resolve([]);
+      try { resolve(JSON.parse(out)); } catch (_e) { resolve([]); }
+    });
+  });
+  _ghReleaseCache.set(projectId, { ts: Date.now(), releases });
+  return releases;
+}
+
+const RELEASE_TAG_RE = /^[a-zA-Z0-9._+-]{1,64}$/;
+
+async function collectReleaseItems(projectId, localPath, repoUrl) {
+  const items = [];
+  const releaseRoot = path.join(localPath, 'release');
+  if (!fs.existsSync(releaseRoot)) return items;
+
+  let tagDirs = [];
+  try {
+    tagDirs = fs.readdirSync(releaseRoot, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && RELEASE_TAG_RE.test(d.name))
+      .map((d) => d.name);
+  } catch (_e) { return items; }
+  if (tagDirs.length === 0) return items;
+
+  const ghReleases = await ghListReleases(projectId, repoUrl);
+  const ghByTag = new Map(ghReleases.map((r) => [r.tagName, r]));
+
+  // Sort newest-first so the row order matches the dashboard's release dropdown.
+  const ranked = tagDirs.map((name) => {
+    let mtime = 0;
+    try { mtime = fs.statSync(path.join(releaseRoot, name)).mtimeMs; } catch (_e) {}
+    return { name, mtime };
+  }).sort((a, b) => b.mtime - a.mtime);
+
+  for (const { name: tag } of ranked) {
+    const dir = path.join(releaseRoot, tag);
+    let pdxName = null;
+    let pdxBytes = 0;
+    try {
+      for (const f of fs.readdirSync(dir)) {
+        if (f.toLowerCase().endsWith('.pdx.zip')) {
+          const st = fs.statSync(path.join(dir, f));
+          if (st.size > pdxBytes) { pdxName = f; pdxBytes = st.size; }
+        }
+      }
+    } catch (_e) {}
+    if (!pdxName) continue; // no zipped pdx in this tag dir — skip
+
+    const ghRel = ghByTag.get(tag);
+    const published = !!ghRel;
+    // Locked = already pushed to GitHub. Draft = packed locally, not yet pushed.
+    const status = published ? 'locked' : 'draft';
+
+    items.push({
+      id: `release:${tag}`,
+      phase: 4,
+      type: 'release',
+      status,
+      files: [path.join(dir, pdxName)],
+      approve_cmd: published
+        ? `OPEN https://github.com/${(repoUrl || '').replace(/^.*github\.com[:/]/, '').replace(/\.git$/, '')}/releases/tag/${tag}`
+        : COMMAND_GRAMMAR.release(),
+      revise_cmd: `REVISE RELEASE ${tag}: <your notes>`,
+      review_questions: questionsFor('release'),
+      preview_cmd: `BUILD SAMPLE`,
+      meta: {
+        tag,
+        pdx_name: pdxName,
+        pdx_bytes: pdxBytes,
+        published_to_github: published,
+        published_at: ghRel ? ghRel.publishedAt : null,
+        is_latest: ghRel ? !!ghRel.isLatest : false,
+        github_url: published && repoUrl
+          ? `https://github.com/${(repoUrl).replace(/^.*github\.com[:/]/, '').replace(/\.git$/, '')}/releases/tag/${tag}`
+          : null
+      }
+    });
+  }
+  return items;
+}
+
 async function collectBatchItems(localPath) {
   const items = [];
   const batchesDir = path.join(localPath, SDK_DATA_REL, 'batches');
@@ -347,17 +453,18 @@ async function sync(projectId, sdkRoot) {
   await fsp.mkdir(dataDir, { recursive: true });
 
   // Collect items from all sources
-  const [conceptItems, gateItems, milestoneItems, batchItems] = await Promise.all([
+  const [conceptItems, gateItems, milestoneItems, batchItems, releaseItems] = await Promise.all([
     collectConceptItems(localPath),
     collectGateItems(projectId, localPath),
     collectMilestoneItems(localPath),
     collectBatchItems(localPath),
+    collectReleaseItems(projectId, localPath, proj.repo),
   ]);
 
   // Merge, deduplicate by id
   const seen = new Set();
   const items = [];
-  for (const item of [...conceptItems, ...gateItems, ...milestoneItems, ...batchItems]) {
+  for (const item of [...conceptItems, ...gateItems, ...milestoneItems, ...batchItems, ...releaseItems]) {
     if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
   }
 
