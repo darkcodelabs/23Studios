@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api.js';
 import AssetEditModal from './AssetEditModal.jsx';
+import ReferenceUploadModal from './ReferenceUploadModal.jsx';
 
 // ProjectGallery — Phase 4.5 Patch C.
 //
@@ -827,6 +828,7 @@ export default function ProjectGallery() {
   const [sortKey, setSortKey] = useState('created');
   const [preview, setPreview] = useState(null);
   const [editing, setEditing] = useState(null); // { asset, mode }
+  const [uploadingRefs, setUploadingRefs] = useState(false);
   const [cardErrors, setCardErrors] = useState({});
 
   const assetsRef = useRef([]);
@@ -962,7 +964,9 @@ export default function ProjectGallery() {
   }
 
   const handleBuild = () => navigate(`/projects/${id}/build/milestones`);
-  const handleUpload = () => navigate(`/projects/${id}/author/references`);
+  // In-modal upload (Phase 4.5 Patch D). The standalone Reference Library
+  // page at /projects/:id/author/references still exists as a deeper UI.
+  const handleUpload = () => setUploadingRefs(true);
 
   return (
     <div className="p-4 space-y-3">
@@ -1029,6 +1033,17 @@ export default function ProjectGallery() {
           onRegenComplete={(updated) => {
             if (updated) handleRegenComplete(updated);
             setEditing(null);
+          }}
+        />
+      ) : null}
+
+      {uploadingRefs ? (
+        <ReferenceUploadModal
+          projectId={id}
+          onClose={() => setUploadingRefs(false)}
+          onUploadComplete={() => {
+            // Trigger an asset/refs refetch so the references row updates.
+            refresh(true);
           }}
         />
       ) : null}
