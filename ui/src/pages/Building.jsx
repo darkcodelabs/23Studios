@@ -30,12 +30,17 @@ import { api } from '../lib/api.js';
 //   GET /api/projects/:id/card_meta                    scene_count, version
 //   GET /api/projects/:id/gallery                      scene asset list (build stream)
 //   GET /api/projects/:id/gates                        gate queue
+//   GET /api/projects/:id/build/events  (SSE)          milestone / asset / spend
 //
-// SSE was on the table but the existing stream POST /api/projects/:id/sdk/autopilot
-// expects a fresh pitch body — it kicks off a NEW run rather than tailing the
-// current one. Polling every 3s is good enough for the visible cadence.
+// Wave 1 wire: the page now opens an EventSource against /build/events as the
+// primary feed. Polling (every 3s) is retained as a SILENT fallback that only
+// activates when SSE has been disconnected for > 30s. If the endpoint 404s the
+// page degrades cleanly to polling-only. The status of the feed is reflected
+// in the small "● live" chip next to the seed in the header.
 
 const POLL_MS = 3000;
+const SSE_FALLBACK_MS = 30000;     // give SSE 30s to recover before polling kicks in
+const RECONNECT_DELAYS = [1000, 2000, 5000, 10000]; // exponential-ish, capped at 10s
 
 // 6 user-facing phases (design's Option B), mapped to the autopilot's
 // 9 actual STAGES. The phase a stage belongs to determines which card
@@ -122,6 +127,48 @@ function Panel({ title, right, children, padded = true }) {
   );
 }
 
+// LiveChip — tiny status dot + label next to the seed in the header.
+//   live    → green dot, SSE actively pushing
+//   polling → amber dot, falling back to 3s HTTP poll
+//   down    → red dot, no feed at all (initial state before first connect)
+function LiveChip({ status }) {
+  const cfg = status === 'live'
+    ? { dot: 'var(--ok)',     label: 'live',    fg: 'var(--ok)',     bg: 'oklch(74% 0.14 145 / .12)', bd: 'oklch(50% 0.10 145)' }
+    : status === 'polling'
+    ? { dot: 'var(--accent)', label: 'polling', fg: 'var(--accent)', bg: 'var(--accent-soft)',        bd: 'var(--accent-dim)' }
+    : { dot: 'var(--danger)', label: 'offline', fg: 'var(--danger)', bg: 'oklch(64% 0.18 25 / .12)', bd: 'oklch(50% 0.15 25)' };
+  return (
+    <span
+      className="font-mono uppercase"
+      title={`event feed: ${cfg.label}`}
+      style={{
+        fontSize: 9,
+        letterSpacing: '.1em',
+        padding: '2px 7px',
+        borderRadius: 99,
+        background: cfg.bg,
+        color: cfg.fg,
+        border: `1px solid ${cfg.bd}`,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        lineHeight: 1.3
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: cfg.dot,
+          boxShadow: status === 'live' ? `0 0 6px ${cfg.dot}` : 'none',
+          flex: 'none'
+        }}
+      />
+      {cfg.label}
+    </span>
+  );
+}
+
 function Tag({ tone, children }) {
   const toneMap = {
     accent: { fg: 'var(--accent)', bg: 'var(--accent-soft)', bd: 'var(--accent-dim)' },
@@ -194,12 +241,13 @@ function PhaseCard({ phase, state, pct, detail }) {
   );
 }
 
-function SceneCard({ asset, stage, onClick }) {
+function SceneCard({ asset, stage, onClick, bust }) {
   // stage: done | building | queued | awaiting_review
   const empty = stage === 'queued' || stage === 'building';
-  const imageUrl = asset?.imageUrl
+  const base = asset?.imageUrl
     ? (asset.imageUrl.startsWith('/') ? appBase() + asset.imageUrl : asset.imageUrl)
     : null;
+  const imageUrl = base && bust ? `${base}${base.includes('?') ? '&' : '?'}v=${bust}` : base;
   return (
     <button
       type="button"
@@ -301,6 +349,14 @@ export default function Building() {
   const [log,     setLog]     = useState(() => [
     { t: '00:00', l: 'cmd', m: '23s sdk autopilot start' }
   ]);
+  // 'live'    — SSE is connected and pumping
+  // 'polling' — SSE is closed or unavailable; polling is filling in
+  // 'down'    — initial connection failing, no feed yet
+  const [feedStatus, setFeedStatus] = useState('down');
+  // Bumps a cache-bust query param on a per-asset basis when SSE pushes an
+  // `asset` event; mirrors the cdn-bust pattern used by the gallery thumbnail
+  // refresh in the workspace.
+  const [assetBust, setAssetBust] = useState({});
 
   // Force a dark body bg (matches Library / Landing pattern).
   useEffect(() => {
@@ -357,11 +413,226 @@ export default function Building() {
     }
   }, [projectId]);
 
+  // Track the most recent moment SSE was confirmed alive (any event in or a
+  // successful `hello`). The polling loop reads this to decide whether to
+  // actually issue HTTP requests or stay quiet.
+  const lastSseEventAt = useRef(0);
+  const feedStatusRef = useRef('down');
+  useEffect(() => { feedStatusRef.current = feedStatus; }, [feedStatus]);
+
+  // Initial fetch always runs once so the page paints something even before
+  // SSE establishes. After that, the interval only fires when SSE has gone
+  // quiet for > SSE_FALLBACK_MS.
   useEffect(() => {
     tick();
-    const id = setInterval(tick, POLL_MS);
+    const id = setInterval(() => {
+      if (feedStatusRef.current === 'live') {
+        const since = Date.now() - lastSseEventAt.current;
+        if (since < SSE_FALLBACK_MS) return; // SSE is driving — skip
+      }
+      tick();
+    }, POLL_MS);
     return () => clearInterval(id);
   }, [tick]);
+
+  // ─── SSE connection ─────────────────────────────────────────────────────
+  // Opens an EventSource at /api/projects/:id/build/events and consumes the
+  // Wave 1A backend's hello/milestone/asset/spend events. On error/close,
+  // reconnects with capped exponential backoff. On a 404 (endpoint not yet
+  // shipped) we let the polling fallback take over silently.
+  useEffect(() => {
+    if (!projectId) return undefined;
+    if (typeof window === 'undefined' || typeof window.EventSource !== 'function') {
+      setFeedStatus('polling');
+      return undefined;
+    }
+
+    let es = null;
+    let reconnectTimer = null;
+    let attempt = 0;
+    let disposed = false;
+    let gave_up = false;
+
+    const appendLog = (level, message) => {
+      const t = new Date();
+      const ts = `${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`;
+      setLog((prev) => [...prev.slice(-40), { t: ts, l: level, m: message }]);
+    };
+
+    const scheduleReconnect = () => {
+      if (disposed || gave_up) return;
+      const delay = RECONNECT_DELAYS[Math.min(attempt, RECONNECT_DELAYS.length - 1)];
+      attempt += 1;
+      reconnectTimer = setTimeout(connect, delay);
+    };
+
+    const onHello = (evt) => {
+      lastSseEventAt.current = Date.now();
+      attempt = 0;
+      setFeedStatus('live');
+      try {
+        const data = evt.data ? JSON.parse(evt.data) : null;
+        if (data && data.message) {
+          appendLog('ok', `sse → ${data.message}`);
+        } else {
+          appendLog('ok', 'sse → connected');
+        }
+      } catch (_e) {
+        appendLog('ok', 'sse → connected');
+      }
+    };
+
+    const onMilestone = (evt) => {
+      lastSseEventAt.current = Date.now();
+      setFeedStatus('live');
+      try {
+        const data = evt.data ? JSON.parse(evt.data) : null;
+        if (!data) return;
+        // Merge into snap (autopilot status shape) — partial update only.
+        setSnap((prev) => {
+          const base = prev || {};
+          const next = { ...base };
+          if (data.phase != null)            next.phase = data.phase;
+          if (data.percent != null)          next.percent = data.percent;
+          if (typeof data.running === 'boolean') next.running = data.running;
+          if (data.stages_complete != null)  next.stages_complete = data.stages_complete;
+          if (data.stages_total != null)     next.stages_total = data.stages_total;
+          if (data.started_at != null)       next.started_at = data.started_at;
+          if (data.awaiting_gate !== undefined) next.awaiting_gate = data.awaiting_gate;
+          if (data.error)                    next.error = data.error;
+          return next;
+        });
+        const label = data.phase
+          ? `milestone → ${data.phase}${data.status ? ' (' + data.status + ')' : ''}`
+          : `milestone update`;
+        appendLog(data.error ? 'err' : (data.status === 'done' ? 'ok' : 'info'), label);
+      } catch (e) {
+        appendLog('warn', `milestone parse failed: ${e.message || e}`);
+      }
+    };
+
+    const onAsset = (evt) => {
+      lastSseEventAt.current = Date.now();
+      setFeedStatus('live');
+      try {
+        const data = evt.data ? JSON.parse(evt.data) : null;
+        if (!data) return;
+        const incoming = data.asset || data; // accept either {asset:{...}} or flat
+        if (!incoming || !incoming.id) {
+          appendLog('warn', 'asset event missing id');
+          return;
+        }
+        setAssets((prev) => {
+          const cur = Array.isArray(prev) ? prev : [];
+          const idx = cur.findIndex((a) => a.id === incoming.id);
+          if (idx === -1) return [...cur, incoming];
+          const merged = { ...cur[idx], ...incoming };
+          const out = cur.slice();
+          out[idx] = merged;
+          return out;
+        });
+        // Cache-bust the thumbnail so the image element refetches.
+        setAssetBust((prev) => ({ ...prev, [incoming.id]: Date.now() }));
+        appendLog('ok', `asset → ${incoming.type || 'asset'} ${incoming.id}`);
+      } catch (e) {
+        appendLog('warn', `asset parse failed: ${e.message || e}`);
+      }
+    };
+
+    const onSpend = (evt) => {
+      lastSseEventAt.current = Date.now();
+      setFeedStatus('live');
+      try {
+        const data = evt.data ? JSON.parse(evt.data) : null;
+        if (!data) return;
+        const delta = typeof data.cost === 'number' ? data.cost
+                    : typeof data.amount === 'number' ? data.amount
+                    : 0;
+        const total = typeof data.cumulative === 'number' ? data.cumulative
+                    : typeof data.total === 'number' ? data.total
+                    : null;
+        // Bump the cumulative cost on card_meta so the stats panel reflects
+        // it without waiting for a card_meta poll.
+        if (total != null) {
+          setMeta((prev) => ({ ...(prev || {}), cost_total: total }));
+        } else if (delta) {
+          setMeta((prev) => ({
+            ...(prev || {}),
+            cost_total: ((prev && typeof prev.cost_total === 'number') ? prev.cost_total : 0) + delta
+          }));
+        }
+        const note = data.note || data.kind || 'spend';
+        const amountStr = delta ? `$${delta.toFixed(4)}` : '';
+        appendLog('info', `spend → ${note} ${amountStr}`.trim());
+      } catch (e) {
+        appendLog('warn', `spend parse failed: ${e.message || e}`);
+      }
+    };
+
+    const connect = () => {
+      if (disposed) return;
+      try {
+        const url = `${appBase()}/api/projects/${projectId}/build/events`;
+        es = new EventSource(url);
+      } catch (e) {
+        console.warn('[building] EventSource construct failed', e);
+        setFeedStatus('polling');
+        gave_up = true;
+        return;
+      }
+
+      es.addEventListener('hello',     onHello);
+      es.addEventListener('milestone', onMilestone);
+      es.addEventListener('asset',     onAsset);
+      es.addEventListener('spend',     onSpend);
+      // Some servers also emit message-typed default events; mirror as info.
+      es.onmessage = (evt) => {
+        lastSseEventAt.current = Date.now();
+        setFeedStatus('live');
+        if (evt && evt.data) {
+          try {
+            const data = JSON.parse(evt.data);
+            if (data && data.message) appendLog('info', `sse: ${data.message}`);
+          } catch (_e) { /* swallow */ }
+        }
+      };
+
+      es.onopen = () => {
+        attempt = 0;
+        lastSseEventAt.current = Date.now();
+        setFeedStatus('live');
+      };
+
+      es.onerror = (_e) => {
+        // EventSource auto-retries by default; we close + manage backoff
+        // explicitly so we can flag the chip + fall through to polling.
+        const readyState = es ? es.readyState : 2;
+        try { if (es) es.close(); } catch (_x) { /* ignore */ }
+        es = null;
+        // readyState 2 = CLOSED. If the very first connect failed (e.g. 404),
+        // log a single warn and stop retrying so we don't spam the console.
+        if (attempt === 0 && readyState === 2 && lastSseEventAt.current === 0) {
+          console.warn('[building] /build/events unavailable — falling back to 3s polling');
+          appendLog('warn', 'sse unavailable — using poll fallback');
+          gave_up = true;
+          setFeedStatus('polling');
+          return;
+        }
+        setFeedStatus('polling');
+        scheduleReconnect();
+      };
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (es) {
+        try { es.close(); } catch (_e) { /* ignore */ }
+      }
+    };
+  }, [projectId]);
 
   const seed = useMemo(() => deriveSeed(projectId), [projectId]);
 
@@ -422,9 +693,13 @@ export default function Building() {
     if (scenes.length === 0) return null;
     return scenes[scenes.length - 1];
   }, [assets]);
-  const previewUrl = previewAsset && previewAsset.imageUrl
+  const previewUrlBase = previewAsset && previewAsset.imageUrl
     ? (previewAsset.imageUrl.startsWith('/') ? appBase() + previewAsset.imageUrl : previewAsset.imageUrl)
     : null;
+  const previewBust = previewAsset ? assetBust[previewAsset.id] : null;
+  const previewUrl = previewUrlBase && previewBust
+    ? `${previewUrlBase}${previewUrlBase.includes('?') ? '&' : '?'}v=${previewBust}`
+    : previewUrlBase;
 
   const sceneCount = assets.filter((a) => a.type === 'scene').length;
   const portraitCount = assets.filter((a) => a.type === 'portrait').length;
@@ -489,10 +764,14 @@ export default function Building() {
                   marginBottom: 4,
                   fontSize: 10,
                   letterSpacing: '.12em',
-                  color: 'var(--text-muted)'
+                  color: 'var(--text-muted)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8
                 }}
               >
-                now building · {seed}
+                <span>now building · {seed}</span>
+                <LiveChip status={feedStatus} />
               </div>
               <h1
                 style={{
@@ -610,6 +889,7 @@ export default function Building() {
                   key={s.asset.id + ':' + i}
                   asset={s.asset}
                   stage={s.stage}
+                  bust={assetBust[s.asset.id]}
                   onClick={() => onJumpToReview()}
                 />
               ))}
