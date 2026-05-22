@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import { api } from '../lib/api.js';
+import { derivedStatus, STATUS } from '../lib/projectStatus.js';
 
 // AppShell — design pass 1.5.
 //
@@ -146,18 +148,20 @@ function FlowItem({ item, activeId, projectId, pill, onNavigate }) {
 // PROJECT list — every project from /api/projects, status pill, click → workspace
 // ----------------------------------------------------------------------------
 
-// Map project.status → sidebar pill label. Matches the screenshot's "draft"
-// chip for in-flight projects; shipped projects get a green pill.
+// Pill rendering keyed by the derivedStatus code (not project.status, which
+// is always 'active' on the server side). Library card grid uses the same
+// codes — see ui/src/lib/projectStatus.js.
 const STATUS_PILL = {
-  active:   { label: 'draft',    tone: 'accent' },
-  building: { label: 'building', tone: 'accent' },
-  broken:   { label: 'broken',   tone: 'danger' },
-  shipped:  { label: 'shipped',  tone: 'ok' }
+  [STATUS.DRAFT]:    { label: 'draft',    tone: 'default' },
+  [STATUS.BUILDING]: { label: 'building', tone: 'accent' },
+  [STATUS.REVIEW]:   { label: 'review',   tone: 'accent' },
+  [STATUS.BROKEN]:   { label: 'broken',   tone: 'danger' },
+  [STATUS.SHIPPED]:  { label: 'shipped',  tone: 'ok' }
 };
 
-function ProjectRow({ project, activeProjectId }) {
+function ProjectRow({ project, status, activeProjectId, onNavigate }) {
   const navigate = useNavigate();
-  const pill = STATUS_PILL[(project.status || 'active').toLowerCase()] || STATUS_PILL.active;
+  const pill = STATUS_PILL[status] || STATUS_PILL[STATUS.DRAFT];
   const isActive = activeProjectId && project.id === activeProjectId;
 
   const toneColor = pill.tone === 'accent' ? 'var(--accent)'
@@ -176,7 +180,7 @@ function ProjectRow({ project, activeProjectId }) {
   return (
     <button
       type="button"
-      onClick={() => navigate(`/projects/${project.id}/author/gallery`)}
+      onClick={() => { onNavigate?.(); navigate(`/projects/${project.id}/author/gallery`); }}
       title={project.name}
       className="relative w-full flex items-center text-left"
       style={{
@@ -281,10 +285,10 @@ function Telemetry() {
 // Sidebar — full assembly
 // ----------------------------------------------------------------------------
 
-function Sidebar({ projects, activeProjectId, activeFlow, flowPills }) {
+function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById, drawerOpen, onClose }) {
   return (
     <aside
-      className="shrink-0 flex flex-col overflow-hidden sticky top-0"
+      className={'shell-rail shrink-0 flex flex-col overflow-hidden sticky top-0 ' + (drawerOpen ? 'shell-drawer-open' : '')}
       style={{
         width: 220,
         height: '100vh',
@@ -306,7 +310,8 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills }) {
       >
         <Link
           to="/dashboard"
-          className="shrink-0 relative overflow-hidden grid place-items-center"
+          onClick={() => onClose?.()}
+          className="shrink-0 relative overflow-hidden grid place-items-center shell-brand-mark"
           style={{
             width: 32, height: 32,
             borderRadius: 5,
@@ -315,7 +320,11 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills }) {
           }}
           title="23 Studios"
         >
-          <img src="/assets/studio-logo.png" alt="23" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img
+            src="/assets/studio-logo.png"
+            alt="23"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </Link>
         <div className="flex flex-col leading-tight">
           <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
@@ -343,6 +352,7 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills }) {
             activeId={activeFlow}
             projectId={activeProjectId}
             pill={flowPills[item.id]}
+            onNavigate={onClose}
           />
         ))}
 
@@ -360,7 +370,13 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills }) {
         </div>
         {projects && projects.length > 0 ? (
           projects.map((p) => (
-            <ProjectRow key={p.id} project={p} activeProjectId={activeProjectId} />
+            <ProjectRow
+              key={p.id}
+              project={p}
+              status={statusById ? statusById[p.id] : STATUS.DRAFT}
+              activeProjectId={activeProjectId}
+              onNavigate={onClose}
+            />
           ))
         ) : (
           <div
@@ -432,7 +448,7 @@ function deriveCrumbs(pathname, activeProject) {
   return ['Studio'];
 }
 
-function Topbar({ crumbs, seed }) {
+function Topbar({ crumbs, seed, onToggleDrawer, drawerOpen }) {
   return (
     <header
       className="sticky top-0 z-10 flex items-center"
@@ -444,6 +460,14 @@ function Topbar({ crumbs, seed }) {
         gap: 14
       }}
     >
+      <button
+        type="button"
+        className="shell-hamburger"
+        aria-label={drawerOpen ? 'close menu' : 'open menu'}
+        onClick={onToggleDrawer}
+      >
+        {drawerOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+      </button>
       <nav className="flex items-center font-mono" style={{ fontSize: 11, gap: 8, color: 'var(--text-muted)' }}>
         {crumbs.map((c, i) => {
           const last = i === crumbs.length - 1;
@@ -495,6 +519,14 @@ export default function AppShell({ children }) {
   const location = useLocation();
   const [projects, setProjects] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  // statusById[projectId] = STATUS code, derived from autopilot + gallery +
+  // card_meta. Repopulated on a 15s tick so sidebar pills track live state
+  // (the slightly slower cadence vs Library's 10s avoids hammering the API
+  // when both are mounted; the projectStatus cache absorbs the overlap).
+  const [statusById, setStatusById] = useState({});
+  // Mobile drawer — closed by default. Toggled by the topbar hamburger.
+  // Auto-closes on route change so navigating doesn't strand the drawer.
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -510,6 +542,34 @@ export default function AppShell({ children }) {
       .catch(() => { if (alive) setLoaded(true); });
     return () => { alive = false; };
   }, []);
+
+  // Resolve status for every project. Fans out the derivedStatus helper
+  // (which is itself cached by id with a short TTL so this is cheap when
+  // the Library page is also mounted). Refreshes on a 15s interval.
+  useEffect(() => {
+    if (!projects || projects.length === 0) { setStatusById({}); return undefined; }
+    let alive = true;
+    const refresh = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      // card_meta is fetched once per refresh so SHIPPED transitions catch.
+      const entries = await Promise.all(projects.map(async (p) => {
+        const meta = await api.get(`/api/projects/${p.id}/card_meta`).catch(() => null);
+        const code = await derivedStatus(p, meta, { skipCache: true });
+        return [p.id, code];
+      }));
+      if (!alive) return;
+      const next = {};
+      for (const [id, code] of entries) { next[id] = code; }
+      setStatusById(next);
+    };
+    refresh();
+    const id = setInterval(refresh, 15_000);
+    return () => { alive = false; clearInterval(id); };
+  }, [projects]);
+
+  // Close the drawer whenever the route changes — clicking a nav item
+  // should always dismiss the overlay on mobile.
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const activeProject = useMemo(() => pickActiveProject(projects), [projects]);
   const activeProjectId = activeProject ? activeProject.id : null;
@@ -539,10 +599,29 @@ export default function AppShell({ children }) {
         activeProjectId={activeProjectId}
         activeFlow={activeFlow}
         flowPills={flowPills}
+        statusById={statusById}
+        drawerOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
       />
 
+      {/* Backdrop only renders + is visible under the mobile breakpoint —
+          .shell-backdrop is display:none above 1024px. Clicking it closes
+          the drawer; tap-outside-to-dismiss is the expected mobile UX. */}
+      {drawerOpen ? (
+        <div
+          className="shell-backdrop"
+          aria-hidden
+          onClick={() => setDrawerOpen(false)}
+        />
+      ) : null}
+
       <main className="flex-1 min-w-0 flex flex-col">
-        <Topbar crumbs={crumbs} seed={seed} />
+        <Topbar
+          crumbs={crumbs}
+          seed={seed}
+          drawerOpen={drawerOpen}
+          onToggleDrawer={() => setDrawerOpen((v) => !v)}
+        />
         <div className="flex-1 min-h-0 overflow-auto" style={{ background: 'var(--bg)' }}>
           {/* When mounted as a layout route, children come via Outlet.
               When mounted as a wrapper, children come as JSX. Support both. */}
