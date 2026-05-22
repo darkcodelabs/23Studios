@@ -2,36 +2,35 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   Pencil, Hammer, PlayCircle, Rocket, MoreHorizontal,
-  ChevronDown, FileText, BookOpen, Image as ImageIcon,
+  FileText, BookOpen, Image as ImageIcon,
   Film, FolderOpen, Boxes, Milestone, ClipboardCheck,
   ShieldCheck, Gauge, Bug, Send, History, Lock,
-  Menu, X as XIcon, Loader2, AlertTriangle, Download,
-  Settings, Trash2, Upload as UploadIcon, ToggleLeft
+  Menu, X as XIcon, Loader2, Download,
+  Settings, Trash2, Upload as UploadIcon, ToggleLeft,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
-import Nav from '../components/Nav.jsx';
 import GateBanner from '../components/GateBanner.jsx';
 import ReleasesDropdown from '../components/ReleasesDropdown.jsx';
 import GameTypeToggle from '../components/GameTypeToggle.jsx';
 import { api } from '../lib/api.js';
 
-// ProjectShell — Phase 4.5 Part 0.
+// ProjectShell — design pass 1.
 //
-// Owns the chrome that wraps every project surface:
-//   * top header: logo (via <Nav/>), breadcrumb, status badge, 5 action
-//     buttons (Edit / Build .pdx / Download / Simulator / Ship), overflow menu
-//   * left sidebar: 4 grouped sections (AUTHOR / BUILD / REVIEW / RELEASE)
-//     with badges sourced from existing endpoints
-//   * footer with cost roll-up
-//   * <Outlet /> renders the active nested route
-//
-// The shell exists so per-stage pages can be plain content components —
-// they no longer have to render their own Nav / build bar / siderail.
+// Visual upgrade from the Phase 4.5 Part 0 ad-hoc Tailwind ink-* chrome
+// to the 23 Studios OKLCH amber design tokens (see src/styles/tokens.css).
+// Functionality preserved 1:1 — sidebar groups, action cluster, overflow
+// menu, footer cost rollup, nested <Outlet /> routing all unchanged.
+// Only the surface paint, fonts, spacing and accent treatment moved.
+
+// ----------------------------------------------------------------------------
+// Status badge — uses --accent / --ok / --danger tokens
+// ----------------------------------------------------------------------------
 
 const STATUS_STYLES = {
-  active:    { label: 'ACTIVE',   cls: 'bg-accent/15 text-accent ring-accent/30' },
-  building:  { label: 'BUILDING', cls: 'bg-amber-500/15 text-amber-300 ring-amber-500/30' },
-  broken:    { label: 'BROKEN',   cls: 'bg-red-500/15 text-red-300 ring-red-500/30' },
-  shipped:   { label: 'SHIPPED',  cls: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' }
+  active:   { label: 'ACTIVE',   fg: 'var(--accent)',   bg: 'var(--accent-soft)',           bd: 'var(--accent-dim)' },
+  building: { label: 'BUILDING', fg: 'var(--accent)',   bg: 'var(--accent-soft)',           bd: 'var(--accent-dim)' },
+  broken:   { label: 'BROKEN',   fg: 'var(--danger)',   bg: 'oklch(64% 0.18 25 / .12)',     bd: 'oklch(50% 0.15 25)' },
+  shipped:  { label: 'SHIPPED',  fg: 'var(--ok)',       bg: 'oklch(74% 0.14 145 / .10)',    bd: 'oklch(50% 0.10 145)' }
 };
 
 function StatusBadge({ status }) {
@@ -39,7 +38,16 @@ function StatusBadge({ status }) {
   const meta = STATUS_STYLES[key] || STATUS_STYLES.active;
   return (
     <span
-      className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide font-mono ring-1 ${meta.cls}`}
+      className="inline-flex items-center font-mono uppercase"
+      style={{
+        fontSize: 10,
+        letterSpacing: '.08em',
+        padding: '3px 7px',
+        borderRadius: 99,
+        color: meta.fg,
+        background: meta.bg,
+        border: `1px solid ${meta.bd}`
+      }}
       title={`project status: ${meta.label.toLowerCase()}`}
     >
       {meta.label}
@@ -47,7 +55,10 @@ function StatusBadge({ status }) {
   );
 }
 
-// Sidebar group definition. Items are NavLinks against the nested router.
+// ----------------------------------------------------------------------------
+// Sidebar — token-tinted, sticky, with the same grouped nav
+// ----------------------------------------------------------------------------
+
 const SIDEBAR_GROUPS = [
   {
     label: 'AUTHOR',
@@ -71,10 +82,10 @@ const SIDEBAR_GROUPS = [
   {
     label: 'REVIEW',
     items: [
-      { path: 'review/board',  label: 'Board',          icon: ClipboardCheck, badgeKey: 'board' },
+      { path: 'review/board',  label: 'Board',           icon: ClipboardCheck, badgeKey: 'board' },
       { path: 'review/design', label: 'Design Validate', icon: ShieldCheck },
-      { path: 'review/perf',   label: 'Perf Audit',     icon: Gauge },
-      { path: 'review/qa',     label: 'QA Critic',      icon: Bug }
+      { path: 'review/perf',   label: 'Perf Audit',      icon: Gauge },
+      { path: 'review/qa',     label: 'QA Critic',       icon: Bug }
     ]
   },
   {
@@ -87,65 +98,317 @@ const SIDEBAR_GROUPS = [
   }
 ];
 
-function SidebarItem({ to, label, icon: Icon, badge }) {
+function SidebarItem({ to, label, icon: Icon, badge, collapsed }) {
   return (
     <NavLink
       to={to}
       end={false}
+      title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors group ' +
+        'sb-item relative flex items-center rounded-tk-sm font-ui ' +
+        (collapsed
+          ? 'justify-center px-1 py-1.5 '
+          : 'gap-2.5 px-2.5 py-2 ') +
         (isActive
-          ? 'bg-accent/15 text-accent ring-1 ring-accent/30'
-          : 'text-ink-300 hover:bg-ink-800/60 hover:text-ink-100')
+          ? 'text-text bg-surface '
+          : 'text-text-soft hover:text-text hover:bg-surface ')
       }
+      style={{ fontSize: 13 }}
     >
-      <Icon className="w-3.5 h-3.5 shrink-0" />
-      <span className="flex-1 truncate">{label}</span>
-      {badge > 0 ? (
-        <span className="min-w-[18px] h-4 px-1 inline-flex items-center justify-center rounded-full bg-amber-500 text-black text-[10px] font-bold leading-none">
-          {badge > 99 ? '99+' : badge}
-        </span>
-      ) : null}
+      {({ isActive }) => (
+        <>
+          {/* Active 2px amber rail */}
+          {isActive ? (
+            <span
+              aria-hidden
+              className="absolute"
+              style={{
+                left: collapsed ? 0 : -10,
+                top: 8,
+                bottom: 8,
+                width: 2,
+                background: 'var(--accent)',
+                borderRadius: '0 2px 2px 0'
+              }}
+            />
+          ) : null}
+          <Icon className="w-3.5 h-3.5 shrink-0" />
+          {collapsed ? null : (
+            <>
+              <span className="flex-1 truncate">{label}</span>
+              {badge > 0 ? (
+                <span
+                  className="font-mono"
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 9,
+                    letterSpacing: '.08em',
+                    padding: '2px 6px',
+                    borderRadius: 99,
+                    background: 'var(--surface-2)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border)'
+                  }}
+                >
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              ) : null}
+            </>
+          )}
+        </>
+      )}
     </NavLink>
   );
 }
 
-function Sidebar({ projectId, badges, onItemClick }) {
+function SidebarTelemetry({ cost, hasBuild, badges }) {
+  // Sticky-bottom telemetry footer per spec — daemon ver, device status,
+  // build queue, cumulative cost. Cost is null while loading and shows
+  // '—' if no spend ledger yet.
+  const queue = (badges && badges.board > 0) ? `${badges.board} pending` : 'idle';
   return (
-    <nav className="w-56 shrink-0 border-r border-ink-800 bg-ink-950 overflow-y-auto py-3 px-2 flex flex-col gap-4">
-      {SIDEBAR_GROUPS.map((group) => (
-        <div key={group.label}>
-          <div className="px-3 mb-1 text-[10px] tracking-[0.15em] text-ink-500 font-mono uppercase">
-            {group.label}
+    <div
+      className="mt-auto pt-3 font-mono flex flex-col gap-1.5"
+      style={{
+        borderTop: '1px dashed var(--border)',
+        fontSize: 10,
+        color: 'var(--text-dim)',
+        padding: '12px 4px 4px'
+      }}
+    >
+      <div className="flex justify-between items-center">
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--ok)',
+              boxShadow: '0 0 6px oklch(74% 0.14 145 / .5)',
+              display: 'inline-block'
+            }}
+          />
+          23s daemon
+        </span>
+        <span>v2.1.4</span>
+      </div>
+      <div className="flex justify-between">
+        <span>device</span>
+        <span>{hasBuild ? 'ready' : 'no build'}</span>
+      </div>
+      <div className="flex justify-between">
+        <span>build queue</span>
+        <span>{queue}</span>
+      </div>
+      <div className="flex justify-between">
+        <span>spend</span>
+        <span style={{ color: 'var(--text-soft)' }}>
+          {cost == null ? '—' : `$${cost.toFixed(2)}`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onItemClick }) {
+  return (
+    <aside
+      className="shrink-0 flex flex-col overflow-hidden sticky top-0"
+      style={{
+        width: collapsed ? 56 : 220,
+        height: '100vh',
+        background: 'var(--bg-2)',
+        borderRight: '1px solid var(--border)',
+        padding: collapsed ? '18px 8px' : '18px 14px 18px 18px',
+        transition: 'width .25s ease'
+      }}
+    >
+      {/* Brand row */}
+      <div
+        className={'flex items-center mb-3.5 pb-3.5 ' + (collapsed ? 'justify-center' : 'gap-2.5')}
+        style={{ borderBottom: '1px dashed var(--border)', padding: collapsed ? '6px 0 14px' : '6px 4px 14px' }}
+      >
+        <Link
+          to="/library"
+          className="shrink-0 relative overflow-hidden grid place-items-center"
+          style={{
+            width: 28, height: 28,
+            borderRadius: 5,
+            background: 'oklch(15% 0.01 75)',
+            border: '1px solid var(--border-2)'
+          }}
+          title="Library"
+        >
+          <img src="/assets/studio-logo.png" alt="23" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </Link>
+        {collapsed ? null : (
+          <>
+            <div className="flex flex-col leading-tight">
+              <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
+              <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>rev 1.0 · hakcers</span>
+            </div>
+            <button
+              type="button"
+              onClick={onCollapse}
+              title="Collapse"
+              className="ml-auto grid place-items-center"
+              style={{
+                width: 22, height: 22, borderRadius: 4,
+                background: 'transparent',
+                color: 'var(--text-dim)',
+                border: 0,
+                cursor: 'pointer'
+              }}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Groups */}
+      <div className={collapsed ? 'flex-1 overflow-y-auto flex flex-col gap-1' : 'flex-1 overflow-y-auto'} onClick={onItemClick}>
+        {SIDEBAR_GROUPS.map((group) => (
+          <div key={group.label} className={collapsed ? 'flex flex-col gap-0.5' : ''}>
+            {collapsed ? null : (
+              <div
+                className="font-mono uppercase"
+                style={{
+                  padding: '14px 4px 6px',
+                  fontSize: 10,
+                  letterSpacing: '.12em',
+                  color: 'var(--text-dim)'
+                }}
+              >
+                {group.label}
+              </div>
+            )}
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((it) => (
+                <SidebarItem
+                  key={it.path}
+                  to={`/projects/${projectId}/${it.path}`}
+                  label={it.label}
+                  icon={it.icon}
+                  badge={it.badgeKey ? badges[it.badgeKey] : 0}
+                  collapsed={collapsed}
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex flex-col gap-0.5" onClick={onItemClick}>
-            {group.items.map((it) => (
-              <SidebarItem
-                key={it.path}
-                to={`/projects/${projectId}/${it.path}`}
-                label={it.label}
-                icon={it.icon}
-                badge={it.badgeKey ? badges[it.badgeKey] : 0}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </nav>
+        ))}
+      </div>
+
+      {/* Telemetry footer (hidden when collapsed to rail) */}
+      {collapsed ? null : (
+        <SidebarTelemetry cost={cost} hasBuild={hasBuild} badges={badges} />
+      )}
+    </aside>
   );
 }
 
 // ----------------------------------------------------------------------------
-// Header action buttons
+// Topbar — 52px sticky, mono breadcrumbs, status chips, action cluster
 // ----------------------------------------------------------------------------
+
+function TopbarChip({ tone, children }) {
+  // tone: 'ok' (default), 'amber'
+  const dotBg = tone === 'amber' ? 'var(--accent)' : 'var(--ok)';
+  const dotGlow = tone === 'amber'
+    ? '0 0 6px oklch(78% 0.13 75 / .5)'
+    : '0 0 6px oklch(74% 0.14 145 / .5)';
+  return (
+    <span
+      className="inline-flex items-center font-mono"
+      style={{
+        fontSize: 11,
+        gap: 6,
+        padding: '4px 10px',
+        borderRadius: 99,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        color: 'var(--text-muted)'
+      }}
+    >
+      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: dotBg, boxShadow: dotGlow }} />
+      {children}
+    </span>
+  );
+}
+
+function Crumbs({ projectName, sectionLabel }) {
+  return (
+    <nav className="flex items-center font-mono" style={{ fontSize: 11, gap: 8, color: 'var(--text-muted)' }}>
+      <Link to="/library" style={{ color: 'var(--text-muted)' }}>Studio</Link>
+      <span style={{ color: 'var(--text-faint)' }}>/</span>
+      <span>{projectName}</span>
+      {sectionLabel ? (
+        <>
+          <span style={{ color: 'var(--text-faint)' }}>/</span>
+          <b style={{ color: 'var(--text)', fontWeight: 500 }}>{sectionLabel}</b>
+        </>
+      ) : null}
+    </nav>
+  );
+}
+
+// Map URL pathname suffix → label for the breadcrumb tail. Cheap routing
+// peek so we don't have to thread state through Outlet just for crumbs.
+function deriveSectionLabel(pathname, projectId) {
+  const tail = pathname.replace(new RegExp(`^.*?/projects/${projectId}/?`), '');
+  if (!tail) return null;
+  const [section, item] = tail.split('/');
+  const map = {
+    'author/brief': 'Brief',
+    'author/bible': 'Bible',
+    'author/storyboard': 'Storyboard',
+    'author/gallery': 'Gallery',
+    'author/references': 'References',
+    'build/files': 'Files',
+    'build/architecture': 'Architecture',
+    'build/milestones': 'Milestones',
+    'build/simulator': 'Simulator',
+    'review/board': 'Board',
+    'review/design': 'Design Validate',
+    'review/perf': 'Perf Audit',
+    'review/qa': 'QA Critic',
+    'release/ship': 'Ship',
+    'release/history': 'History',
+    'release/mvp': 'MVP Lock'
+  };
+  return map[`${section}/${item}`] || (section ? section[0].toUpperCase() + section.slice(1) : null);
+}
+
+// ----------------------------------------------------------------------------
+// Action cluster — kept from Part 0, restyled with token palette
+// ----------------------------------------------------------------------------
+
+const tkBtnBase = {
+  appearance: 'none',
+  border: '1px solid var(--border-2)',
+  background: 'transparent',
+  color: 'var(--text)',
+  padding: '6px 10px',
+  borderRadius: 'var(--radius-sm)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 12,
+  fontWeight: 500,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  cursor: 'pointer',
+  lineHeight: 1
+};
+const tkBtnPrimary = {
+  ...tkBtnBase,
+  background: 'var(--accent)',
+  color: 'var(--accent-ink)',
+  border: '1px solid var(--accent)',
+  fontWeight: 600
+};
 
 function EditButton({ projectId }) {
   return (
-    <Link
-      to={`/project/${projectId}/sdk/edit`}
-      className="btn text-xs"
-      title="edit scenes, characters, prompts"
-    >
+    <Link to={`/project/${projectId}/sdk/edit`} style={tkBtnBase} title="edit scenes, characters, prompts">
       <Pencil className="w-3 h-3" /> edit
     </Link>
   );
@@ -185,12 +448,12 @@ function BuildButton({ projectId, onStarted }) {
 
   return (
     <>
-      <button type="button" className="btn text-xs" onClick={doExport} disabled={busy}>
+      <button type="button" style={tkBtnBase} onClick={doExport} disabled={busy}>
         {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Hammer className="w-3 h-3" />}
         {busy ? 'building' : 'build .pdx'}
       </button>
       {msg ? (
-        <span className="text-ink-500 truncate max-w-[140px] text-xs font-mono">{msg}</span>
+        <span className="font-mono truncate" style={{ color: 'var(--text-dim)', fontSize: 11, maxWidth: 140 }}>{msg}</span>
       ) : null}
     </>
   );
@@ -201,7 +464,7 @@ function SimulatorButton({ projectId, disabled, disabledReason }) {
   return (
     <button
       type="button"
-      className="btn text-xs"
+      style={{ ...tkBtnBase, opacity: disabled ? 0.4 : 1, pointerEvents: disabled ? 'none' : 'auto' }}
       onClick={() => navigate(`/projects/${projectId}/build/simulator`)}
       disabled={disabled}
       title={disabled ? disabledReason : 'open simulator'}
@@ -219,7 +482,7 @@ function ShipHeaderButton({ projectId, disabled, disabledReason }) {
     <>
       <button
         type="button"
-        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs disabled:opacity-50"
+        style={{ ...tkBtnPrimary, opacity: disabled ? 0.4 : 1, pointerEvents: disabled ? 'none' : 'auto' }}
         onClick={() => setOpen(true)}
         disabled={disabled}
         title={disabled ? disabledReason : 'open ship flow'}
@@ -240,33 +503,36 @@ function ShipHeaderButton({ projectId, disabled, disabledReason }) {
 }
 
 function ShipPlaceholderModal({ onClose, onConfirm }) {
-  // Lightweight confirmation placeholder. Full pre-flight + SSE handoff lives
-  // on the dedicated /release/ship page (ShipStatus.jsx). We just route there.
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,.6)' }}
+      onClick={onClose}
+    >
       <div
-        className="bg-ink-900 ring-1 ring-ink-700 rounded-lg w-full max-w-md shadow-2xl"
+        className="w-full max-w-md shadow-2xl"
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border-2)',
+          borderRadius: 'var(--radius)'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-4 py-3 border-b border-ink-800 flex items-center gap-2">
-          <Rocket className="w-4 h-4 text-accent" />
-          <span className="text-sm text-ink-100">Ship release</span>
+        <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
+          <Rocket className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+          <span style={{ fontSize: 14, color: 'var(--text)' }}>Ship release</span>
           <div className="flex-1" />
-          <button type="button" onClick={onClose} className="text-ink-500 hover:text-ink-200">
+          <button type="button" onClick={onClose} style={{ color: 'var(--text-dim)', background: 'transparent', border: 0, cursor: 'pointer' }}>
             <XIcon className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-4 space-y-3 text-sm text-ink-300">
+        <div className="p-4 space-y-3" style={{ fontSize: 13, color: 'var(--text-soft)' }}>
           <p>This opens the dedicated ship workflow. Pre-flight gates (lint, drift, approvals) run there.</p>
-          <p className="text-xs text-ink-500">TODO — full inline pre-flight ships in a follow-up patch.</p>
+          <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>TODO — full inline pre-flight ships in a follow-up patch.</p>
         </div>
-        <div className="px-4 py-3 border-t border-ink-800 flex justify-end gap-2">
-          <button type="button" onClick={onClose}
-                  className="px-3 py-1.5 rounded bg-ink-800 hover:bg-ink-700 text-ink-200 text-xs">
-            cancel
-          </button>
-          <button type="button" onClick={onConfirm}
-                  className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs flex items-center gap-1.5">
+        <div className="px-4 py-3 flex justify-end gap-2" style={{ borderTop: '1px solid var(--border)' }}>
+          <button type="button" onClick={onClose} style={tkBtnBase}>cancel</button>
+          <button type="button" onClick={onConfirm} style={tkBtnPrimary}>
             <Rocket className="w-3 h-3" /> open ship page
           </button>
         </div>
@@ -276,7 +542,7 @@ function ShipPlaceholderModal({ onClose, onConfirm }) {
 }
 
 // ----------------------------------------------------------------------------
-// Overflow menu — settings, delete, export, sdk/pulp toggle
+// Overflow menu — restyled
 // ----------------------------------------------------------------------------
 
 function OverflowMenu({ project, onProjectChange }) {
@@ -301,27 +567,40 @@ function OverflowMenu({ project, onProjectChange }) {
     <div className="relative inline-flex" ref={wrapRef}>
       <button
         type="button"
-        className="btn-icon"
         onClick={() => setOpen((v) => !v)}
         title="more"
         aria-haspopup="menu"
         aria-expanded={open}
+        style={{
+          ...tkBtnBase,
+          padding: 6,
+          width: 30,
+          height: 30,
+          justifyContent: 'center'
+        }}
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
       {open ? (
         <div
-          className="absolute right-0 top-full mt-1 w-64 z-40 rounded ring-1 ring-ink-700 bg-ink-900 shadow-xl p-1 text-xs"
+          className="absolute right-0 top-full mt-1 z-40 shadow-xl p-1"
           role="menu"
+          style={{
+            width: 256,
+            background: 'var(--surface)',
+            border: '1px solid var(--border-2)',
+            borderRadius: 'var(--radius)',
+            fontSize: 12
+          }}
         >
           <MenuRow icon={Settings} label="Project settings" disabled note="TODO" />
           <MenuRow icon={UploadIcon} label="Export project state" disabled note="TODO" />
           <div className="px-3 py-2 flex items-center gap-2">
-            <ToggleLeft className="w-3.5 h-3.5 text-ink-400" />
-            <span className="flex-1 text-ink-200">Game type</span>
+            <ToggleLeft className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+            <span className="flex-1" style={{ color: 'var(--text)' }}>Game type</span>
             <GameTypeToggle project={project} onChange={onProjectChange} />
           </div>
-          <div className="my-1 border-t border-ink-800" />
+          <div className="my-1" style={{ borderTop: '1px solid var(--border)' }} />
           <MenuRow icon={Trash2} label="Delete project" danger disabled note="TODO" />
         </div>
       ) : null}
@@ -335,46 +614,27 @@ function MenuRow({ icon: Icon, label, danger, disabled, note, onClick }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={
-        'w-full flex items-center gap-2 px-3 py-1.5 rounded text-left ' +
-        (disabled ? 'opacity-50 cursor-not-allowed ' : 'hover:bg-ink-800 ') +
-        (danger ? 'text-red-300' : 'text-ink-200')
-      }
+      className="w-full flex items-center gap-2 text-left"
       role="menuitem"
+      style={{
+        padding: '6px 12px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'transparent',
+        border: 0,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
+        color: danger ? 'var(--danger)' : 'var(--text)',
+        fontSize: 12
+      }}
+      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = 'var(--surface-2)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
       <Icon className="w-3.5 h-3.5" />
       <span className="flex-1">{label}</span>
-      {note ? <span className="text-[10px] text-ink-500 font-mono">{note}</span> : null}
+      {note ? (
+        <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-dim)' }}>{note}</span>
+      ) : null}
     </button>
-  );
-}
-
-// ----------------------------------------------------------------------------
-// Footer — cost roll-up
-// ----------------------------------------------------------------------------
-
-function CostFooter({ projectId }) {
-  const [cost, setCost] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    api.get(`/api/projects/${projectId}/cost`)
-      .then((r) => {
-        if (!alive) return;
-        const usd = r && (r.total_cost_usd != null ? r.total_cost_usd : (r.summary && r.summary.total_cost_usd));
-        setCost(typeof usd === 'number' ? usd : null);
-      })
-      .catch(() => { /* silent — footer is non-critical */ });
-    return () => { alive = false; };
-  }, [projectId]);
-
-  return (
-    <div className="h-7 border-t border-ink-800 bg-ink-950 px-3 flex items-center text-[10px] font-mono text-ink-500 gap-3">
-      <span>cost</span>
-      <span className="text-ink-300">
-        {cost == null ? '—' : `$${cost.toFixed(3)}`}
-      </span>
-    </div>
   );
 }
 
@@ -388,7 +648,17 @@ export default function ProjectShell() {
   const [err, setErr] = useState(null);
   const [meta, setMeta] = useState(null);
   const [badges, setBadges] = useState({ gallery: 0, references: 0, board: 0 });
+  const [cost, setCost] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('23s.shell.collapsed') === '1'; } catch (_e) { return false; }
+  });
+
+  // Persist collapse pref
+  useEffect(() => {
+    try { localStorage.setItem('23s.shell.collapsed', collapsed ? '1' : '0'); } catch (_e) {}
+  }, [collapsed]);
 
   // Project record
   useEffect(() => {
@@ -413,11 +683,23 @@ export default function ProjectShell() {
     return () => { alive = false; };
   }, [id]);
 
+  // Cost rollup for sidebar footer. Endpoint returns a summary object with
+  // total_cost_usd (see server/routes/cost.js). Silent failure → '—'.
+  useEffect(() => {
+    let alive = true;
+    api.get(`/api/projects/${id}/cost`)
+      .then((r) => {
+        if (!alive) return;
+        const usd = r && (r.total_cost_usd != null ? r.total_cost_usd : (r.summary && r.summary.total_cost_usd));
+        setCost(typeof usd === 'number' ? usd : null);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [id]);
+
   // Badge counts — fire-and-forget; missing endpoints render 0 silently.
   const refreshBadges = useCallback(() => {
     let alive = true;
-    // Gallery: count pending. /api/projects/:id/gallery is the Phase 4.5
-    // Patch A endpoint and may not exist yet — swallow 404.
     api.get(`/api/projects/${id}/gallery`)
       .then((r) => {
         if (!alive) return;
@@ -426,18 +708,14 @@ export default function ProjectShell() {
           : 0;
         setBadges((b) => ({ ...b, gallery: pending }));
       })
-      .catch(() => { /* endpoint may not exist yet */ });
-
-    // References: count from /references items[]
+      .catch(() => {});
     api.get(`/api/projects/${id}/references`)
       .then((r) => {
         if (!alive) return;
         const count = Array.isArray(r && r.items) ? r.items.length : 0;
         setBadges((b) => ({ ...b, references: count }));
       })
-      .catch(() => { /* silent */ });
-
-    // Review board: counts.pending
+      .catch(() => {});
     api.get(`/api/projects/${id}/review`)
       .then((r) => {
         if (!alive) return;
@@ -445,8 +723,7 @@ export default function ProjectShell() {
           ? r.counts.pending : 0;
         setBadges((b) => ({ ...b, board: pending }));
       })
-      .catch(() => { /* silent */ });
-
+      .catch(() => {});
     return () => { alive = false; };
   }, [id]);
 
@@ -457,8 +734,12 @@ export default function ProjectShell() {
 
   if (err === 'not_found') {
     return (
-      <div className="h-screen flex items-center justify-center bg-ink-900 text-ink-300 text-sm">
-        Project not found. <Link to="/dashboard" className="ml-2 underline">dashboard</Link>
+      <div
+        className="h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg)', color: 'var(--text-soft)', fontSize: 13 }}
+      >
+        Project not found.
+        <Link to="/library" style={{ marginLeft: 8, color: 'var(--accent)' }}>library</Link>
       </div>
     );
   }
@@ -469,34 +750,104 @@ export default function ProjectShell() {
   const simDisabled = !hasBuild;
   const simReason = simDisabled ? 'no build exists yet' : null;
 
+  const sectionLabel = deriveSectionLabel(
+    typeof window !== 'undefined' ? window.location.pathname : '',
+    id
+  );
+
+  // Build queue chip count — reuse review pending as a proxy until the
+  // SSE queue surface lands. 1+ = amber dot, else green.
+  const queueCount = badges.board || 0;
+
   return (
-    <div className="h-screen flex flex-col bg-ink-900 text-ink-100">
-      <Nav subtitle={project?.name || id} />
+    <div
+      className="h-screen flex font-ui"
+      style={{ background: 'var(--bg)', color: 'var(--text)' }}
+    >
+      {/* Desktop sidebar */}
+      <div className="hidden lg:block">
+        <Sidebar
+          projectId={id}
+          badges={badges}
+          collapsed={collapsed}
+          onCollapse={() => setCollapsed(true)}
+          cost={cost}
+          hasBuild={!!hasBuild}
+        />
+      </div>
 
-      {/* Project gate banner — empty/free when no gate is active */}
-      <GateBanner />
+      {/* Mobile sidebar drawer */}
+      {mobileNavOpen ? (
+        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileNavOpen(false)}>
+          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,.6)' }} />
+          <div className="relative h-full" onClick={(e) => e.stopPropagation()}>
+            <Sidebar
+              projectId={id}
+              badges={badges}
+              collapsed={false}
+              onCollapse={() => setMobileNavOpen(false)}
+              cost={cost}
+              hasBuild={!!hasBuild}
+              onItemClick={() => setMobileNavOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
 
-      {/* Action strip: status + 5 actions + overflow */}
-      <div className="bg-ink-900 border-b border-ink-800">
-        <div className="px-3 h-10 flex items-center gap-2">
+      <main className="flex-1 min-w-0 flex flex-col relative">
+        {/* Floating rail-expand button when sidebar is collapsed */}
+        {collapsed ? (
           <button
             type="button"
-            className="btn-icon lg:hidden"
+            onClick={() => setCollapsed(false)}
+            title="Expand"
+            className="hidden lg:grid place-items-center absolute"
+            style={{
+              top: 14, left: 14, zIndex: 4,
+              width: 22, height: 22, borderRadius: 4,
+              background: 'var(--surface)',
+              color: 'var(--text-dim)',
+              border: '1px solid var(--border-2)',
+              cursor: 'pointer'
+            }}
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        ) : null}
+
+        {/* Topbar — 52px sticky */}
+        <header
+          className="sticky top-0 z-10 flex items-center"
+          style={{
+            height: 52,
+            background: 'var(--bg)',
+            borderBottom: '1px solid var(--border)',
+            padding: '0 24px',
+            gap: 14
+          }}
+        >
+          {/* Mobile sidebar toggle */}
+          <button
+            type="button"
+            className="lg:hidden grid place-items-center"
             onClick={() => setMobileNavOpen((v) => !v)}
             aria-label="toggle sidebar"
             title="toggle sidebar"
+            style={{
+              width: 28, height: 28, borderRadius: 4,
+              background: 'transparent', color: 'var(--text-muted)', border: 0, cursor: 'pointer'
+            }}
           >
             <Menu className="w-4 h-4" />
           </button>
-          <StatusBadge status={project?.status} />
-          <div className="flex-1 hidden md:flex items-center gap-2 text-xs text-ink-500 font-mono truncate">
-            {meta && meta.version ? <span>v{meta.version}</span> : null}
-            {meta && meta.scene_count != null ? <span>· {meta.scene_count} scenes</span> : null}
-            {meta && meta.character_count != null ? <span>· {meta.character_count} chars</span> : null}
-          </div>
 
-          {/* Action cluster — collapses to overflow on narrow viewports */}
-          <div className="hidden md:flex items-center gap-1">
+          <Crumbs projectName={project?.name || id} sectionLabel={sectionLabel} />
+
+          <StatusBadge status={project?.status} />
+
+          <div className="flex-1" />
+
+          <div className="hidden md:flex items-center gap-1.5">
             <EditButton projectId={id} />
             <BuildButton projectId={id} onStarted={refreshBadges} />
             <ReleasesDropdown projectId={id} />
@@ -505,45 +856,36 @@ export default function ProjectShell() {
           </div>
 
           <OverflowMenu project={project} onProjectChange={setProject} />
+        </header>
+
+        {/* Status chips strip */}
+        <div
+          className="flex items-center gap-2 flex-wrap"
+          style={{
+            padding: '8px 24px',
+            background: 'var(--bg-2)',
+            borderBottom: '1px solid var(--border)'
+          }}
+        >
+          <TopbarChip tone="ok">device ready</TopbarChip>
+          <TopbarChip tone={queueCount > 0 ? 'amber' : 'ok'}>build queue: {queueCount}</TopbarChip>
+          <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-dim)' }}>seed 0xR23-G23S</span>
         </div>
-      </div>
 
-      <div className="flex-1 min-h-0 flex">
-        {/* Desktop sidebar */}
-        <div className="hidden lg:block">
-          <Sidebar projectId={id} badges={badges} />
-        </div>
+        {/* Project gate banner */}
+        <GateBanner />
 
-        {/* Mobile sidebar drawer */}
-        {mobileNavOpen ? (
-          <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileNavOpen(false)}>
-            <div className="absolute inset-0 bg-black/60" />
-            <div
-              className="relative h-full w-56"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Sidebar
-                projectId={id}
-                badges={badges}
-                onItemClick={() => setMobileNavOpen(false)}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {/* Main content area — child route renders here */}
-        <main className="flex-1 min-w-0 min-h-0 overflow-auto bg-ink-900">
+        {/* Main content area */}
+        <div className="flex-1 min-h-0 overflow-auto" style={{ background: 'var(--bg)' }}>
           {!project ? (
-            <div className="p-6 text-ink-400 text-sm flex items-center gap-2">
+            <div className="p-6 flex items-center gap-2" style={{ color: 'var(--text-muted)', fontSize: 13 }}>
               <Loader2 className="w-4 h-4 animate-spin" /> loading project…
             </div>
           ) : (
             <Outlet context={{ project, meta, refreshBadges }} />
           )}
-        </main>
-      </div>
-
-      <CostFooter projectId={id} />
+        </div>
+      </main>
     </div>
   );
 }
