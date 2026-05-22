@@ -150,4 +150,72 @@ router.post('/:id/gallery/assets/:assetId/regen',
   }
 );
 
+// ---------------------------------------------------------------------------
+// Phase 4.5 Patch F — dither variant picker
+// ---------------------------------------------------------------------------
+//
+// GET  /api/projects/:id/gallery/assets/:assetId/dither/variants
+//        → { variants: [{ algo, url, bytes, generatedAt }, ...] }
+//        Returns [] if no variants exist yet.
+//
+// POST /api/projects/:id/gallery/assets/:assetId/dither/variants
+//        → triggers dither_variants.generateVariants synchronously
+//          (5 variants × ~100ms = ~500ms; well under the 5s threshold).
+//          Returns the same shape as GET.
+//
+// POST /api/projects/:id/gallery/assets/:assetId/dither/pick
+//        body: { algo: "atkinson_punchy" }
+//        → updates <local_path>/sdk_data/dither_config.json with this pick
+//          for the asset's config key (scene_bg / portrait / card / icon).
+//          Returns { configKey, algo, picks }.
+
+router.get('/:id/gallery/assets/:assetId/dither/variants', async (req, res) => {
+  const idErr = validateId(req.params.id);
+  if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
+  const assetId = decodeAssetId(req.params.assetId);
+  try {
+    const data = await gallery.listVariants(req.params.id, assetId);
+    res.json(data);
+  } catch (e) { sendErr(res, e); }
+});
+
+router.post('/:id/gallery/assets/:assetId/dither/variants',
+  express.json({ limit: '4kb' }),
+  async (req, res) => {
+    const idErr = validateId(req.params.id);
+    if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
+    const assetId = decodeAssetId(req.params.assetId);
+    try {
+      const data = await gallery.generateVariantsFor(req.params.id, assetId);
+      res.json(data);
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
+router.post('/:id/gallery/assets/:assetId/dither/pick',
+  express.json({ limit: '4kb' }),
+  async (req, res) => {
+    const idErr = validateId(req.params.id);
+    if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
+    const assetId = decodeAssetId(req.params.assetId);
+    const body = req.body || {};
+    const algo = typeof body.algo === 'string' ? body.algo : null;
+    if (!algo) {
+      return res.status(400).json({
+        error: 'bad_request',
+        detail: 'body must include { algo: "<variant_name>" }'
+      });
+    }
+    // Resolve the asset's type so recordDitherPick can map to a config key.
+    // getAsset already validates the asset id + that the png exists on disk.
+    try {
+      const asset = await gallery.getAsset(req.params.id, assetId);
+      const result = await gallery.recordDitherPick(
+        req.params.id, asset.type, algo, asset.name
+      );
+      res.json(result);
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
 module.exports = router;

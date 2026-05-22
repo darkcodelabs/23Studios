@@ -32,6 +32,7 @@ const path = require('path');
 
 const projects = require('./projects');
 const pulpAi = require('./pulp_ai');
+const ditherVariants = require('./dither_variants');
 
 const VALID_STATES = new Set(['pending', 'approved', 'rejected', 'regenerating']);
 
@@ -562,6 +563,178 @@ async function updateAssetSidecar(projectId, assetId, fields) {
   return getAsset(projectId, assetId);
 }
 
+// ----------------------------------------------------------------------------
+// Dither variants (Phase 4.5 Patch F)
+// ----------------------------------------------------------------------------
+//
+// listVariants(projectId, assetId)
+//   → { assetId, variants: [{algo, url, bytes}, ...] }
+//
+// Scans <local_path>/sdk_data/dither_variants/<sanitized_id>/ for *.png and
+// returns metadata + the same /file/raw URL pattern the rest of the gallery
+// uses. Returns an empty array if the dir doesn't exist yet (variants not
+// generated for this asset). Safe to call cheaply from the UI.
+
+async function listVariants(projectId, assetId) {
+  const parsed = parseAssetId(assetId);
+  if (!parsed) {
+    const err = new Error('invalid asset id (expected "<type>:<name>")');
+    err.status = 400; err.code = 'bad_asset_id';
+    throw err;
+  }
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+  const safeId = ditherVariants.sanitizeAssetId(assetId);
+  const dirAbs = path.join(localPath, 'sdk_data', 'dither_variants', safeId);
+
+  let entries;
+  try {
+    entries = await fsp.readdir(dirAbs, { withFileTypes: true });
+  } catch (_e) {
+    return { assetId, variants: [] };
+  }
+
+  const variants = [];
+  for (const ent of entries) {
+    if (!ent.isFile()) continue;
+    if (!ent.name.toLowerCase().endsWith('.png')) continue;
+    const algo = ent.name.slice(0, -4);
+    const pngAbs = path.join(dirAbs, ent.name);
+    let stat;
+    try { stat = await fsp.stat(pngAbs); } catch (_e) { continue; }
+    const relPath = `sdk_data/dither_variants/${safeId}/${ent.name}`;
+    variants.push({
+      algo,
+      url: `/api/projects/${encodeURIComponent(projectId)}/file/raw?path=${encodeURIComponent(relPath)}`,
+      bytes: stat.size,
+      generatedAt: stat.mtime.toISOString()
+    });
+  }
+
+  // Stable order mirroring dither_variants.VARIANTS spec order.
+  const ORDER = ['atkinson', 'atkinson_punchy', 'floyd_steinberg', 'bayer4x4', 'threshold'];
+  variants.sort((a, b) => {
+    const ai = ORDER.indexOf(a.algo);
+    const bi = ORDER.indexOf(b.algo);
+    if (ai === -1 && bi === -1) return a.algo.localeCompare(b.algo);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+
+  return { assetId, variants };
+}
+
+// generateVariantsFor(projectId, assetId)
+//   → { assetId, variants: [{algo, url, bytes}, ...] }
+//
+// Runs dither_variants.generateVariants (synchronously holding the HTTP
+// connection) and then re-reads the directory through listVariants so the
+// response shape matches GET. The synchronous-vs-async decision in the spec
+// is: scenes regen in ~100ms each * 5 = ~500ms total, well under the 5s
+// async threshold. Keeping it synchronous keeps the UI flow simple.
+
+async function generateVariantsFor(projectId, assetId) {
+  // Throws typed errors on bad asset id / missing project / missing source.
+  await ditherVariants.generateVariants(projectId, assetId);
+  return listVariants(projectId, assetId);
+}
+
+// recordDitherPick(projectId, assetType, algo)
+//
+// Persists the user's pick to <local_path>/sdk_data/dither_config.json per
+// the shape spec'd in Phase 4 Patch F:
+//
+//   {
+//     "version": 1,
+//     "updatedAt": ISO,
+//     "picks":   { "scene_bg": "atkinson_punchy", "portrait": "atkinson", ... },
+//     "history": [ { "asset_type": "scene_bg", "algo": "...", "picked_at": ISO } ]
+//   }
+//
+// Asset type maps from the gallery's type enum:
+//   scene    → "scene_bg"
+//   portrait → "portrait"
+//   launcher → "card"        (default; spec keys "card" / "icon" map per name)
+//
+// Picks are CAPPED to the dither_variants.VARIANTS name set so a typo
+// can't poison the config.
+
+const VALID_PICK_ALGOS = new Set(ditherVariants.VARIANTS.map((v) => v.name));
+
+function ditherConfigPath(localPath) {
+  return path.join(localPath, 'sdk_data', 'dither_config.json');
+}
+
+function emptyDitherConfig() {
+  return { version: 1, updatedAt: null, picks: {}, history: [] };
+}
+
+async function readDitherConfig(localPath) {
+  const p = ditherConfigPath(localPath);
+  try {
+    const raw = await fsp.readFile(p, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return emptyDitherConfig();
+    if (!parsed.picks   || typeof parsed.picks   !== 'object') parsed.picks   = {};
+    if (!Array.isArray(parsed.history)) parsed.history = [];
+    if (!parsed.version) parsed.version = 1;
+    return parsed;
+  } catch (_e) {
+    return emptyDitherConfig();
+  }
+}
+
+async function writeDitherConfig(localPath, cfg) {
+  const p = ditherConfigPath(localPath);
+  cfg.version = 1;
+  cfg.updatedAt = new Date().toISOString();
+  await fsp.mkdir(path.dirname(p), { recursive: true });
+  const tmp = p + '.' + process.pid + '.' + Date.now() + '.tmp';
+  await fsp.writeFile(tmp, JSON.stringify(cfg, null, 2));
+  await fsp.rename(tmp, p);
+}
+
+// Type → asset-class key. Spec'd defaults so the UI doesn't have to think.
+function assetTypeToConfigKey(assetType, assetName) {
+  if (assetType === 'scene')    return 'scene_bg';
+  if (assetType === 'portrait') return 'portrait';
+  if (assetType === 'launcher') {
+    if (assetName === 'icon') return 'icon';
+    if (assetName === 'card') return 'card';
+    return 'card'; // launch_image et al default to card
+  }
+  return 'scene_bg';
+}
+
+async function recordDitherPick(projectId, assetType, algo, assetName) {
+  if (!VALID_PICK_ALGOS.has(algo)) {
+    const err = new Error(
+      'invalid algo "' + algo + '"; must be one of: ' +
+      [...VALID_PICK_ALGOS].join(', ')
+    );
+    err.status = 400; err.code = 'bad_algo';
+    throw err;
+  }
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+
+  const configKey = assetTypeToConfigKey(assetType, assetName);
+  const cfg = await readDitherConfig(localPath);
+  cfg.picks[configKey] = algo;
+  cfg.history.push({
+    asset_type: configKey,
+    algo,
+    picked_at: new Date().toISOString()
+  });
+  // Cap history at 50 entries to keep the file bounded (mirrors regen
+  // history cap in regenAsset).
+  if (cfg.history.length > 50) cfg.history = cfg.history.slice(-50);
+
+  await writeDitherConfig(localPath, cfg);
+  return { configKey, algo, picks: cfg.picks };
+}
+
 module.exports = {
   listAssets,
   getAsset,
@@ -570,12 +743,20 @@ module.exports = {
   updateAssetSidecar,
   readGalleryState,
   writeGalleryState,
+  // Phase 4.5 Patch F — dither variant picker
+  listVariants,
+  generateVariantsFor,
+  recordDitherPick,
+  readDitherConfig,
   _internals: {
     parseAssetId,
     assetIdFor,
     galleryStatePath,
     TYPE_DIR,
     VALID_STATES,
-    ALLOWED_SIDECAR_FIELDS
+    ALLOWED_SIDECAR_FIELDS,
+    ditherConfigPath,
+    assetTypeToConfigKey,
+    VALID_PICK_ALGOS
   }
 };
