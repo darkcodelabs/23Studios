@@ -49,6 +49,20 @@ async function countByExt(absDir, suffix, depth = 6) {
   return n;
 }
 
+// Read <base>/sdk_data/project.json, return parsed object or null. Tolerates
+// missing / unparseable file — callers fall back to disk counts.
+async function readProjectJson(base) {
+  try {
+    const raw = await fsp.readFile(
+      path.join(base, 'sdk_data', 'project.json'), 'utf8'
+    );
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : null;
+  } catch (_e) {
+    return null;
+  }
+}
+
 async function pickTitleImage(base, projectId) {
   // Search order tuned for desktop card hero — prefer the high-detail
   // source artwork (pre-1-bit dither) over the device-ready image.
@@ -110,10 +124,36 @@ async function pickTitleImage(base, projectId) {
   const at = path.join(base, 'assets', 'title.png');
   if (fs.existsSync(at)) return fileRawUrl('assets/title.png');
 
+  // 6. ANY PNG in <project>_pixel_collection/  (deterministic first alpha).
+  //    Phase 4.5 audit spec fix: projects with curated source art but no
+  //    canonical title.png (e.g. hakcd) still deserve a card hero. Pick the
+  //    first alphabetical PNG so the choice is stable across restarts.
+  if (collectionDir) {
+    const colEnts = await readDirSafe(path.join(base, collectionDir.name));
+    const colPngs = colEnts
+      .filter((e) => e.isFile() && /\.png$/i.test(e.name))
+      .map((e) => e.name)
+      .sort();
+    if (colPngs.length > 0) {
+      return fileRawUrl(path.posix.join(collectionDir.name, colPngs[0]));
+    }
+  }
+
+  // 7. ANY PNG in sdk_data/scenes/  (deterministic first alpha) — covers
+  //    autopilot output that didn't pick a title_*.png name (e.g. files
+  //    named "bedroom_pixel_art.png" only).
+  const fallbackScenePng = sceneEnts
+    .filter((e) => e.isFile() && /\.png$/i.test(e.name))
+    .map((e) => e.name)
+    .sort();
+  if (fallbackScenePng.length > 0) {
+    return fileRawUrl(path.posix.join('sdk_data', 'scenes', fallbackScenePng[0]));
+  }
+
   return null;
 }
 
-async function pickSceneCount(base) {
+async function pickSceneCount(base, projectJson) {
   // Prefer sdk_data/scenes/*.json (declarative scene manifests).
   const jsonDir = path.join(base, 'sdk_data', 'scenes');
   const jsonEnts = await readDirSafe(jsonDir);
@@ -121,16 +161,37 @@ async function pickSceneCount(base) {
     (e) => e.isFile() && e.name.toLowerCase().endsWith('.json')
   ).length;
   if (jsonCount > 0) return jsonCount;
-  // Fallback: count *.lua under source/scenes/** (recursive).
-  return countByExt(path.join(base, 'source', 'scenes'), '.lua');
-}
-
-async function pickCharacterCount(base) {
-  const dir = path.join(base, 'sdk_data', 'characters');
-  const ents = await readDirSafe(dir);
-  return ents.filter(
+  // 2nd: count rendered PNGs in sdk_data/scenes/ (autopilot output before
+  // scene_lua materializes per-scene JSON manifests).
+  const pngCount = jsonEnts.filter(
     (e) => e.isFile() && e.name.toLowerCase().endsWith('.png')
   ).length;
+  if (pngCount > 0) return pngCount;
+  // 3rd: count *.lua under source/scenes/** (recursive).
+  const luaCount = await countByExt(path.join(base, 'source', 'scenes'), '.lua');
+  if (luaCount > 0) return luaCount;
+  // 4th (Phase 4.5 fix): fall back to sdk_data/project.json declared scenes.
+  // Projects mid-autopilot have a populated project.json but no disk artifacts
+  // yet — Library cards should reflect the declared scope, not 0.
+  if (projectJson && Array.isArray(projectJson.scenes)) {
+    return projectJson.scenes.length;
+  }
+  return 0;
+}
+
+async function pickCharacterCount(base, projectJson) {
+  const dir = path.join(base, 'sdk_data', 'characters');
+  const ents = await readDirSafe(dir);
+  const pngCount = ents.filter(
+    (e) => e.isFile() && e.name.toLowerCase().endsWith('.png')
+  ).length;
+  if (pngCount > 0) return pngCount;
+  // Phase 4.5 fix: fall back to declared characters in project.json so
+  // the card shows true scope before portraits render.
+  if (projectJson && Array.isArray(projectJson.characters)) {
+    return projectJson.characters.length;
+  }
+  return 0;
 }
 
 const TAG_RE = /^[a-zA-Z0-9._+-]{1,64}$/;
@@ -236,11 +297,15 @@ router.get('/:id/card_meta', async (req, res, next) => {
       });
     }
 
+    // Read project.json once so scene + character pickers can fall back to
+    // the declared scope when no disk artifacts exist yet (mid-autopilot).
+    const projectJson = await readProjectJson(base);
+
     const [title_image_url, scene_count, character_count, version, buildInfo] =
       await Promise.all([
         pickTitleImage(base, project.id),
-        pickSceneCount(base),
-        pickCharacterCount(base),
+        pickSceneCount(base, projectJson),
+        pickCharacterCount(base, projectJson),
         pickVersion(base),
         pickLatestBuild(base, project.id)
       ]);
