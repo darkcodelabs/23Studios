@@ -806,9 +806,9 @@ function buildSceneLuaFromFeatures(scene, featureSet, recipeBody) {
   // scene_manager.replace(require("scenes." .. target_id), { spawn = ... })
   const exitsTable = exits.length
     ? `local exits = {\n${exits.map((e) => {
-        const lbl = JSON.stringify(String((e && (e.label || e.to_scene)) || 'next'));
-        const tgt = JSON.stringify(String((e && e.to_scene) || ''));
-        const spw = JSON.stringify(String((e && e.spawn_target) || (e && e.spawn) || ''));
+        const lbl = JSON.stringify(String((e && (e.label || e.to)) || 'next'));
+        const tgt = JSON.stringify(String((e && e.to) || ''));
+        const spw = JSON.stringify(String((e && e.spawn) || ''));
         return `  [${lbl}] = { to = ${tgt}, spawn = ${spw} },`;
       }).join('\n')}\n}`
     : `local exits = {} -- no static exits declared`;
