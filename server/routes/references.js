@@ -119,6 +119,19 @@ router.post('/projects/:id/references',
   }
 );
 
+// GET /api/projects/:id/references/:filename/raw
+//   Streams the resolved PNG bytes — gallery thumbnails consume this.
+router.get('/projects/:id/references/:filename/raw', async (req, res) => {
+  const idErr = validateId(req.params.id);
+  if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
+  try {
+    const buf = await references.resolveReferenceFile(req.params.id, req.params.filename);
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.end(buf);
+  } catch (e) { sendErr(res, e); }
+});
+
 // DELETE /api/projects/:id/references/:filename
 //   Removes from per-project upload dir + scrubs from per-project manifest.
 //   Refuses to touch global defaults (those aren't stored on disk in this

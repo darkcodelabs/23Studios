@@ -606,7 +606,11 @@ async function resolveReferenceFile(projectId, filename) {
     path.join(uploadDir(localPath), safeName),
     path.join(localPath, 'hakcd_pixel_collection', safeName),
     path.join(localPath, 'sdk_data', 'asset_library', safeName),
-    path.join(localPath, 'assets', safeName)
+    path.join(localPath, 'assets', safeName),
+    // Global reference set — defaults live next to the user's other personal
+    // projects, not inside any individual project's tree. Lets a fresh
+    // project pick up the canonical HAKCD reference art without copying.
+    path.join(process.env.STUDIO_REFERENCE_ROOT || '/home/hakcer/projects/personal/hakcd/hakcd_pixel_collection', safeName)
   ];
 
   for (const abs of candidates) {

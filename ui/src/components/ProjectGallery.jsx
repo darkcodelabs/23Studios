@@ -280,18 +280,24 @@ function FilterBar({ filters, setFilters, sortKey, setSortKey, total, shown }) {
 // References row
 // ----------------------------------------------------------------------------
 
+function referenceRawUrl(projectId, filename) {
+  return `${appBase()}/api/projects/${encodeURIComponent(projectId)}/references/${encodeURIComponent(filename)}/raw`;
+}
+
 function referenceImageUrl(projectId, reference) {
   // Manifest entries (Patch A) may carry filename only. Project-scope
   // references (Phase 6 B5) carry a `path` relative to local_path.
   // Backend merged manifest also emits bare strings (e.g. default_set).
+  // Route bare filenames through the resolver endpoint — backend searches
+  // upload dir + project tree + global HAKCD reference set.
   if (!reference) return null;
   if (typeof reference === 'string') {
-    return fileRawUrl(projectId, `sdk_data/asset_library/${reference}`);
+    return referenceRawUrl(projectId, reference);
   }
   if (reference.url) return reference.url.startsWith('/') ? appBase() + reference.url : reference.url;
   if (reference.path) return fileRawUrl(projectId, reference.path);
   if (reference.filename) {
-    return fileRawUrl(projectId, `sdk_data/asset_library/${reference.filename}`);
+    return referenceRawUrl(projectId, reference.filename);
   }
   return null;
 }

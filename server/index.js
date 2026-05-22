@@ -256,6 +256,23 @@ app.use('/api/projects', architectureRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
+  // Vite emits relative asset paths like ./assets/index-X.css. With nested
+  // SPA routes (/projects/:id/<section>/<item>), the browser's preload
+  // scanner fetches those links BEFORE the inline boot script can set
+  // <base href>, so the URL resolves against the document URL and we get
+  // e.g. /projects/hakcd-v2/author/assets/foo.css. SPA fallback then
+  // returns the index HTML with text/html MIME and the browser refuses
+  // to apply the stylesheet. Fix: rewrite any request whose path ends in
+  // .../assets/<file> or .../icons/<file> down to the canonical
+  // /assets/<file> or /icons/<file> before express.static sees it.
+  app.use((req, res, next) => {
+    const m = req.path.match(/^\/(?:[^/]+\/)*(assets|icons)\/(.+)$/);
+    if (m) {
+      req.url = `/${m[1]}/${m[2]}`;
+    }
+    next();
+  });
+
   // Hashed Vite assets are immutable; everything else (the rare top-level
   // file) gets no-cache so a fresh build never gets shadowed by a proxy.
   app.use(express.static(PUBLIC_DIR, {
