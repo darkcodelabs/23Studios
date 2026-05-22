@@ -63,6 +63,7 @@ const reviewBoardRouter = require('./routes/review_board');
 const batchesRouter = require('./routes/batches');
 const perfRouter = require('./routes/perf');
 const architectureRouter = require('./routes/architecture');
+const qualityReportsRouter = require('./routes/quality_reports');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -243,6 +244,11 @@ app.use('/api/projects', scopeRouter);
 app.use('/api', shipRouter);
 app.use('/api/projects', releasesRouter);
 app.use('/api/projects', cardMetaRouter);
+// quality_reports MUST mount before designRouter / perfRouter /
+// architectureRouter so its GET stubs return 200 even when the underlying
+// report file is missing. POST routes still flow to those older routers
+// because they only define POST handlers for the same paths (no overlap).
+app.use('/api/projects', qualityReportsRouter);
 app.use('/api/projects', designRouter);
 app.use('/api/projects', conceptsRouter);
 app.use('/api/projects', milestonesRouter);

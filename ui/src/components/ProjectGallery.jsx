@@ -682,14 +682,14 @@ function InspCode({ asset }) {
   );
 }
 
-function InspRefs({ projectId, references, asset, onAdd }) {
+function InspRefs({ projectId, references, asset, onAdd, selectedSet, savedSet, onToggle }) {
   const refs = references || [];
   return (
     <>
       <div style={smallcaps()}>references for this asset</div>
       <p className="font-mono" style={{ margin: 0, fontSize: 11, color: 'var(--text-dim)' }}>
         Pick which references guide the next regen of <b style={{ color: 'var(--text-soft)' }}>{asset.name || asset.id}</b>.
-        Final selection is committed via the editor regen panel.
+        Selection persists to <code style={{ color: 'var(--text-soft)' }}>{asset.name}.prompt.json</code> as you toggle.
       </p>
 
       {refs.length === 0 ? (
@@ -730,12 +730,15 @@ function InspRefs({ projectId, references, asset, onAdd }) {
           {refs.map((r, idx) => {
             const url = referenceImageUrl(projectId, r);
             const label = referenceLabel(r);
+            const key = (typeof r === 'string' ? r : (r?.filename || r?.path || r?.name)) || `ref-${idx}`;
+            const checked = selectedSet ? selectedSet.has(key) : true;
+            const justSaved = savedSet ? savedSet.has(key) : false;
             return (
               <label
-                key={(typeof r === 'string' ? r : (r?.path || r?.filename || r?.name)) || idx}
+                key={key}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '20px 48px 1fr',
+                  gridTemplateColumns: '20px 48px 1fr auto',
                   gap: 10,
                   alignItems: 'center',
                   padding: '6px 8px',
@@ -747,10 +750,10 @@ function InspRefs({ projectId, references, asset, onAdd }) {
               >
                 <input
                   type="checkbox"
-                  defaultChecked
-                  disabled
-                  title="commit selection via the regen panel"
-                  style={{ accentColor: 'var(--accent)' }}
+                  checked={checked}
+                  onChange={() => onToggle && onToggle(key)}
+                  title="toggle this reference for the next regen"
+                  style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
                 />
                 <div
                   style={{
@@ -778,6 +781,24 @@ function InspRefs({ projectId, references, asset, onAdd }) {
                 </div>
                 <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-soft)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {label}
+                </span>
+                <span
+                  className="font-mono"
+                  aria-hidden={!justSaved}
+                  style={{
+                    fontSize: 10,
+                    color: 'var(--ok)',
+                    opacity: justSaved ? 1 : 0,
+                    transition: 'opacity 180ms ease-out',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    minWidth: 38,
+                    justifyContent: 'flex-end'
+                  }}
+                >
+                  <Check style={{ width: 10, height: 10 }} />
+                  saved
                 </span>
               </label>
             );
@@ -928,6 +949,19 @@ export default function ProjectGallery() {
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
 
+  // Per-asset reference selection (inspector refs tab).
+  //
+  // Shape: Map<assetId, Set<filename>>. Each Set carries the filenames that
+  // are currently CHECKED for that asset. We persist on every toggle to the
+  // per-asset prompt sidecar via PUT /api/projects/:id/gallery/assets/:assetId/prompt
+  // (Wave 1A Commit 2). If that endpoint 404s, we keep the optimistic UI and
+  // warn once per asset — selection survives in-session but is lost on reload.
+  const [refSelections, setRefSelections] = useState(() => new Map());
+  // Per-(asset,filename) "saved" check shown briefly after a successful PUT.
+  const [refSavedFlash, setRefSavedFlash] = useState(() => new Map());
+  // Track endpoint 404 to avoid log spam after the first miss.
+  const refEndpointMissing = useRef(false);
+
   const assetsRef = useRef([]);
   useEffect(() => { assetsRef.current = assets || []; }, [assets]);
 
@@ -1006,6 +1040,99 @@ export default function ProjectGallery() {
     () => (activeId ? (assets || []).find((a) => a.id === activeId) || null : null),
     [assets, activeId]
   );
+
+  // Stable filename for a reference entry (string|object) — must match the
+  // key used in InspRefs row keys so toggle state aligns.
+  const refKey = useCallback((r, idx) => {
+    if (typeof r === 'string') return r;
+    if (!r) return `ref-${idx}`;
+    return r.filename || r.path || r.name || `ref-${idx}`;
+  }, []);
+
+  // Initialize per-asset selection when a new asset becomes active. Seed
+  // from `asset.referenceImages` if the gallery payload ships it (Wave 1A
+  // Commit 1 sidecar field); otherwise default to "all checked" so the user
+  // can untick selectively without losing context.
+  useEffect(() => {
+    if (!activeAsset) return;
+    if (refSelections.has(activeAsset.id)) return; // already seeded for this asset
+    const all = (references || []).map((r, i) => refKey(r, i));
+    const seeded = Array.isArray(activeAsset.referenceImages) && activeAsset.referenceImages.length > 0
+      ? activeAsset.referenceImages.filter((n) => typeof n === 'string')
+      : all;
+    setRefSelections((prev) => {
+      const next = new Map(prev);
+      next.set(activeAsset.id, new Set(seeded));
+      return next;
+    });
+  }, [activeAsset, references, refSelections, refKey]);
+
+  const activeRefSelection = useMemo(() => {
+    if (!activeAsset) return new Set();
+    return refSelections.get(activeAsset.id) || new Set();
+  }, [activeAsset, refSelections]);
+
+  const activeRefSaved = useMemo(() => {
+    if (!activeAsset) return new Set();
+    return refSavedFlash.get(activeAsset.id) || new Set();
+  }, [activeAsset, refSavedFlash]);
+
+  const handleRefToggle = useCallback(async (filename) => {
+    if (!activeAsset) return;
+    const aid = activeAsset.id;
+
+    // Optimistic flip locally first.
+    let nextSet;
+    setRefSelections((prev) => {
+      const m = new Map(prev);
+      const cur = new Set(m.get(aid) || []);
+      if (cur.has(filename)) cur.delete(filename);
+      else cur.add(filename);
+      m.set(aid, cur);
+      nextSet = cur;
+      return m;
+    });
+
+    // Persist to the per-asset prompt sidecar. Wave 1A Commit 2 ships this
+    // endpoint; until then, gracefully degrade to in-session-only state.
+    try {
+      const enc = encodeURIComponent(aid);
+      await api.put(
+        `/api/projects/${id}/gallery/assets/${enc}/prompt`,
+        { referenceImages: Array.from(nextSet || []) }
+      );
+      // Brief "saved" flash on the toggled row.
+      setRefSavedFlash((prev) => {
+        const m = new Map(prev);
+        const cur = new Set(m.get(aid) || []);
+        cur.add(filename);
+        m.set(aid, cur);
+        return m;
+      });
+      setTimeout(() => {
+        setRefSavedFlash((prev) => {
+          const m = new Map(prev);
+          const cur = new Set(m.get(aid) || []);
+          cur.delete(filename);
+          if (cur.size === 0) m.delete(aid);
+          else m.set(aid, cur);
+          return m;
+        });
+      }, 1400);
+    } catch (e) {
+      if (e && e.status === 404) {
+        if (!refEndpointMissing.current) {
+          refEndpointMissing.current = true;
+          console.warn(
+            '[gallery] PUT /gallery/assets/:assetId/prompt not implemented yet — ' +
+            'reference selection is in-session only until Wave 1A Commit 2 lands.'
+          );
+        }
+      } else {
+        console.warn('[gallery] reference selection save failed', e);
+      }
+    }
+  }, [activeAsset, id]);
 
   // Counts for left rail footer
   const counts = useMemo(() => {
@@ -1462,7 +1589,15 @@ export default function ProjectGallery() {
         ) : tab === 'code' ? (
           <InspCode asset={activeAsset} />
         ) : (
-          <InspRefs projectId={id} references={references} asset={activeAsset} onAdd={() => setUploadingRefs(true)} />
+          <InspRefs
+            projectId={id}
+            references={references}
+            asset={activeAsset}
+            onAdd={() => setUploadingRefs(true)}
+            selectedSet={activeRefSelection}
+            savedSet={activeRefSaved}
+            onToggle={handleRefToggle}
+          />
         )}
       </div>
     </div>
