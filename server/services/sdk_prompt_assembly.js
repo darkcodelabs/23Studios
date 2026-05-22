@@ -47,7 +47,30 @@ DO NOT:
 - Use grayscale or color in any asset prompt
 - Reference Disney, Marvel, copyrighted characters, or named celebrities
 - Use em dashes or en dashes (use hyphens)
-- Use emoji`;
+- Use emoji
+
+VISUAL STYLE (mandatory for every image generation request):
+
+Positive style anchors:
+- 1-bit black and white illustration
+- high contrast pen and ink, woodcut, or linocut
+- bold outlines, strong silhouettes
+- crosshatching and stippling for shading, no smooth gradients
+- limited tonal range, no midtones
+- inspired by Lucas Pope's Return of the Obra Dinn and Mars After Midnight
+- inspired by classic Mac System 7 illustration and HyperCard graphics
+- isometric or flat perspective preferred for scenes
+- newspaper print or ink-on-paper texture
+
+Negative style (do NOT produce):
+- photorealistic, photographic, photograph
+- soft focus, blurry, out of focus
+- gradient, smooth shading, soft lighting
+- color, full color, saturated, vibrant
+- low contrast, washed out, faded, pastel
+- noise, grain, film grain, jpeg artifacts
+- anti-aliased, smooth edges
+- 3D rendered, ray traced, CGI`;
 
 // --- Sections 4-12 — Per-stage augments ----------------------------------
 //
