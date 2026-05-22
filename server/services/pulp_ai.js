@@ -719,8 +719,17 @@ async function toScenePng(buf, width, height) {
   const w = Math.max(8, Math.min(2048, (width || SCENE_DIM_DEFAULT[0]) | 0));
   const h = Math.max(8, Math.min(2048, (height || SCENE_DIM_DEFAULT[1]) | 0));
   const mode = resolveDitherMode(process.env.PULP_AI_SCENE_DITHER, 'atkinson');
-  const resized = await sharp(buf)
-    .resize(w, h, { fit: 'cover', position: 'centre' })
+  // Phase 4.8 Patch B: 2x oversample → nearest-neighbor downsample to target.
+  // Native Playdate is 400x240; we request the model at 800x480 (2x), then
+  // cover-fit to that intermediate, then nearest-down to (w,h). The nearest
+  // kernel preserves crisp dithered edges that lanczos/cubic would smear.
+  const oversampleW = w * 2;
+  const oversampleH = h * 2;
+  const oversampled = await sharp(buf)
+    .resize(oversampleW, oversampleH, { fit: 'cover', position: 'centre' })
+    .toBuffer();
+  const resized = await sharp(oversampled)
+    .resize(w, h, { fit: 'fill', kernel: 'nearest' })
     .toBuffer();
   return ditherTo1bit(resized, w, h, mode);
 }
@@ -807,7 +816,7 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage,
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
         model: requestedModel,
-        sizeHint: 'landscape 1792x1024 (5:3 aspect), Playdate 400x240 native target',
+        sizeHint: 'landscape 800x480 (5:3 aspect), Playdate 400x240 native target. Generate at 800x480, 5:3 aspect. This will be downsampled 2x with nearest-neighbor to the native 400x240 Playdate display.',
         projectId: projectId || null,
         sceneId: sceneId || null,
         stage: stage || 'scene',
