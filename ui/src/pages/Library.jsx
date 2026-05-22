@@ -306,12 +306,11 @@ export default function Library() {
   const [filter, setFilter] = useState('all');
   const [metaById, setMetaById] = useState({});
 
-  // Force a dark body bg even if a previous theme override painted it.
-  useEffect(() => {
-    const prev = document.body.style.background;
-    document.body.style.background = 'var(--bg)';
-    return () => { document.body.style.background = prev; };
-  }, []);
+  // No body bg override anymore — AppShell paints the page background.
+  // Library used to mount full-bleed at /dashboard and would smash the body
+  // bg to var(--bg); now it lives inside AppShell's content area so the
+  // shell handles colors. Keeping the effect here would double-paint and
+  // bleed into other AppShell-wrapped routes after unmount.
 
   const load = useCallback(async () => {
     setErr(null);
@@ -356,7 +355,7 @@ export default function Library() {
   return (
     <div
       className="font-ui"
-      style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100vh' }}
+      style={{ color: 'var(--text)' }}
     >
       <div style={{ padding: '24px 32px 56px' }}>
         {/* ─── Header ─── */}
