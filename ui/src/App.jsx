@@ -119,6 +119,7 @@ import ProjectGallery from './components/ProjectGallery.jsx';
 import ProjectShell from './layouts/ProjectShell.jsx';
 import Landing from './pages/Landing.jsx';
 import Library from './pages/Library.jsx';
+import SceneEditor from './pages/SceneEditor.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -208,6 +209,8 @@ export default function App() {
             <Route path="bible"      element={<Bible />} />
             <Route path="storyboard" element={<Storyboard />} />
             <Route path="gallery"    element={<ProjectGallery />} />
+            {/* Scene Editor — design pass 3 full-page drill-down. */}
+            <Route path="gallery/:assetId/edit" element={<SceneEditor />} />
             <Route path="references" element={<ReferenceLibrary />} />
           </Route>
           <Route path="build">
