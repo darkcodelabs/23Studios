@@ -26,6 +26,7 @@
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
+const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
 const projects = require('./projects');
@@ -478,6 +479,49 @@ async function pack(projectId, opts = {}) {
   // meta.json
   const metaPath = path.join(pressskitDir, 'meta.json');
   const byteSize = pdxSrc ? fileBytes(pdxSrc) : fileBytes(zipDest);
+
+  // Real SHA-256 of the packed .pdx.zip — replaces the frontend's
+  // synthesized "pseudo-sha" derived from (last_build_at + size). Reads
+  // the entire zip buffer; pdx zips are small (single-digit MB max),
+  // streaming would be overkill.
+  let pdxSha256 = null;
+  let pdxShaShort = null;
+  if (fs.existsSync(zipDest)) {
+    try {
+      const buf = fs.readFileSync(zipDest);
+      pdxSha256 = crypto.createHash('sha256').update(buf).digest('hex');
+      pdxShaShort = pdxSha256.slice(0, 12);
+    } catch (_e) { /* sha is decorative — don't fail pack on a read error */ }
+  }
+
+  // Smoketest summary — pull from the milestone status.json if it exists.
+  // Pattern mirrors latestPdxPath()'s milestones probe above. Surface a
+  // compact { ok, booted, frame_count, errors } shape so the frontend
+  // doesn't need to walk milestones to render the badge.
+  let smoketest = null;
+  try {
+    const rcStatusPath = path.join(sdkRoot, 'sdk_data', 'milestones',
+                                   'release_candidate', 'status.json');
+    if (fs.existsSync(rcStatusPath)) {
+      const s = JSON.parse(fs.readFileSync(rcStatusPath, 'utf8'));
+      if (s && typeof s === 'object') {
+        // The status.json fields aren't fully standardized across milestones;
+        // common keys we've seen: ok / boots / booted / frame_count / frames
+        // / errors / smoketest. Pull defensively.
+        const probe = (s.smoketest && typeof s.smoketest === 'object') ? s.smoketest : s;
+        smoketest = {
+          ok: typeof probe.ok === 'boolean' ? probe.ok : (probe.boots === true || probe.booted === true),
+          booted: typeof probe.booted === 'boolean'
+            ? probe.booted
+            : (typeof probe.boots === 'boolean' ? probe.boots : null),
+          frame_count: Number.isFinite(probe.frame_count) ? probe.frame_count
+                       : (Number.isFinite(probe.frames) ? probe.frames : 0),
+          errors: Array.isArray(probe.errors) ? probe.errors.slice(0, 20) : []
+        };
+      }
+    }
+  } catch (_e) { /* smoketest is optional; missing is fine */ }
+
   const meta = {
     title,
     tag,
@@ -487,7 +531,10 @@ async function pack(projectId, opts = {}) {
     byte_size: byteSize,
     developer,
     publisher: project.publisher || developer,
-    bundle_id: pdxinfo.bundleID || null
+    bundle_id: pdxinfo.bundleID || null,
+    pdx_sha256: pdxSha256,
+    pdx_sha_short: pdxShaShort,
+    smoketest
   };
   await fsp.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf8');
   trackFile(metaPath, 'presskit');
@@ -554,7 +601,39 @@ async function getLatestPack(projectId) {
   }
   scanDir(releaseDir, '');
 
-  return { release_dir: releaseDir, tag: latest.name, files };
+  // Surface the meta.json top-level fields the Release screen wants so
+  // callers don't have to read presskit/meta.json themselves. Stays
+  // backward-compatible — pre-existing callers that only consume
+  // { release_dir, tag, files } keep working.
+  let pdxSha256 = null;
+  let pdxShaShort = null;
+  let smoketest = null;
+  let buildDate = null;
+  let byteSize = null;
+  try {
+    const metaPath = path.join(releaseDir, 'presskit', 'meta.json');
+    if (fs.existsSync(metaPath)) {
+      const m = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+      if (m && typeof m === 'object') {
+        pdxSha256   = typeof m.pdx_sha256 === 'string' ? m.pdx_sha256 : null;
+        pdxShaShort = typeof m.pdx_sha_short === 'string' ? m.pdx_sha_short : null;
+        smoketest   = (m.smoketest && typeof m.smoketest === 'object') ? m.smoketest : null;
+        buildDate   = typeof m.build_date === 'string' ? m.build_date : null;
+        byteSize    = Number.isFinite(m.byte_size) ? m.byte_size : null;
+      }
+    }
+  } catch (_e) { /* manifest is optional decoration here */ }
+
+  return {
+    release_dir: releaseDir,
+    tag: latest.name,
+    files,
+    pdx_sha256: pdxSha256,
+    pdx_sha_short: pdxShaShort,
+    smoketest,
+    build_date: buildDate,
+    byte_size: byteSize
+  };
 }
 
 /**
