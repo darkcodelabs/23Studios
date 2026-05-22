@@ -33,6 +33,7 @@ const mvpAutopilot = require('./mvp_autopilot');
 const designCompiler = require('./sdk_design_compiler');
 const sdkReviewBoard = require('./sdk_review_board');
 const assetBatches = require('./sdk_asset_batches');
+const bibleParser = require('./story_bible_parser');
 
 const SDK_DATA_REL = 'sdk_data';
 
@@ -77,6 +78,28 @@ function readStoryBible(localPath) {
   // Cap aggressively so each Claude call has room for stage-specific prompt
   // + accumulated prior-stage outputs. The bible itself rarely exceeds 20k.
   return raw.length > 16000 ? raw.slice(0, 16000) + '\n\n[... bible truncated to 16k chars ...]' : raw;
+}
+
+// Phase 4.7: parse the FULL (not truncated) bible into typed sections so
+// individual stages can pluck cast/scenes/acts directly instead of asking
+// Claude to re-parse markdown. Read the untruncated version off disk; the
+// parser doesn't care about size and per-stage prompts can pick the slices
+// they need. Returns null if no bible on disk.
+//
+// Per-stage adopters: future refactors should drop the storyBible string
+// concat where structured data suffices (e.g. characters stage can hand
+// Claude `parsedBible.cast` as JSON rather than the full markdown bible).
+// Until that lands the parsed object travels ALONGSIDE the markdown — no
+// behavior change for stages that haven't opted in yet.
+function readParsedBible(localPath) {
+  const fp = path.join(localPath, SDK_DATA_REL, 'story_bible.md');
+  if (!fs.existsSync(fp)) return null;
+  try {
+    const raw = fs.readFileSync(fp, 'utf8');
+    return bibleParser.parseBible(raw);
+  } catch (_e) {
+    return null;
+  }
 }
 
 // Extract a small vars bag from the bible markdown so {bible.primary_dither}
@@ -1239,10 +1262,19 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
       job.localPath = project.local_path;
       const sdk = await readSdk(project.local_path);
       const storyBible = readStoryBible(project.local_path);
+      // Phase 4.7: also parse the bible into typed sections. parsedBible
+      // travels alongside the storyBible string and is forwarded to every
+      // stage runner. Stages opt in to the typed data as their prompts get
+      // refactored — see TODO markers below.
+      const parsedBible = readParsedBible(project.local_path);
       if (storyBible) {
         ev('log', { text: `story_bible.md loaded (${storyBible.length} chars) — every stage will receive it as system context` });
       } else {
         ev('log', { text: 'no story_bible.md; running in open-prompt mode' });
+      }
+      if (parsedBible) {
+        const counts = bibleParser.countsFor(parsedBible);
+        ev('log', { text: `parsed bible: ${counts.cast} cast · ${counts.scenes} scenes · ${counts.acts} acts · ${counts.beats} beats` });
       }
 
       // Bake static project context for prompts.
@@ -1288,7 +1320,9 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
         job.summary.stages_complete++;
       } else {
         const brainstorm = await runBrainstorm({
-          pitch, claudeCtx, storyBible, intake, localPath: project.local_path
+          // TODO(phase4.7): brainstorm could pluck parsedBible.logline as the
+          // pitch seed instead of relying on the open-text `pitch` param.
+          pitch, claudeCtx, storyBible, parsedBible, intake, localPath: project.local_path
         });
         sdk.concepts_gate = 'concept_pick';
         await writeSdk(project.local_path, sdk);
@@ -1312,7 +1346,10 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
                   startup_scene: sdk.startup_scene };
         ev('log', { text: 'story: skipped — ' + sdk.scenes.length + ' scenes already in project.json' });
       } else {
-        story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, intake });
+        // TODO(phase4.7): runStoryAndScenes can seed scenes from
+        // parsedBible.scenes (already typed: id/code/name/primary_mechanic/
+        // exit) and only call Claude to fill gaps + write the outline.
+        story = await runStoryAndScenes({ pitch, brainstorm, claudeCtx, storyBible, parsedBible, intake });
         sdk.outline = story.outline;
         sdk.startup_scene = story.startup_scene || (story.scenes && story.scenes[0] && story.scenes[0].id);
         sdk.scenes = story.scenes || [];
@@ -1330,7 +1367,10 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
         chars = { characters: sdk.characters };
         ev('log', { text: 'characters: skipped — ' + sdk.characters.length + ' already in project.json' });
       } else {
-        chars = await runCharacters({ pitch, story, claudeCtx, storyBible, intake });
+        // TODO(phase4.7): runCharacters can read parsedBible.cast directly
+        // (15-entry typed array with name/role/bio/act for HAKCD) and skip
+        // the Claude round-trip whenever the bible already enumerates NPCs.
+        chars = await runCharacters({ pitch, story, claudeCtx, storyBible, parsedBible, intake });
         sdk.characters = chars.characters || [];
         await writeSdk(project.local_path, sdk);
       }
@@ -1340,16 +1380,25 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'scene_bursts' });
+      // TODO(phase4.7): scene_bursts can pull per-scene visual_anchor from
+      // parsedBible.scenes[i] (raw + primary_mechanic + interactables) to
+      // build a richer per-scene prompt instead of relying on Claude's
+      // story-stage scene summaries.
       await runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
-                             storyBible, intake, bibleVars, activePicks: claudeCtx.activePicks,
+                             storyBible, parsedBible, intake, bibleVars,
+                             activePicks: claudeCtx.activePicks,
                              locked, skipBatchGates: job.skipBatchGates });
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'portrait_bursts' });
+      // TODO(phase4.7): portrait_bursts can use parsedBible.cast bios as
+      // visual_anchor seeds — every named NPC already has a one-line
+      // description in the source bible.
       await runPortraitBursts({ projectId, sdkRoot, characters: sdk.characters,
-                                 emit: ev, job, storyBible, intake, bibleVars,
+                                 emit: ev, job, storyBible, parsedBible,
+                                 intake, bibleVars,
                                  activePicks: claudeCtx.activePicks,
                                  skipBatchGates: job.skipBatchGates });
       job.summary.stages_complete++;
@@ -1357,29 +1406,35 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'scene_lua' });
-      await runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
-                          emit: ev, job });
+      // TODO(phase4.7): scene_lua can read parsedBible.scenes[i].
+      // primary_mechanic + exit verbatim instead of asking Claude to invent
+      // them — the bible IS the spec for those fields.
+      await runSceneLua({ sdkRoot, sdk, claudeCtx, storyBible, parsedBible,
+                          intake, bibleVars, emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'sfx' });
-      await runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
-                              bibleVars, emit: ev });
+      // TODO(phase4.7): sfx + music can read parsedBible.tone_map to pick
+      // mood per act (Acts 1-2 Larry energy / Act 3 paranoia / Act 4 stakes).
+      await runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, parsedBible,
+                              intake, bibleVars, emit: ev });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'music' });
-      await runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
-                             bibleVars, emit: ev });
+      await runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, parsedBible,
+                             intake, bibleVars, emit: ev });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
       snapshotBible(project.local_path);
 
       ev('phase', { id: 'launcher' });
-      await runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, intake, bibleVars,
+      await runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible,
+                          parsedBible, intake, bibleVars,
                           emit: ev, job });
       await writeSdk(project.local_path, sdk);
       job.summary.stages_complete++;
@@ -1474,5 +1529,10 @@ module.exports = {
   isRunning,
   getJobSnapshot,
   STAGES,
+  // Phase 4.7: exposed so other services (regen, late-add, tests) can read
+  // the same typed bible the autopilot sees without re-implementing the
+  // disk-load + parser glue.
+  readStoryBible,
+  readParsedBible,
   _internals: { buildSceneLua, safeParseJson, runBrainstorm, resolveConceptGate, TONE_SEEDS }
 };
