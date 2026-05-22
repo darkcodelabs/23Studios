@@ -415,6 +415,21 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
         });
         if (!r.pngBuffer) throw new Error('no png returned');
         await fsp.writeFile(destPng, r.pngBuffer);
+        // Sidecar for Phase 4.5 gallery. Best-effort — never block autopilot.
+        try {
+          await fsp.writeFile(
+            destPng.replace(/\.png$/i, '.prompt.json'),
+            JSON.stringify({
+              prompt: brief,
+              model: r.model || null,
+              dim: [400, 240],
+              createdAt: new Date().toISOString(),
+              stage: 'scene_bursts'
+            }, null, 2)
+          );
+        } catch (sidecarErr) {
+          ev('log', { text: `scene ${s.id} sidecar write failed: ${sidecarErr.message}` });
+        }
         if (r.sourceBuffer) {
           const srcDir = path.join(sdkRoot, 'art_source', 'scenes');
           await fsp.mkdir(srcDir, { recursive: true });
@@ -552,6 +567,21 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
         });
         if (!r.pngBuffer) throw new Error('no png returned');
         await fsp.writeFile(destPng, r.pngBuffer);
+        // Sidecar for Phase 4.5 gallery. Best-effort — never block autopilot.
+        try {
+          await fsp.writeFile(
+            destPng.replace(/\.png$/i, '.prompt.json'),
+            JSON.stringify({
+              prompt: promptText,
+              model: r.model || null,
+              dim: [64, 64],
+              createdAt: new Date().toISOString(),
+              stage: 'portrait_bursts'
+            }, null, 2)
+          );
+        } catch (sidecarErr) {
+          ev('log', { text: `portrait ${c.id} sidecar write failed: ${sidecarErr.message}` });
+        }
         if (r.sourceBuffer) {
           const srcDir = path.join(sdkRoot, 'art_source', 'characters');
           await fsp.mkdir(srcDir, { recursive: true });
@@ -1133,6 +1163,22 @@ async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, int
       });
       if (!r.pngBuffer) throw new Error('no png returned');
       await fsp.writeFile(out, r.pngBuffer);
+      // Sidecar for Phase 4.5 gallery. Best-effort — never block autopilot.
+      // Launcher path has no `kind` var in scope; stage is always 'launcher'.
+      try {
+        await fsp.writeFile(
+          out.replace(/\.png$/i, '.prompt.json'),
+          JSON.stringify({
+            prompt: t.prompt,
+            model: r.model || null,
+            dim: t.dim,
+            createdAt: new Date().toISOString(),
+            stage: 'launcher'
+          }, null, 2)
+        );
+      } catch (sidecarErr) {
+        ev('log', { text: `launcher ${t.name} sidecar write failed: ${sidecarErr.message}` });
+      }
       if (r.sourceBuffer) {
         const srcDir = path.join(sdkRoot, 'art_source', 'launcher');
         await fsp.mkdir(srcDir, { recursive: true });

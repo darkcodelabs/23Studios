@@ -260,6 +260,27 @@ async function runBatch(projectId, sdkRoot, kind, batch, opts = {}) {
       bytesTotal += r.pngBuffer.length;
       generatedIds.push(item.id);
 
+      // Sidecar so the gallery (Phase 4.5) can show the prompt that produced
+      // this PNG. Best-effort — never let a sidecar write failure break the
+      // batch. See server/services/gallery.js readSidecar() for the read path.
+      try {
+        const dimForSidecar = (kind === 'portrait')
+          ? [64, 64]
+          : (item._dim || [400, 240]);
+        await fsp.writeFile(
+          destPng.replace(/\.png$/i, '.prompt.json'),
+          JSON.stringify({
+            prompt,
+            model: r.model || null,
+            dim: dimForSidecar,
+            createdAt: new Date().toISOString(),
+            stage: kind === 'portrait' ? 'portrait_bursts' : 'scene_bursts'
+          }, null, 2)
+        );
+      } catch (sidecarErr) {
+        ev('log', { text: `[batch ${batch.batch_id}] ${kind} ${item.id} sidecar write failed: ${sidecarErr.message}` });
+      }
+
       // Mirror source (pre-dither) under art_source/<kind>/
       if (r.sourceBuffer) {
         await fsp.writeFile(path.join(artSourceDir, item.id + '.png'), r.sourceBuffer);
