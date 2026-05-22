@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import FloatingComposer from '../components/FloatingComposer.jsx';
+import FooterStrip from '../components/FooterStrip.jsx';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { api } from '../lib/api.js';
@@ -805,12 +807,14 @@ export default function AppShell({ children }) {
           drawerOpen={drawerOpen}
           onToggleDrawer={() => setDrawerOpen((v) => !v)}
         />
-        <div className="flex-1 min-h-0 overflow-auto" style={{ background: 'var(--bg)' }}>
+        <div className="flex-1 min-h-0 overflow-auto" style={{ background: 'var(--bg)', paddingBottom: 38 }}>
           {/* When mounted as a layout route, children come via Outlet.
               When mounted as a wrapper, children come as JSX. Support both. */}
           {children ?? <Outlet />}
         </div>
       </main>
+      <FloatingComposer />
+      <FooterStrip />
     </div>
   );
 }

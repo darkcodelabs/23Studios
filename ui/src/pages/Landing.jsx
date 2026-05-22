@@ -407,31 +407,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── Single bottom row — deduped strip + footer, no borders ─── */}
-      <div
-        className="flex items-center font-mono uppercase overflow-x-auto"
-        style={{
-          padding: '20px 56px',
-          gap: 28,
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          letterSpacing: '.08em',
-          whiteSpace: 'nowrap'
-        }}
-      >
-        <span style={{ color: 'var(--accent)' }}>BUILT BY HAKCERS FOR HAKCERS</span>
-        <span>REV 1.0</span>
-        <span>R2S-G23S-GLV-001</span>
-        <span>1-BIT TARGET</span>
-        <span>SIDELOAD READY</span>
-        <span>MARKETPLACE PENDING</span>
-        <div className="flex" style={{ marginLeft: 'auto', gap: 22 }}>
-          <span>DOCS</span>
-          <span>CHANGELOG</span>
-          <span>DISCORD</span>
-          <span>PRESS KIT</span>
-        </div>
-      </div>
     </div>
   );
 }

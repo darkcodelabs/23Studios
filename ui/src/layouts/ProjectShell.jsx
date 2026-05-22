@@ -9,6 +9,8 @@ import {
   Settings, Trash2, Upload as UploadIcon, ToggleLeft,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
+import FloatingComposer from '../components/FloatingComposer.jsx';
+import FooterStrip from '../components/FooterStrip.jsx';
 import GateBanner from '../components/GateBanner.jsx';
 import ReleasesDropdown from '../components/ReleasesDropdown.jsx';
 import GameTypeToggle from '../components/GameTypeToggle.jsx';
@@ -882,10 +884,14 @@ export default function ProjectShell() {
               <Loader2 className="w-4 h-4 animate-spin" /> loading project…
             </div>
           ) : (
-            <Outlet context={{ project, meta, refreshBadges }} />
+            <div style={{ paddingBottom: 38 }}>
+              <Outlet context={{ project, meta, refreshBadges }} />
+            </div>
           )}
         </div>
       </main>
+      <FloatingComposer />
+      <FooterStrip />
     </div>
   );
 }
