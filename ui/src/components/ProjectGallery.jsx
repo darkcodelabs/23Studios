@@ -280,20 +280,28 @@ function FilterBar({ filters, setFilters, sortKey, setSortKey, total, shown }) {
 // References row
 // ----------------------------------------------------------------------------
 
-function referenceImageUrl(projectId, ref) {
+function referenceImageUrl(projectId, reference) {
   // Manifest entries (Patch A) may carry filename only. Project-scope
   // references (Phase 6 B5) carry a `path` relative to local_path.
-  if (ref.url) return ref.url.startsWith('/') ? appBase() + ref.url : ref.url;
-  if (ref.path) return fileRawUrl(projectId, ref.path);
-  if (ref.filename) {
-    return fileRawUrl(projectId, `sdk_data/asset_library/${ref.filename}`);
+  // Backend merged manifest also emits bare strings (e.g. default_set).
+  if (!reference) return null;
+  if (typeof reference === 'string') {
+    return fileRawUrl(projectId, `sdk_data/asset_library/${reference}`);
+  }
+  if (reference.url) return reference.url.startsWith('/') ? appBase() + reference.url : reference.url;
+  if (reference.path) return fileRawUrl(projectId, reference.path);
+  if (reference.filename) {
+    return fileRawUrl(projectId, `sdk_data/asset_library/${reference.filename}`);
   }
   return null;
 }
 
-function ReferenceThumb({ projectId, ref }) {
-  const url = referenceImageUrl(projectId, ref);
-  const label = ref.name || ref.filename || (ref.path && ref.path.split('/').pop()) || 'ref';
+function ReferenceThumb({ projectId, reference }) {
+  if (!reference) return null;
+  const url = referenceImageUrl(projectId, reference);
+  const label = (typeof reference === 'string')
+    ? reference
+    : (reference.name || reference.filename || (reference.path && reference.path.split('/').pop()) || 'ref');
   return (
     <div className="shrink-0 w-16 flex flex-col items-center gap-1" title={label}>
       <div className="w-16 h-16 rounded ring-1 ring-ink-800 bg-ink-950 flex items-center justify-center overflow-hidden">
@@ -351,9 +359,9 @@ function ReferencesRow({ projectId, references, onAdd }) {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {references.map((r, idx) => (
           <ReferenceThumb
-            key={r.path || r.filename || r.name || idx}
+            key={(typeof r === 'string' ? r : (r?.path || r?.filename || r?.name)) || idx}
             projectId={projectId}
-            ref={r}
+            reference={r}
           />
         ))}
       </div>
