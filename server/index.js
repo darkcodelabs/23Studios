@@ -286,13 +286,19 @@ if (fs.existsSync(PUBLIC_DIR)) {
 
   // Hashed Vite assets are immutable; everything else (the rare top-level
   // file) gets no-cache so a fresh build never gets shadowed by a proxy.
+  // Only hash-named Vite output (e.g., index-AbCd1234.js, react-XxYy.css)
+  // gets `immutable` — those carry a content hash and never change in place.
+  // Plain-named assets (studio-logo.png, sw.js) get a short cache so a re-copy
+  // actually reaches the browser. Without this fix, a logo refresh requires
+  // a query-string cache-bust on every <img src>.
+  const HASHED_ASSET_RE = /[-.][A-Za-z0-9_]{6,}\.(?:js|css|woff2?)$/;
   app.use(express.static(PUBLIC_DIR, {
     index: false,
     setHeaders: (res, filePath) => {
-      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      if (filePath.includes(`${path.sep}assets${path.sep}`) && HASHED_ASSET_RE.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else {
-        res.setHeader('Cache-Control', 'no-store, must-revalidate');
+        res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
       }
     }
   }));

@@ -225,7 +225,7 @@ export default function Landing() {
           style={{ zIndex: 0, pointerEvents: 'none' }}
         >
           <img
-            src="assets/studio-logo.png"
+            src="assets/studio-logo.png?v=20260522b"
             alt=""
             style={{
               width: '100%',

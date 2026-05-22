@@ -52,7 +52,7 @@ function BrandLogo() {
   }
   return (
     <img
-      src="assets/studio-logo.png"
+      src="assets/studio-logo.png?v=20260522b"
       alt="23"
       width={32}
       height={32}
@@ -348,38 +348,81 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
         gap: 4
       }}
     >
-      {/* Brand row */}
-      <div
-        className="flex items-center"
-        style={{
-          gap: 10,
-          padding: collapsed ? '6px 0 18px' : '6px 4px 18px',
-          borderBottom: '1px dashed var(--border)',
-          marginBottom: 14,
-          justifyContent: collapsed ? 'center' : 'flex-start'
-        }}
-      >
-        <Link
-          to="/dashboard"
-          onClick={() => onClose?.()}
-          className="shrink-0 relative overflow-hidden grid place-items-center shell-brand-mark"
+      {/* Brand row — when collapsed, the WHOLE row is the expand-trigger.
+          Click anywhere on it to re-expand. The small chevron stays as a
+          visual hint. */}
+      {collapsed ? (
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+          className="shrink-0 flex flex-col items-center"
           style={{
-            width: 32, height: 32,
-            borderRadius: 5,
-            background: 'oklch(15% 0.01 75)',
-            border: '1px solid var(--border-2)'
+            appearance: 'none',
+            background: 'transparent',
+            border: 0,
+            padding: '6px 0 12px',
+            borderBottom: '1px dashed var(--border)',
+            marginBottom: 12,
+            gap: 6,
+            cursor: 'pointer',
+            width: '100%'
           }}
-          title="23 Studios"
         >
-          <BrandLogo />
-        </Link>
-        {!collapsed ? (
+          <span
+            className="shrink-0 relative overflow-hidden grid place-items-center shell-brand-mark"
+            style={{
+              width: 32, height: 32,
+              borderRadius: 5,
+              background: 'oklch(15% 0.01 75)',
+              border: '1px solid var(--border-2)',
+              pointerEvents: 'none'
+            }}
+          >
+            <BrandLogo />
+          </span>
+          <span
+            aria-hidden
+            className="grid place-items-center font-mono"
+            style={{
+              width: 22, height: 18, borderRadius: 4,
+              background: 'var(--surface)',
+              border: '1px solid var(--border-2)',
+              color: 'var(--accent)',
+              fontSize: 13, lineHeight: 1, fontWeight: 600,
+              pointerEvents: 'none'
+            }}
+          >›</span>
+        </button>
+      ) : (
+        <div
+          className="flex items-center"
+          style={{
+            gap: 10,
+            padding: '6px 4px 18px',
+            borderBottom: '1px dashed var(--border)',
+            marginBottom: 14
+          }}
+        >
+          <Link
+            to="/dashboard"
+            onClick={() => onClose?.()}
+            className="shrink-0 relative overflow-hidden grid place-items-center shell-brand-mark"
+            style={{
+              width: 32, height: 32,
+              borderRadius: 5,
+              background: 'oklch(15% 0.01 75)',
+              border: '1px solid var(--border-2)'
+            }}
+            title="23 Studios"
+          >
+            <BrandLogo />
+          </Link>
           <div className="flex flex-col leading-tight">
             <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
             <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>rev 1.0 · hakcers</span>
           </div>
-        ) : null}
-        {!collapsed ? (
           <button
             type="button"
             onClick={onToggleCollapse}
@@ -387,29 +430,16 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
             aria-label="Collapse sidebar"
             className="ml-auto shrink-0 grid place-items-center"
             style={{
+              appearance: 'none', cursor: 'pointer',
               width: 22, height: 22, borderRadius: 4,
-              background: 'transparent', border: '1px solid var(--border-2)',
-              color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
+              background: 'var(--surface)',
+              border: '1px solid var(--border-2)',
+              color: 'var(--accent)', fontSize: 13, fontWeight: 600,
               lineHeight: 1
             }}
           >‹</button>
-        ) : null}
-      </div>
-      {collapsed ? (
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          title="Expand sidebar"
-          aria-label="Expand sidebar"
-          className="grid place-items-center"
-          style={{
-            width: 32, height: 24, borderRadius: 4,
-            background: 'transparent', border: '1px solid var(--border-2)',
-            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
-            lineHeight: 1, marginBottom: 8, alignSelf: 'center'
-          }}
-        >›</button>
-      ) : null}
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto flex flex-col" style={{ gap: 2 }}>
         {/* FLOW group */}

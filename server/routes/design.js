@@ -63,9 +63,12 @@ router.get('/:id/design', async (req, res) => {
     const sdkRoot = path.join(project.local_path, SDK_DATA_REL);
     const compiled = await compiler.read(sdkRoot);
     if (!compiled) {
-      return res.status(404).json({
-        error: 'not_compiled_yet',
-        detail: 'Run POST /api/projects/:id/design/compile first'
+      // 200 + empty-state body so client code doesn't log a 404 / treat as
+      // hard error. The compiled state is "we haven't compiled yet" — a
+      // valid state, not a missing resource.
+      return res.json({
+        compiled: false,
+        detail: 'design has not been compiled yet — POST /api/projects/:id/design/compile to generate'
       });
     }
     res.json(compiled);
