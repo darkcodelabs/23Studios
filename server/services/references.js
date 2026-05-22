@@ -580,6 +580,47 @@ async function deleteReference(projectId, filename) {
   return { deleted: safeName };
 }
 
+// Resolve a reference filename (as stored in the manifest, e.g. "seckc.png")
+// to the actual bytes on disk. Phase 4 Patch F needs this so pulp_ai can
+// attach references to OpenRouter calls as base64 data URLs.
+//
+// Search order (first hit wins):
+//   1. <local_path>/sdk_data/asset_library/references/<filename>   (uploads)
+//   2. <local_path>/hakcd_pixel_collection/<filename>              (legacy)
+//   3. <local_path>/sdk_data/asset_library/<filename>              (loose)
+//   4. <local_path>/assets/<filename>                              (loose)
+//
+// Returns Buffer. Throws ENOENT if no match.
+async function resolveReferenceFile(projectId, filename) {
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+
+  const safeName = sanitizeUploadFilename(filename);
+  if (!safeName) {
+    const err = new Error('invalid filename');
+    err.status = 400; err.code = 'bad_filename';
+    throw err;
+  }
+
+  const candidates = [
+    path.join(uploadDir(localPath), safeName),
+    path.join(localPath, 'hakcd_pixel_collection', safeName),
+    path.join(localPath, 'sdk_data', 'asset_library', safeName),
+    path.join(localPath, 'assets', safeName)
+  ];
+
+  for (const abs of candidates) {
+    try {
+      const buf = await fsp.readFile(abs);
+      if (buf && buf.length > 0) return buf;
+    } catch (_e) { /* keep searching */ }
+  }
+
+  const err = new Error(`reference file not found: ${safeName}`);
+  err.status = 404; err.code = 'ref_not_found';
+  throw err;
+}
+
 async function readProjectManifest(localPath) {
   try {
     const raw = await fsp.readFile(projectManifestPath(localPath), 'utf8');
@@ -693,6 +734,8 @@ module.exports = {
   updateProjectManifest,
   readProjectManifest,
   writeProjectManifest,
+  // Phase 4 Patch F (reference image wiring in pulp_ai):
+  resolveReferenceFile,
   _internals: {
     sanitizeTag, sanitizeAnchorId, walkImages, computePerceptualHash, emptyEntry,
     isPngBuffer, sanitizeUploadFilename, sanitizeManifestInput,

@@ -343,6 +343,11 @@ async function regenAsset(projectId, assetId, overrides = {}) {
   const ditherAlgo = (overrides && typeof overrides.ditherAlgo === 'string')
     ? overrides.ditherAlgo
     : (existingSidecar.ditherAlgo || null);
+  // Phase 4 Patch F: reference image filenames forwarded to pulp_ai. The
+  // generator resolves filenames → disk → base64 dataUrls via references.js.
+  const referenceImages = (overrides && Array.isArray(overrides.referenceImages))
+    ? overrides.referenceImages.filter((n) => typeof n === 'string')
+    : [];
 
   // Flip state to 'regenerating' so the UI can show a spinner. Best-effort;
   // a state write failure shouldn't block the gen attempt itself.
@@ -383,7 +388,8 @@ async function regenAsset(projectId, assetId, overrides = {}) {
         dim,
         projectId,
         sceneId: parsed.name,
-        stage
+        stage,
+        referenceImages
       }),
       timeoutPromise(REGEN_TIMEOUT_MS, `regen ${assetId}`)
     ]);

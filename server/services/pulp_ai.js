@@ -16,6 +16,15 @@ const playdateValidator = require('./playdate_validator');
 const driftDetect = require('./drift_detect');
 const ditherMod = require('./dither');
 const openrouterSpend = require('./openrouter_spend');
+// Phase 4 Patch F: per-project reference manifest + per-project reference
+// PNGs on disk. Lazy-required inside pickReferences so a circular import
+// (references.js eventually pulls projects.js) doesn't bite at module load.
+let _references = null;
+function references() {
+  if (_references) return _references;
+  _references = require('./references');
+  return _references;
+}
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -26,7 +35,8 @@ const API_KEY = process.env.OPENROUTER_API_KEY || '';
 // returns images in message.images[0].image_url.url as base64 data URLs.
 // The right OpenAI model on OpenRouter for this is `openai/gpt-image-1`.
 async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectContext,
-                                            projectId, sceneId, stage, kind }) {
+                                            projectId, sceneId, stage, kind,
+                                            references: referenceImages }) {
   if (!API_KEY) {
     const e = new Error('openrouter_unavailable');
     e.code = 'openrouter_unavailable';
@@ -75,9 +85,32 @@ async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectCont
   }
 
   const sizeLine = sizeHint ? `\n\nRender at ${sizeHint}.` : '';
+  const assembledText = (prompt || '') + sizeLine;
+
+  // Phase 4 Patch F: when references are present, build multimodal content
+  // following OpenRouter's chat-completions shape:
+  //   messages[].content = [{type:'text',text:...}, {type:'image_url',image_url:{url}}]
+  // NOT the FLUX-native top-level `reference_images` field (that's the wrong
+  // surface for chat-completions per phase4_preflight.md spec deviation note).
+  // When references is empty/missing, fall back to the legacy string-content
+  // shape so existing call sites are unchanged.
+  let userContent;
+  const refs = Array.isArray(referenceImages) ? referenceImages : [];
+  if (refs.length > 0) {
+    userContent = [{ type: 'text', text: assembledText }];
+    for (const ref of refs) {
+      // Each ref is { filename, dataUrl } — only the dataUrl matters here.
+      const url = ref && typeof ref.dataUrl === 'string' ? ref.dataUrl : null;
+      if (!url) continue;
+      userContent.push({ type: 'image_url', image_url: { url } });
+    }
+  } else {
+    userContent = assembledText;
+  }
+
   const payload = {
     model,
-    messages: [{ role: 'user', content: (prompt || '') + sizeLine }],
+    messages: [{ role: 'user', content: userContent }],
     modalities: ['image', 'text']
   };
   // 120s hard timeout — OpenRouter image gen occasionally hangs forever
@@ -170,10 +203,19 @@ const DOCS_PATH = path.join(__dirname, '..', 'data', 'pulpscript_docs.md');
 // Default image model — top-tier on OpenRouter as of 2026-05.
 // openai/gpt-5-image has the best silhouette + dither preservation
 // + crispest 1-bit conversion in side-by-sides. Override with env
-// PULP_AI_IMAGE_MODEL=... (other premium picks: openai/gpt-5-image,
-// google/gemini-3-pro-image-preview).
-const DEFAULT_IMAGE_MODEL = process.env.PULP_AI_IMAGE_MODEL
+// PULP_AI_IMAGE_MODEL=... (legacy) or STUDIO_IMAGE_MODEL=... (Phase 4
+// Patch G — emergency model swap without code change; lets us flip to
+// black-forest-labs/flux.2-flex if/when it lands on OpenRouter without
+// reshipping).
+const DEFAULT_IMAGE_MODEL = process.env.STUDIO_IMAGE_MODEL
+  || process.env.PULP_AI_IMAGE_MODEL
   || 'openai/gpt-5-image';
+
+// Phase 4 Patch F: max attached references per call. OpenRouter's chat-
+// completions image-input limit varies by model, but 4 is conservative
+// across the supported model set (gpt-5-image, gemini-3-pro-image-preview,
+// flux.2-*) and keeps payloads under typical request-size caps.
+const MAX_REFERENCES_PER_CALL = 4;
 
 // Best-of-N candidate generation. When > 1, generateScene/generatePortrait
 // fan out to N parallel models and pick the best output per the validator
@@ -232,6 +274,105 @@ function sanitizeModel(s) {
   // Allow OpenAI/OpenRouter model id pattern: alnum, dot, dash, underscore, slash, colon.
   if (!/^[A-Za-z0-9._\-/:]+$/.test(s)) return '';
   return s;
+}
+
+// ---------- Phase 4 Patch F — reference image picker ----------
+//
+// Resolve a list of base64 data-URL reference images for a given asset class
+// + tags. Reads the per-project merged manifest (project entries override
+// global defaults) via references.getMergedManifest, then loads PNG bytes
+// from disk via references.resolveReferenceFile.
+//
+// assetClass: 'scene' | 'portrait' | 'card' | 'launcher'
+// tags: optional array of strings (scene-tag keys → manifest.scene_references)
+// maxCount: cap, defaults to MAX_REFERENCES_PER_CALL
+//
+// Env override:
+//   STUDIO_NO_REFERENCE_IMAGES=1 → return [] (kill switch for the feature)
+//
+// Returns: [{ filename, dataUrl }]   (may be empty — never throws)
+async function pickReferences(projectId, assetClass, tags, maxCount) {
+  if (process.env.STUDIO_NO_REFERENCE_IMAGES === '1') return [];
+  if (!projectId) return [];
+
+  const cap = Math.max(0, Math.min(MAX_REFERENCES_PER_CALL,
+    Number.isFinite(maxCount) ? Number(maxCount) : MAX_REFERENCES_PER_CALL));
+  if (cap === 0) return [];
+
+  const refs = references();
+  let manifest;
+  try {
+    manifest = await refs.getMergedManifest(projectId);
+  } catch (e) {
+    // Reference lookup failures should NEVER fail image gen — log and
+    // proceed with no references.
+    // eslint-disable-next-line no-console
+    console.warn('[pulp_ai] pickReferences manifest load failed:', e && e.message);
+    return [];
+  }
+  if (!manifest || typeof manifest !== 'object') return [];
+
+  // Build the candidate filename pool based on assetClass + tags.
+  const seen = new Set();
+  const pool = [];
+  const push = (filename) => {
+    if (!filename || typeof filename !== 'string') return;
+    if (seen.has(filename)) return;
+    seen.add(filename);
+    pool.push(filename);
+  };
+
+  if (assetClass === 'scene') {
+    const scene = (manifest.scene_references && typeof manifest.scene_references === 'object')
+      ? manifest.scene_references : {};
+    const tagList = Array.isArray(tags) ? tags : [];
+    for (const tag of tagList) {
+      const arr = scene[tag];
+      if (Array.isArray(arr)) for (const n of arr) push(n);
+    }
+    if (pool.length === 0 && Array.isArray(manifest.default_set)) {
+      for (const n of manifest.default_set) push(n);
+    }
+  } else if (assetClass === 'portrait') {
+    const p = (manifest.portrait_references && typeof manifest.portrait_references === 'object')
+      ? manifest.portrait_references : {};
+    if (Array.isArray(p.default)) for (const n of p.default) push(n);
+    if (pool.length === 0 && Array.isArray(manifest.default_set)) {
+      for (const n of manifest.default_set) push(n);
+    }
+  } else if (assetClass === 'card' || assetClass === 'launcher') {
+    const c = (manifest.card_references && typeof manifest.card_references === 'object')
+      ? manifest.card_references : {};
+    if (Array.isArray(c.default)) for (const n of c.default) push(n);
+    if (pool.length === 0 && Array.isArray(manifest.default_set)) {
+      for (const n of manifest.default_set) push(n);
+    }
+  } else if (Array.isArray(manifest.default_set)) {
+    for (const n of manifest.default_set) push(n);
+  }
+
+  if (pool.length === 0) return [];
+
+  // Cap before disk reads so we don't waste IO.
+  const capped = pool.slice(0, cap);
+
+  // Resolve filenames → buffers → data URLs.
+  const out = [];
+  for (const filename of capped) {
+    let buf = null;
+    try {
+      buf = await refs.resolveReferenceFile(projectId, filename);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[pulp_ai] reference file missing:', filename, e && e.message);
+    }
+    if (!buf || !Buffer.isBuffer(buf)) continue;
+    out.push({
+      filename,
+      dataUrl: 'data:image/png;base64,' + buf.toString('base64')
+    });
+  }
+  return out;
 }
 
 async function loadProjectOrThrow(projectId) {
@@ -601,7 +742,8 @@ const SCENE_STYLE_LOCK =
  * - Falls back to a deterministic dithered placeholder if OPENROUTER_API_KEY
  *   is unset or the image call fails.
  */
-async function generateScene({ prompt, model, dim, projectId, sceneId, stage }) {
+async function generateScene({ prompt, model, dim, projectId, sceneId, stage,
+                               tags, referenceImages }) {
   const cleanPrompt = sanitizePrompt(prompt);
   if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
   const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
@@ -633,6 +775,32 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage }) 
   let pngBuffer = null;
   let lastErr = null;
 
+  // Phase 4 Patch F: resolve reference images once before the attempt loop.
+  // Caller can either pass explicit `referenceImages` (array of filenames —
+  // e.g. from the gallery regen modal) or let pickReferences derive them
+  // from the per-project manifest based on `tags` (autopilot path).
+  let resolvedRefs = [];
+  try {
+    if (Array.isArray(referenceImages) && referenceImages.length > 0) {
+      // Treat explicit list as tag-equivalent: build a single-element pool
+      // and route through pickReferences to load bytes from disk.
+      const refsMod = references();
+      for (const filename of referenceImages.slice(0, MAX_REFERENCES_PER_CALL)) {
+        try {
+          const buf = await refsMod.resolveReferenceFile(projectId, filename);
+          if (buf && Buffer.isBuffer(buf)) {
+            resolvedRefs.push({
+              filename,
+              dataUrl: 'data:image/png;base64,' + buf.toString('base64')
+            });
+          }
+        } catch (_e) { /* skip missing */ }
+      }
+    } else {
+      resolvedRefs = await pickReferences(projectId, 'scene', tags, MAX_REFERENCES_PER_CALL);
+    }
+  } catch (_e) { resolvedRefs = []; }
+
   for (let attempt = 0; attempt < 2; attempt++) {
     const augmented = buildPrompt(attempt > 0);
     try {
@@ -643,7 +811,8 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage }) 
         projectId: projectId || null,
         sceneId: sceneId || null,
         stage: stage || 'scene',
-        kind: 'scene'
+        kind: 'scene',
+        references: resolvedRefs
       });
       usedModel = `openrouter:${requestedModel}`;
       pngBuffer = await toScenePng(imgBuf, dw, dh);
@@ -723,7 +892,7 @@ async function toPortraitPng(buf, width, height) {
  * the signature so the service surface stays uniform.
  */
 // eslint-disable-next-line no-unused-vars
-async function generatePortrait({ prompt, model, dim, dither, threshold, contrast, brightness, projectId, sceneId, stage }) {
+async function generatePortrait({ prompt, model, dim, dither, threshold, contrast, brightness, projectId, sceneId, stage, tags, referenceImages }) {
   const cleanPrompt = sanitizePrompt(prompt);
   if (!cleanPrompt) throw aiErr(400, 'bad_request', 'prompt required');
   const requestedModel = sanitizeModel(model) || DEFAULT_IMAGE_MODEL;
@@ -752,6 +921,27 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
   let pngBuffer = null;
   let lastErr = null;
 
+  // Phase 4 Patch F: same reference-resolution pattern as generateScene.
+  let resolvedRefs = [];
+  try {
+    if (Array.isArray(referenceImages) && referenceImages.length > 0) {
+      const refsMod = references();
+      for (const filename of referenceImages.slice(0, MAX_REFERENCES_PER_CALL)) {
+        try {
+          const buf = await refsMod.resolveReferenceFile(projectId, filename);
+          if (buf && Buffer.isBuffer(buf)) {
+            resolvedRefs.push({
+              filename,
+              dataUrl: 'data:image/png;base64,' + buf.toString('base64')
+            });
+          }
+        } catch (_e) { /* skip missing */ }
+      }
+    } else {
+      resolvedRefs = await pickReferences(projectId, 'portrait', tags, MAX_REFERENCES_PER_CALL);
+    }
+  } catch (_e) { resolvedRefs = []; }
+
   for (let attempt = 0; attempt < 2; attempt++) {
     const augmented = buildPrompt(attempt > 0);
     try {
@@ -762,7 +952,8 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
         projectId: projectId || null,
         sceneId: sceneId || null,
         stage: stage || 'portrait',
-        kind: 'portrait'
+        kind: 'portrait',
+        references: resolvedRefs
       });
       usedModel = `openrouter:${requestedModel}`;
       pngBuffer = await toPortraitPng(imgBuf, dw, dh);
@@ -1072,6 +1263,9 @@ module.exports = {
   generateSound,
   getLog,
   aiErr,
+  // Phase 4 Patch F: exposed so the gallery / late-add ops can resolve refs
+  // before calling generateScene / generatePortrait directly.
+  pickReferences,
   PORTRAIT_DIM_DEFAULT,
   PORTRAIT_DIM_MIN,
   PORTRAIT_DIM_MAX,
