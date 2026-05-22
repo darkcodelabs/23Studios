@@ -76,7 +76,8 @@ function RequireAuth({ children }) {
 }
 
 import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
+// Dashboard.jsx is unrouted as of design pass 1.5 — Landing (wrapped in
+// AppShell) is the new /dashboard. The file stays on disk for now.
 import Project from './pages/Project.jsx';
 import NotFound from './pages/NotFound.jsx';
 import PulpLayout from './components/PulpLayout.jsx';
@@ -117,6 +118,7 @@ import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import Brief from './pages/Brief.jsx';
 import ProjectGallery from './components/ProjectGallery.jsx';
 import ProjectShell from './layouts/ProjectShell.jsx';
+import AppShell from './layouts/AppShell.jsx';
 import Landing from './pages/Landing.jsx';
 import Library from './pages/Library.jsx';
 import SceneEditor from './pages/SceneEditor.jsx';
@@ -188,14 +190,16 @@ export default function App() {
       <CostPanel />
       <Routes>
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
-        <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
-        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        {/* Library — primary studio home (design pass 1). /dashboard stays
-            live as a legacy alias for any deep links. */}
-        <Route path="/library" element={<RequireAuth><Library /></RequireAuth>} />
-        {/* Landing — full-bleed prompt composer; mounted outside ProjectShell
-            because Landing is its own world (no sidebar, no topbar). */}
-        <Route path="/new" element={<RequireAuth><Landing /></RequireAuth>} />
+        {/* Studio shell — Landing at "/" + "/dashboard" + "/new",
+            Library at "/library". All wrap in AppShell (220 px FLOW +
+            PROJECT sidebar + 52 px topbar). The old Dashboard.jsx is no
+            longer routed; its file remains on disk, unreferenced. */}
+        <Route path="/" element={<RequireAuth><AppShell /></RequireAuth>}>
+          <Route index element={<Landing />} />
+          <Route path="dashboard" element={<Landing />} />
+          <Route path="new" element={<Landing />} />
+          <Route path="library" element={<Library />} />
+        </Route>
         <Route path="/agents" element={<RequireAuth><AgentsDashboard /></RequireAuth>} />
         {/* Phase 4.5 Part 0 — nested project shell at /projects/:id.
             The legacy /project/:id routes below stay live for any deep

@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Paperclip, ArrowRight, Minus } from 'lucide-react';
 import { api } from '../lib/api.js';
 
 // Landing — design pass 1.
 //
-// Full-bleed hero with a glove backdrop + centered prompt composer.
-// Fidelity reference: design_handoff_23_studios/screen-landing.jsx and
-// the .land-* CSS in design_handoff_23_studios/styles.css.
+// Hero with glove backdrop + centered prompt composer, mono "BUILT BY
+// HAKCERS" belt, 4-card flow grid, and a footer strip. Fidelity
+// reference: design_handoff_23_studios/screen-landing.jsx and the
+// .land-* CSS in design_handoff_23_studios/styles.css.
 //
-// Mounted at /new in App.jsx OUTSIDE the ProjectShell — Landing is its
-// own world, no sidebar, no topbar.
+// Mounted at "/" and "/dashboard" INSIDE AppShell so the studio sidebar
+// + topbar paint around it. (Previously /new mounted Landing full-bleed
+// — that route still works as a backward-compat alias and falls back
+// into the same wrapped layout.)
 //
 // On "Build it":
 //   POST /api/projects { name, description, game_type: 'sdk' }
@@ -171,14 +174,6 @@ export default function Landing() {
 
   const charCount = useMemo(() => (prompt || '').length, [prompt]);
 
-  // Force a dark page bg even if the parent route container doesn't set
-  // one (Landing is its own full-bleed surface).
-  useEffect(() => {
-    const prev = document.body.style.background;
-    document.body.style.background = 'var(--bg)';
-    return () => { document.body.style.background = prev; };
-  }, []);
-
   async function onBuild() {
     if (busy) return;
     const text = (prompt || '').trim();
@@ -209,8 +204,7 @@ export default function Landing() {
       className="font-ui"
       style={{
         background: 'var(--bg)',
-        color: 'var(--text)',
-        minHeight: '100vh'
+        color: 'var(--text)'
       }}
     >
       {/* ─── Hero (v2 — full-bleed glove + composer) ─── */}
