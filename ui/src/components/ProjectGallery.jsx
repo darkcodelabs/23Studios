@@ -5,6 +5,7 @@ import {
   RefreshCw, Pencil, AlertCircle, Plus, Filter as FilterIcon, ArrowUpDown
 } from 'lucide-react';
 import { api } from '../lib/api.js';
+import AssetEditModal from './AssetEditModal.jsx';
 
 // ProjectGallery — Phase 4.5 Patch C.
 //
@@ -363,7 +364,7 @@ function ReferencesRow({ projectId, references, onAdd }) {
 // Asset card
 // ----------------------------------------------------------------------------
 
-function AssetCard({ projectId, asset, onApprove, onReject, onOpen, error }) {
+function AssetCard({ projectId, asset, onApprove, onReject, onOpen, onEdit, error }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -499,17 +500,19 @@ function AssetCard({ projectId, asset, onApprove, onReject, onOpen, error }) {
           <div className="flex-1" />
           <button
             type="button"
-            disabled
-            title="Patch E coming."
-            className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-ink-900 text-ink-500 ring-1 ring-ink-800 cursor-not-allowed"
+            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(asset, { mode: 'edit' }); }}
+            disabled={!canAct}
+            title="edit prompt / references and optionally regenerate"
+            className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-ink-800 hover:bg-ink-700 text-ink-100 ring-1 ring-ink-700 disabled:opacity-40"
           >
             <Pencil className="w-3 h-3" /> Edit
           </button>
           <button
             type="button"
-            disabled
-            title="Patch E coming."
-            className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-ink-900 text-ink-500 ring-1 ring-ink-800 cursor-not-allowed"
+            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(asset, { mode: 'regen' }); }}
+            disabled={!canAct}
+            title="open regen panel"
+            className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-ink-800 hover:bg-ink-700 text-ink-100 ring-1 ring-ink-700 disabled:opacity-40"
           >
             <RefreshCw className="w-3 h-3" /> Regen
           </button>
@@ -523,7 +526,7 @@ function AssetCard({ projectId, asset, onApprove, onReject, onOpen, error }) {
 // Preview modal
 // ----------------------------------------------------------------------------
 
-function PreviewModal({ projectId, asset, onClose, onApprove, onReject }) {
+function PreviewModal({ projectId, asset, onClose, onApprove, onReject, onEdit }) {
   const ref = useRef(null);
   const [reason, setReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
@@ -669,17 +672,19 @@ function PreviewModal({ projectId, asset, onClose, onApprove, onReject }) {
               <div className="flex-1" />
               <button
                 type="button"
-                disabled
-                title="Patch E coming."
-                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-ink-900 text-ink-500 ring-1 ring-ink-800 cursor-not-allowed"
+                onClick={() => { onClose(); onEdit && onEdit(asset, { mode: 'edit' }); }}
+                disabled={busy}
+                title="edit prompt / references"
+                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-ink-800 hover:bg-ink-700 text-ink-100 ring-1 ring-ink-700 disabled:opacity-50"
               >
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </button>
               <button
                 type="button"
-                disabled
-                title="Patch E coming."
-                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-ink-900 text-ink-500 ring-1 ring-ink-800 cursor-not-allowed"
+                onClick={() => { onClose(); onEdit && onEdit(asset, { mode: 'regen' }); }}
+                disabled={busy}
+                title="open regen panel"
+                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-ink-800 hover:bg-ink-700 text-ink-100 ring-1 ring-ink-700 disabled:opacity-50"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Regen
               </button>
@@ -821,6 +826,7 @@ export default function ProjectGallery() {
   const [filters, setFilters] = useState({ types: [], states: [] });
   const [sortKey, setSortKey] = useState('created');
   const [preview, setPreview] = useState(null);
+  const [editing, setEditing] = useState(null); // { asset, mode }
   const [cardErrors, setCardErrors] = useState({});
 
   const assetsRef = useRef([]);
@@ -922,6 +928,24 @@ export default function ProjectGallery() {
     }
   }, [id]);
 
+  // Edit modal triggers.
+  const handleEdit = useCallback((asset, opts) => {
+    setEditing({ asset, mode: (opts && opts.mode) || 'edit' });
+    setCardErrors((m) => { const n = { ...m }; delete n[asset.id]; return n; });
+  }, []);
+
+  // Called by AssetEditModal when a regen finishes successfully. Replace the
+  // asset record in place (so the new image url + sidecar values render) and
+  // flip state badge to 'pending' (the backend already reset it). We also
+  // briefly flash 'regenerating' here as an extra visual cue — the next poll
+  // will replace this with the final server state.
+  const handleRegenComplete = useCallback((updatedAsset) => {
+    setAssets((cur) => {
+      if (!cur || !updatedAsset || !updatedAsset.id) return cur;
+      return cur.map((a) => (a.id === updatedAsset.id ? { ...a, ...updatedAsset } : a));
+    });
+  }, []);
+
   const visibleAssets = useMemo(() => {
     if (!assets) return [];
     return applySort(applyFilters(assets, filters), sortKey);
@@ -979,6 +1003,7 @@ export default function ProjectGallery() {
               onApprove={handleApprove}
               onReject={handleReject}
               onOpen={(x) => setPreview(x)}
+              onEdit={handleEdit}
               error={cardErrors[a.id]}
             />
           ))}
@@ -992,6 +1017,19 @@ export default function ProjectGallery() {
           onClose={() => setPreview(null)}
           onApprove={handleApprove}
           onReject={handleReject}
+          onEdit={handleEdit}
+        />
+      ) : null}
+
+      {editing ? (
+        <AssetEditModal
+          projectId={id}
+          asset={editing.asset}
+          onClose={() => setEditing(null)}
+          onRegenComplete={(updated) => {
+            if (updated) handleRegenComplete(updated);
+            setEditing(null);
+          }}
         />
       ) : null}
     </div>
