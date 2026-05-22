@@ -163,8 +163,8 @@ function M.lineOfSight(x1, y1, x2, y2, blockers)
             end
 
             return false  -- segment intersects this blocker
-            ::continue::
         end
+        ::continue::
     end
 
     return true
