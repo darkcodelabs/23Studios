@@ -257,8 +257,12 @@ export default function StudioShelfCard({ project }) {
             {autopilot.awaiting_gate && (
               <Link
                 to={
+                  // Phase 4.7: ConceptPicker is replaced by the bible-derived
+                  // Brief. concept_pick gate now resolves via /author/brief
+                  // (review the bible-derived concept), other gates still
+                  // route to /batches.
                   autopilot.awaiting_gate === 'concept_pick'
-                    ? `/project/${project.id}/concepts`
+                    ? `/projects/${project.id}/author/brief`
                     : `/project/${project.id}/batches`
                 }
                 className="block text-[10px] text-amber-300 hover:text-amber-200"

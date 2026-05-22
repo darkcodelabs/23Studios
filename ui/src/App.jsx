@@ -107,7 +107,9 @@ import ShipStatus from './pages/ShipStatus.jsx';
 import MvpWorkflow from './pages/MvpWorkflow.jsx';
 import Releases from './pages/Releases.jsx';
 import DesignValidator from './pages/DesignValidator.jsx';
-import ConceptPicker from './pages/ConceptPicker.jsx';
+// ConceptPicker.jsx was deleted in phase 4.7 — Brief surface now derives
+// from the parsed bible directly. /project/:id/concepts redirects to the
+// new /projects/:id/author/brief surface (see RedirectToNew below).
 import Milestones from './pages/Milestones.jsx';
 import ReviewBoard from './pages/ReviewBoard.jsx';
 import PerfAudit from './pages/PerfAudit.jsx';
@@ -272,7 +274,9 @@ export default function App() {
         <Route path="/project/:id/approve" element={<RequireAuth><AssetApprover /></RequireAuth>} />
         <Route path="/project/:id/releases" element={<RequireAuth><Releases /></RequireAuth>} />
         <Route path="/project/:id/design-validate" element={<RequireAuth><DesignValidator /></RequireAuth>} />
-        <Route path="/project/:id/concepts" element={<RequireAuth><ConceptPicker /></RequireAuth>} />
+        {/* Phase 4.7: ConceptPicker is gone. Legacy concept-picker deep
+            links redirect into the new bible-derived Brief surface. */}
+        <Route path="/project/:id/concepts" element={<RequireAuth><RedirectToNew /></RequireAuth>} />
         <Route path="/project/:id/milestones" element={<RequireAuth><Milestones /></RequireAuth>} />
         <Route path="/project/:id/review" element={<RequireAuth><ReviewBoard /></RequireAuth>} />
         {/* /project/:id/batches now redirects to /projects/:id/author/gallery
