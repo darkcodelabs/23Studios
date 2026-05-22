@@ -79,6 +79,18 @@ function sectionBodyStartsWith(sections, prefix) {
   return '';
 }
 
+// Header lookup — same matching rule as sectionBodyStartsWith but returns
+// the raw human header text (`ANTAGONIST: REDHOOK`) instead of the body.
+// Used to recover the named antagonist / mentor from the section heading.
+function sectionHeaderStartsWith(sections, prefix) {
+  for (const s of sections) {
+    if (s.key === prefix || s.key.startsWith(prefix + ' ') || s.key.startsWith(prefix + '_')) {
+      return s.header;
+    }
+  }
+  return '';
+}
+
 // ---------------------------------------------------------------------------
 // CAST LIST parser
 // ---------------------------------------------------------------------------
@@ -295,8 +307,24 @@ function parseBulletList(body) {
 
 function parseProtagonist(body) {
   if (!body) return null;
+  const rawName = pickField(body, /^Name:\s*(.+)$/im);
+  // Clean up bibles that leave the name as a prose line like
+  // "customizable (player picks a handle…)". Strip everything from the
+  // first paren or comma onward; if the result is the literal word
+  // "customizable", surface the default handle from inside the parens
+  // when present, otherwise fall back to "Protagonist".
+  let name = 'Protagonist';
+  if (rawName) {
+    const stripped = rawName.replace(/[(,].*$/, '').trim();
+    if (stripped.toLowerCase() === 'customizable') {
+      const defaultM = rawName.match(/default\s+"([^"]+)"/i);
+      name = defaultM ? defaultM[1] : 'Protagonist';
+    } else if (stripped) {
+      name = stripped;
+    }
+  }
   return {
-    name: pickField(body, /^Name:\s*(.+)$/im) || 'Protagonist',
+    name,
     age: pickField(body, /^Age:\s*(.+)$/im),
     location: pickField(body, /^Location:\s*(.+)$/im),
     family: pickField(body, /^Family situation:\s*(.+)$/im),
@@ -306,26 +334,38 @@ function parseProtagonist(body) {
   };
 }
 
-function parseAntagonist(body) {
+function parseAntagonist(body, headerText) {
   if (!body) return null;
   return {
-    name: extractAntagonistName(body),
+    name: extractAntagonistName(headerText, body),
     voice: pickField(body, /^Voice:\s*(.+)$/im),
     description: body.trim().slice(0, 1200),
   };
 }
 
-function extractAntagonistName(body) {
-  // Try to lift a bare name from leading 1-2 paragraphs.
-  const firstLine = body.split(/\n/).find((l) => l.trim()) || '';
-  const m = firstLine.match(/\b([A-Z][A-Za-z0-9]+)\b/);
-  return m ? m[1] : '';
+function extractAntagonistName(headerText, body) {
+  // Prefer the section header's named-villain pattern (`ANTAGONIST: REDHOOK`
+  // or `ANTAGONIST — REDHOOK`). Fall back to the first capitalized word in
+  // the body when no header name is present.
+  if (headerText) {
+    const m = headerText.match(/(?:ANTAGONIST|VILLAIN)\s*[:\-—]\s*(.+)$/i);
+    if (m) return m[1].trim();
+  }
+  const firstLine = (body || '').split(/\n/).find((l) => l.trim()) || '';
+  const m2 = firstLine.match(/\b([A-Z][A-Za-z0-9]+)\b/);
+  return m2 ? m2[1] : '';
 }
 
 function parseMentor(body) {
   if (!body) return null;
+  // pickField returns the full first line after the label, but a HAKCD-shape
+  // mentor `Real name:` line often runs prose into the same row
+  // (`Real name: Loyd-something. Died February 1996, …`). Clamp to the
+  // first sentence so downstream UIs get a clean name.
+  const raw = pickField(body, /^Real name:\s*(.+)$/im);
+  const realName = raw ? raw.split('.')[0].trim().replace(/,$/, '') : '';
   return {
-    real_name: pickField(body, /^Real name:\s*(.+)$/im),
+    real_name: realName,
     voice_pre_reveal: pickField(body, /^Voice\s*\(pre-reveal\):\s*(.+)$/im),
     voice_post_reveal: pickField(body, /^Voice\s*\(post-reveal\):\s*(.+)$/im),
     description: body.trim().slice(0, 1500),
@@ -370,7 +410,10 @@ function parseBible(rawMarkdown) {
     setting: sectionBody(sections, 'SETTING'),
     structure: sectionBody(sections, 'STRUCTURE'),
     protagonist: parseProtagonist(sectionBody(sections, 'PROTAGONIST')),
-    antagonist: parseAntagonist(sectionBodyStartsWith(sections, 'ANTAGONIST')),
+    antagonist: parseAntagonist(
+      sectionBodyStartsWith(sections, 'ANTAGONIST'),
+      sectionHeaderStartsWith(sections, 'ANTAGONIST')
+    ),
     mentor: parseMentor(sectionBodyStartsWith(sections, 'THE MENTOR') || sectionBodyStartsWith(sections, 'MENTOR')),
     threat: sectionBodyStartsWith(sections, 'THE THREAT') || sectionBodyStartsWith(sections, 'THREAT'),
     tool_progression: sectionBody(sections, 'TOOL PROGRESSION'),

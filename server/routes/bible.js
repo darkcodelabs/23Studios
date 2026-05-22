@@ -27,15 +27,22 @@ const router = express.Router();
 const _parsedCache = new Map();
 
 function loadCompiledBible(localPath) {
-  // Prefer per-section bible/ files concatenated via sdk_bible.compile
-  // (keeps with the modular layout once ingest has run). Fall back to the
-  // flat sdk_data/story_bible.md the autopilot already consumes.
-  const dirPath = path.join(localPath, 'sdk_data', 'bible');
+  // The parser keys off `## SECTION` headers from the original rich source
+  // bible. The per-section bible/*.md files use level-1 `#` headers, so
+  // concatenating them would defeat the section detector. PREFER the flat
+  // sdk_data/story_bible.md (always written by /bible/ingest + the legacy
+  // template seeder) — fall back to the section concat only if it's
+  // missing AND the section files happen to keep `##` headers.
   const compiledPath = path.join(localPath, 'sdk_data', 'story_bible.md');
+  const dirPath = path.join(localPath, 'sdk_data', 'bible');
   let raw = null;
   let mtime = 0;
   try {
-    if (fs.existsSync(dirPath)) {
+    if (fs.existsSync(compiledPath)) {
+      const st = fs.statSync(compiledPath);
+      mtime = st.mtimeMs;
+      raw = fs.readFileSync(compiledPath, 'utf8');
+    } else if (fs.existsSync(dirPath)) {
       const files = fs.readdirSync(dirPath)
         .filter((f) => /^[a-z0-9][a-z0-9_-]*\.md$/.test(f))
         .sort();
@@ -49,11 +56,6 @@ function loadCompiledBible(localPath) {
         }
         raw = parts.join('\n\n---\n\n') + '\n';
       }
-    }
-    if (raw === null && fs.existsSync(compiledPath)) {
-      const st = fs.statSync(compiledPath);
-      mtime = st.mtimeMs;
-      raw = fs.readFileSync(compiledPath, 'utf8');
     }
   } catch (_e) { /* swallow — return null so caller 404s */ }
   return raw ? { raw, mtime } : null;
