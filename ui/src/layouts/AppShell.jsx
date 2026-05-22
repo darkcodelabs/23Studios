@@ -18,6 +18,53 @@ import { derivedStatus, STATUS } from '../lib/projectStatus.js';
 // replace it; the two co-exist.
 
 // ----------------------------------------------------------------------------
+// Brand mark
+// ----------------------------------------------------------------------------
+
+// Sidebar brand glyph. The PNG at /assets/studio-logo.png is the wired-glove
+// mark; some browsers (and some proxy paths) intermittently fail to load
+// it before React paints — the result was a broken-image placeholder in the
+// 32×32 square. onError swaps in a CSS-rendered "23" wordmark so the slot
+// never reads as broken. width/height + loading="eager" + decoding="async"
+// keep layout stable while the bytes arrive.
+function BrandLogo() {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        aria-label="23"
+        className="font-mono"
+        style={{
+          width: '100%', height: '100%',
+          display: 'inline-flex',
+          alignItems: 'center', justifyContent: 'center',
+          background: 'var(--accent)',
+          color: 'var(--accent-ink)',
+          fontWeight: 700,
+          fontSize: 13,
+          letterSpacing: '-.02em',
+          lineHeight: 1
+        }}
+      >
+        23
+      </span>
+    );
+  }
+  return (
+    <img
+      src="/assets/studio-logo.png"
+      alt="23"
+      width={32}
+      height={32}
+      loading="eager"
+      decoding="async"
+      onError={() => setFailed(true)}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+    />
+  );
+}
+
+// ----------------------------------------------------------------------------
 // FLOW items — fixed 6-item flat nav per design
 // ----------------------------------------------------------------------------
 
@@ -320,11 +367,7 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
           }}
           title="23 Studios"
         >
-          <img
-            src="/assets/studio-logo.png"
-            alt="23"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
+          <BrandLogo />
         </Link>
         <div className="flex flex-col leading-tight">
           <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
