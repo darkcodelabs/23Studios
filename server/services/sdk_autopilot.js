@@ -36,6 +36,11 @@ const assetBatches = require('./sdk_asset_batches');
 
 const SDK_DATA_REL = 'sdk_data';
 
+// Canonical Playdate-side runtime modules. Staged into <project>/source/runtime/
+// by wireSourceTree so every emitted scene can `import "runtime/scene_manager"`
+// etc. Mirrors sdk_export.js:32.
+const RUNTIME_DIR = path.join(__dirname, 'sdk_runtime_lua');
+
 function emit(onEvent, evt, data) {
   if (typeof onEvent === 'function') {
     try { onEvent(evt, data); } catch (_e) { /* ignore */ }
@@ -769,6 +774,42 @@ async function wireSourceTree(localPath, sdk, ev) {
   await fsp.mkdir(path.join(srcDir, 'sounds', 'sfx'), { recursive: true });
   await fsp.mkdir(path.join(srcDir, 'sounds', 'music'), { recursive: true });
 
+  // Stage the canonical runtime into source/runtime/ + source/runtime/concepts/.
+  // Mirrors sdk_export.js:227. Without this every reference to scene_manager,
+  // audio_manager, save_state, etc. resolves to nil on device.
+  const runtimeDir = path.join(srcDir, 'runtime');
+  await fsp.mkdir(runtimeDir, { recursive: true });
+  await fsp.mkdir(path.join(runtimeDir, 'concepts'), { recursive: true });
+
+  // Recursive copy of every .lua under sdk_runtime_lua/ into source/runtime/.
+  async function copyRuntimeRecursive(srcRoot, destRoot) {
+    const entries = await fsp.readdir(srcRoot, { withFileTypes: true });
+    for (const entry of entries) {
+      const s = path.join(srcRoot, entry.name);
+      const d = path.join(destRoot, entry.name);
+      if (entry.isDirectory()) {
+        await fsp.mkdir(d, { recursive: true });
+        await copyRuntimeRecursive(s, d);
+      } else if (entry.isFile() && entry.name.endsWith('.lua')) {
+        await fsp.copyFile(s, d);
+      }
+    }
+  }
+  await copyRuntimeRecursive(RUNTIME_DIR, runtimeDir);
+
+  // sdk_runtime_lua/main.lua is the canonical bootstrap. Move it to source/main.lua
+  // so the autopilot's emitted main.lua (below) can decide whether to replace it.
+  const canonicalMainSrc = path.join(runtimeDir, 'main.lua');
+  if (fs.existsSync(canonicalMainSrc)) {
+    await fsp.rename(canonicalMainSrc, path.join(srcDir, 'main.lua.canonical'));
+  }
+
+  // Strip docs that aren't pdc-friendly. Matches sdk_export.js:235.
+  const conceptReadme = path.join(runtimeDir, 'concepts', 'README.md');
+  if (fs.existsSync(conceptReadme)) {
+    await fsp.unlink(conceptReadme).catch(() => {});
+  }
+
   // main.lua — import every scene + boot the startup scene
   const startup = sdk.startup_scene || (sdk.scenes && sdk.scenes[0] && sdk.scenes[0].id) || 'title';
   const sceneIds = (sdk.scenes || []).map((s) => s && s.id).filter(Boolean);
@@ -780,37 +821,81 @@ async function wireSourceTree(localPath, sdk, ev) {
     'import "CoreLibs/crank"',
     'import "CoreLibs/animation"',
     '',
-    '-- 23studios autopilot-emitted main.lua — regenerated each scene_lua run',
+    '-- 23studios autopilot-emitted main.lua',
+    '-- Regenerated each scene_lua run. Do not hand-edit.',
     '',
-    'local gfx <const> = playdate.graphics',
+    '-- Runtime: self-binds every module to _G via load-once pattern.',
+    '-- Order matters: scene_manager must load before any scene that calls it.',
+    'import "runtime/save_state"',
+    'import "runtime/audio_manager"',
+    'import "runtime/animation"',
+    'import "runtime/input"',
+    'import "runtime/sprite_base"',
+    'import "runtime/scene_manager"',
+    'import "runtime/scene_transition"',
     '',
-    '-- Scenes: imported once, bound to globals via _G in their module',
+    '-- Concepts: load every module that scenes might reference.',
+    'import "runtime/concepts/inventory"',
+    'import "runtime/concepts/collision"',
+    'import "runtime/concepts/interaction"',
+    'import "runtime/concepts/debug_overlay"',
+    '',
+    '-- Scenes: each module self-binds Scene_<id> to _G.',
     ...sceneIds.map((id) => `import "scenes/${id}"`),
     '',
-    'local current_scene_id = ' + JSON.stringify(startup),
-    'local current_scene = _G[current_scene_id]',
-    'if current_scene and current_scene.init then current_scene.init() end',
-    'if current_scene and current_scene.enter then current_scene.enter() end',
+    'local gfx <const> = playdate.graphics',
+    'local pd  <const> = playdate',
     '',
-    'function playdate.update()',
-    '    gfx.clear()',
-    '    if current_scene and current_scene.update then current_scene.update() end',
-    '    if current_scene and current_scene.draw then current_scene.draw() end',
-    '    playdate.timer.updateTimers()',
-    '    gfx.sprite.update()',
+    '-- Boot the startup scene through scene_manager.',
+    '-- Every frame looks the scene up via scene_manager.current() instead of',
+    '-- caching a local. transition_to(...) inside a scene calls scene_manager.replace()',
+    '-- which updates the stack the dispatcher reads from.',
+    'local startup_scene = _G[' + JSON.stringify('Scene_' + startup) + ']',
+    'if not startup_scene then',
+    '  error("startup scene Scene_' + startup + ' not loaded -- check imports above")',
+    'end',
+    'scene_manager.push(startup_scene)',
+    '',
+    'function pd.update()',
+    '  gfx.clear()',
+    '  local s = scene_manager.current()',
+    '  if s and s.update then s:update() end',
+    '  if s and s.draw   then s:draw()   end',
+    '  pd.timer.updateTimers()',
+    '  gfx.sprite.update()',
     'end',
     '',
-    'function playdate.AButtonDown()',
-    '    if current_scene and current_scene.input then current_scene.input("a") end',
+    '-- Input translation layer. The scene emitter (sdk_prompt_assembly.js)',
+    '-- currently emits switch-style `function Scene_<id>:input(evt)` handlers',
+    '-- taking strings like "a", "b", "up". Future emitter revisions may emit',
+    '-- named methods (s:AButtonDown). Dispatcher prefers named, falls back to',
+    '-- :input(evt).',
+    'local INPUT_MAP = {',
+    '  AButtonDown = "a",  AButtonUp = "a_up",',
+    '  BButtonDown = "b",  BButtonUp = "b_up",',
+    '  upButtonDown = "up", downButtonDown = "down",',
+    '  leftButtonDown = "left", rightButtonDown = "right",',
+    '}',
+    '',
+    'local function dispatch(name, ...)',
+    '  local s = scene_manager.current()',
+    '  if not s then return end',
+    '  -- Prefer named method (s:AButtonDown) if scene provides it.',
+    '  if s[name] then s[name](s, ...); return end',
+    '  -- Fallback: legacy switch-style :input(evt) the existing emitter produces.',
+    '  local evt = INPUT_MAP[name]',
+    '  if evt and s.input then s:input(evt, ...) end',
     'end',
-    'function playdate.BButtonDown()',
-    '    if current_scene and current_scene.input then current_scene.input("b") end',
-    'end',
-    'function playdate.upButtonDown()    if current_scene and current_scene.input then current_scene.input("up")    end end',
-    'function playdate.downButtonDown()  if current_scene and current_scene.input then current_scene.input("down")  end end',
-    'function playdate.leftButtonDown()  if current_scene and current_scene.input then current_scene.input("left")  end end',
-    'function playdate.rightButtonDown() if current_scene and current_scene.input then current_scene.input("right") end end',
-    'function playdate.cranked(change)   if current_scene and current_scene.crank then current_scene.crank(change) end end',
+    '',
+    'function pd.AButtonDown()     dispatch("AButtonDown")     end',
+    'function pd.AButtonUp()       dispatch("AButtonUp")       end',
+    'function pd.BButtonDown()     dispatch("BButtonDown")     end',
+    'function pd.BButtonUp()       dispatch("BButtonUp")       end',
+    'function pd.upButtonDown()    dispatch("upButtonDown")    end',
+    'function pd.downButtonDown()  dispatch("downButtonDown")  end',
+    'function pd.leftButtonDown()  dispatch("leftButtonDown")  end',
+    'function pd.rightButtonDown() dispatch("rightButtonDown") end',
+    'function pd.cranked(change, accel) dispatch("cranked", change, accel) end',
     ''
   ].join('\n');
   await fsp.writeFile(path.join(srcDir, 'main.lua'), mainLua);
