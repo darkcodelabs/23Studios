@@ -117,6 +117,7 @@ import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import Brief from './pages/Brief.jsx';
 import ProjectGallery from './components/ProjectGallery.jsx';
 import ProjectShell from './layouts/ProjectShell.jsx';
+import Landing from './pages/Landing.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -186,6 +187,9 @@ export default function App() {
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        {/* Landing — full-bleed prompt composer; mounted outside ProjectShell
+            because Landing is its own world (no sidebar, no topbar). */}
+        <Route path="/new" element={<RequireAuth><Landing /></RequireAuth>} />
         <Route path="/agents" element={<RequireAuth><AgentsDashboard /></RequireAuth>} />
         {/* Phase 4.5 Part 0 — nested project shell at /projects/:id.
             The legacy /project/:id routes below stay live for any deep
