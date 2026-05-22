@@ -114,6 +114,7 @@ import PerfAudit from './pages/PerfAudit.jsx';
 import QaCritic from './pages/QaCritic.jsx';
 import Architecture from './pages/Architecture.jsx';
 import Bible from './pages/Bible.jsx';
+import BibleBuilder from './pages/BibleBuilder.jsx';
 import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import Brief from './pages/Brief.jsx';
 import ProjectGallery from './components/ProjectGallery.jsx';
@@ -220,6 +221,10 @@ export default function App() {
             <Route path="gallery/:assetId/edit" element={<SceneEditor />} />
             <Route path="references" element={<ReferenceLibrary />} />
           </Route>
+          {/* Phase 4.7 — paste/upload a rich source bible to split into the
+              modular sections the autopilot consumes. Sits outside `author`
+              because it's a one-time intake surface, not a daily-edit one. */}
+          <Route path="bible-builder" element={<BibleBuilder />} />
           <Route path="build">
             <Route index element={<Navigate to="files" replace />} />
             <Route path="files"        element={<Project />} />
