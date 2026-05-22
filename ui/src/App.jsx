@@ -100,7 +100,6 @@ import Storyboard from './pages/Storyboard.jsx';
 import DecisionsLog from './pages/DecisionsLog.jsx';
 import Interview from './pages/Interview.jsx';
 import CostPanel from './components/CostPanel.jsx';
-import GateBanner from './components/GateBanner.jsx';
 import AgentsDashboard from './pages/AgentsDashboard.jsx';
 import AssetApprover from './pages/AssetApprover.jsx';
 import ShipStatus from './pages/ShipStatus.jsx';
@@ -110,12 +109,14 @@ import DesignValidator from './pages/DesignValidator.jsx';
 import ConceptPicker from './pages/ConceptPicker.jsx';
 import Milestones from './pages/Milestones.jsx';
 import ReviewBoard from './pages/ReviewBoard.jsx';
-import AssetBatches from './pages/AssetBatches.jsx';
 import PerfAudit from './pages/PerfAudit.jsx';
 import QaCritic from './pages/QaCritic.jsx';
 import Architecture from './pages/Architecture.jsx';
 import Bible from './pages/Bible.jsx';
 import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
+import Brief from './pages/Brief.jsx';
+import ProjectGallery from './components/ProjectGallery.jsx';
+import ProjectShell from './layouts/ProjectShell.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -164,16 +165,16 @@ function GatesIndex() {
   );
 }
 
-// Shell wraps every project route with the cross-app GateBanner. Banner
-// renders nothing when there's no active gate, so it's free on signed-off
-// projects.
-function ProjectShell({ children }) {
-  return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <GateBanner />
-      <div className="flex-1 min-h-0 overflow-auto">{children}</div>
-    </div>
-  );
+// Legacy /project/:id and /project/:id/batches deep links redirect into the
+// new /projects/:id/... shell. Preserves shared URLs from prior phases.
+function RedirectToNew() {
+  const { id } = useParams();
+  return <Navigate to={`/projects/${id}/author/brief`} replace />;
+}
+
+function RedirectToGallery() {
+  const { id } = useParams();
+  return <Navigate to={`/projects/${id}/author/gallery`} replace />;
 }
 
 export default function App() {
@@ -186,8 +187,47 @@ export default function App() {
         <Route path="/" element={<RequireAuth><Navigate to="/dashboard" replace /></RequireAuth>} />
         <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
         <Route path="/agents" element={<RequireAuth><AgentsDashboard /></RequireAuth>} />
-        <Route path="/project/:id" element={<RequireAuth><Project /></RequireAuth>} />
-        <Route path="/project/:id/files" element={<RequireAuth><Project /></RequireAuth>} />
+        {/* Phase 4.5 Part 0 — nested project shell at /projects/:id.
+            The legacy /project/:id routes below stay live for any deep
+            links + still-canonical surfaces (sdk/play, sdk/edit, composer,
+            …), but the bare /project/:id + /project/:id/batches links
+            redirect into the new shell. */}
+        <Route path="/projects/:id" element={<RequireAuth><ProjectShell /></RequireAuth>}>
+          <Route index element={<Navigate to="author/brief" replace />} />
+          <Route path="author">
+            <Route index element={<Navigate to="brief" replace />} />
+            <Route path="brief"      element={<Brief />} />
+            <Route path="bible"      element={<Bible />} />
+            <Route path="storyboard" element={<Storyboard />} />
+            <Route path="gallery"    element={<ProjectGallery />} />
+            <Route path="references" element={<ReferenceLibrary />} />
+          </Route>
+          <Route path="build">
+            <Route index element={<Navigate to="files" replace />} />
+            <Route path="files"        element={<Project />} />
+            <Route path="architecture" element={<Architecture />} />
+            <Route path="milestones"   element={<Milestones />} />
+            <Route path="simulator"    element={<SdkPlayPage />} />
+          </Route>
+          <Route path="review">
+            <Route index element={<Navigate to="board" replace />} />
+            <Route path="board"  element={<ReviewBoard />} />
+            <Route path="design" element={<DesignValidator />} />
+            <Route path="perf"   element={<PerfAudit />} />
+            <Route path="qa"     element={<QaCritic />} />
+          </Route>
+          <Route path="release">
+            <Route index element={<Navigate to="ship" replace />} />
+            <Route path="ship"    element={<ShipStatus />} />
+            <Route path="history" element={<Releases />} />
+            <Route path="mvp"     element={<MvpWorkflow />} />
+          </Route>
+        </Route>
+
+        {/* Backward-compat redirects from the singular /project/:id space. */}
+        <Route path="/project/:id" element={<RequireAuth><RedirectToNew /></RequireAuth>} />
+        <Route path="/project/:id/files" element={<RequireAuth><RedirectToNew /></RequireAuth>} />
+        <Route path="/project/:id/batches" element={<RequireAuth><RedirectToGallery /></RequireAuth>} />
         <Route path="/project/:id/edit" element={<RequireAuth><PulpEditor /></RequireAuth>} />
         <Route path="/project/:id/play" element={<RequireAuth><PulpPlayPage /></RequireAuth>} />
         <Route path="/project/:id/sdk/play" element={<RequireAuth><SdkPlayPage /></RequireAuth>} />
@@ -209,7 +249,9 @@ export default function App() {
         <Route path="/project/:id/concepts" element={<RequireAuth><ConceptPicker /></RequireAuth>} />
         <Route path="/project/:id/milestones" element={<RequireAuth><Milestones /></RequireAuth>} />
         <Route path="/project/:id/review" element={<RequireAuth><ReviewBoard /></RequireAuth>} />
-        <Route path="/project/:id/batches" element={<RequireAuth><AssetBatches /></RequireAuth>} />
+        {/* /project/:id/batches now redirects to /projects/:id/author/gallery
+            via RedirectToGallery above. AssetBatches.jsx is unlinked from the
+            new sidebar but kept on disk for Patch C subsumption. */}
         <Route path="/project/:id/perf" element={<RequireAuth><PerfAudit /></RequireAuth>} />
         <Route path="/project/:id/qa-critic" element={<RequireAuth><QaCritic /></RequireAuth>} />
         <Route path="/project/:id/architecture" element={<RequireAuth><Architecture /></RequireAuth>} />
