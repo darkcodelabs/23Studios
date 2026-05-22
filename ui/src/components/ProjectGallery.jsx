@@ -300,6 +300,22 @@ function promptHtml(txt) {
     .replace(PROMPT_KEYWORD_RE, '<span class="tok-2">$&</span>');
 }
 
+// Universal directive — verbatim "VISUAL STYLE" stanza from
+// server/services/sdk_prompt_assembly.js UNIVERSAL_DIRECTIVE (the 5-line
+// abridged form per spec). Kept hardcoded here because the inspector
+// displays it read-only and the server payload does not surface it.
+const UNIVERSAL_DIRECTIVE_DISPLAY =
+`1-bit black and white illustration. High contrast pen and ink, woodcut, or linocut.
+Bold outlines, strong silhouettes. Crosshatching and stippling for shading, no smooth gradients.
+Limited tonal range, no midtones. Inspired by Lucas Pope's Return of the Obra Dinn and Mars
+After Midnight; classic Mac System 7 illustration and HyperCard graphics. Isometric or flat
+perspective preferred for scenes. Newspaper print or ink-on-paper texture.`;
+
+// Fallback style line used when compiled_design.json has not been generated
+// (or does not surface a style_block / style_line yet).
+const STYLE_LINE_FALLBACK =
+'1-bit illustration, high contrast pen + ink, Atkinson dither, isometric perspective, ink-on-paper texture';
+
 const luaCodeFallback =
 `-- generated lua not yet wired into /gallery payload
 -- this asset's scene_lua will appear here after Patch B/F.
@@ -354,14 +370,45 @@ function InspTab({ active, label, count, onClick }) {
   );
 }
 
-function InspPrompt({ asset, onRegen }) {
+function InspPrompt({ asset, onRegen, projectStyleLine }) {
   const prompt = asset.prompt || '(prompt not recorded — sidecar pending in Patch A)';
-  const tokens = asset.prompt
-    ? [...asset.prompt.matchAll(PROMPT_TOKEN_RE)].map((m) => m[1])
-    : [];
-  const subject = asset.subject || asset.name || '—';
-  const styleLine = asset.style_line || asset.style || '—';
-  const directive = asset.universal_directive || 'Playdate-safe 1-bit · 400×240 · pixelated · no antialiasing';
+
+  // Subject layer = the asset's editable scene prompt itself (the sidecar's
+  // `prompt` field). This mirrors how sdk_prompt_assembly.js layers things
+  // server-side: per-asset subject text on top of the project style line on
+  // top of the global universal directive.
+  const subject = asset.prompt || asset.subject || asset.name || '—';
+
+  // Style layer = client-side derived. Prefer the per-asset style snapshot
+  // recorded in the sidecar (Patch A may add this later); else fall back to
+  // whatever the design compiler surfaced; else the project style prop
+  // (fetched from compiled_design.json by the parent); else the hardcoded
+  // 23studios style line.
+  const styleLine =
+       asset.style_line
+    || asset.style
+    || projectStyleLine
+    || STYLE_LINE_FALLBACK;
+
+  // Universal directive is read-only, verbatim from sdk_prompt_assembly.js.
+  // No backend round-trip — every Playdate asset gets the same stanza.
+  const directive = UNIVERSAL_DIRECTIVE_DISPLAY;
+
+  // Tokens detected = {token} placeholders across the assembled prompt
+  // (subject + style + universal). Dedupe while preserving first-seen order
+  // so the chip strip is stable as the user edits the subject.
+  const assembled = [subject, styleLine, directive].filter(Boolean).join('\n\n');
+  const tokens = (() => {
+    const seen = new Set();
+    const out = [];
+    for (const m of assembled.matchAll(PROMPT_TOKEN_RE)) {
+      const t = m[1];
+      if (seen.has(t)) continue;
+      seen.add(t);
+      out.push(t);
+    }
+    return out;
+  })();
 
   return (
     <>
@@ -442,9 +489,23 @@ function InspPrompt({ asset, onRegen }) {
       </p>
 
       <div style={smallcaps()}>universal directive</div>
-      <p className="font-mono" style={{ margin: 0, fontSize: 11, lineHeight: 1.6, color: 'var(--text-dim)' }}>
+      <pre
+        className="font-mono"
+        style={{
+          margin: 0,
+          fontSize: 11,
+          lineHeight: 1.6,
+          color: 'var(--text-dim)',
+          whiteSpace: 'pre-wrap',
+          background: 'var(--bg)',
+          border: '1px dashed var(--border)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '10px 12px'
+        }}
+        title="read-only · matches server/services/sdk_prompt_assembly.js UNIVERSAL_DIRECTIVE"
+      >
         {directive}
-      </p>
+      </pre>
 
       <div style={smallcaps()}>tokens detected</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -948,6 +1009,32 @@ export default function ProjectGallery() {
   const [cardErrors, setCardErrors] = useState({});
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  // Project-wide style line, pulled from compiled_design.json so the inspector
+  // can show the user what aesthetic is being injected. 404 is fine — falls
+  // back to the hardcoded 23studios style.
+  const [projectStyleLine, setProjectStyleLine] = useState(null);
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    api.get(`/api/projects/${id}/design`)
+      .then((d) => {
+        if (!alive || !d) return;
+        // The compiled design schema may evolve — probe a few likely fields.
+        const line =
+             (d && typeof d.style_block === 'string' && d.style_block)
+          || (d && typeof d.style_line === 'string' && d.style_line)
+          || (d && d.style && (d.style.line || d.style.summary))
+          || (d && d.visual_style && (d.visual_style.line || d.visual_style.summary))
+          || null;
+        if (line) setProjectStyleLine(line);
+      })
+      .catch((e) => {
+        if (e && (e.status === 404 || e.status === 422)) return; // not compiled yet
+        console.warn('[gallery] compiled_design.json fetch failed', e);
+      });
+    return () => { alive = false; };
+  }, [id]);
 
   // Per-asset reference selection (inspector refs tab).
   //
@@ -1581,7 +1668,7 @@ export default function ProjectGallery() {
             select an asset to inspect.
           </div>
         ) : tab === 'prompt' ? (
-          <InspPrompt asset={activeAsset} onRegen={openRegen} />
+          <InspPrompt asset={activeAsset} onRegen={openRegen} projectStyleLine={projectStyleLine} />
         ) : tab === 'art' ? (
           <InspArt projectId={id} asset={activeAsset} variants={activeAsset.variants} references={references} />
         ) : tab === 'audio' ? (
