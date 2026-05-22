@@ -472,11 +472,102 @@ async function regenAsset(projectId, assetId, overrides = {}) {
   return getAsset(projectId, assetId);
 }
 
+// ----------------------------------------------------------------------------
+// updateAssetSidecar — edit <asset>.prompt.json in place WITHOUT regen
+// ----------------------------------------------------------------------------
+//
+// Backs the Scene Editor "Save (no regen)" button. Lets the user edit the
+// prompt + model + ditherAlgo + referenceImages on the sidecar without
+// burning an OpenRouter call. Preserves dim + stage + createdAt because
+// those are tied to the PNG that's already on disk.
+//
+// fields: { prompt?, model?, ditherAlgo?, referenceImages? } — any subset.
+// Missing fields are left untouched on the existing sidecar.
+//
+// Atomic write (.tmp + rename) mirrors writeGalleryState above.
+
+const ALLOWED_SIDECAR_FIELDS = new Set([
+  'prompt',
+  'model',
+  'ditherAlgo',
+  'referenceImages'
+]);
+
+async function updateAssetSidecar(projectId, assetId, fields) {
+  const parsed = parseAssetId(assetId);
+  if (!parsed) {
+    const err = new Error('invalid asset id (expected "<type>:<name>")');
+    err.status = 400; err.code = 'bad_asset_id';
+    throw err;
+  }
+  if (!fields || typeof fields !== 'object') {
+    const err = new Error('fields object required');
+    err.status = 400; err.code = 'bad_request';
+    throw err;
+  }
+
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+
+  const dir = TYPE_DIR[parsed.type];
+  const destPng = path.join(localPath, 'sdk_data', dir, parsed.name + '.png');
+
+  // Confirm the PNG actually exists — sidecars without a backing PNG would
+  // accumulate into orphaned files. Same guard pattern as setAssetState.
+  try { await fsp.stat(destPng); }
+  catch (_e) {
+    const err = new Error(`asset png missing: ${assetId}`);
+    err.status = 404; err.code = 'not_found';
+    throw err;
+  }
+
+  const sidecarPath = destPng.replace(/\.png$/i, '.prompt.json');
+  const existing = await readSidecar(destPng);
+
+  // Merge only the whitelisted fields; everything else (dim, stage,
+  // createdAt) stays as the existing sidecar had it. Validate types
+  // defensively so a typo doesn't poison the file.
+  const merged = { ...existing };
+  for (const key of Object.keys(fields)) {
+    if (!ALLOWED_SIDECAR_FIELDS.has(key)) continue;
+    const v = fields[key];
+    if (key === 'prompt' && typeof v === 'string') {
+      merged.prompt = v;
+    } else if (key === 'model' && (typeof v === 'string' || v === null)) {
+      merged.model = v;
+    } else if (key === 'ditherAlgo' && (typeof v === 'string' || v === null)) {
+      merged.ditherAlgo = v;
+    } else if (key === 'referenceImages' && Array.isArray(v)) {
+      merged.referenceImages = v.filter((n) => typeof n === 'string');
+    }
+  }
+
+  // Preserve dim + stage explicitly per spec; these aren't even in the
+  // allowed-fields whitelist so they couldn't be clobbered above, but be
+  // defensive in case a future caller passes them and a future merge
+  // strategy widens the whitelist.
+  if (existing.dim) merged.dim = existing.dim;
+  if (existing.stage) merged.stage = existing.stage;
+  if (existing.createdAt && !merged.createdAt) merged.createdAt = existing.createdAt;
+  merged.updatedAt = new Date().toISOString();
+
+  // Atomic write: .tmp + rename.
+  await fsp.mkdir(path.dirname(sidecarPath), { recursive: true });
+  const tmp = sidecarPath + '.' + process.pid + '.' + Date.now() + '.tmp';
+  await fsp.writeFile(tmp, JSON.stringify(merged, null, 2));
+  await fsp.rename(tmp, sidecarPath);
+
+  // Return the updated asset shape (state, regenHistory, etc.) so the
+  // caller can just patch its local state without a follow-up GET.
+  return getAsset(projectId, assetId);
+}
+
 module.exports = {
   listAssets,
   getAsset,
   setAssetState,
   regenAsset,
+  updateAssetSidecar,
   readGalleryState,
   writeGalleryState,
   _internals: {
@@ -484,6 +575,7 @@ module.exports = {
     assetIdFor,
     galleryStatePath,
     TYPE_DIR,
-    VALID_STATES
+    VALID_STATES,
+    ALLOWED_SIDECAR_FIELDS
   }
 };

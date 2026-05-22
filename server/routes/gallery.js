@@ -89,6 +89,42 @@ router.post('/:id/gallery/assets/:assetId/reject',
   }
 );
 
+// PUT /api/projects/:id/gallery/assets/:assetId/prompt
+//   body: { prompt, model?, ditherAlgo?, referenceImages? }
+//
+// Edits the prompt sidecar in-place without re-running pulp_ai. Backs the
+// Scene Editor "Save (no regen)" button. Preserves dim + stage + createdAt;
+// bumps updatedAt. Returns the merged asset object so the caller can patch
+// local state without a follow-up GET.
+router.put('/:id/gallery/assets/:assetId/prompt',
+  express.json({ limit: '32kb' }),
+  async (req, res) => {
+    const idErr = validateId(req.params.id);
+    if (idErr) return res.status(400).json({ error: 'bad_request', detail: idErr });
+    const assetId = decodeAssetId(req.params.assetId);
+    const body = req.body || {};
+    // Caller must supply at least one of the whitelisted fields. Reject an
+    // empty body early so we don't bump updatedAt for nothing.
+    const fields = {};
+    if (typeof body.prompt === 'string')          fields.prompt = body.prompt;
+    if (typeof body.model === 'string' || body.model === null)
+      fields.model = body.model;
+    if (typeof body.ditherAlgo === 'string' || body.ditherAlgo === null)
+      fields.ditherAlgo = body.ditherAlgo;
+    if (Array.isArray(body.referenceImages))      fields.referenceImages = body.referenceImages;
+    if (Object.keys(fields).length === 0) {
+      return res.status(400).json({
+        error: 'bad_request',
+        detail: 'body must include at least one of: prompt, model, ditherAlgo, referenceImages'
+      });
+    }
+    try {
+      const asset = await gallery.updateAssetSidecar(req.params.id, assetId, fields);
+      res.json({ asset });
+    } catch (e) { sendErr(res, e); }
+  }
+);
+
 // POST /api/projects/:id/gallery/assets/:assetId/regen
 //   body: { promptOverride?, modelOverride?, referenceImages?, ditherAlgo? }
 //
