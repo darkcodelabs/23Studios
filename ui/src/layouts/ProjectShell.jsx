@@ -29,31 +29,28 @@ import { api } from '../lib/api.js';
 // ----------------------------------------------------------------------------
 
 const STATUS_STYLES = {
-  active:   { label: 'ACTIVE',   fg: 'var(--accent)',   bg: 'var(--accent-soft)',           bd: 'var(--accent-dim)' },
-  building: { label: 'BUILDING', fg: 'var(--accent)',   bg: 'var(--accent-soft)',           bd: 'var(--accent-dim)' },
-  broken:   { label: 'BROKEN',   fg: 'var(--danger)',   bg: 'oklch(64% 0.18 25 / .12)',     bd: 'oklch(50% 0.15 25)' },
-  shipped:  { label: 'SHIPPED',  fg: 'var(--ok)',       bg: 'oklch(74% 0.14 145 / .10)',    bd: 'oklch(50% 0.10 145)' }
+  active:   { label: 'active',   color: 'var(--accent)' },
+  building: { label: 'building', color: 'var(--accent)' },
+  broken:   { label: 'broken',   color: 'var(--danger)' },
+  shipped:  { label: 'shipped',  color: 'var(--ok)' }
 };
 
+// Bare 6px dot — no pill, no uppercase, no border. Hover tooltip carries the label.
 function StatusBadge({ status }) {
   const key = (status || 'active').toLowerCase();
   const meta = STATUS_STYLES[key] || STATUS_STYLES.active;
   return (
     <span
-      className="inline-flex items-center font-mono uppercase"
+      aria-hidden
+      title={`project status: ${meta.label}`}
       style={{
-        fontSize: 10,
-        letterSpacing: '.08em',
-        padding: '3px 7px',
-        borderRadius: 99,
-        color: meta.fg,
-        background: meta.bg,
-        border: `1px solid ${meta.bd}`
+        display: 'inline-block',
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: meta.color
       }}
-      title={`project status: ${meta.label.toLowerCase()}`}
-    >
-      {meta.label}
-    </span>
+    />
   );
 }
 
@@ -175,13 +172,9 @@ function SidebarItem({ to, label, icon: Icon, badge, collapsed, disabled, disabl
                   className="font-mono"
                   style={{
                     marginLeft: 'auto',
-                    fontSize: 9,
-                    letterSpacing: '.08em',
-                    padding: '2px 6px',
-                    borderRadius: 99,
-                    background: 'var(--surface-2)',
-                    color: 'var(--text-muted)',
-                    border: '1px solid var(--border)'
+                    fontSize: 10,
+                    color: 'var(--text-dim)',
+                    textAlign: 'right'
                   }}
                 >
                   {badge > 99 ? '99+' : badge}
@@ -301,23 +294,16 @@ function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onI
         )}
       </div>
 
-      {/* Groups */}
+      {/* Groups — labels removed (phase 4.9). Whitespace separates the
+          AUTHOR/BUILD/REVIEW/RELEASE clusters via marginTop on every group
+          after the first. */}
       <div className={collapsed ? 'flex-1 overflow-y-auto flex flex-col gap-1' : 'flex-1 overflow-y-auto'} onClick={onItemClick}>
-        {SIDEBAR_GROUPS.map((group) => (
-          <div key={group.label} className={collapsed ? 'flex flex-col gap-0.5' : ''}>
-            {collapsed ? null : (
-              <div
-                className="font-mono uppercase"
-                style={{
-                  padding: '14px 4px 6px',
-                  fontSize: 10,
-                  letterSpacing: '.12em',
-                  color: 'var(--text-dim)'
-                }}
-              >
-                {group.label}
-              </div>
-            )}
+        {SIDEBAR_GROUPS.map((group, gi) => (
+          <div
+            key={group.label}
+            className={collapsed ? 'flex flex-col gap-0.5' : ''}
+            style={!collapsed && gi > 0 ? { marginTop: 14 } : undefined}
+          >
             <div className="flex flex-col gap-0.5">
               {group.items.map((it) => (
                 <SidebarItem
@@ -349,25 +335,18 @@ function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onI
 // ----------------------------------------------------------------------------
 
 function TopbarChip({ tone, children }) {
-  // tone: 'ok' (default), 'amber'
+  // tone: 'ok' (default), 'amber' — bare dot + muted text, no pill chrome.
   const dotBg = tone === 'amber' ? 'var(--accent)' : 'var(--ok)';
-  const dotGlow = tone === 'amber'
-    ? '0 0 6px oklch(78% 0.13 75 / .5)'
-    : '0 0 6px oklch(74% 0.14 145 / .5)';
   return (
     <span
       className="inline-flex items-center font-mono"
       style={{
         fontSize: 11,
         gap: 6,
-        padding: '4px 10px',
-        borderRadius: 99,
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
         color: 'var(--text-muted)'
       }}
     >
-      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: dotBg, boxShadow: dotGlow }} />
+      <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: dotBg, display: 'inline-block' }} />
       {children}
     </span>
   );

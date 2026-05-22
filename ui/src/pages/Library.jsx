@@ -28,27 +28,13 @@ const FILTERS = [
   { id: 'broken',          label: 'broken' }
 ];
 
-const BADGE_STYLES = {
-  DRAFT: {
-    bg: 'var(--bg)', fg: 'var(--text)',
-    border: '1px solid var(--border-2)'
-  },
-  BUILDING: {
-    bg: 'var(--accent)', fg: 'var(--accent-ink)',
-    border: 'none'
-  },
-  REVIEW: {
-    bg: 'transparent', fg: 'var(--accent)',
-    border: '1px solid var(--accent-dim)'
-  },
-  SHIPPED: {
-    bg: 'var(--ok)', fg: 'oklch(15% 0.02 145)',
-    border: 'none'
-  },
-  BROKEN: {
-    bg: 'var(--danger)', fg: 'oklch(15% 0.04 25)',
-    border: 'none'
-  }
+// Dot color per status (phase 4.9: stripped pill chrome → dot + muted lowercase).
+const BADGE_DOTS = {
+  DRAFT:    'var(--text-dim)',
+  BUILDING: 'var(--accent)',
+  REVIEW:   'var(--accent)',
+  SHIPPED:  'var(--ok)',
+  BROKEN:   'var(--danger)'
 };
 
 // Status badge resolution now lives in ui/src/lib/projectStatus.js so the
@@ -90,25 +76,32 @@ function formatBuiltAt(ms) {
 }
 
 function StatusBadge({ kind }) {
-  const style = BADGE_STYLES[kind] || BADGE_STYLES.DRAFT;
+  const dot = BADGE_DOTS[kind] || BADGE_DOTS.DRAFT;
   const pulsing = kind === 'REVIEW';
+  const label = (kind || 'draft').toLowerCase();
   return (
     <span
-      className={'font-mono ' + (pulsing ? 'animate-pulse-accent' : '')}
+      className={'font-mono inline-flex items-center ' + (pulsing ? 'animate-pulse-accent' : '')}
       style={{
         position: 'absolute',
         top: 10, right: 10,
         zIndex: 2,
-        fontSize: 10,
-        letterSpacing: '.08em',
-        padding: '3px 7px',
-        borderRadius: 3,
-        background: style.bg,
-        color: style.fg,
-        border: style.border
+        fontSize: 11,
+        color: 'var(--text-muted)',
+        gap: 6
       }}
     >
-      {kind}
+      <span
+        aria-hidden
+        style={{
+          display: 'inline-block',
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: dot
+        }}
+      />
+      {label}
     </span>
   );
 }

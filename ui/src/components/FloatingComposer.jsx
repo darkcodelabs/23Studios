@@ -25,6 +25,8 @@ function deriveName(prompt) {
 }
 
 function Chip({ children, subtle, title, onClick }) {
+  // Phase 4.9 strip: bare mono text only — no border, no pill background.
+  // Footnote-style chips that read like the FooterStrip.
   return (
     <button
       type="button"
@@ -34,10 +36,9 @@ function Chip({ children, subtle, title, onClick }) {
       style={{
         appearance: 'none',
         background: 'transparent',
-        border: `1px solid ${subtle ? 'var(--border)' : 'var(--border-2)'}`,
+        border: 0,
         color: subtle ? 'var(--text-dim)' : 'var(--text-muted)',
-        padding: '5px 10px',
-        borderRadius: 999,
+        padding: '4px 2px',
         fontSize: 10,
         letterSpacing: '.04em',
         gap: 6,

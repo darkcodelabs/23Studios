@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, Paperclip, ArrowRight, Minus } from 'lucide-react';
 import { api } from '../lib/api.js';
 
-// Landing — design pass 1.
+// Landing — design pass 1 (phase 4.9 stripped).
 //
-// Hero with glove backdrop + centered prompt composer, mono "BUILT BY
-// HAKCERS" belt, 4-card flow grid, and a footer strip. Fidelity
-// reference: design_handoff_23_studios/screen-landing.jsx and the
-// .land-* CSS in design_handoff_23_studios/styles.css.
+// Hero with glove backdrop + centered prompt composer + example chips.
+// The eyebrow pill, the dead 4-card flow grid, and the matching flow-step
+// data were removed in phase 4.9 strip-chrome. Fidelity reference:
+// design_handoff_23_studios/screen-landing.jsx and the .land-* CSS in
+// design_handoff_23_studios/styles.css.
 //
 // Mounted at "/" and "/dashboard" INSIDE AppShell so the studio sidebar
 // + topbar paint around it. (Previously /new mounted Landing full-bleed
@@ -44,29 +45,6 @@ const EXAMPLES = [
   }
 ];
 
-const FLOW_STEPS = [
-  {
-    n: '01 / describe',
-    t: 'Type the idea',
-    p: "One paragraph. As specific or unhinged as you like. The system extracts genre, mood, mechanics, art direction, audio palette."
-  },
-  {
-    n: '02 / generate',
-    t: 'Watch it build',
-    p: "Story bible, scene by scene. 1-bit art frames. Tones and music synthesized to mood. Lua compiled to a runnable bundle."
-  },
-  {
-    n: '03 / curate',
-    t: "Stay in the driver's seat",
-    p: "Approve, reject, regen anything. Edit prompts inline. Swap in your own art or audio. The platform respects your taste."
-  },
-  {
-    n: '04 / ship',
-    t: 'Onto real hardware',
-    p: ".pdx package downloads in seconds. Sideload via Playdate Mirror or play.date. Optionally publish to GitHub."
-  }
-];
-
 const STRIP_LABELS = [
   'BUILT BY HAKCERS FOR HAKCERS',
   'REV 1.0',
@@ -85,51 +63,6 @@ function deriveName(prompt) {
   const firstSentence = firstLine.split(/[.!?]/)[0];
   const words = firstSentence.trim().split(/\s+/).slice(0, 6).join(' ');
   return words.slice(0, 60) || 'New project';
-}
-
-function FlowCard({ step }) {
-  return (
-    <div
-      className="flex flex-col"
-      style={{
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        background: 'var(--surface)',
-        padding: 20,
-        gap: 14,
-        minHeight: 200
-      }}
-    >
-      <div
-        className="font-mono uppercase"
-        style={{
-          fontSize: 11,
-          letterSpacing: '.14em',
-          color: 'var(--accent)'
-        }}
-      >
-        {step.n}
-      </div>
-      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 500, letterSpacing: '-.01em', color: 'var(--text)' }}>
-        {step.t}
-      </h3>
-      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5 }}>{step.p}</p>
-      <div
-        className="mt-auto grid place-items-center font-mono"
-        style={{
-          height: 80,
-          background: 'var(--bg-2)',
-          border: '1px dashed var(--border-2)',
-          borderRadius: 'var(--radius-sm)',
-          fontSize: 10,
-          color: 'var(--text-dim)',
-          letterSpacing: '.1em'
-        }}
-      >
-        {step.n.split(' / ')[1].toUpperCase()}
-      </div>
-    </div>
-  );
 }
 
 function CompChip({ children, onClick, subtle, title }) {
@@ -261,30 +194,6 @@ export default function Landing() {
           }}
         />
 
-        {/* ── Eyebrow pill ── */}
-        <div
-          className="relative font-mono uppercase inline-flex items-center"
-          style={{
-            zIndex: 2,
-            fontSize: 11,
-            letterSpacing: '.16em',
-            color: 'var(--text-muted)',
-            gap: 12,
-            background: 'oklch(13% 0.005 75 / .55)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            padding: '8px 16px',
-            borderRadius: 999,
-            border: '1px solid var(--border)'
-          }}
-        >
-          <span>23 STUDIOS</span>
-          <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} />
-          <span>REV 1.0</span>
-          <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} />
-          <span>PROMPT → PLAYABLE</span>
-        </div>
-
         {/* ── Prompt composer card ── */}
         <div
           className="relative w-full"
@@ -413,4 +322,4 @@ export default function Landing() {
 
 // Tiny tests-as-exports — kept light because Vite doesn't run a test runner
 // here. deriveName is the only non-trivial pure helper.
-export const __TEST__ = { deriveName, EXAMPLES, FLOW_STEPS };
+export const __TEST__ = { deriveName, EXAMPLES };
