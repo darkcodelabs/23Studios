@@ -402,11 +402,300 @@ async function bulkApplyTags(projectId, relPaths, addTags = [], removeTags = [])
   return { updated_count: updated.length, updated };
 }
 
+// ----------------------------------------------------------------------------
+// Phase 4.5 Patch A — multipart upload, delete, and per-project manifest
+// ----------------------------------------------------------------------------
+//
+// Uploaded reference PNGs land at
+// <local_path>/sdk_data/asset_library/references/<filename>. That path sits
+// inside the priority-2 discovery zone (sdk_data/asset_library/) so the
+// existing walkImages() picks them up automatically — no extra index needed.
+//
+// The per-project reference *manifest* (default_set / scene_references /
+// portrait_references / card_references) lives in a separate file from the
+// tag index so they don't fight for ownership:
+//
+//   references.json           — Phase 6 B5 tag/anchor index (per-image)
+//   references_manifest.json  — Phase 4.5 reference assignments (per-bucket)
+
+const defaultManifest = require('./reference_images_defaults');
+
+const MAX_REFS_PER_PROJECT = 20;
+const MAX_REF_BYTES = 10 * 1024 * 1024;
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+
+const SAFE_FILENAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.png$/;
+
+function uploadDir(localPath) {
+  return path.join(assetLibDir(localPath), 'references');
+}
+
+function projectManifestPath(localPath) {
+  return path.join(assetLibDir(localPath), 'references_manifest.json');
+}
+
+function sanitizeUploadFilename(name) {
+  if (typeof name !== 'string') return null;
+  const base = path.basename(name).trim();
+  if (!base) return null;
+  // Force .png extension; reject anything weird.
+  if (!SAFE_FILENAME_RE.test(base)) return null;
+  return base;
+}
+
+function isPngBuffer(buf) {
+  if (!Buffer.isBuffer(buf) || buf.length < PNG_MAGIC.length) return false;
+  for (let i = 0; i < PNG_MAGIC.length; i++) {
+    if (buf[i] !== PNG_MAGIC[i]) return false;
+  }
+  return true;
+}
+
+async function countUploadedReferences(localPath) {
+  try {
+    const entries = await fsp.readdir(uploadDir(localPath));
+    return entries.filter((e) => e.toLowerCase().endsWith('.png')).length;
+  } catch (_e) { return 0; }
+}
+
+async function addReference(projectId, fileBuffer, requestedName) {
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+
+  if (!Buffer.isBuffer(fileBuffer)) {
+    const err = new Error('file buffer required');
+    err.status = 400; err.code = 'no_file';
+    throw err;
+  }
+  if (fileBuffer.length > MAX_REF_BYTES) {
+    const err = new Error(`file too large (max ${MAX_REF_BYTES} bytes)`);
+    err.status = 413; err.code = 'file_too_large';
+    throw err;
+  }
+  if (!isPngBuffer(fileBuffer)) {
+    const err = new Error('only PNG uploads allowed (magic bytes check failed)');
+    err.status = 400; err.code = 'not_png';
+    throw err;
+  }
+
+  const safeName = sanitizeUploadFilename(requestedName);
+  if (!safeName) {
+    const err = new Error('invalid filename (must match /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.png$/)');
+    err.status = 400; err.code = 'bad_filename';
+    throw err;
+  }
+
+  const existing = await countUploadedReferences(localPath);
+  if (existing >= MAX_REFS_PER_PROJECT) {
+    const err = new Error(`max ${MAX_REFS_PER_PROJECT} references per project`);
+    err.status = 409; err.code = 'too_many_refs';
+    throw err;
+  }
+
+  const destDir = uploadDir(localPath);
+  await fsp.mkdir(destDir, { recursive: true });
+
+  const destPath = path.join(destDir, safeName);
+
+  // Refuse to clobber an existing upload — caller should DELETE first.
+  try {
+    await fsp.stat(destPath);
+    const err = new Error(`reference already exists: ${safeName}`);
+    err.status = 409; err.code = 'already_exists';
+    throw err;
+  } catch (e) {
+    if (e.code !== 'ENOENT' && e.code !== 'already_exists') {
+      // re-throw unexpected errors but pass through our own
+      if (e.code === 'already_exists') throw e;
+    }
+    if (e.status === 409) throw e;
+  }
+
+  await fsp.writeFile(destPath, fileBuffer);
+  const relPath = path.relative(localPath, destPath);
+
+  return {
+    filename: safeName,
+    path: relPath,
+    size: fileBuffer.length,
+    uploaded_at: new Date().toISOString()
+  };
+}
+
+async function deleteReference(projectId, filename) {
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+
+  const safeName = sanitizeUploadFilename(filename);
+  if (!safeName) {
+    const err = new Error('invalid filename');
+    err.status = 400; err.code = 'bad_filename';
+    throw err;
+  }
+
+  const destPath = path.join(uploadDir(localPath), safeName);
+
+  // Belt-and-suspenders: confirm the resolved path still lives inside the
+  // per-project upload directory. Guards against weird basename outputs.
+  const baseReal = await fsp.realpath(uploadDir(localPath)).catch(() => uploadDir(localPath));
+  if (destPath !== path.join(baseReal, safeName)) {
+    const err = new Error('path escapes upload directory');
+    err.status = 400; err.code = 'bad_path';
+    throw err;
+  }
+
+  try { await fsp.unlink(destPath); }
+  catch (e) {
+    if (e.code === 'ENOENT') {
+      const err = new Error(`reference not found: ${safeName}`);
+      err.status = 404; err.code = 'not_found';
+      throw err;
+    }
+    throw e;
+  }
+
+  // Also scrub from per-project manifest so dangling refs disappear.
+  try {
+    const manifest = await readProjectManifest(localPath);
+    let mutated = false;
+    if (Array.isArray(manifest.default_set)) {
+      const before = manifest.default_set.length;
+      manifest.default_set = manifest.default_set.filter((n) => n !== safeName);
+      if (manifest.default_set.length !== before) mutated = true;
+    }
+    for (const bucket of ['scene_references', 'portrait_references', 'card_references']) {
+      if (manifest[bucket] && typeof manifest[bucket] === 'object') {
+        for (const key of Object.keys(manifest[bucket])) {
+          if (Array.isArray(manifest[bucket][key])) {
+            const before = manifest[bucket][key].length;
+            manifest[bucket][key] = manifest[bucket][key].filter((n) => n !== safeName);
+            if (manifest[bucket][key].length !== before) mutated = true;
+          }
+        }
+      }
+    }
+    if (mutated) await writeProjectManifest(localPath, manifest);
+  } catch (_e) { /* best-effort */ }
+
+  return { deleted: safeName };
+}
+
+async function readProjectManifest(localPath) {
+  try {
+    const raw = await fsp.readFile(projectManifestPath(localPath), 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed;
+  } catch (_e) {
+    return {};
+  }
+}
+
+async function writeProjectManifest(localPath, manifest) {
+  await fsp.mkdir(path.dirname(projectManifestPath(localPath)), { recursive: true });
+  const tmp = projectManifestPath(localPath) + '.tmp';
+  await fsp.writeFile(tmp, JSON.stringify(manifest, null, 2));
+  await fsp.rename(tmp, projectManifestPath(localPath));
+}
+
+// Validate a manifest payload — keep it small and forgiving, just rule out
+// the obviously dangerous shapes.
+function sanitizeManifestInput(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+  const out = {};
+  if (Array.isArray(input.default_set)) {
+    out.default_set = input.default_set
+      .filter((n) => typeof n === 'string')
+      .map((n) => path.basename(n))
+      .filter((n) => SAFE_FILENAME_RE.test(n))
+      .slice(0, 64);
+  }
+  for (const bucket of ['scene_references', 'portrait_references', 'card_references']) {
+    if (input[bucket] && typeof input[bucket] === 'object' && !Array.isArray(input[bucket])) {
+      out[bucket] = {};
+      for (const key of Object.keys(input[bucket]).slice(0, 32)) {
+        if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(key)) continue;
+        if (Array.isArray(input[bucket][key])) {
+          out[bucket][key] = input[bucket][key]
+            .filter((n) => typeof n === 'string')
+            .map((n) => path.basename(n))
+            .filter((n) => SAFE_FILENAME_RE.test(n))
+            .slice(0, 32);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+async function updateProjectManifest(projectId, input) {
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+  const sanitized = sanitizeManifestInput(input);
+  await writeProjectManifest(localPath, sanitized);
+  return await getMergedManifest(projectId);
+}
+
+// Merge project-specific entries on top of defaults. For each bucket, the
+// project value (if present) wins outright; otherwise the default fills in.
+// _source map flags origin per top-level key (scalar arrays) and per
+// nested key (for object buckets like scene_references.title).
+async function getMergedManifest(projectId) {
+  const proj = await resolveProject(projectId);
+  const localPath = proj.local_path;
+
+  const defaults = defaultManifest.getDefaultManifest();
+  const project = await readProjectManifest(localPath);
+  const merged = {};
+  const source = {};
+
+  // default_set is a flat array.
+  if (Array.isArray(project.default_set) && project.default_set.length > 0) {
+    merged.default_set = project.default_set.slice();
+    source.default_set = 'project';
+  } else {
+    merged.default_set = Array.isArray(defaults.default_set) ? defaults.default_set.slice() : [];
+    source.default_set = 'default';
+  }
+
+  // Object buckets — per-key override.
+  for (const bucket of ['scene_references', 'portrait_references', 'card_references']) {
+    const defBucket = (defaults[bucket] && typeof defaults[bucket] === 'object') ? defaults[bucket] : {};
+    const projBucket = (project[bucket] && typeof project[bucket] === 'object') ? project[bucket] : {};
+    const allKeys = new Set([...Object.keys(defBucket), ...Object.keys(projBucket)]);
+    merged[bucket] = {};
+    for (const key of allKeys) {
+      if (Array.isArray(projBucket[key])) {
+        merged[bucket][key] = projBucket[key].slice();
+        source[`${bucket}.${key}`] = 'project';
+      } else if (Array.isArray(defBucket[key])) {
+        merged[bucket][key] = defBucket[key].slice();
+        source[`${bucket}.${key}`] = 'default';
+      } else {
+        merged[bucket][key] = [];
+        source[`${bucket}.${key}`] = 'default';
+      }
+    }
+  }
+
+  merged._source = source;
+  return merged;
+}
+
 module.exports = {
   listReferences,
   updateReference,
   bulkApplyTags,
+  // Phase 4.5 additions:
+  addReference,
+  deleteReference,
+  getMergedManifest,
+  updateProjectManifest,
+  readProjectManifest,
+  writeProjectManifest,
   _internals: {
-    sanitizeTag, sanitizeAnchorId, walkImages, computePerceptualHash, emptyEntry
+    sanitizeTag, sanitizeAnchorId, walkImages, computePerceptualHash, emptyEntry,
+    isPngBuffer, sanitizeUploadFilename, sanitizeManifestInput,
+    MAX_REFS_PER_PROJECT, MAX_REF_BYTES, PNG_MAGIC
   }
 };
