@@ -15,6 +15,7 @@ const playdateSpec = require('./playdate_spec');
 const playdateValidator = require('./playdate_validator');
 const driftDetect = require('./drift_detect');
 const ditherMod = require('./dither');
+const ditherDefaults = require('./dither_config');
 const openrouterSpend = require('./openrouter_spend');
 // Phase 4 Patch F: per-project reference manifest + per-project reference
 // PNGs on disk. Lazy-required inside pickReferences so a circular import
@@ -673,6 +674,65 @@ function resolveDitherMode(envVal, defaultMode) {
   return v;
 }
 
+// Phase 4.8 Patch D — variant-name → underlying dither.js algo mapping.
+// The per-project dither_config.json stores variant names from
+// dither_variants.VARIANTS (e.g. 'atkinson_punchy' → 'atkinson'). The new
+// global defaults at ./dither_config.js use names like 'bayer4x4' that need
+// to be normalized to dither.js's 'bayer4'. This canonicalizes both.
+function canonicalizeDitherAlgo(name) {
+  if (!name || typeof name !== 'string') return null;
+  const lc = name.trim().toLowerCase();
+  if (lc === 'bayer4x4' || lc === 'bayer2x2' || lc === 'bayer2') return 'bayer4';
+  if (lc === 'floyd_steinberg' || lc === 'floyd-steinberg') return 'floyd';
+  if (lc === 'atkinson_punchy') return 'atkinson';
+  if (VALID_DITHER_MODES.has(lc)) return lc;
+  return null;
+}
+
+// Lazy per-project dither_config.json reader. Bypasses gallery.js to avoid
+// the circular dep (gallery → dither_variants → pulp_ai). Returns the parsed
+// picks object or {} on any failure.
+async function readProjectDitherPicks(projectId) {
+  if (!projectId) return {};
+  try {
+    const project = await projects.getProject(projectId);
+    if (!project || !project.local_path) return {};
+    const cfgPath = path.join(project.local_path, 'sdk_data', 'dither_config.json');
+    const raw = await fsp.readFile(cfgPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.picks && typeof parsed.picks === 'object') {
+      return parsed.picks;
+    }
+  } catch (_e) { /* no per-project override, fall through */ }
+  return {};
+}
+
+// Phase 4.8 Patch D — full resolution chain for the dither algo of an asset.
+// Precedence (highest first):
+//   1. envVar (PULP_AI_SCENE_DITHER / PULP_AI_PORTRAIT_DITHER) — emergency
+//   2. per-project picks[configKey] from <local_path>/sdk_data/dither_config.json
+//   3. global defaults from ./dither_config.js[configKey].algo
+//   4. hardcoded 'atkinson' fallback
+async function resolveAssetDither(envVar, projectId, configKey) {
+  // 1. env
+  const envCanon = canonicalizeDitherAlgo(envVar);
+  if (envCanon) return envCanon;
+  // 2. per-project
+  if (projectId) {
+    const picks = await readProjectDitherPicks(projectId);
+    const projAlgo = canonicalizeDitherAlgo(picks[configKey]);
+    if (projAlgo) return projAlgo;
+  }
+  // 3. global default
+  const def = ditherDefaults[configKey];
+  if (def && def.algo) {
+    const globalAlgo = canonicalizeDitherAlgo(def.algo);
+    if (globalAlgo) return globalAlgo;
+  }
+  // 4. hardcoded fallback
+  return 'atkinson';
+}
+
 /**
  * ditherTo1bit(buf, w, h, mode)
  *
@@ -715,10 +775,13 @@ async function ditherTo1bit(buf, w, h, mode) {
     .toBuffer();
 }
 
-async function toScenePng(buf, width, height) {
+async function toScenePng(buf, width, height, projectId) {
   const w = Math.max(8, Math.min(2048, (width || SCENE_DIM_DEFAULT[0]) | 0));
   const h = Math.max(8, Math.min(2048, (height || SCENE_DIM_DEFAULT[1]) | 0));
-  const mode = resolveDitherMode(process.env.PULP_AI_SCENE_DITHER, 'atkinson');
+  // Phase 4.8 Patch D: env > per-project > global defaults > 'atkinson'.
+  // resolveAssetDither handles all four levels; pass projectId so the per-
+  // project dither_config.json gets consulted.
+  const mode = await resolveAssetDither(process.env.PULP_AI_SCENE_DITHER, projectId, 'scene_bg');
   // Phase 4.8 Patch B: 2x oversample → nearest-neighbor downsample to target.
   // Native Playdate is 400x240; we request the model at 800x480 (2x), then
   // cover-fit to that intermediate, then nearest-down to (w,h). The nearest
@@ -824,7 +887,7 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage,
         references: resolvedRefs
       });
       usedModel = `openrouter:${requestedModel}`;
-      pngBuffer = await toScenePng(imgBuf, dw, dh);
+      pngBuffer = await toScenePng(imgBuf, dw, dh, projectId);
       const v = await playdateValidator.validate1bitPng(pngBuffer, { w: dw, h: dh });
       if (v.ok) { lastErr = null; break; }
       lastErr = aiErr(502, 'validation_failed_1bit', v.reason);
@@ -871,14 +934,15 @@ function clampPortraitDim(v, fallback) {
   return Math.max(PORTRAIT_DIM_MIN, Math.min(PORTRAIT_DIM_MAX, n));
 }
 
-async function toPortraitPng(buf, width, height) {
+async function toPortraitPng(buf, width, height, projectId) {
   const w = clampPortraitDim(width, PORTRAIT_DIM_DEFAULT[0]);
   const h = clampPortraitDim(height, PORTRAIT_DIM_DEFAULT[1]);
   // Square-ish bust: use cover-fit so the AI's full image is cropped to the
   // tight character canvas without letterboxing.
-  // Bayer 4x4 default per PORTRAIT_STYLE_LOCK: crisp regular grid reads
-  // better than error-diffusion at 64x64 portrait size.
-  const mode = resolveDitherMode(process.env.PULP_AI_PORTRAIT_DITHER, 'bayer4');
+  // Phase 4.8 Patch D: env > per-project > global default ('threshold' per
+  // dither_config.js, the line-art pivot) > 'atkinson' hardcoded fallback.
+  // Pre-Phase-4.8 default was 'bayer4'; the global default now overrides.
+  const mode = await resolveAssetDither(process.env.PULP_AI_PORTRAIT_DITHER, projectId, 'portrait');
   const resized = await sharp(buf)
     .resize(w, h, { fit: 'cover', position: 'centre', kernel: 'nearest' })
     .toBuffer();
@@ -965,7 +1029,7 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
         references: resolvedRefs
       });
       usedModel = `openrouter:${requestedModel}`;
-      pngBuffer = await toPortraitPng(imgBuf, dw, dh);
+      pngBuffer = await toPortraitPng(imgBuf, dw, dh, projectId);
       const v = await playdateValidator.validate1bitPng(pngBuffer, { w: dw, h: dh });
       if (v.ok) { lastErr = null; break; }
       lastErr = aiErr(502, 'validation_failed_1bit', v.reason);
