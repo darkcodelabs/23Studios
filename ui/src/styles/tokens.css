@@ -16,6 +16,24 @@
  * use the design-token utilities.
  */
 
+/* Self-hosted Google Sans (phase 4.9.1) — no external CDN. Files live in
+ * ui/public/fonts/google-sans/ and ship in the Vite build output. */
+@font-face {
+  font-family: 'Google Sans';
+  font-weight: 400; font-style: normal; font-display: swap;
+  src: url('/fonts/google-sans/GoogleSans-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-weight: 500; font-style: normal; font-display: swap;
+  src: url('/fonts/google-sans/GoogleSans-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Google Sans';
+  font-weight: 700; font-style: normal; font-display: swap;
+  src: url('/fonts/google-sans/GoogleSans-Bold.woff2') format('woff2');
+}
+
 :root {
   /* Surfaces */
   --bg:           oklch(13% 0.005 75);
@@ -47,7 +65,8 @@
   --ok:           oklch(74% 0.14 145);
 
   /* Fonts */
-  --font-ui:   "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui:   var(--font-sans);
   --font-mono: "Geist Mono", ui-monospace, "JetBrains Mono", "Menlo", monospace;
   --font-lcd:  "VT323", ui-monospace, monospace;
 

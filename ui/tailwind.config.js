@@ -62,7 +62,7 @@ export default {
         // Legacy aliases (sans / mono) kept pointing at the old stack so
         // nothing else breaks; opt into the new look via font-ui / font-mono
         // (override) / font-lcd.
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['"Google Sans"', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
         mono: ['"Geist Mono"', 'ui-monospace', '"JetBrains Mono"', 'SFMono-Regular', 'Menlo', 'monospace'],
         // 23 Studios font utilities — match var(--font-*).
         ui:   ['Geist', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
