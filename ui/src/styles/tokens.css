@@ -1,0 +1,99 @@
+/*
+ * 23 Studios design tokens (Part 1 of the design pass).
+ *
+ * Verbatim port of the :root block from
+ * design_handoff_23_studios/styles.css — OKLCH palette + font tokens + radii
+ * + shadows + density vars. Plus the [data-accent="..."] alternate-accent
+ * overrides taken from app.jsx (ACCENTS map).
+ *
+ * Tailwind utilities in this codebase (bg-bg, bg-surface, text-text-soft,
+ * border-border-2, text-accent, bg-accent-soft, font-ui, font-mono, font-lcd,
+ * rounded-tk, rounded-tk-sm, rounded-tk-lg) all resolve to the CSS variables
+ * defined here — see tailwind.config.js theme.extend.
+ *
+ * NOTE: the legacy ink-* palette is untouched. Existing screens stay on
+ * Tailwind ink-* until they're explicitly ported. New surfaces should
+ * use the design-token utilities.
+ */
+
+:root {
+  /* Surfaces */
+  --bg:           oklch(13% 0.005 75);
+  --bg-2:         oklch(15% 0.006 75);
+  --surface:      oklch(17% 0.006 75);
+  --surface-2:    oklch(20% 0.007 75);
+  --surface-3:    oklch(24% 0.008 75);
+  --border:       oklch(26% 0.008 75);
+  --border-2:     oklch(34% 0.01 75);
+  --border-strong:oklch(46% 0.012 75);
+
+  /* Text */
+  --text:         oklch(96% 0.008 75);
+  --text-soft:    oklch(82% 0.01 75);
+  --text-muted:   oklch(62% 0.012 75);
+  --text-dim:     oklch(44% 0.012 75);
+  --text-faint:   oklch(32% 0.012 75);
+
+  /* Accent — amber by default */
+  --accent:       oklch(78% 0.13 75);
+  --accent-soft:  oklch(78% 0.13 75 / .18);
+  --accent-dim:   oklch(50% 0.09 75);
+  --accent-ink:   oklch(15% 0.04 75);
+
+  /* Status motifs */
+  --phosphor:     oklch(85% 0.20 145);
+  --crt:          oklch(72% 0.22 45);
+  --danger:       oklch(64% 0.18 25);
+  --ok:           oklch(74% 0.14 145);
+
+  /* Fonts */
+  --font-ui:   "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "JetBrains Mono", "Menlo", monospace;
+  --font-lcd:  "VT323", ui-monospace, monospace;
+
+  /* Radii */
+  --radius:    8px;
+  --radius-sm: 4px;
+  --radius-lg: 14px;
+
+  /* Shadows */
+  --shadow-1: 0 1px 0 rgba(255,255,255,.02) inset;
+  --shadow-2: 0 1px 0 rgba(255,255,255,.02) inset;
+
+  /* Density (control padding scale) */
+  --pad-y: 14px;
+  --pad-x: 18px;
+}
+
+/* Density tweak — apply to the app root */
+.density-tight { --pad-y: 8px;  --pad-x: 14px; }
+.density-cozy  { --pad-y: 14px; --pad-x: 18px; }
+
+/*
+ * Alternate accent palettes. Switch by setting data-accent on <html>.
+ * Values lifted verbatim from app.jsx ACCENTS in the design handoff.
+ */
+[data-accent="amber"] {
+  --accent:      oklch(78% 0.13 75);
+  --accent-soft: oklch(78% 0.13 75 / .18);
+  --accent-dim:  oklch(50% 0.09 75);
+  --accent-ink:  oklch(15% 0.04 75);
+}
+[data-accent="orange"] {
+  --accent:      oklch(70% 0.18 45);
+  --accent-soft: oklch(70% 0.18 45 / .18);
+  --accent-dim:  oklch(48% 0.13 45);
+  --accent-ink:  oklch(15% 0.05 45);
+}
+[data-accent="phosphor"] {
+  --accent:      oklch(82% 0.20 145);
+  --accent-soft: oklch(82% 0.20 145 / .18);
+  --accent-dim:  oklch(52% 0.13 145);
+  --accent-ink:  oklch(12% 0.04 145);
+}
+[data-accent="steel"] {
+  --accent:      oklch(78% 0.04 240);
+  --accent-soft: oklch(78% 0.04 240 / .18);
+  --accent-dim:  oklch(55% 0.03 240);
+  --accent-ink:  oklch(14% 0.02 240);
+}
