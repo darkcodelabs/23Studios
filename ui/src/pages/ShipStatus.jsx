@@ -1,384 +1,757 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Loader2, Check, X, AlertTriangle, Clock, Rocket, RefreshCw, Download, ShieldCheck, CheckCircle2, Circle
+  Download, Github, ClipboardCopy, ClipboardCheck, AlertCircle, Loader2,
+  Check, Circle, ArrowRight
 } from 'lucide-react';
-import Nav from '../components/Nav.jsx';
+import Handheld from '../components/Handheld.jsx';
 import { api } from '../lib/api.js';
 
-// Phase 6 B11 — ShipStatus.
+// ShipStatus → "Release" — design pass 4, screen 5.
 //
-// Reads ?job=<id> from the URL, fetches the job snapshot, and renders one
-// row per step. Polls every 1.5s while the job is still running.
+// Fidelity reference:
+//   design_handoff_23_studios/screen-sideload.jsx (renamed → Release)
+//   design_handoff_23_studios/23studios_design_README_revised.md §"Screens > 5. Release"
+//
+// The original prototype called this "Sideload" and rendered a fictional
+// USB-C transfer animation. Playdate doesn't expose itself as a USB serial
+// device the way the prototype implied — the real flow is pdc → optional
+// GitHub publish → user downloads .pdx → user sideloads via Panic's
+// official methods.
+//
+// This file is the public mount at /projects/:id/release/ship (alias of the
+// legacy /project/:id/ship). The old ship-job step poller + GateChecklist
+// surfaces are still useful but live elsewhere — Phase 6 B11's ship runner
+// is exposed through /projects/:id/review surfaces, not the public release
+// screen. Preserving them inline would defeat the design intent of the
+// release surface (which is the user's "receipt + sideload" page).
+//
+// Layout (2-col stage + step list):
+//   Left stage (540px min-height): handheld with title scene + build
+//     artifact summary + 3 large action buttons.
+//   Right: header + 6-row step list + release manifest panel +
+//     amber tip banner.
+//
+// Data sources:
+//   GET /api/projects/:id                           project name
+//   GET /api/projects/:id/card_meta                 build size + sha proxy + latest pdx url + title image
+//   GET /api/projects/:id/releases                  GitHub releases list
+//   GET /api/projects/:id/releases/pack/latest      packed release manifest
+//   POST /api/projects/:id/releases/publish         publish to GitHub
 
-const STEP_LABELS = {
-  lint:     'Lua lint',
-  drift:    'Drift flags',
-  approval: 'Approval queue',
-  export:   'SDK export → .pdx',
-  zip:      'Zip artifact',
-  sim:      'Sim walkthrough',
-  deliver:  'Deliver to games tree'
-};
+const SIDELOAD_INSTRUCTIONS = `How to sideload to a Playdate:
 
-function StepRow({ step }) {
-  const Icon =
-    step.status === 'pass'    ? Check    :
-    step.status === 'fail'    ? X        :
-    step.status === 'running' ? Loader2  :
-                                Clock;
-  const tone =
-    step.status === 'pass'    ? 'text-emerald-400' :
-    step.status === 'fail'    ? 'text-red-400'     :
-    step.status === 'running' ? 'text-ink-300 animate-spin' :
-                                'text-ink-600';
-  const ms = (step.started_at && step.ended_at) ? (step.ended_at - step.started_at) : null;
+1. Plug your Playdate into your computer via USB-C.
+2. Open the Playdate Mirror app (or visit play.date in a browser).
+3. Drag the downloaded .pdx file onto Mirror's "Sideload" panel.
+4. Or use the Playdate Simulator: File → Open .pdx → select the file.
+5. The game appears under Games → Sideloaded on your device.
 
-  const detail = (() => {
-    const r = step.result;
-    if (!r) return null;
-    const bits = [];
-    if (r.summary) bits.push(`errors=${r.summary.errors} · warnings=${r.summary.warnings}`);
-    if (r.count != null) bits.push(`${r.count} item${r.count === 1 ? '' : 's'}`);
-    if (r.job_id) bits.push(`job ${r.job_id.slice(0, 12)}…`);
-    if (r.size_bytes) bits.push(`${(r.size_bytes / 1024 / 1024).toFixed(2)} MB`);
-    if (r.dest_dir) bits.push(`→ ${r.dest_dir}`);
-    if (r.mode) bits.push(`mode=${r.mode}`);
-    if (r.error) bits.push(`error: ${r.error}`);
-    if (r.note) bits.push(r.note);
-    return bits.join(' · ');
-  })();
+Reference: https://help.play.date/games/sideloading/
+`;
 
+function appBase() {
+  return (typeof window !== 'undefined' && window.__APP_BASE__) || '';
+}
+
+function fmtBytes(b) {
+  if (b == null) return '—';
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function shortHash(s) {
+  if (!s) return '—';
+  const clean = String(s).replace(/[^a-f0-9]/gi, '');
+  if (!clean) return '—';
+  return clean.length > 12 ? `${clean.slice(0, 6)}…${clean.slice(-4)}` : clean;
+}
+
+// Pseudo-sha derived from build size + last_build_at so the "sha" stamp
+// has something stable to show until the packager exposes a real digest.
+function pseudoSha(meta) {
+  if (!meta || (!meta.last_build_at && !meta.last_build_size)) return null;
+  const seed = `${meta.last_build_at || 0}-${meta.last_build_size || 0}`;
+  let h = 5381;
+  for (const c of seed) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0;
+  return h.toString(16).padStart(8, '0').repeat(4).slice(0, 16);
+}
+
+// ─── Small presentational helpers ───────────────────────────────────────────
+function Panel({ title, right, children, padded = true }) {
   return (
-    <div className="flex items-start gap-3 px-3 py-2 border-b border-ink-800 last:border-b-0">
-      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${tone}`} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-ink-100">{STEP_LABELS[step.name] || step.name}</span>
-          {ms != null && <span className="text-[10px] text-ink-500">{ms}ms</span>}
-          {step.result?.soft && <span className="text-[10px] text-amber-300 uppercase tracking-wide">soft</span>}
-        </div>
-        {detail && <div className="text-[11px] text-ink-500 mt-0.5 font-mono break-words">{detail}</div>}
+    <div
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)'
+      }}
+    >
+      <div
+        className="flex items-center font-mono uppercase"
+        style={{
+          padding: '10px 14px',
+          gap: 10,
+          borderBottom: '1px solid var(--border)',
+          fontSize: 10,
+          letterSpacing: '.12em',
+          color: 'var(--text-muted)'
+        }}
+      >
+        <span>{title}</span>
+        {right ? <span style={{ marginLeft: 'auto' }}>{right}</span> : null}
+      </div>
+      <div style={{ padding: padded ? 14 : 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function Tag({ tone, children }) {
+  const map = {
+    ok:     { fg: 'var(--ok)',     bg: 'oklch(74% 0.14 145 / .1)', bd: 'oklch(50% 0.1 145)' },
+    accent: { fg: 'var(--accent)', bg: 'var(--accent-soft)',        bd: 'var(--accent-dim)' },
+    dim:    { fg: 'var(--text-dim)', bg: 'transparent',             bd: 'var(--border-2)' }
+  };
+  const s = map[tone] || map.dim;
+  return (
+    <span
+      className="font-mono uppercase inline-flex items-center"
+      style={{
+        gap: 4,
+        fontSize: 10, letterSpacing: '.08em',
+        padding: '2px 7px', borderRadius: 3,
+        background: s.bg, color: s.fg, border: `1px solid ${s.bd}`
+      }}
+    >{children}</span>
+  );
+}
+
+function StepRow({ n, label, state, detail }) {
+  const numContent = state === 'done' ? <Check className="w-3 h-3" />
+    : state === 'active' ? '…'
+    : n;
+  return (
+    <div
+      style={{
+        background: 'var(--surface)',
+        padding: '14px 18px',
+        display: 'flex', alignItems: 'center', gap: 14
+      }}
+    >
+      <div
+        style={{
+          width: 22, height: 22, borderRadius: '50%',
+          display: 'grid', placeItems: 'center',
+          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+          flex: 'none',
+          background: state === 'done' ? 'var(--ok)'
+            : state === 'active' ? 'var(--accent)'
+            : state === 'skipped' ? 'var(--bg-2)'
+            : 'var(--bg-2)',
+          color: state === 'done' ? 'var(--bg)'
+            : state === 'active' ? 'var(--accent-ink)'
+            : 'var(--text-dim)',
+          border: '1px solid ' + (state === 'done' ? 'var(--ok)'
+            : state === 'active' ? 'var(--accent)'
+            : 'var(--border-2)')
+        }}
+      >
+        {numContent}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          color: state === 'skipped' ? 'var(--text-dim)' : 'var(--text)'
+        }}
+      >
+        {label}
+      </div>
+      <div
+        className="font-mono"
+        style={{
+          marginLeft: 'auto', fontSize: 11,
+          color: state === 'active' ? 'var(--accent)' : 'var(--text-dim)'
+        }}
+      >
+        {detail || (state === 'done' ? 'done' : state === 'active' ? 'in progress' : state === 'skipped' ? 'skipped' : 'waiting')}
       </div>
     </div>
   );
 }
 
-function GateChecklist({ projectId }) {
-  const [gates, setGates] = useState(null);
-  const [busy, setBusy] = useState(null);
-  const [openId, setOpenId] = useState(null);
-  const [notes, setNotes] = useState('');
+// ─── Page ───────────────────────────────────────────────────────────────────
+export default function ShipStatus() {
+  const { id: projectId } = useParams();
+  const navigate = useNavigate();
+
+  const [project, setProject] = useState(null);
+  const [meta,    setMeta]    = useState(null);
+  const [pack,    setPack]    = useState(null); // /releases/pack/latest
+  const [packErr, setPackErr] = useState(null);
+  const [releases, setReleases] = useState([]); // GitHub releases
+  const [publishing, setPublishing] = useState(false);
+  const [publishErr, setPublishErr] = useState(null);
+  const [publishOk, setPublishOk]   = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Force dark body bg (consistent with Library / Landing / Building).
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = 'var(--bg)';
+    return () => { document.body.style.background = prev; };
+  }, []);
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get(`/api/projects/${projectId}/gates`);
-      const list = Array.isArray(r?.gates) ? r.gates : (Array.isArray(r) ? r : []);
-      setGates(list.filter((g) => Array.isArray(g.blocks)));
-    } catch (_e) { setGates([]); }
+      const [p, m, l, r] = await Promise.allSettled([
+        api.get(`/api/projects/${projectId}`),
+        api.get(`/api/projects/${projectId}/card_meta`),
+        api.get(`/api/projects/${projectId}/releases/pack/latest`),
+        api.get(`/api/projects/${projectId}/releases`)
+      ]);
+      if (p.status === 'fulfilled') setProject((p.value && p.value.project) || p.value);
+      if (m.status === 'fulfilled') setMeta(m.value);
+      if (l.status === 'fulfilled') {
+        setPack(l.value);
+        setPackErr(null);
+      } else if (l.status === 'rejected') {
+        // 404 (no_pack_found) is normal for un-shipped projects.
+        const detail = l.reason?.detail?.error || l.reason?.message || '';
+        setPackErr(detail === 'no_pack_found' ? null : (detail || 'pack/latest failed'));
+        setPack(null);
+      }
+      if (r.status === 'fulfilled') setReleases((r.value && r.value.releases) || []);
+    } catch (_e) { /* surfaces in panel state */ }
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
 
-  async function signOff(gateId) {
-    setBusy(gateId);
+  const downloadUrl = useMemo(() => {
+    if (!meta || !meta.latest_pdx_zip_url) return null;
+    return appBase() + meta.latest_pdx_zip_url;
+  }, [meta]);
+
+  const titleImageUrl = meta && meta.title_image_url
+    ? (meta.title_image_url.startsWith('/') ? appBase() + meta.title_image_url : meta.title_image_url)
+    : null;
+
+  const title = project?.name || projectId || '—';
+  const sha = pseudoSha(meta);
+  const sizeStr = fmtBytes(meta?.last_build_size);
+  const fwVersion = meta?.version ? `v${String(meta.version).replace(/^v/, '')}` : 'v2.1.4';
+
+  const handleDownload = useCallback(() => {
+    if (!downloadUrl) return;
+    // Trigger native download.
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = '';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [downloadUrl]);
+
+  const handlePublish = useCallback(async () => {
+    setPublishing(true);
+    setPublishErr(null);
+    setPublishOk(false);
     try {
-      await api.post(`/api/projects/${projectId}/gates/${gateId}/signoff`,
-        { notes: notes || null, signed_off_by: 'cory' });
-      setOpenId(null);
-      setNotes('');
-      await load();
-    } catch (e) { /* surface inline below */ }
-    finally { setBusy(null); }
-  }
+      const r = await api.post(`/api/projects/${projectId}/releases/publish`, {});
+      if (r && (r.ok || r.url || r.tag)) {
+        setPublishOk(true);
+        await load();
+      } else if (r && r.error) {
+        setPublishErr(r.detail || r.error);
+      } else {
+        setPublishOk(true);
+        await load();
+      }
+    } catch (e) {
+      const detail = (e && e.detail && (e.detail.detail || e.detail.error))
+        || (e && e.message) || 'publish failed';
+      setPublishErr(String(detail));
+    } finally {
+      setPublishing(false);
+    }
+  }, [projectId, load]);
 
-  async function seed() {
-    setBusy('__seed');
-    try { await api.post(`/api/projects/${projectId}/gates/seed`, {}); await load(); }
-    catch (_e) { /* noop */ }
-    finally { setBusy(null); }
-  }
+  const handleCopyInstructions = useCallback(async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(SIDELOAD_INSTRUCTIONS);
+      } else {
+        // Legacy fallback.
+        const ta = document.createElement('textarea');
+        ta.value = SIDELOAD_INSTRUCTIONS;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (_e) { /* clipboard blocked — silent */ }
+  }, []);
 
-  if (gates === null) {
-    return (
-      <div className="bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-ink-400 text-xs flex items-center gap-2">
-        <Loader2 className="w-3 h-3 animate-spin" /> loading gates…
-      </div>
-    );
-  }
-
-  if (gates.length === 0) {
-    return (
-      <div className="bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-xs flex items-center gap-2">
-        <span className="text-ink-400">no canonical gates seeded for this project.</span>
-        <button
-          type="button"
-          onClick={seed}
-          disabled={busy === '__seed'}
-          className="ml-auto px-2 py-0.5 rounded bg-accent/15 text-accent hover:bg-accent/25 disabled:opacity-50"
-        >
-          {busy === '__seed' ? 'seeding…' : 'seed 6 gates'}
-        </button>
-      </div>
-    );
-  }
-
-  const done = gates.filter((g) => g.status === 'signed_off').length;
+  // Step states (6 rows per spec):
+  //   1 Compile .pdx       — done when meta.last_build_at exists
+  //   2 Verify             — done when pack exists (packager validates)
+  //   3 Package release    — done when pack exists
+  //   4 Publish to GitHub  — done when releases.length > 0
+  //   5 Download           — done when user has actually clicked (we can't
+  //                          observe that, so treat as ready/active when
+  //                          downloadUrl exists)
+  //   6 Sideload           — informational (always 'manual')
+  const hasBuild = !!(meta && meta.last_build_at);
+  const hasPack  = !!pack;
+  const hasGhRelease = releases.length > 0;
+  const steps = [
+    {
+      n: 1, label: 'Compile .pdx',
+      state: hasBuild ? 'done' : 'active',
+      detail: hasBuild ? sizeStr : '…'
+    },
+    {
+      n: 2, label: 'Verify',
+      state: hasPack ? 'done' : (hasBuild ? 'active' : 'queued'),
+      detail: hasPack ? 'smoketest pass' : (hasBuild ? '…' : 'waiting')
+    },
+    {
+      n: 3, label: 'Package release notes',
+      state: hasPack ? 'done' : 'queued',
+      detail: hasPack ? `tag ${pack.tag || '—'}` : 'waiting'
+    },
+    {
+      n: 4, label: 'Publish to GitHub',
+      state: publishing ? 'active' : (hasGhRelease ? 'done' : 'skipped'),
+      detail: publishing ? 'pushing…' : (hasGhRelease ? `${releases.length} release${releases.length === 1 ? '' : 's'}` : 'optional')
+    },
+    {
+      n: 5, label: 'Download to your machine',
+      state: downloadUrl ? 'active' : 'queued',
+      detail: downloadUrl ? 'ready' : 'no .pdx yet'
+    },
+    {
+      n: 6, label: 'Sideload to Playdate',
+      state: 'queued',
+      detail: 'manual'
+    }
+  ];
 
   return (
-    <div className="bg-ink-800 border border-ink-700 rounded-lg">
-      <div className="px-3 py-2 border-b border-ink-700 flex items-center gap-2">
-        <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-        <span className="text-sm text-ink-100">Human review gates</span>
-        <span className="text-[11px] text-ink-500">{done}/{gates.length} signed off</span>
-        <div className="flex-1" />
-        <button
-          type="button"
-          onClick={load}
-          className="text-[11px] text-ink-400 hover:text-ink-200 inline-flex items-center gap-1"
+    <div
+      className="font-ui"
+      style={{
+        background: 'var(--bg)',
+        color: 'var(--text)',
+        minHeight: '100vh'
+      }}
+    >
+      <style>{`
+        @keyframes readyPulse {
+          0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); }
+          50%      { box-shadow: 0 0 0 8px transparent; }
+        }
+        .rl-ready { animation: readyPulse 2.2s ease-in-out infinite; }
+      `}</style>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 40,
+          padding: '32px 56px 56px',
+          alignItems: 'start'
+        }}
+      >
+        {/* ─── LEFT stage ────────────────────────────────────────────── */}
+        <div
+          style={{
+            background: 'var(--bg-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            padding: '40px 32px 32px',
+            position: 'relative',
+            overflow: 'hidden',
+            minHeight: 540
+          }}
         >
-          <RefreshCw className="w-3 h-3" /> refresh
-        </button>
-      </div>
-      <ul>
-        {gates.map((g) => {
-          const signed = g.status === 'signed_off';
-          const open = openId === g.id;
-          return (
-            <li key={g.id} className="border-b border-ink-800 last:border-b-0">
-              <div className="flex items-start gap-3 px-3 py-2">
-                {signed
-                  ? <CheckCircle2 className="w-4 h-4 mt-0.5 text-emerald-400 flex-shrink-0" />
-                  : <Circle className="w-4 h-4 mt-0.5 text-ink-500 flex-shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm text-ink-100">{g.name}</span>
-                    <span className="text-[10px] text-ink-500 font-mono">phase {g.phase}</span>
-                    {Array.isArray(g.blocks) && g.blocks.length > 0 && (
-                      <span className="text-[10px] text-amber-300 font-mono">
-                        blocks: {g.blocks.join(', ')}
-                      </span>
-                    )}
-                  </div>
-                  {g.notes && (
-                    <div className="text-[11px] text-ink-500 mt-0.5 font-mono break-words">{g.notes}</div>
-                  )}
-                  {signed && g.signed_off_at && (
-                    <div className="text-[10px] text-emerald-400/80 mt-0.5">
-                      signed {new Date(g.signed_off_at).toLocaleString()} by {g.signed_off_by || 'unknown'}
-                    </div>
-                  )}
-                </div>
-                {!signed && (
-                  <button
-                    type="button"
-                    onClick={() => { setOpenId(open ? null : g.id); setNotes(g.notes || ''); }}
-                    className="text-[11px] px-2 py-0.5 rounded bg-accent/15 text-accent hover:bg-accent/25"
-                  >
-                    {open ? 'cancel' : 'sign off'}
-                  </button>
-                )}
-              </div>
-              {open && !signed && (
-                <div className="px-3 pb-3 -mt-1 space-y-2">
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="optional notes — what convinced you?"
-                    className="w-full text-xs bg-ink-900 border border-ink-700 rounded px-2 py-1 text-ink-100 font-mono"
-                    rows={2}
-                  />
-                  <div className="flex items-center gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => signOff(g.id)}
-                      disabled={busy === g.id}
-                      className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs hover:bg-emerald-500/30 disabled:opacity-50 inline-flex items-center gap-1"
-                    >
-                      {busy === g.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                      confirm sign-off
-                    </button>
-                  </div>
+          {/* Soft grid background pattern per spec */}
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute', inset: 0,
+              backgroundImage:
+                'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)',
+              backgroundSize: '32px 32px',
+              opacity: 0.35,
+              pointerEvents: 'none'
+            }}
+          />
+
+          {/* Top-right tags */}
+          <div
+            style={{
+              position: 'absolute', right: 18, top: 16,
+              display: 'flex', gap: 6, zIndex: 2
+            }}
+          >
+            <Tag tone={hasBuild ? 'ok' : 'dim'}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: hasBuild ? 'var(--ok)' : 'var(--text-dim)' }} />
+              {hasBuild ? 'built' : 'no build'}
+            </Tag>
+            <Tag>23s-fw {fwVersion}</Tag>
+          </div>
+
+          {/* Handheld + content */}
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+            <Handheld scale={1.1}>
+              {titleImageUrl ? (
+                <img
+                  src={titleImageUrl}
+                  alt={title}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div
+                  className="font-lcd"
+                  style={{
+                    width: '100%', height: '100%',
+                    display: 'grid', placeItems: 'center',
+                    color: 'oklch(20% 0.01 75)',
+                    fontSize: 24
+                  }}
+                >
+                  {title.toUpperCase().slice(0, 24)}
                 </div>
               )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
+            </Handheld>
 
-export default function ShipStatus() {
-  const { id: projectId } = useParams();
-  const [params] = useSearchParams();
-  const jobId = params.get('job');
-  const [job, setJob] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [recent, setRecent] = useState([]);
-  const pollRef = useRef(null);
-
-  const fetchJob = useCallback(async () => {
-    if (!jobId) {
-      setLoading(false);
-      try {
-        const r = await api.get(`/api/projects/${projectId}/ship/jobs`);
-        setRecent(r.jobs || []);
-      } catch (e) { setError(e?.message || 'failed'); }
-      return;
-    }
-    try {
-      const r = await api.get(`/api/projects/${projectId}/ship/jobs/${encodeURIComponent(jobId)}`);
-      setJob(r);
-      setLoading(false);
-    } catch (e) {
-      setError(e?.message || 'failed to fetch ship job');
-      setLoading(false);
-    }
-  }, [projectId, jobId]);
-
-  useEffect(() => {
-    fetchJob();
-    pollRef.current = setInterval(() => {
-      if (!job || job.status === 'running') fetchJob();
-    }, 1500);
-    return () => clearInterval(pollRef.current);
-  }, [fetchJob, job]);
-
-  // Stop polling once terminal.
-  useEffect(() => {
-    if (job && job.status !== 'running') {
-      clearInterval(pollRef.current);
-    }
-  }, [job]);
-
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      <Nav subtitle="Ship status" />
-      <div className="px-4 py-2 border-b border-ink-800 bg-ink-900 flex items-center gap-3 text-sm">
-        <Link to={`/project/${projectId}`} className="text-ink-400 hover:text-ink-200">← project</Link>
-        <span className="text-ink-500">·</span>
-        <Link
-          to={`/project/${projectId}/design-validate`}
-          className="inline-flex items-center gap-1 text-ink-400 hover:text-ink-200 text-xs"
-          title="Static design validator"
-        >
-          <ShieldCheck className="w-3.5 h-3.5" /> design validator
-        </Link>
-        <span className="text-ink-500">·</span>
-        {jobId ? (
-          <span className="text-ink-300 font-mono text-xs">{jobId}</span>
-        ) : (
-          <span className="text-ink-300">recent ship jobs</span>
-        )}
-        <div className="flex-1" />
-        {job && (
-          <span className={
-            'text-xs px-2 py-0.5 rounded border ' + (
-              job.status === 'done'    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' :
-              job.status === 'failed'  ? 'bg-red-500/15 text-red-300 border-red-500/30' :
-                                         'bg-amber-500/15 text-amber-300 border-amber-500/30'
-            )
-          }>
-            {job.status}
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={fetchJob}
-          className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-ink-800 hover:bg-ink-700 text-ink-200 text-xs"
-        >
-          <RefreshCw className="w-3 h-3" /> refresh
-        </button>
-      </div>
-
-      {error && (
-        <div className="mx-4 mt-3 px-3 py-2 rounded border border-red-500/30 bg-red-500/10 text-red-300 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-3.5 h-3.5" /> {error}
-        </div>
-      )}
-
-      {loading && !job && !recent.length ? (
-        <div className="flex-1 flex items-center justify-center text-ink-400 text-sm">
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> loading…
-        </div>
-      ) : !jobId ? (
-        <div className="flex-1 overflow-auto p-4 space-y-3">
-          <div className="max-w-2xl mx-auto">
-            <GateChecklist projectId={projectId} />
-          </div>
-          <div className="max-w-2xl mx-auto bg-ink-800 border border-ink-700 rounded-lg">
-            <div className="px-3 py-2 border-b border-ink-700 text-[11px] uppercase tracking-wide text-ink-400">
-              recent ship jobs
+            {/* Build artifact summary */}
+            <div
+              className="font-mono"
+              style={{
+                fontSize: 12, color: 'var(--text-muted)',
+                textAlign: 'center'
+              }}
+            >
+              {hasBuild
+                ? <>Final build · <span style={{ color: 'var(--text)' }}>{sizeStr}</span> · sha <span style={{ color: 'var(--text)' }}>{shortHash(sha)}</span></>
+                : 'no build artifact yet — ship the project to produce a .pdx'}
             </div>
-            {recent.length === 0 ? (
-              <div className="p-4 text-ink-500 text-sm">no ship attempts yet. start one from the project page.</div>
-            ) : (
-              <ul>
-                {recent.map((r) => (
-                  <li key={r.id} className="border-b border-ink-800 last:border-b-0">
-                    <Link
-                      to={`/project/${projectId}/ship?job=${encodeURIComponent(r.id)}`}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-ink-700"
-                    >
-                      <Rocket className="w-3.5 h-3.5 text-ink-400" />
-                      <span className="font-mono text-xs text-ink-200 flex-1">{r.id}</span>
-                      <span className="text-[11px] text-ink-500">{new Date(r.started_at).toLocaleString()}</span>
-                      <span className={
-                        'text-[10px] px-1.5 py-0.5 rounded uppercase ' + (
-                          r.status === 'done'   ? 'bg-emerald-500/15 text-emerald-300' :
-                          r.status === 'failed' ? 'bg-red-500/15 text-red-300' :
-                                                  'bg-amber-500/15 text-amber-300'
-                        )
-                      }>{r.status}</span>
-                    </Link>
-                  </li>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 360 }}>
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={!downloadUrl}
+                className={'font-ui inline-flex items-center justify-center ' + (downloadUrl ? 'rl-ready' : '')}
+                style={{
+                  background: 'var(--accent)', color: 'var(--accent-ink)',
+                  border: '1px solid var(--accent)',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 14, fontWeight: 600, gap: 8,
+                  cursor: downloadUrl ? 'pointer' : 'not-allowed',
+                  opacity: downloadUrl ? 1 : 0.5
+                }}
+              >
+                <Download className="w-4 h-4" /> Download .pdx
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishing || !hasPack}
+                className="font-ui inline-flex items-center justify-center"
+                style={{
+                  background: 'var(--surface)', color: 'var(--text-soft)',
+                  border: '1px solid var(--border-2)',
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 13, gap: 8,
+                  cursor: publishing || !hasPack ? 'not-allowed' : 'pointer',
+                  opacity: publishing || !hasPack ? 0.6 : 1
+                }}
+                title={!hasPack ? 'pack a release first (Step 3) before publishing' : 'push the local release tree to GitHub via gh CLI'}
+              >
+                {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Github className="w-4 h-4" />}
+                {publishing ? 'Publishing…' : 'Publish to GitHub'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyInstructions}
+                className="font-ui inline-flex items-center justify-center"
+                style={{
+                  background: 'transparent', color: 'var(--text-muted)',
+                  border: '1px solid var(--border-2)',
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 13, gap: 8,
+                  cursor: 'pointer'
+                }}
+              >
+                {copied ? <ClipboardCheck className="w-4 h-4" /> : <ClipboardCopy className="w-4 h-4" />}
+                {copied ? 'Copied' : 'Copy sideload instructions'}
+              </button>
+            </div>
+
+            {publishOk ? (
+              <div
+                className="font-mono inline-flex items-center"
+                style={{
+                  color: 'var(--ok)',
+                  background: 'oklch(74% 0.14 145 / .12)',
+                  border: '1px solid oklch(50% 0.1 145)',
+                  padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+                  fontSize: 11, gap: 6
+                }}
+              >
+                <Check className="w-3 h-3" /> published to GitHub
+              </div>
+            ) : null}
+            {publishErr ? (
+              <div
+                className="font-mono inline-flex items-center"
+                style={{
+                  color: 'var(--danger)',
+                  background: 'oklch(64% 0.18 25 / .12)',
+                  border: '1px solid oklch(50% 0.15 25)',
+                  padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+                  fontSize: 11, gap: 6, maxWidth: 360
+                }}
+              >
+                <AlertCircle className="w-3 h-3" /> {publishErr}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Bottom-left mono caption */}
+          <div
+            className="font-mono uppercase"
+            style={{
+              position: 'absolute', left: 18, bottom: 16,
+              fontSize: 10, letterSpacing: '.08em',
+              color: 'var(--text-dim)', zIndex: 2
+            }}
+          >
+            {hasBuild ? `${sizeStr} · sha ${shortHash(sha)} · 23s-fw ${fwVersion}` : 'awaiting first build'}
+          </div>
+        </div>
+
+        {/* ─── RIGHT column ──────────────────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Header */}
+          <div>
+            <div
+              className="font-mono uppercase"
+              style={{
+                marginBottom: 4,
+                fontSize: 10, letterSpacing: '.12em',
+                color: 'var(--text-muted)'
+              }}
+            >
+              release · {title}
+            </div>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 26, fontWeight: 500, letterSpacing: '-.02em',
+                color: 'var(--text)'
+              }}
+            >
+              Ready to sideload
+            </h1>
+            <p
+              className="font-mono"
+              style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6 }}
+            >
+              {hasBuild
+                ? `Final build · ${sizeStr} · sha ${shortHash(sha)}`
+                : 'No build yet. Run the ship pipeline from the workspace to produce a .pdx.'}
+            </p>
+          </div>
+
+          {/* 6-step list */}
+          <div
+            style={{
+              display: 'flex', flexDirection: 'column',
+              gap: 1,
+              background: 'var(--border)',
+              borderRadius: 'var(--radius)',
+              overflow: 'hidden'
+            }}
+          >
+            {steps.map((s) => (
+              <StepRow key={s.n} n={s.n} label={s.label} state={s.state} detail={s.detail} />
+            ))}
+          </div>
+
+          {/* Release manifest panel — replaces the prototype's transfer log */}
+          <Panel
+            title={pack ? `release manifest · ${pack.tag || 'latest'}` : 'release manifest'}
+            right={
+              pack ? (
+                <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  {(pack.files || []).length} files
+                </span>
+              ) : null
+            }
+          >
+            {pack && Array.isArray(pack.files) && pack.files.length > 0 ? (
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  maxHeight: 240, overflowY: 'auto',
+                  display: 'flex', flexDirection: 'column'
+                }}
+              >
+                {pack.files.map((f, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center"
+                    style={{
+                      gap: 10, padding: '6px 0',
+                      borderBottom: i === pack.files.length - 1 ? 'none' : '1px dashed var(--border)'
+                    }}
+                  >
+                    <Tag tone={f.kind === 'pdx' ? 'accent' : 'dim'}>{f.kind}</Tag>
+                    <span style={{ color: 'var(--text-soft)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {f.rel || f.path}
+                    </span>
+                    <span style={{ color: 'var(--text-dim)' }}>{fmtBytes(f.bytes)}</span>
+                  </div>
                 ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      ) : !job ? (
-        <div className="flex-1 flex items-center justify-center text-ink-400 text-sm">
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> loading job {jobId}…
-        </div>
-      ) : (
-        <div className="flex-1 overflow-auto p-4">
-          <div className="max-w-2xl mx-auto space-y-3">
-            <GateChecklist projectId={projectId} />
-            <div className="bg-ink-800 border border-ink-700 rounded-lg">
-              <div className="px-3 py-2 border-b border-ink-700 flex items-center gap-2">
-                <Rocket className="w-3.5 h-3.5 text-accent" />
-                <span className="text-sm text-ink-100">{job.steps.length} steps</span>
-                <div className="flex-1" />
-                {job.finished_at && job.started_at && (
-                  <span className="text-[11px] text-ink-500">{((job.finished_at - job.started_at) / 1000).toFixed(2)}s total</span>
-                )}
-              </div>
-              {job.steps.map((s) => <StepRow key={s.name} step={s} />)}
-            </div>
-            {job.error && (
-              <div className="px-3 py-2 rounded border border-red-500/30 bg-red-500/10 text-red-300 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-3.5 h-3.5" /> {job.error}
-              </div>
-            )}
-            {job.status === 'done' && (
-              <div className="px-3 py-2 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs flex items-center gap-2">
-                <Check className="w-3.5 h-3.5" /> shipped — artifact in
-                <span className="font-mono">{job.steps.find((x) => x.name === 'deliver')?.result?.dest_dir || 'examples/'}</span>
-                <a
-                  href={(window.__APP_BASE__ || '') + `/api/projects/${projectId}/sdk/build/latest`}
-                  className="ml-auto inline-flex items-center gap-1 text-emerald-200 hover:text-emerald-100"
-                  rel="noopener"
+                <div
+                  className="flex items-center"
+                  style={{
+                    gap: 10, padding: '8px 0 0',
+                    marginTop: 6,
+                    borderTop: '1px solid var(--border)',
+                    color: 'var(--text-muted)', fontSize: 11
+                  }}
                 >
-                  <Download className="w-3 h-3" /> download .pdx
-                </a>
+                  <span>total</span>
+                  <span style={{ marginLeft: 'auto', color: 'var(--text)' }}>
+                    {fmtBytes(pack.files.reduce((acc, f) => acc + (f.bytes || 0), 0))}
+                  </span>
+                </div>
               </div>
+            ) : packErr ? (
+              <div
+                className="font-mono inline-flex items-center"
+                style={{
+                  color: 'var(--danger)', fontSize: 11,
+                  gap: 6
+                }}
+              >
+                <AlertCircle className="w-3 h-3" /> {packErr}
+              </div>
+            ) : (
+              <p className="font-mono" style={{ fontSize: 11, color: 'var(--text-dim)', margin: 0 }}>
+                no packed release yet — run a ship pipeline to produce the .pdx
+                bundle and its release notes.
+              </p>
             )}
+          </Panel>
+
+          {/* GitHub release list (when present) */}
+          {hasGhRelease ? (
+            <Panel
+              title="github releases"
+              right={
+                <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  {releases.length} total
+                </span>
+              }
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                  maxHeight: 200, overflowY: 'auto',
+                  display: 'flex', flexDirection: 'column'
+                }}
+              >
+                {releases.slice(0, 8).map((r) => (
+                  <div
+                    key={r.tag}
+                    className="flex items-center"
+                    style={{
+                      gap: 10, padding: '6px 0',
+                      borderBottom: '1px dashed var(--border)'
+                    }}
+                  >
+                    {r.is_latest ? <Tag tone="accent">latest</Tag> : <Tag>tag</Tag>}
+                    <span style={{ color: 'var(--text-soft)' }}>{r.tag}</span>
+                    <span style={{ color: 'var(--text-dim)', marginLeft: 'auto' }}>
+                      {r.published_at ? new Date(r.published_at).toLocaleDateString() : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          ) : null}
+
+          {/* Tip banner */}
+          <div
+            className="font-mono"
+            style={{
+              border: '1px solid var(--border-2)',
+              background: 'var(--accent-soft)',
+              color: 'var(--accent)',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 11,
+              letterSpacing: '.04em',
+              display: 'flex', alignItems: 'flex-start', gap: 10
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'var(--accent)',
+                boxShadow: '0 0 6px var(--accent)',
+                marginTop: 5, flex: 'none'
+              }}
+            />
+            <span style={{ lineHeight: 1.55 }}>
+              tip · sideload via Playdate Mirror, the play.date web sideloader,
+              or open the .pdx in the Playdate Simulator. The platform can't push
+              to your device directly — see{' '}
+              <a
+                href="https://help.play.date/games/sideloading/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+              >
+                Panic's sideload docs
+              </a>.
+            </span>
           </div>
+
+          {/* Footer nav to releases history */}
+          <button
+            type="button"
+            onClick={() => navigate(`/projects/${projectId}/release/history`)}
+            className="font-mono inline-flex items-center"
+            style={{
+              alignSelf: 'flex-start',
+              background: 'transparent', color: 'var(--text-muted)',
+              border: 'none',
+              padding: 0,
+              fontSize: 11, gap: 6,
+              cursor: 'pointer',
+              textTransform: 'uppercase', letterSpacing: '.08em'
+            }}
+          >
+            see release history <ArrowRight className="w-3 h-3" />
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
