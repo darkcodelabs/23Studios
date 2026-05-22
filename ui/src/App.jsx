@@ -120,6 +120,7 @@ import ProjectShell from './layouts/ProjectShell.jsx';
 import Landing from './pages/Landing.jsx';
 import Library from './pages/Library.jsx';
 import SceneEditor from './pages/SceneEditor.jsx';
+import Building from './pages/Building.jsx';
 
 function PulpComingSoon({ name }) {
   return (
@@ -217,7 +218,10 @@ export default function App() {
             <Route index element={<Navigate to="files" replace />} />
             <Route path="files"        element={<Project />} />
             <Route path="architecture" element={<Architecture />} />
-            <Route path="milestones"   element={<Milestones />} />
+            {/* Building — design pass 4. Milestones power-user timeline
+                stays available at the legacy /project/:id/milestones route. */}
+            <Route path="milestones"   element={<Building />} />
+            <Route path="milestones/raw" element={<Milestones />} />
             <Route path="simulator"    element={<SdkPlayPage />} />
           </Route>
           <Route path="review">
