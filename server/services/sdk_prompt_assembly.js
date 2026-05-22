@@ -51,26 +51,30 @@ DO NOT:
 
 VISUAL STYLE (mandatory for every image generation request):
 
-Positive style anchors:
-- 1-bit black and white illustration
-- high contrast pen and ink, woodcut, or linocut
-- bold outlines, strong silhouettes
-- crosshatching and stippling for shading, no smooth gradients
-- limited tonal range, no midtones
-- inspired by Lucas Pope's Return of the Obra Dinn and Mars After Midnight
-- inspired by classic Mac System 7 illustration and HyperCard graphics
-- isometric or flat perspective preferred for scenes
-- newspaper print or ink-on-paper texture
+POSITIVE STYLE:
+- Bold black-and-white line art illustration with confident ink-pen line weight
+- Heavy contour outlines and strong silhouettes; every object reads at a glance
+- Pure black ink on pure white paper — newspaper-strip / comic-book / woodcut feel
+- Crosshatching, parallel hatching, and stippling for interior shading
+- Flat shapes filled solid black for deep shadows; no tonal gradient anywhere
+- Line-art clarity above all: a reader should be able to trace every outline
+- Inspired by Edward Gorey, Mike Mignola (Hellboy), Frank Miller (Sin City),
+  Charles Burns (Black Hole), Eric Drooker, and the Mars After Midnight /
+  Whitewater Wipeout Playdate aesthetic
+- Isometric or top-down perspective for scenes; tight 3/4 framing for portraits
+- Dither, when present, is CONTAINED within explicit shape boundaries — never
+  a photographic mist across the whole frame
 
-Negative style (do NOT produce):
-- photorealistic, photographic, photograph
-- soft focus, blurry, out of focus
-- gradient, smooth shading, soft lighting
-- color, full color, saturated, vibrant
-- low contrast, washed out, faded, pastel
-- noise, grain, film grain, jpeg artifacts
-- anti-aliased, smooth edges
-- 3D rendered, ray traced, CGI`;
+NEGATIVE STYLE (do NOT produce):
+- Photographic, photo-realistic, photo-derived, "dithered photograph" look
+- Grayscale, anti-aliased edges, soft focus, blur, depth-of-field
+- Smooth gradients, soft lighting, ambient occlusion, painted rendering
+- Color of any kind, sepia, duotone, halftone-on-color
+- 3D-rendered, CGI, ray-traced, voxel, ASCII-art
+- Noise, film grain, JPEG artifacts, scanner moire
+- Low contrast, washed out, faded, pastel
+- Dither used as a substitute for line work; dither should accent line art,
+  never replace it`;
 
 // --- Sections 4-12 — Per-stage augments ----------------------------------
 //
