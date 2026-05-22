@@ -838,7 +838,7 @@ function buildSceneLuaFromFeatures(scene, featureSet, recipeBody) {
     '',
     // enter: becomes top of stack. exit() on outgoing scene has already run.
     `function Scene_${ident}:enter()`,
-    `  self._bg = gfx.image.new("assets/scenes/${id}")`,
+    `  self._bg = gfx.image.new("images/scenes/${id}")`,
     stateInit,
     setup,
     recipeSection,
