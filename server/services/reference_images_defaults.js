@@ -20,6 +20,11 @@
 function getDefaultManifest() {
   return {
     default_set: [
+      // Phase 4.8 calibration targets — line-art with contained dither.
+      // These carry the visual style; weight heavier than bible-derived refs.
+      'topdown_suburbia.png',
+      'isometric_garage_ghosts.png',
+      'isometric_dialogue_scene.png',
       'seckc.png',
       'bbs_chat_close.png',
       'bedroom.png',
@@ -29,12 +34,13 @@ function getDefaultManifest() {
     ],
     scene_references: {
       title: ['title.png'],
-      interior: ['bedroom.png', 'bbs_chat_close.png'],
-      exterior: [],
-      ui: ['coins_inventory.png']
+      // Line-art interior references lead — bedroom + bbs are dither-heavy fallbacks
+      interior: ['isometric_garage_ghosts.png', 'isometric_dialogue_scene.png', 'bedroom.png'],
+      exterior: ['topdown_suburbia.png'],
+      ui: ['coins_inventory.png', 'bbs_chat_close.png']
     },
     portrait_references: {
-      default: []
+      default: ['isometric_dialogue_scene.png']
     },
     card_references: {
       default: ['title.png']
