@@ -64,6 +64,7 @@ const batchesRouter = require('./routes/batches');
 const perfRouter = require('./routes/perf');
 const architectureRouter = require('./routes/architecture');
 const qualityReportsRouter = require('./routes/quality_reports');
+const buildEventsRouter = require('./routes/build_events');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -259,6 +260,8 @@ app.use('/api/projects', batchesRouter);
 app.use('/api/projects', galleryRouter);
 app.use('/api/projects', perfRouter);
 app.use('/api/projects', architectureRouter);
+// SSE: GET /api/projects/:id/build/events — Building screen push feed.
+app.use('/api/projects', buildEventsRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {
