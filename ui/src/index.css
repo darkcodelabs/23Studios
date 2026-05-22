@@ -267,3 +267,86 @@
  * to the lavender hairline so cards still have a visible edge. */
 :root[data-theme="playdate"] .border-ink-700,
 :root[data-theme="playdate"] .border-ink-700\/60 { border-color: var(--hairline); }
+
+/* ────────────────────────────────────────────────────────────────────
+ * Library + AppShell responsive rules.
+ *
+ * Tailwind responsive prefixes are available, but the project's existing
+ * layout chrome uses inline `style={{ gridTemplateColumns: ... }}` which
+ * inline-styles always win over utility classes. We therefore expose
+ * dedicated class hooks and drive the responsive sizing from media
+ * queries below. Same pattern for the filter-pill row + sidebar collapse.
+ * ──────────────────────────────────────────────────────────────────── */
+
+/* Project card grid — 3-col by default (matches design), 2-col at tablet,
+ * 1-col at mobile portrait. Inline `grid-template-columns` removed from
+ * Library.jsx so the cascade below actually wins. */
+.lib-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1023.98px) {
+  .lib-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 639.98px) {
+  .lib-grid { grid-template-columns: 1fr; }
+}
+
+/* Filter pill row — wraps to a new line by default (via flex-wrap on the
+ * component), but at narrow widths we'd rather scroll horizontally than
+ * stack three rows of pills above the cards. */
+@media (max-width: 767.98px) {
+  .lib-filter-pills {
+    margin-left: 0 !important;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    scrollbar-width: thin;
+  }
+  .lib-filter-pills > button { flex: 0 0 auto; }
+  .lib-pad { padding-left: 16px !important; padding-right: 16px !important; }
+}
+
+/* AppShell sidebar — collapses to an off-canvas drawer below 1024px so
+ * the project cards aren't squeezed into a sliver. The .shell-rail class
+ * is the <aside> wrapper; .shell-drawer-open lifts it back into view when
+ * the hamburger is toggled. The .shell-hamburger button is hidden at
+ * desktop widths. .shell-backdrop is the dim layer behind the drawer. */
+.shell-hamburger { display: none; }
+.shell-backdrop  { display: none; }
+
+@media (max-width: 1023.98px) {
+  .shell-hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .shell-rail {
+    position: fixed !important;
+    left: 0; top: 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 160ms ease-out;
+    box-shadow: 6px 0 24px oklch(0% 0 0 / .35);
+  }
+  .shell-rail.shell-drawer-open { transform: translateX(0); }
+  .shell-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: oklch(0% 0 0 / .42);
+    display: block;
+    animation: shell-backdrop-in 120ms ease-out;
+  }
+}
+
+@keyframes shell-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

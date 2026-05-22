@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Plus, RefreshCw, ArrowRight, Loader2 } from 'lucide-react';
 import { api } from '../lib/api.js';
+import { decideStatus, pluralize, STATUS } from '../lib/projectStatus.js';
 
 // Library — design pass 1.
 //
@@ -50,16 +51,17 @@ const BADGE_STYLES = {
   }
 };
 
-// Map raw project + card_meta into one of the 5 status badges.
-// Simple heuristic per spec — refine when the real status pipeline lands.
-function deriveStatusBadge(project, meta) {
-  const status = (project?.status || '').toLowerCase();
-  if (status === 'broken') return 'BROKEN';
-  if (status === 'building') return 'BUILDING';
-  if (status === 'shipped' || status === 'published') return 'SHIPPED';
-  const built = meta && meta.last_build_at != null;
-  if (built) return 'SHIPPED';
-  return 'DRAFT';
+// Status badge resolution now lives in ui/src/lib/projectStatus.js so the
+// AppShell sidebar pills and Library cards use the same decision tree.
+// Library batches the autopilot + gallery probes per project (see `probes`
+// state below) and feeds the snapshot into decideStatus per render.
+function deriveStatusBadge(project, meta, probe) {
+  return decideStatus({
+    project,
+    cardMeta: meta,
+    autopilot: probe && probe.autopilot,
+    gallery:   probe && probe.gallery
+  });
 }
 
 // Map badge label → filter id for the pills.
@@ -111,14 +113,14 @@ function StatusBadge({ kind }) {
   );
 }
 
-function GameCard({ project, meta, onOpen }) {
-  const badge = deriveStatusBadge(project, meta);
+function GameCard({ project, meta, probe, onOpen }) {
+  const badge = deriveStatusBadge(project, meta, probe);
   const cover = meta && meta.title_image_url ? meta.title_image_url : null;
   const sub = useMemo(() => {
     const parts = [];
     const desc = (project.description || '').trim();
     if (desc) parts.push(desc.split(/\s+/).slice(0, 2).join(' '));
-    if (meta && meta.scene_count != null) parts.push(`${meta.scene_count} scenes`);
+    if (meta && meta.scene_count != null) parts.push(pluralize(meta.scene_count, 'scene'));
     parts.push((project.game_type || 'sdk').toLowerCase());
     return parts.join(' · ');
   }, [project, meta]);
@@ -305,6 +307,10 @@ export default function Library() {
   const [err, setErr] = useState(null);
   const [filter, setFilter] = useState('all');
   const [metaById, setMetaById] = useState({});
+  // probes[id] = { autopilot, gallery } — keyed by project id, refreshed by
+  // the polling effect below. Decoupled from metaById so the cover image
+  // doesn't repaint every 10s.
+  const [probesById, setProbesById] = useState({});
 
   // No body bg override anymore — AppShell paints the page background.
   // Library used to mount full-bleed at /dashboard and would smash the body
@@ -312,37 +318,84 @@ export default function Library() {
   // shell handles colors. Keeping the effect here would double-paint and
   // bleed into other AppShell-wrapped routes after unmount.
 
+  // Fan out card_meta + the two status probes (autopilot, gallery) for every
+  // project. Probes have to refresh on a tick because hakcd-v3 is generating
+  // PNGs live — scene_count crawls upward, awaiting_review enters/leaves —
+  // and the user would see stale "0 scenes / DRAFT" without polling.
+  const fetchProbes = useCallback(async (list) => {
+    const entries = await Promise.all(list.map(async (p) => {
+      const [autopilot, gallery] = await Promise.all([
+        api.get(`/api/projects/${p.id}/sdk/autopilot/status`).catch(() => null),
+        api.get(`/api/projects/${p.id}/gallery`).catch(() => null)
+      ]);
+      return [p.id, { autopilot, gallery }];
+    }));
+    const next = {};
+    for (const [id, payload] of entries) { next[id] = payload; }
+    return next;
+  }, []);
+
+  const fetchMetas = useCallback(async (list) => {
+    const pairs = await Promise.all(list.map(async (p) => {
+      try {
+        const m = await api.get(`/api/projects/${p.id}/card_meta`);
+        return [p.id, m];
+      } catch (_e) {
+        return [p.id, null];
+      }
+    }));
+    const next = {};
+    for (const [id, m] of pairs) { if (m) next[id] = m; }
+    return next;
+  }, []);
+
   const load = useCallback(async () => {
     setErr(null);
     try {
       const r = await api.get('/api/projects');
       const list = (r && r.projects) || [];
       setProjects(list);
-      // Fan out card_meta concurrently; silent per-item failures fall back
-      // to the no-cover state.
-      const pairs = await Promise.all(list.map(async (p) => {
-        try {
-          const m = await api.get(`/api/projects/${p.id}/card_meta`);
-          return [p.id, m];
-        } catch (_e) {
-          return [p.id, null];
-        }
-      }));
-      const next = {};
-      for (const [id, m] of pairs) { if (m) next[id] = m; }
-      setMetaById(next);
+      const [metas, probes] = await Promise.all([
+        fetchMetas(list),
+        fetchProbes(list)
+      ]);
+      setMetaById(metas);
+      setProbesById(probes);
     } catch (_e) {
       setErr('failed to load projects');
     }
-  }, []);
+  }, [fetchMetas, fetchProbes]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Live refresh — every 10s re-pull card_meta (scene_count grows as PNGs
+  // land) and the autopilot+gallery probes (badge transitions BUILDING →
+  // REVIEW → SHIPPED in real time). Bail when no projects yet; no-op when
+  // the tab is hidden so we don't burn API on a backgrounded tab.
+  useEffect(() => {
+    if (!projects || projects.length === 0) return undefined;
+    const tick = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const [metas, probes] = await Promise.all([
+          fetchMetas(projects),
+          fetchProbes(projects)
+        ]);
+        setMetaById(metas);
+        setProbesById(probes);
+      } catch (_e) { /* keep last good snapshot */ }
+    };
+    const id = setInterval(tick, 10_000);
+    return () => clearInterval(id);
+  }, [projects, fetchMetas, fetchProbes]);
 
   const filtered = useMemo(() => {
     if (!projects) return null;
     if (filter === 'all') return projects;
-    return projects.filter((p) => badgeToFilter(deriveStatusBadge(p, metaById[p.id])) === filter);
-  }, [projects, metaById, filter]);
+    return projects.filter((p) =>
+      badgeToFilter(deriveStatusBadge(p, metaById[p.id], probesById[p.id])) === filter
+    );
+  }, [projects, metaById, probesById, filter]);
 
   const totalScenes = useMemo(() => {
     if (!projects) return 0;
@@ -357,9 +410,9 @@ export default function Library() {
       className="font-ui"
       style={{ color: 'var(--text)' }}
     >
-      <div style={{ padding: '24px 32px 56px' }}>
+      <div className="lib-pad" style={{ padding: '24px 32px 56px' }}>
         {/* ─── Header ─── */}
-        <div className="flex items-center" style={{ gap: 14, marginBottom: 24 }}>
+        <div className="lib-header flex flex-wrap items-center" style={{ gap: 14, marginBottom: 24 }}>
           <h1
             className="font-ui"
             style={{ margin: 0, fontSize: 26, fontWeight: 500, letterSpacing: '-.02em', color: 'var(--text)' }}
@@ -370,10 +423,10 @@ export default function Library() {
             className="font-mono"
             style={{ fontSize: 12, color: 'var(--text-dim)' }}
           >
-            {projects ? `${projects.length} projects · ${totalScenes} scenes` : 'loading…'}
+            {projects ? `${pluralize(projects.length, 'project')} · ${pluralize(totalScenes, 'scene')}` : 'loading…'}
           </span>
 
-          <div className="flex" style={{ marginLeft: 'auto', gap: 6 }}>
+          <div className="lib-filter-pills flex" style={{ marginLeft: 'auto', gap: 6 }}>
             {FILTERS.map((f) => {
               const active = f.id === filter;
               return (
@@ -455,12 +508,13 @@ export default function Library() {
             <Loader2 className="w-4 h-4 animate-spin" /> loading…
           </div>
         ) : (
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+          <div className="lib-grid grid" style={{ gap: 18 }}>
             {(filtered || []).map((p) => (
               <GameCard
                 key={p.id}
                 project={p}
                 meta={metaById[p.id]}
+                probe={probesById[p.id]}
                 onOpen={() => openProject(p)}
               />
             ))}
@@ -485,4 +539,4 @@ export default function Library() {
 }
 
 // Pure helper exports for ad-hoc test runs (Vite has no test runner here).
-export const __TEST__ = { deriveStatusBadge, badgeToFilter, formatBuiltAt };
+export const __TEST__ = { deriveStatusBadge, badgeToFilter, formatBuiltAt, STATUS };
