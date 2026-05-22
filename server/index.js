@@ -135,7 +135,9 @@ app.use(helmet({
       // when an unauthenticated session expires; allow the CF Access
       // host so the redirect doesn't trigger a console violation.
       'manifest-src': ["'self'", 'https://hackdev.cloudflareaccess.com'],
-      'style-src': ["'self'", "'unsafe-inline'"],
+      'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      'style-src-elem': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://fonts.googleapis.com'],
       // The studio bundles its own Inter font copy via @font-face
       // (added at build time); we don't need to call out to rsms.me
       // anymore. Leave style-src tight.

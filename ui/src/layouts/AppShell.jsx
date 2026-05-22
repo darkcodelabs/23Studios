@@ -52,7 +52,7 @@ function BrandLogo() {
   }
   return (
     <img
-      src="/assets/studio-logo.png"
+      src="assets/studio-logo.png"
       alt="23"
       width={32}
       height={32}
@@ -102,7 +102,7 @@ function pickActiveFlow(pathname) {
   return 'landing';
 }
 
-function FlowItem({ item, activeId, projectId, pill, onNavigate }) {
+function FlowItem({ item, activeId, projectId, pill, onNavigate, collapsed }) {
   const target = item.to(projectId);
   const isActive = item.id === activeId;
   const disabled = !target;
@@ -167,8 +167,8 @@ function FlowItem({ item, activeId, projectId, pill, onNavigate }) {
       >
         {item.num}
       </span>
-      <span className="flex-1 truncate">{item.label}</span>
-      {pill ? (
+      {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
+      {pill && !collapsed ? (
         <span
           className="font-mono uppercase"
           style={{
@@ -206,7 +206,7 @@ const STATUS_PILL = {
   [STATUS.SHIPPED]:  { label: 'shipped',  tone: 'ok' }
 };
 
-function ProjectRow({ project, status, activeProjectId, onNavigate }) {
+function ProjectRow({ project, status, activeProjectId, onNavigate, collapsed }) {
   const navigate = useNavigate();
   const pill = STATUS_PILL[status] || STATUS_PILL[STATUS.DRAFT];
   const isActive = activeProjectId && project.id === activeProjectId;
@@ -265,22 +265,24 @@ function ProjectRow({ project, status, activeProjectId, onNavigate }) {
         {/* Filled small square as bullet — matches design's ▤ glyph */}
         ▤
       </span>
-      <span className="flex-1 truncate" style={{ color: 'var(--text-soft)' }}>{project.name}</span>
-      <span
-        className="font-mono uppercase"
-        style={{
-          marginLeft: 'auto',
-          fontSize: 9,
-          letterSpacing: '.08em',
-          padding: '2px 6px',
-          borderRadius: 99,
-          color: toneColor,
-          background: toneBg,
-          border: `1px solid ${toneBd}`
-        }}
-      >
-        {pill.label}
-      </span>
+      {!collapsed ? <span className="flex-1 truncate" style={{ color: 'var(--text-soft)' }}>{project.name}</span> : null}
+      {!collapsed ? (
+        <span
+          className="font-mono uppercase"
+          style={{
+            marginLeft: 'auto',
+            fontSize: 9,
+            letterSpacing: '.08em',
+            padding: '2px 6px',
+            borderRadius: 99,
+            color: toneColor,
+            background: toneBg,
+            border: `1px solid ${toneBd}`
+          }}
+        >
+          {pill.label}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -332,16 +334,17 @@ function Telemetry() {
 // Sidebar — full assembly
 // ----------------------------------------------------------------------------
 
-function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById, drawerOpen, onClose }) {
+function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById, drawerOpen, onClose, collapsed, onToggleCollapse }) {
   return (
     <aside
       className={'shell-rail shrink-0 flex flex-col overflow-hidden sticky top-0 ' + (drawerOpen ? 'shell-drawer-open' : '')}
       style={{
-        width: 220,
+        width: collapsed ? 56 : 220,
+        transition: 'width .2s ease',
         height: '100vh',
         background: 'var(--bg-2)',
         borderRight: '1px solid var(--border)',
-        padding: '18px 14px 18px 18px',
+        padding: collapsed ? '18px 6px' : '18px 14px 18px 18px',
         gap: 4
       }}
     >
@@ -350,9 +353,10 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
         className="flex items-center"
         style={{
           gap: 10,
-          padding: '6px 4px 18px',
+          padding: collapsed ? '6px 0 18px' : '6px 4px 18px',
           borderBottom: '1px dashed var(--border)',
-          marginBottom: 14
+          marginBottom: 14,
+          justifyContent: collapsed ? 'center' : 'flex-start'
         }}
       >
         <Link
@@ -369,48 +373,85 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
         >
           <BrandLogo />
         </Link>
-        <div className="flex flex-col leading-tight">
-          <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
-          <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>rev 1.0 · hakcers</span>
-        </div>
+        {!collapsed ? (
+          <div className="flex flex-col leading-tight">
+            <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
+            <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>rev 1.0 · hakcers</span>
+          </div>
+        ) : null}
+        {!collapsed ? (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title="Collapse sidebar"
+            aria-label="Collapse sidebar"
+            className="ml-auto shrink-0 grid place-items-center"
+            style={{
+              width: 22, height: 22, borderRadius: 4,
+              background: 'transparent', border: '1px solid var(--border-2)',
+              color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
+              lineHeight: 1
+            }}
+          >‹</button>
+        ) : null}
       </div>
+      {collapsed ? (
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+          className="grid place-items-center"
+          style={{
+            width: 32, height: 24, borderRadius: 4,
+            background: 'transparent', border: '1px solid var(--border-2)',
+            color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14,
+            lineHeight: 1, marginBottom: 8, alignSelf: 'center'
+          }}
+        >›</button>
+      ) : null}
 
       <div className="flex-1 overflow-y-auto flex flex-col" style={{ gap: 2 }}>
         {/* FLOW group */}
-        <div
-          className="font-mono uppercase"
-          style={{
-            padding: '14px 4px 6px',
-            fontSize: 10,
-            letterSpacing: '.12em',
-            color: 'var(--text-dim)'
-          }}
-        >
-          flow
-        </div>
+        {!collapsed ? (
+          <div
+            className="font-mono uppercase"
+            style={{
+              padding: '14px 4px 6px',
+              fontSize: 10,
+              letterSpacing: '.12em',
+              color: 'var(--text-dim)'
+            }}
+          >
+            flow
+          </div>
+        ) : <div style={{ height: 8 }} />}
         {FLOW_ITEMS.map((item) => (
           <FlowItem
             key={item.id}
             item={item}
             activeId={activeFlow}
             projectId={activeProjectId}
-            pill={flowPills[item.id]}
+            pill={collapsed ? null : flowPills[item.id]}
             onNavigate={onClose}
+            collapsed={collapsed}
           />
         ))}
 
         {/* PROJECT group */}
-        <div
-          className="font-mono uppercase"
-          style={{
-            padding: '14px 4px 6px',
-            fontSize: 10,
-            letterSpacing: '.12em',
-            color: 'var(--text-dim)'
-          }}
-        >
-          project
-        </div>
+        {!collapsed ? (
+          <div
+            className="font-mono uppercase"
+            style={{
+              padding: '14px 4px 6px',
+              fontSize: 10,
+              letterSpacing: '.12em',
+              color: 'var(--text-dim)'
+            }}
+          >
+            project
+          </div>
+        ) : <div style={{ height: 12 }} />}
         {projects && projects.length > 0 ? (
           projects.map((p) => (
             <ProjectRow
@@ -419,9 +460,10 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
               status={statusById ? statusById[p.id] : STATUS.DRAFT}
               activeProjectId={activeProjectId}
               onNavigate={onClose}
+              collapsed={collapsed}
             />
           ))
-        ) : (
+        ) : !collapsed ? (
           <div
             className="font-mono"
             style={{
@@ -432,10 +474,10 @@ function Sidebar({ projects, activeProjectId, activeFlow, flowPills, statusById,
           >
             no projects yet
           </div>
-        )}
+        ) : null}
       </div>
 
-      <Telemetry />
+      {!collapsed ? <Telemetry /> : null}
     </aside>
   );
 }
@@ -528,6 +570,7 @@ function Topbar({ crumbs, seed, onToggleDrawer, drawerOpen }) {
       <div className="flex-1" />
 
       <div className="flex items-center" style={{ gap: 14 }}>
+        <ThemeSwitcher />
         <TopbarChip tone="ok">device ready</TopbarChip>
         <TopbarChip tone="amber">build queue: 1</TopbarChip>
         <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -535,6 +578,63 @@ function Topbar({ crumbs, seed, onToggleDrawer, drawerOpen }) {
         </span>
       </div>
     </header>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Theme switcher — cycles document.documentElement.dataset.accent across
+// amber → orange → phosphor → steel. Tokens.css owns the [data-accent="..."]
+// overrides. Persisted to localStorage so the choice survives reloads.
+// ----------------------------------------------------------------------------
+
+const ACCENTS = ['amber', 'orange', 'phosphor', 'steel'];
+const ACCENT_HUES = { amber: '78% 0.13 75', orange: '70% 0.18 45', phosphor: '82% 0.20 145', steel: '78% 0.04 240' };
+
+function ThemeSwitcher() {
+  const [accent, setAccent] = useState(() => {
+    if (typeof localStorage === 'undefined') return 'amber';
+    return localStorage.getItem('studio.accent') || 'amber';
+  });
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.dataset.accent = accent;
+    try { localStorage.setItem('studio.accent', accent); } catch (_e) {}
+  }, [accent]);
+
+  const cycle = () => {
+    const idx = ACCENTS.indexOf(accent);
+    setAccent(ACCENTS[(idx + 1) % ACCENTS.length]);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={cycle}
+      title={`theme: ${accent} (click to cycle)`}
+      aria-label="cycle accent theme"
+      className="inline-flex items-center font-mono uppercase"
+      style={{
+        appearance: 'none', cursor: 'pointer',
+        gap: 6,
+        padding: '4px 8px',
+        background: 'var(--surface)',
+        border: '1px solid var(--border-2)',
+        borderRadius: 99,
+        fontSize: 10,
+        letterSpacing: '.08em',
+        color: 'var(--text-muted)'
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 8, height: 8, borderRadius: '50%',
+          background: `oklch(${ACCENT_HUES[accent]})`,
+          boxShadow: `0 0 6px oklch(${ACCENT_HUES[accent]} / .5)`
+        }}
+      />
+      {accent}
+    </button>
   );
 }
 
@@ -570,6 +670,14 @@ export default function AppShell({ children }) {
   // Mobile drawer — closed by default. Toggled by the topbar hamburger.
   // Auto-closes on route change so navigating doesn't strand the drawer.
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Sidebar collapse — persists across reloads via localStorage.
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('studio.sidebarCollapsed') === '1';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('studio.sidebarCollapsed', collapsed ? '1' : '0'); } catch (_e) {}
+  }, [collapsed]);
 
   useEffect(() => {
     let alive = true;
@@ -645,6 +753,8 @@ export default function AppShell({ children }) {
         statusById={statusById}
         drawerOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
       />
 
       {/* Backdrop only renders + is visible under the mobile breakpoint —

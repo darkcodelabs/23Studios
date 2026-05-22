@@ -225,7 +225,7 @@ export default function Landing() {
           style={{ zIndex: 0, pointerEvents: 'none' }}
         >
           <img
-            src="/assets/studio-logo.png"
+            src="assets/studio-logo.png"
             alt=""
             style={{
               width: '100%',
@@ -430,18 +430,6 @@ export default function Landing() {
             {t}
           </span>
         ))}
-      </div>
-
-      {/* ─── Flow grid ─── */}
-      <div
-        className="grid"
-        style={{
-          padding: '64px 56px',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 18
-        }}
-      >
-        {FLOW_STEPS.map((s) => <FlowCard key={s.n} step={s} />)}
       </div>
 
       {/* ─── Footer ─── */}

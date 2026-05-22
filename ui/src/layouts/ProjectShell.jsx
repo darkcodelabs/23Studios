@@ -238,7 +238,7 @@ function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onI
           }}
           title="Library"
         >
-          <img src="/assets/studio-logo.png" alt="23" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src="assets/studio-logo.png" alt="23" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </Link>
         {collapsed ? null : (
           <>
