@@ -32,6 +32,7 @@ const phase6Router = require('./routes/phase6');
 const stylesRouter = require('./routes/styles');
 const assetLibraryRouter = require('./routes/asset_library');
 const referencesRouter = require('./routes/references');
+const galleryRouter = require('./routes/gallery');
 const lateAddRouter = require('./routes/late_add');
 const npcRouter = require('./routes/npc');
 const levelsRouter = require('./routes/levels');
@@ -249,6 +250,7 @@ app.use('/api/projects', bibleRouter);
 app.use('/api/projects', regenRouter);
 app.use('/api/projects', reviewBoardRouter);
 app.use('/api/projects', batchesRouter);
+app.use('/api/projects', galleryRouter);
 app.use('/api/projects', perfRouter);
 app.use('/api/projects', architectureRouter);
 
