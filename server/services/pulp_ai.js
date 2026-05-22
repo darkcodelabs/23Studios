@@ -37,7 +37,8 @@ const API_KEY = process.env.OPENROUTER_API_KEY || '';
 // The right OpenAI model on OpenRouter for this is `openai/gpt-image-1`.
 async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectContext,
                                             projectId, sceneId, stage, kind,
-                                            references: referenceImages }) {
+                                            references: referenceImages,
+                                            guidance_scale: guidanceScale }) {
   if (!API_KEY) {
     const e = new Error('openrouter_unavailable');
     e.code = 'openrouter_unavailable';
@@ -114,6 +115,13 @@ async function generateImageViaOpenRouter({ prompt, model, sizeHint, projectCont
     messages: [{ role: 'user', content: userContent }],
     modalities: ['image', 'text']
   };
+  // Phase 4.8 Patch E — best-effort guidance_scale forwarding. gpt-5-image
+  // likely ignores this; flux.*/sd.* models honour it. OpenRouter passes
+  // unknown body fields through to the upstream provider, so this is safe
+  // to include even on models that drop it.
+  if (Number.isFinite(guidanceScale)) {
+    payload.guidance_scale = guidanceScale;
+  }
   // 120s hard timeout — OpenRouter image gen occasionally hangs forever
   // on premium models. Without AbortController the autopilot wedges.
   const FETCH_TIMEOUT_MS = Number(process.env.OPENROUTER_TIMEOUT_MS) || 120000;
@@ -216,7 +224,24 @@ const DEFAULT_IMAGE_MODEL = process.env.STUDIO_IMAGE_MODEL
 // completions image-input limit varies by model, but 4 is conservative
 // across the supported model set (gpt-5-image, gemini-3-pro-image-preview,
 // flux.2-*) and keeps payloads under typical request-size caps.
-const MAX_REFERENCES_PER_CALL = 4;
+// Phase 4.8 Patch E: hard ceiling raised to 6 to accommodate cards. The
+// per-asset-class count in REFERENCE_WEIGHTING (dither_config.js) caps
+// each individual call; this is the global maximum across all classes.
+const MAX_REFERENCES_PER_CALL = 6;
+
+// Phase 4.8 Patch E — per-asset-class reference count map. Falls back to
+// MAX_REFERENCES_PER_CALL when the asset class is not declared in
+// REFERENCE_WEIGHTING. The 'scene' / 'portrait' / 'card' / 'launcher' keys
+// here are pickReferences's assetClass arg; they map to REFERENCE_WEIGHTING's
+// scene_bg / portrait / card / launch_image keys.
+function refCapFor(assetClass) {
+  const w = ditherDefaults.REFERENCE_WEIGHTING || {};
+  if (assetClass === 'scene'    && w.scene_bg     && Number.isFinite(w.scene_bg.count))     return w.scene_bg.count;
+  if (assetClass === 'portrait' && w.portrait     && Number.isFinite(w.portrait.count))     return w.portrait.count;
+  if (assetClass === 'card'     && w.card         && Number.isFinite(w.card.count))         return w.card.count;
+  if (assetClass === 'launcher' && w.launch_image && Number.isFinite(w.launch_image.count)) return w.launch_image.count;
+  return MAX_REFERENCES_PER_CALL;
+}
 
 // Best-of-N candidate generation. When > 1, generateScene/generatePortrait
 // fan out to N parallel models and pick the best output per the validator
@@ -296,8 +321,12 @@ async function pickReferences(projectId, assetClass, tags, maxCount) {
   if (process.env.STUDIO_NO_REFERENCE_IMAGES === '1') return [];
   if (!projectId) return [];
 
-  const cap = Math.max(0, Math.min(MAX_REFERENCES_PER_CALL,
-    Number.isFinite(maxCount) ? Number(maxCount) : MAX_REFERENCES_PER_CALL));
+  // Phase 4.8 Patch E: if the caller didn't pass an explicit cap, derive it
+  // from REFERENCE_WEIGHTING per asset class (scene=4, portrait=2, card=6,
+  // launcher=4) — bumped from the flat MAX_REFERENCES_PER_CALL=4 default.
+  const classCap = refCapFor(assetClass);
+  const requested = Number.isFinite(maxCount) ? Number(maxCount) : classCap;
+  const cap = Math.max(0, Math.min(MAX_REFERENCES_PER_CALL, requested));
   if (cap === 0) return [];
 
   const refs = references();
@@ -851,13 +880,16 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage,
   // Caller can either pass explicit `referenceImages` (array of filenames —
   // e.g. from the gallery regen modal) or let pickReferences derive them
   // from the per-project manifest based on `tags` (autopilot path).
+  // Phase 4.8 Patch E: scene cap raised to REFERENCE_WEIGHTING.scene_bg.count
+  // (default 4) — explicit list now respects the same per-class cap.
+  const sceneRefCap = refCapFor('scene');
   let resolvedRefs = [];
   try {
     if (Array.isArray(referenceImages) && referenceImages.length > 0) {
       // Treat explicit list as tag-equivalent: build a single-element pool
       // and route through pickReferences to load bytes from disk.
       const refsMod = references();
-      for (const filename of referenceImages.slice(0, MAX_REFERENCES_PER_CALL)) {
+      for (const filename of referenceImages.slice(0, sceneRefCap)) {
         try {
           const buf = await refsMod.resolveReferenceFile(projectId, filename);
           if (buf && Buffer.isBuffer(buf)) {
@@ -869,12 +901,24 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage,
         } catch (_e) { /* skip missing */ }
       }
     } else {
-      resolvedRefs = await pickReferences(projectId, 'scene', tags, MAX_REFERENCES_PER_CALL);
+      resolvedRefs = await pickReferences(projectId, 'scene', tags, sceneRefCap);
     }
   } catch (_e) { resolvedRefs = []; }
 
+  // Phase 4.8 Patch E — when references are attached, prepend a hard
+  // style-match directive at the START of the prompt so the model is told to
+  // reproduce line weight + silhouette strength + dither containment before
+  // it ever sees the scene description. Skipped when no references resolved
+  // (referring to attached refs that don't exist would confuse the model).
+  const STYLE_MATCH_DIRECTIVE = 'Match the visual style of the attached ' +
+    'reference images precisely. Reproduce the line weight, silhouette ' +
+    'strength, and dither containment seen in the references.';
+
   for (let attempt = 0; attempt < 2; attempt++) {
-    const augmented = buildPrompt(attempt > 0);
+    const built = buildPrompt(attempt > 0);
+    const augmented = resolvedRefs.length > 0
+      ? STYLE_MATCH_DIRECTIVE + '\n\n' + built
+      : built;
     try {
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
@@ -884,7 +928,8 @@ async function generateScene({ prompt, model, dim, projectId, sceneId, stage,
         sceneId: sceneId || null,
         stage: stage || 'scene',
         kind: 'scene',
-        references: resolvedRefs
+        references: resolvedRefs,
+        guidance_scale: 8.5
       });
       usedModel = `openrouter:${requestedModel}`;
       pngBuffer = await toScenePng(imgBuf, dw, dh, projectId);
@@ -995,11 +1040,14 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
   let lastErr = null;
 
   // Phase 4 Patch F: same reference-resolution pattern as generateScene.
+  // Phase 4.8 Patch E: portrait cap drops to REFERENCE_WEIGHTING.portrait.count
+  // (default 2) — faces don't need 4 refs to lock the style.
+  const portraitRefCap = refCapFor('portrait');
   let resolvedRefs = [];
   try {
     if (Array.isArray(referenceImages) && referenceImages.length > 0) {
       const refsMod = references();
-      for (const filename of referenceImages.slice(0, MAX_REFERENCES_PER_CALL)) {
+      for (const filename of referenceImages.slice(0, portraitRefCap)) {
         try {
           const buf = await refsMod.resolveReferenceFile(projectId, filename);
           if (buf && Buffer.isBuffer(buf)) {
@@ -1011,13 +1059,16 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
         } catch (_e) { /* skip missing */ }
       }
     } else {
-      resolvedRefs = await pickReferences(projectId, 'portrait', tags, MAX_REFERENCES_PER_CALL);
+      resolvedRefs = await pickReferences(projectId, 'portrait', tags, portraitRefCap);
     }
   } catch (_e) { resolvedRefs = []; }
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const augmented = buildPrompt(attempt > 0);
     try {
+      // Phase 4.8 Patch E — portrait guidance bumped to 7.0 (vs the implicit
+      // ~6.5-7 default). gpt-5-image may ignore guidance_scale; this is a
+      // best-effort hint for models that honour it (flux.*).
       imgBuf = await generateImageViaOpenRouter({
         prompt: augmented,
         model: requestedModel,
@@ -1026,7 +1077,8 @@ async function generatePortrait({ prompt, model, dim, dither, threshold, contras
         sceneId: sceneId || null,
         stage: stage || 'portrait',
         kind: 'portrait',
-        references: resolvedRefs
+        references: resolvedRefs,
+        guidance_scale: 7.0
       });
       usedModel = `openrouter:${requestedModel}`;
       pngBuffer = await toPortraitPng(imgBuf, dw, dh, projectId);
