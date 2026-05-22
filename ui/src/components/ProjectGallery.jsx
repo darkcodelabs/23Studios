@@ -552,6 +552,252 @@ function refGridCell(children, key) {
   );
 }
 
+// ----------------------------------------------------------------------------
+// DitherVariantPicker (Phase 4.5 Patch F)
+// ----------------------------------------------------------------------------
+//
+// Inline sub-section inside the Art inspector tab. Flow:
+//   1. POST /dither/variants — backend runs 5-way variant gen (~500ms)
+//   2. GET render 5-up grid with a "Pick" button per variant
+//   3. POST /dither/pick — persists choice to sdk_data/dither_config.json
+//   4. confirmation banner for 3s, then idles
+//
+// Lazy-loads existing variants on mount via GET so the picker doesn't
+// re-burn cycles on every inspector swap.
+
+const DITHER_ALGO_LABELS = {
+  atkinson:         'Atkinson',
+  atkinson_punchy:  'Atkinson Punchy',
+  floyd_steinberg:  'Floyd–Steinberg',
+  bayer4x4:         'Bayer 4×4',
+  threshold:        'Threshold'
+};
+
+const DITHER_TYPE_LABEL = {
+  scene: 'scenes',
+  portrait: 'portraits',
+  launcher: 'launcher art'
+};
+
+function DitherVariantPicker({ projectId, asset }) {
+  const [variants, setVariants] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [picking, setPicking] = useState(null); // algo name while POST is in flight
+  const [confirm, setConfirm] = useState(null); // {label, type} for fade banner
+  const [err, setErr] = useState(null);
+
+  const assetId = asset && asset.id;
+  const encId = assetId ? encodeURIComponent(assetId) : null;
+
+  // Lazy fetch existing variants on asset change.
+  useEffect(() => {
+    if (!projectId || !encId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get(`/api/projects/${projectId}/gallery/assets/${encId}/dither/variants`);
+        if (cancelled) return;
+        const v = (r && Array.isArray(r.variants)) ? r.variants : [];
+        setVariants(v);
+        setErr(null);
+      } catch (_e) {
+        if (cancelled) return;
+        // 404 / missing dir is fine — empty list. Only surface real failures.
+        setVariants([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [projectId, encId]);
+
+  // Auto-fade the confirmation banner after 3s per spec.
+  useEffect(() => {
+    if (!confirm) return;
+    const t = setTimeout(() => setConfirm(null), 3000);
+    return () => clearTimeout(t);
+  }, [confirm]);
+
+  const handleGenerate = useCallback(async () => {
+    if (!encId || generating) return;
+    setGenerating(true);
+    setErr(null);
+    try {
+      const r = await api.post(`/api/projects/${projectId}/gallery/assets/${encId}/dither/variants`, {});
+      const v = (r && Array.isArray(r.variants)) ? r.variants : [];
+      setVariants(v);
+    } catch (e) {
+      setErr((e && e.message) || 'failed to generate variants');
+    } finally {
+      setGenerating(false);
+    }
+  }, [projectId, encId, generating]);
+
+  const handlePick = useCallback(async (algo) => {
+    if (!encId || picking) return;
+    setPicking(algo);
+    setErr(null);
+    try {
+      await api.post(`/api/projects/${projectId}/gallery/assets/${encId}/dither/pick`, { algo });
+      const label = DITHER_ALGO_LABELS[algo] || algo;
+      const typeLabel = (asset && DITHER_TYPE_LABEL[asset.type]) || 'this asset class';
+      setConfirm({ label, typeLabel });
+    } catch (e) {
+      setErr((e && e.message) || 'failed to record pick');
+    } finally {
+      setPicking(null);
+    }
+  }, [projectId, encId, picking, asset]);
+
+  return (
+    <>
+      <div style={{ ...smallcaps(), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>dither variants · pick a 1-bit treatment</span>
+        <button
+          type="button"
+          className="font-mono"
+          onClick={handleGenerate}
+          disabled={generating || !encId}
+          style={{
+            background: 'var(--bg-2, var(--surface))',
+            border: '1px solid var(--border)',
+            color: 'var(--text-soft)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '3px 8px',
+            fontSize: 10,
+            letterSpacing: '.08em',
+            cursor: (generating || !encId) ? 'wait' : 'pointer',
+            opacity: (generating || !encId) ? 0.6 : 1
+          }}
+        >
+          {generating ? 'generating…' : (variants.length > 0 ? 'regenerate' : 'generate variants')}
+        </button>
+      </div>
+
+      {err ? (
+        <div
+          className="font-mono"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border-2)',
+            borderLeft: '3px solid var(--accent, oklch(78% 0.13 75))',
+            borderRadius: 'var(--radius-sm)',
+            padding: '6px 10px',
+            color: 'var(--text-soft)',
+            fontSize: 11
+          }}
+        >
+          {err}
+        </div>
+      ) : null}
+
+      {confirm ? (
+        <div
+          className="font-mono"
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderLeft: '3px solid var(--accent, oklch(78% 0.13 75))',
+            borderRadius: 'var(--radius-sm)',
+            padding: '6px 10px',
+            color: 'var(--accent, oklch(78% 0.13 75))',
+            fontSize: 11
+          }}
+        >
+          {`✓ ${confirm.label} set as default for ${confirm.typeLabel}`}
+        </div>
+      ) : null}
+
+      {variants.length === 0 && !generating ? (
+        <div
+          className="font-mono"
+          style={{
+            background: 'var(--surface)',
+            border: '1px dashed var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '10px 12px',
+            color: 'var(--text-dim)',
+            fontSize: 11,
+            lineHeight: 1.5
+          }}
+        >
+          no variants yet. click <span style={{ color: 'var(--text-soft)' }}>generate variants</span> to
+          dither this source five ways (atkinson, atkinson punchy, floyd–steinberg, bayer 4×4, threshold).
+        </div>
+      ) : null}
+
+      {variants.length > 0 ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+          {variants.map((v) => {
+            const src = (v.url || '').startsWith('/') ? appBase() + v.url : v.url;
+            const label = DITHER_ALGO_LABELS[v.algo] || v.algo;
+            const isPicking = picking === v.algo;
+            return (
+              <div key={v.algo} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div
+                  style={{
+                    aspectRatio: '5 / 3',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <img
+                    src={src}
+                    alt={label}
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      imageRendering: 'pixelated',
+                      display: 'block'
+                    }}
+                  />
+                </div>
+                <div
+                  className="font-mono"
+                  title={`${label} · ${v.bytes} bytes`}
+                  style={{
+                    fontSize: 9,
+                    color: 'var(--text-dim)',
+                    letterSpacing: '.04em',
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {label}
+                </div>
+                <button
+                  type="button"
+                  className="font-mono"
+                  onClick={() => handlePick(v.algo)}
+                  disabled={!!picking}
+                  style={{
+                    background: 'var(--bg-2, var(--surface))',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-soft)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '3px 0',
+                    fontSize: 9,
+                    letterSpacing: '.08em',
+                    cursor: picking ? 'wait' : 'pointer',
+                    opacity: picking && !isPicking ? 0.4 : 1
+                  }}
+                >
+                  {isPicking ? '…' : 'pick'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function InspArt({ projectId, asset, variants, references }) {
   const variantCells = [];
   const heroSrc = resolveImageUrl(projectId, asset);
@@ -618,6 +864,9 @@ function InspArt({ projectId, asset, variants, references }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {variantCells}
       </div>
+
+      <DitherVariantPicker projectId={projectId} asset={asset} />
+
       <div style={smallcaps()}>reference drop</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {refCells}
