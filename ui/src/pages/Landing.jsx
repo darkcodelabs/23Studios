@@ -407,45 +407,24 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── Strip (mono belt under hero) ─── */}
+      {/* ─── Single bottom row — deduped strip + footer, no borders ─── */}
       <div
-        className="flex items-center overflow-x-hidden"
+        className="flex items-center font-mono uppercase overflow-x-auto"
         style={{
-          marginTop: 0,
-          borderTop: '1px solid var(--border)',
-          borderBottom: '1px solid var(--border)',
-          padding: '18px 56px',
-          gap: 40,
-          background: 'var(--bg-2)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          letterSpacing: '.1em',
-          textTransform: 'uppercase',
-          color: 'var(--text-muted)'
-        }}
-      >
-        {STRIP_LABELS.map((t, i) => (
-          <span key={i} className="inline-flex items-center" style={{ gap: 10 }}>
-            <span aria-hidden style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} />
-            {t}
-          </span>
-        ))}
-      </div>
-
-      {/* ─── Footer ─── */}
-      <div
-        className="flex items-center font-mono uppercase"
-        style={{
-          padding: '36px 56px 48px',
-          gap: 24,
+          padding: '20px 56px',
+          gap: 28,
           fontSize: 11,
           color: 'var(--text-muted)',
           letterSpacing: '.08em',
-          borderTop: '1px solid var(--border)'
+          whiteSpace: 'nowrap'
         }}
       >
-        <span style={{ color: 'var(--accent)' }}>// BUILT BY HAKCERS FOR HAKCERS //</span>
-        <span>R2S-G23S-GLV-001 rev 1.0</span>
+        <span style={{ color: 'var(--accent)' }}>BUILT BY HAKCERS FOR HAKCERS</span>
+        <span>REV 1.0</span>
+        <span>R2S-G23S-GLV-001</span>
+        <span>1-BIT TARGET</span>
+        <span>SIDELOAD READY</span>
+        <span>MARKETPLACE PENDING</span>
         <div className="flex" style={{ marginLeft: 'auto', gap: 22 }}>
           <span>DOCS</span>
           <span>CHANGELOG</span>
