@@ -4,7 +4,6 @@ import {
   Image as ImageIcon, Loader2, Search, X, Plus, Tag,
   CheckSquare, Square, Anchor, ArrowLeft, RefreshCw
 } from 'lucide-react';
-import Nav from '../components/Nav.jsx';
 import { api } from '../lib/api.js';
 
 // Build an APP_BASE-aware raw image URL using the existing /file/raw endpoint.
@@ -111,7 +110,6 @@ export default function ReferenceLibrary() {
 
   return (
     <div className="min-h-screen bg-ink-900 text-ink-100">
-      <Nav subtitle={`${data?.project_name || id} · references`} />
       <div className="px-4 py-3 border-b border-ink-800 flex items-center gap-2">
         <Link to={`/project/${id}`} className="btn-icon" title="back to project" aria-label="back">
           <ArrowLeft className="w-4 h-4" />

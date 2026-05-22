@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Pencil, Hammer, PlayCircle, Rocket, MoreHorizontal,
   FileText, BookOpen, Image as ImageIcon,
@@ -100,7 +100,39 @@ const SIDEBAR_GROUPS = [
   }
 ];
 
-function SidebarItem({ to, label, icon: Icon, badge, collapsed }) {
+function SidebarItem({ to, label, icon: Icon, badge, collapsed, disabled, disabledReason }) {
+  // Disabled mode — render a non-interactive row with muted styling and a
+  // tooltip explaining why. Used in noProjectMode where every project-scoped
+  // path needs a project id to resolve.
+  if (disabled) {
+    const tip = collapsed
+      ? (disabledReason ? `${label} — ${disabledReason}` : label)
+      : disabledReason || undefined;
+    return (
+      <div
+        aria-disabled="true"
+        title={tip}
+        className={
+          'sb-item relative flex items-center rounded-tk-sm font-ui ' +
+          (collapsed
+            ? 'justify-center px-1 py-1.5 '
+            : 'gap-2.5 px-2.5 py-2 ')
+        }
+        style={{
+          fontSize: 13,
+          color: 'var(--text-faint)',
+          cursor: 'not-allowed',
+          opacity: 0.55
+        }}
+      >
+        <Icon className="w-3.5 h-3.5 shrink-0" />
+        {collapsed ? null : (
+          <span className="flex-1 truncate">{label}</span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <NavLink
       to={to}
@@ -211,7 +243,7 @@ function SidebarTelemetry({ cost, hasBuild, badges }) {
   );
 }
 
-function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onItemClick }) {
+function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onItemClick, noProjectMode }) {
   return (
     <aside
       className="shrink-0 flex flex-col overflow-hidden sticky top-0"
@@ -246,7 +278,9 @@ function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onI
           <>
             <div className="flex flex-col leading-tight">
               <b className="font-ui" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>23 STUDIOS</b>
-              <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>rev 1.0 · hakcers</span>
+              <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                {noProjectMode ? 'rev 1.0 · studio' : 'rev 1.0 · hakcers'}
+              </span>
             </div>
             <button
               type="button"
@@ -288,11 +322,13 @@ function Sidebar({ projectId, badges, collapsed, onCollapse, cost, hasBuild, onI
               {group.items.map((it) => (
                 <SidebarItem
                   key={it.path}
-                  to={`/projects/${projectId}/${it.path}`}
+                  to={projectId ? `/projects/${projectId}/${it.path}` : '#'}
                   label={it.label}
                   icon={it.icon}
                   badge={it.badgeKey ? badges[it.badgeKey] : 0}
                   collapsed={collapsed}
+                  disabled={noProjectMode}
+                  disabledReason={noProjectMode ? 'Select a project from Library' : undefined}
                 />
               ))}
             </div>
@@ -337,7 +373,19 @@ function TopbarChip({ tone, children }) {
   );
 }
 
-function Crumbs({ projectName, sectionLabel }) {
+function Crumbs({ projectName, sectionLabel, noProjectMode, noProjectLabel }) {
+  // noProjectMode collapses to a 2-crumb trail: "Studio / <route label>" —
+  // there is no project to thread through. The route label comes from the
+  // pathname mapping done in the parent (Library, New project, Studio…).
+  if (noProjectMode) {
+    return (
+      <nav className="flex items-center font-mono" style={{ fontSize: 11, gap: 8, color: 'var(--text-muted)' }}>
+        <Link to="/library" style={{ color: 'var(--text-muted)' }}>Studio</Link>
+        <span style={{ color: 'var(--text-faint)' }}>/</span>
+        <b style={{ color: 'var(--text)', fontWeight: 500 }}>{noProjectLabel || 'Library'}</b>
+      </nav>
+    );
+  }
   return (
     <nav className="flex items-center font-mono" style={{ fontSize: 11, gap: 8, color: 'var(--text-muted)' }}>
       <Link to="/library" style={{ color: 'var(--text-muted)' }}>Studio</Link>
@@ -351,6 +399,15 @@ function Crumbs({ projectName, sectionLabel }) {
       ) : null}
     </nav>
   );
+}
+
+// Derive the breadcrumb tail for noProjectMode based on the current pathname.
+function deriveNoProjectLabel(pathname) {
+  if (!pathname) return 'Library';
+  if (pathname.startsWith('/library')) return 'Library';
+  if (pathname === '/new' || pathname.startsWith('/new')) return 'New project';
+  if (pathname === '/' || pathname.startsWith('/dashboard')) return 'Studio';
+  return 'Library';
 }
 
 // Map URL pathname suffix → label for the breadcrumb tail. Cheap routing
@@ -644,8 +701,13 @@ function MenuRow({ icon: Icon, label, danger, disabled, note, onClick }) {
 // Main shell
 // ----------------------------------------------------------------------------
 
-export default function ProjectShell() {
-  const { id } = useParams();
+export default function ProjectShell({ noProjectMode = false }) {
+  const { id: routeId } = useParams();
+  // In noProjectMode there is no :id segment in the URL — useParams returns
+  // undefined and every project-scoped fetch is suppressed. Library, /new and
+  // /dashboard mount in this mode so they share the same chrome.
+  const id = noProjectMode ? null : routeId;
+  const location = useLocation();
   const [project, setProject] = useState(null);
   const [err, setErr] = useState(null);
   const [meta, setMeta] = useState(null);
@@ -654,7 +716,27 @@ export default function ProjectShell() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
-    try { return localStorage.getItem('23s.shell.collapsed') === '1'; } catch (_e) { return false; }
+    try {
+      // One-shot migration: anyone with the legacy stuck `'1'` value (icon-
+      // only rail by default) gets flipped back to expanded ONCE, then their
+      // future intentional collapses are preserved. The migration flag
+      // (`studio.shell.collapsed.migrated.v1`) is set the first time we run
+      // so subsequent reloads honor whatever the user picked next.
+      const raw = localStorage.getItem('23s.shell.collapsed');
+      const migrated = localStorage.getItem('studio.shell.collapsed.migrated.v1');
+      if (raw === '1' && !migrated) {
+        localStorage.setItem('23s.shell.collapsed', '0');
+        localStorage.setItem('studio.shell.collapsed.migrated.v1', '1');
+        return false;
+      }
+      if (raw === null) {
+        // No key set yet — fresh visit. Default to expanded.
+        return false;
+      }
+      return raw === '1';
+    } catch (_e) {
+      return false;
+    }
   });
 
   // Persist collapse pref
@@ -662,8 +744,9 @@ export default function ProjectShell() {
     try { localStorage.setItem('23s.shell.collapsed', collapsed ? '1' : '0'); } catch (_e) {}
   }, [collapsed]);
 
-  // Project record
+  // Project record — guarded by id so noProjectMode skips the fetch entirely.
   useEffect(() => {
+    if (!id) return undefined;
     let alive = true;
     (async () => {
       try {
@@ -678,6 +761,7 @@ export default function ProjectShell() {
 
   // Card meta — gives us last_build_at to gate Ship + Simulator
   useEffect(() => {
+    if (!id) return undefined;
     let alive = true;
     api.get(`/api/projects/${id}/card_meta`)
       .then((r) => { if (alive) setMeta(r); })
@@ -688,6 +772,7 @@ export default function ProjectShell() {
   // Cost rollup for sidebar footer. Endpoint returns a summary object with
   // total_cost_usd (see server/routes/cost.js). Silent failure → '—'.
   useEffect(() => {
+    if (!id) return undefined;
     let alive = true;
     api.get(`/api/projects/${id}/cost`)
       .then((r) => {
@@ -701,6 +786,7 @@ export default function ProjectShell() {
 
   // Badge counts — fire-and-forget; missing endpoints render 0 silently.
   const refreshBadges = useCallback(() => {
+    if (!id) return undefined;
     let alive = true;
     api.get(`/api/projects/${id}/gallery`)
       .then((r) => {
@@ -752,10 +838,16 @@ export default function ProjectShell() {
   const simDisabled = !hasBuild;
   const simReason = simDisabled ? 'no build exists yet' : null;
 
-  const sectionLabel = deriveSectionLabel(
-    typeof window !== 'undefined' ? window.location.pathname : '',
-    id
-  );
+  const sectionLabel = noProjectMode
+    ? null
+    : deriveSectionLabel(
+        typeof window !== 'undefined' ? window.location.pathname : '',
+        id
+      );
+
+  const noProjectLabel = noProjectMode
+    ? deriveNoProjectLabel(location.pathname)
+    : null;
 
   // Build queue chip count — reuse review pending as a proxy until the
   // SSE queue surface lands. 1+ = amber dot, else green.
@@ -775,6 +867,7 @@ export default function ProjectShell() {
           onCollapse={() => setCollapsed(true)}
           cost={cost}
           hasBuild={!!hasBuild}
+          noProjectMode={noProjectMode}
         />
       </div>
 
@@ -791,6 +884,7 @@ export default function ProjectShell() {
               cost={cost}
               hasBuild={!!hasBuild}
               onItemClick={() => setMobileNavOpen(false)}
+              noProjectMode={noProjectMode}
             />
           </div>
         </div>
@@ -843,21 +937,29 @@ export default function ProjectShell() {
             <Menu className="w-4 h-4" />
           </button>
 
-          <Crumbs projectName={project?.name || id} sectionLabel={sectionLabel} />
+          <Crumbs
+            projectName={project?.name || id}
+            sectionLabel={sectionLabel}
+            noProjectMode={noProjectMode}
+            noProjectLabel={noProjectLabel}
+          />
 
-          <StatusBadge status={project?.status} />
+          {noProjectMode ? null : <StatusBadge status={project?.status} />}
 
           <div className="flex-1" />
 
-          <div className="hidden md:flex items-center gap-1.5">
-            <EditButton projectId={id} />
-            <BuildButton projectId={id} onStarted={refreshBadges} />
-            <ReleasesDropdown projectId={id} />
-            <SimulatorButton projectId={id} disabled={simDisabled} disabledReason={simReason} />
-            <ShipHeaderButton projectId={id} disabled={shipDisabled} disabledReason={shipReason} />
-          </div>
+          {/* Project-scoped action cluster only when a project is loaded. */}
+          {noProjectMode ? null : (
+            <div className="hidden md:flex items-center gap-1.5">
+              <EditButton projectId={id} />
+              <BuildButton projectId={id} onStarted={refreshBadges} />
+              <ReleasesDropdown projectId={id} />
+              <SimulatorButton projectId={id} disabled={simDisabled} disabledReason={simReason} />
+              <ShipHeaderButton projectId={id} disabled={shipDisabled} disabledReason={shipReason} />
+            </div>
+          )}
 
-          <OverflowMenu project={project} onProjectChange={setProject} />
+          {noProjectMode ? null : <OverflowMenu project={project} onProjectChange={setProject} />}
         </header>
 
         {/* Status chips strip */}
@@ -874,12 +976,18 @@ export default function ProjectShell() {
           <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-dim)' }}>seed 0xR23-G23S</span>
         </div>
 
-        {/* Project gate banner */}
-        <GateBanner />
+        {/* Project gate banner — only meaningful when a project is loaded. */}
+        {noProjectMode ? null : <GateBanner />}
 
-        {/* Main content area */}
+        {/* Main content area. In noProjectMode there is no project to wait
+            on — the route's own component (Library, Landing, …) renders
+            immediately. */}
         <div className="flex-1 min-h-0 overflow-auto" style={{ background: 'var(--bg)' }}>
-          {!project ? (
+          {noProjectMode ? (
+            <div style={{ paddingBottom: 38 }}>
+              <Outlet />
+            </div>
+          ) : !project ? (
             <div className="p-6 flex items-center gap-2" style={{ color: 'var(--text-muted)', fontSize: 13 }}>
               <Loader2 className="w-4 h-4 animate-spin" /> loading project…
             </div>

@@ -118,7 +118,6 @@ import ReferenceLibrary from './pages/ReferenceLibrary.jsx';
 import Brief from './pages/Brief.jsx';
 import ProjectGallery from './components/ProjectGallery.jsx';
 import ProjectShell from './layouts/ProjectShell.jsx';
-import AppShell from './layouts/AppShell.jsx';
 import Landing from './pages/Landing.jsx';
 import Library from './pages/Library.jsx';
 import SceneEditor from './pages/SceneEditor.jsx';
@@ -191,10 +190,13 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginOrBounce Login={Login} />} />
         {/* Studio shell — Landing at "/" + "/dashboard" + "/new",
-            Library at "/library". All wrap in AppShell (220 px FLOW +
-            PROJECT sidebar + 52 px topbar). The old Dashboard.jsx is no
-            longer routed; its file remains on disk, unreferenced. */}
-        <Route path="/" element={<RequireAuth><AppShell /></RequireAuth>}>
+            Library at "/library". Phase 4.5 Part 0: AppShell was deleted and
+            ProjectShell becomes the single root layout. Routes without a
+            project id mount in `noProjectMode` — the 4-group sidebar
+            (AUTHOR/BUILD/REVIEW/RELEASE) still paints, but every project-
+            scoped item is disabled and tooltipped "Select a project from
+            Library". Library is reachable via the brand mark. */}
+        <Route path="/" element={<RequireAuth><ProjectShell noProjectMode /></RequireAuth>}>
           <Route index element={<Landing />} />
           <Route path="dashboard" element={<Landing />} />
           <Route path="new" element={<Landing />} />

@@ -4,7 +4,6 @@ import {
   BookOpen, Plus, Save, Trash2, RefreshCw, GripVertical,
   AlertTriangle, ChevronDown, ChevronRight, Loader2, GitCompare
 } from 'lucide-react';
-import Nav from '../components/Nav.jsx';
 import { api } from '../lib/api.js';
 
 // ---------------------------------------------------------------------------
@@ -458,9 +457,7 @@ export default function Bible() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Nav subtitle="Bible editor" />
-
+    <div className="flex flex-col">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-ink-800 bg-ink-950 flex-shrink-0">
         <BookOpen size={16} className="text-ink-400" />

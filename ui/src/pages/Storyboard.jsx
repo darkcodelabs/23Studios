@@ -4,7 +4,6 @@ import {
   RefreshCw, Loader2, AlertTriangle, Search, Filter as FilterIcon,
   Image as ImageIcon, Layers, BookOpen
 } from 'lucide-react';
-import Nav from '../components/Nav.jsx';
 import LinkedDocPane from '../components/LinkedDocPane.jsx';
 import { api } from '../lib/api.js';
 
@@ -141,9 +140,7 @@ export default function Storyboard() {
   const counts = board?.counts?.by_status || {};
 
   return (
-    <div className="h-screen flex flex-col bg-ink-900 text-ink-100">
-      <Nav subtitle={board?.project_name ? `${board.project_name} — Storyboard` : id} showSiderailToggle={false} />
-
+    <div className="flex flex-col bg-ink-900 text-ink-100">
       <div className="border-b border-ink-800 px-3 py-2 flex items-center gap-2 flex-wrap">
         <Link
           to={`/project/${id}`}

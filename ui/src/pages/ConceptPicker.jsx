@@ -285,7 +285,7 @@ export default function ConceptPicker() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate(`/project/${id}`)}
+          onClick={() => navigate('/library')}
           className="p-1.5 rounded-md hover:bg-ink-800 text-ink-400 hover:text-ink-100"
         >
           <ArrowLeft className="w-4 h-4" />
