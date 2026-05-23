@@ -1589,12 +1589,16 @@ export default function ProjectGallery() {
 
   const goShip = () => navigate(`/projects/${id}/release/ship`);
 
-  // counts per inspector tab — only rough; backend doesn't ship these yet.
+  // counts per inspector tab — derived from the active asset, no hardcoded
+  // placeholders. When no asset is selected, ART + CODE show 0 instead of
+  // contradicting an empty gallery with fake "3 variants / 1 code file".
   const promptCt = activeAsset && activeAsset.prompt ? activeAsset.prompt.length : 0;
-  const variantCt = 3;
+  const variantCt = (activeAsset && Array.isArray(activeAsset.variants))
+    ? activeAsset.variants.length
+    : 0;
   const audioCt = (activeAsset && activeAsset.audio && Array.isArray(activeAsset.audio.sfx))
     ? activeAsset.audio.sfx.length : 0;
-  const codeCt = 1;
+  const codeCt = (activeAsset && (activeAsset.code || activeAsset.lua)) ? 1 : 0;
   const refsCt = references.length;
 
   const stage = (
