@@ -1129,19 +1129,34 @@ async function runDialogue({ project, sdk, parsedBible, emit: ev }) {
   // Pull tone-per-act from parsedBible.tone_map if present, else empty
   const toneMap = (parsedBible && parsedBible.tone_map) || {};
 
-  // For each scene, infer NPCs: use scene.key_npcs ids if present, else
-  // every character (skip if too many — cap at 3 per scene to bound cost).
-  function npcIdsForScene(scene) {
+  // For each scene, infer NPCs: use scene.key_npcs if present, else
+  // distribute the cast across scenes so every character gets at least
+  // one dialogue file. Protagonist (newb) gets dialogue in every scene
+  // since they're always present. Each other NPC gets at least 1-2 scenes.
+  const npcRotation = characters.filter((c) => c.role !== 'protagonist');
+  function npcIdsForScene(scene, sceneIdx) {
     if (Array.isArray(scene.key_npcs) && scene.key_npcs.length > 0) {
       return scene.key_npcs.map((x) => x.id || x).filter((id) => castById.has(id));
     }
-    // No explicit list — use first 2 characters as a budget cap (newb + 1 NPC).
-    return characters.slice(0, 2).map((c) => c.id);
+    const protagonist = characters.find((c) => c.role === 'protagonist');
+    const out = [];
+    if (protagonist) out.push(protagonist.id);
+    // Pick 1-2 NPCs for this scene by rotating through the cast — every
+    // NPC eventually appears, distribution stays even across scenes.
+    if (npcRotation.length > 0) {
+      out.push(npcRotation[sceneIdx % npcRotation.length].id);
+      // Second NPC every 3rd scene to fill richer beats
+      if (sceneIdx % 3 === 0 && npcRotation.length > 1) {
+        out.push(npcRotation[(sceneIdx + 1) % npcRotation.length].id);
+      }
+    }
+    return [...new Set(out)];
   }
 
   let ok = 0, fail = 0, skipped = 0;
-  for (const scene of scenes) {
-    const npcIds = npcIdsForScene(scene);
+  for (let si = 0; si < scenes.length; si++) {
+    const scene = scenes[si];
+    const npcIds = npcIdsForScene(scene, si);
     for (const npcId of npcIds) {
       const cast = castById.get(npcId);
       if (!cast) { skipped++; continue; }

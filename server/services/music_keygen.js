@@ -66,19 +66,34 @@ async function fetchKeygenTracks(opts = {}) {
       if (code !== 0) {
         return reject(new Error(`scraper exit ${code}: ${stderr.slice(0, 400)}`));
       }
-      const manifestPath = path.join(outDir, 'downloads', 'keygenmusic', 'manifest.json');
+      const manifestDir = path.join(outDir, 'downloads', 'keygenmusic');
+      const manifestPath = path.join(manifestDir, 'manifest.json');
       try {
         const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-        // Normalize: each entry → { path, title, group, name, year, format }
-        const tracks = (Array.isArray(manifest) ? manifest : manifest.tracks || []).map((t) => ({
-          path: t.local_path || t.path || null,
-          title: t.mdt || t.title || t.st || null,
-          group: t.rg || t.group || null,
-          name: t.sn || t.name || null,
-          year: t.year || null,
-          format: t.path ? path.extname(t.path).toLowerCase().slice(1) : null,
-          raw: t
-        })).filter((t) => t.path);
+        // Scraper writes local_path RELATIVE to the cwd it ran in (which is
+        // outDir). Resolve to absolute against manifestDir so callers don't
+        // have to know about that.
+        const tracks = (Array.isArray(manifest) ? manifest : manifest.tracks || []).map((t) => {
+          const rel = t.local_path || t.path || null;
+          let abs = rel;
+          if (rel && !path.isAbsolute(rel)) {
+            // First try resolving relative to outDir (where scraper ran)
+            const candidate1 = path.resolve(outDir, rel);
+            const candidate2 = path.resolve(manifestDir, path.basename(rel));
+            abs = fs.existsSync(candidate1) ? candidate1
+                : fs.existsSync(candidate2) ? candidate2
+                : candidate1;
+          }
+          return {
+            path: abs,
+            title: t.mod_title || t.title || t.display_title || null,
+            group: t.release_group || t.composer || t.group || null,
+            name: t.keygen_target || t.name || null,
+            year: t.year || null,
+            format: t.format || (abs ? path.extname(abs).toLowerCase().slice(1) : null),
+            raw: t
+          };
+        }).filter((t) => t.path && fs.existsSync(t.path));
         resolve(tracks);
       } catch (e) {
         reject(new Error(`scraper manifest unreadable: ${e.message}`));
