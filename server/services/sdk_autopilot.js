@@ -1085,6 +1085,64 @@ function buildSceneLua(scene) {
   return assembly.buildSceneLuaFromFeatures(scene, scene.feature_set || [], '');
 }
 
+// Phase 4.7.2 Patch B: per-(scene, NPC) dialogue generation. Walks every
+// scene in sdk.scenes, infers the NPC roster either from
+// scene.key_npcs (when populated) or by mapping bible CAST entries to
+// their act. For each (scene, npc) pair, calls dialogue_generator which
+// writes JSON to <local_path>/sdk_data/dialogue/<sid>__<nid>.json plus a
+// cache mirror at sdk_data/dialogue_cache/<key>.json. Cached entries
+// skip the LLM round-trip — same scene + cast + tone = reuse.
+async function runDialogue({ project, sdk, parsedBible, emit: ev }) {
+  let dialogueGen;
+  try { dialogueGen = require('./dialogue_generator'); }
+  catch (e) { ev('log', { text: 'dialogue: generator import failed — skipping: ' + e.message }); return; }
+
+  const localPath = project.local_path;
+  const projectId = project.id;
+  const scenes = Array.isArray(sdk.scenes) ? sdk.scenes : [];
+  const characters = Array.isArray(sdk.characters) ? sdk.characters : [];
+  if (scenes.length === 0 || characters.length === 0) {
+    ev('log', { text: 'dialogue: no scenes or characters — skipping' });
+    return;
+  }
+  const castById = new Map(characters.map((c) => [c.id, c]));
+
+  // Pull tone-per-act from parsedBible.tone_map if present, else empty
+  const toneMap = (parsedBible && parsedBible.tone_map) || {};
+
+  // For each scene, infer NPCs: use scene.key_npcs ids if present, else
+  // every character (skip if too many — cap at 3 per scene to bound cost).
+  function npcIdsForScene(scene) {
+    if (Array.isArray(scene.key_npcs) && scene.key_npcs.length > 0) {
+      return scene.key_npcs.map((x) => x.id || x).filter((id) => castById.has(id));
+    }
+    // No explicit list — use first 2 characters as a budget cap (newb + 1 NPC).
+    return characters.slice(0, 2).map((c) => c.id);
+  }
+
+  let ok = 0, fail = 0, skipped = 0;
+  for (const scene of scenes) {
+    const npcIds = npcIdsForScene(scene);
+    for (const npcId of npcIds) {
+      const cast = castById.get(npcId);
+      if (!cast) { skipped++; continue; }
+      try {
+        await dialogueGen.generateDialogue({
+          projectId, localPath,
+          sceneEntry: scene, castEntry: cast,
+          actToneEntry: toneMap[scene.act] || toneMap.default || {},
+          ev
+        });
+        ok++;
+      } catch (e) {
+        fail++;
+        ev('log', { text: `dialogue fail ${scene.id}__${npcId}: ${(e.message || '').slice(0, 120)}` });
+      }
+    }
+  }
+  ev('log', { text: `dialogue: ok=${ok} fail=${fail} skipped=${skipped}` });
+}
+
 async function runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
                                 bibleVars, emit: ev }) {
   // Always emit the 6 procedural baselines first — they're deterministic
@@ -1469,6 +1527,15 @@ function startSdkAutopilot({ projectId, pitch, onEvent, skipBatchGates = false, 
       job.summary.stages_complete++;
       syncReviewBoard(projectId, sdkRoot);
       snapshotBible(project.local_path);
+
+      // Phase 4.7.2 Patch B: dialogue stage. For every scene that lists
+      // key_npcs (or every NPC inferred from bible CAST entries when the
+      // scene field is missing), generate per-(scene, npc) dialogue JSON.
+      // Output lands at <local_path>/sdk_data/dialogue/<sid>__<nid>.json
+      // and is loaded at runtime by concepts/dialog_tree.lua.
+      ev('phase', { id: 'dialogue' });
+      await runDialogue({ project, sdk, parsedBible, emit: ev });
+      job.summary.stages_complete++;
 
       ev('phase', { id: 'sfx' });
       // TODO(phase4.7): sfx + music can read parsedBible.tone_map to pick
