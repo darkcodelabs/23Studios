@@ -1044,14 +1044,18 @@ async function wireSourceTree(localPath, sdk, ev) {
   const launcherCopied = await copyDir('sdk_data/launcher',   'launcher',         /\.(png|gif|txt)$/i);
   const sfxCopied    = await copyDir('sdk_data/sfx_baseline', 'sounds/sfx',       /\.(wav|mp3|aiff?)$/i);
 
-  // Music — only copy wavs whose stem matches a scene id, COMPRESS via ffmpeg
-  // to mono 96kbps MP3 (~85% size drop). Without this the .pdx balloons to
-  // 80MB+ from tracker WAVs (one 21MB drake_basement.wav alone). Mirrors the
-  // bloat-guard policy in sdk_export.js.
+  // Music — copy wavs from sdk_data/scene_music. Two acceptable shapes:
+  //   1. <scene_id>.wav — assigned per-scene by runMusicAssign (preferred)
+  //   2. <arbitrary>.wav — raw keygen / library tracks; copied as-is so
+  //      scenes can reference them by filename via sdk.scenes[i].bgm_file
+  // Pre-Phase-4.7.2 the filter was strict stem-match on sceneIds, which
+  // silently dropped all 25 keygen tracks (named "0BiT_-_Fax_Spider_..."
+  // not "sc01_bedroom..."). Now we copy ALL wavs found and let scene
+  // references decide what plays. Per-track ffmpeg compress kicks in
+  // above 1MB to keep .pdx bounded.
   const musicSrc = path.join(localPath, 'sdk_data', 'scene_music');
   let musicCopied = 0;
   if (fs.existsSync(musicSrc)) {
-    const referenced = new Set(sceneIds);
     const { spawn } = require('child_process');
     const which = (bin) => {
       try { return require('child_process').execFileSync('which', [bin], { encoding: 'utf8' }).trim() || null; }
@@ -1061,7 +1065,6 @@ async function wireSourceTree(localPath, sdk, ev) {
     for (const f of fs.readdirSync(musicSrc)) {
       if (!/\.wav$/i.test(f)) continue;
       const stem = f.replace(/\.wav$/i, '');
-      if (!referenced.has(stem)) continue;
       const src = path.join(musicSrc, f);
       // Skip if source larger than 1MB AND ffmpeg available — compress to MP3
       const stat = fs.statSync(src);
