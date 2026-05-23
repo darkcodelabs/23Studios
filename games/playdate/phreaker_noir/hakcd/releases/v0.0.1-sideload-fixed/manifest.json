@@ -1,0 +1,16 @@
+{
+  "game": "hakcd",
+  "platform": "playdate",
+  "genre": "phreaker_noir",
+  "tag": "v0.0.1-sideload-fixed",
+  "built_at": "2026-05-23T17:13:32Z",
+  "pdx_zip": "hakcd-v0.0.1-sideload-fixed.pdx.zip",
+  "bytes": 63952556,
+  "sha256": "a7715b74c115de9ec6b5425b99d7087d320a05ff06c14f8bdf785637ec2fdf0b",
+  "supersedes": "v0.0.1-from-bible",
+  "fixes": [
+    "scene Lua play_music path: sounds/<id> -> sounds/music/<id>",
+    "audio_manager play_sfx prefix: sounds/<name> -> sounds/sfx/<name>",
+    "scene :input(a) now calls self:transition_to(first_exit) after sfx (all 27 scenes patched)"
+  ]
+}
