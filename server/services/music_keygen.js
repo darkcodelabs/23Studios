@@ -105,19 +105,30 @@ async function fetchKeygenTracks(opts = {}) {
 
 async function renderTrackerToWav(trackerPath, wavPath) {
   if (!OPENMPT_BIN) throw new Error('openmpt123 not on PATH — cannot render tracker formats');
+  // openmpt123 --render writes alongside the input file as <input>.wav.
+  // -o/--output is only honored in --ui/--batch modes, not --render.
+  // So we let it write next to the source, then rename to the requested path.
   return new Promise((resolve, reject) => {
     const proc = spawn(OPENMPT_BIN, [
+      '--render',
+      '--force',
+      '--output-type', 'wav',
       '--samplerate', '44100',
       '--channels', '1',
-      '--render', trackerPath,
-      '-o', wavPath,
-      '--quiet'
+      '--quiet',
+      trackerPath
     ]);
     let stderr = '';
     proc.stderr.on('data', (d) => { stderr += d.toString(); });
     proc.on('close', (code) => {
-      if (code !== 0) return reject(new Error(`openmpt123 exit ${code}: ${stderr.slice(0, 200)}`));
-      resolve(wavPath);
+      if (code !== 0) return reject(new Error(`openmpt123 exit ${code}: ${stderr.slice(-300)}`));
+      const autoWav = trackerPath + '.wav';  // openmpt123 naming convention
+      if (!fs.existsSync(autoWav)) return reject(new Error(`openmpt123 silent: no wav at ${autoWav}`));
+      // Move to caller's requested path
+      try {
+        fs.renameSync(autoWav, wavPath);
+        resolve(wavPath);
+      } catch (e) { reject(e); }
     });
     proc.on('error', (e) => reject(e));
   });
