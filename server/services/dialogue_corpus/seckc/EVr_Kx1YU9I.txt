@@ -1,0 +1,499 @@
+can everybody hear me okay I can't hear
+myself so maybe you guys can hear me
+perfect thank you okay um so first of
+all it's nice to see that there are a
+lot of women out here if you didn't
+notice at the beginning there's a MEAP
+meeting which we're all used to so it's
+nice to see that it's moving towards a
+little bit of the mvt meaning for the
+women that are out there and you are
+interested in a women's group we do have
+the women in security Kansas City these
+two lovely ladies in the middle nicole
+and Melissa they can help you out they
+have information so if you're interested
+please see them so that's a little
+cephalus promotion for me participation
+I would really like some participation
+you're welcome to haggle you're welcome
+to challenge me have a free ball if if
+that sháá happens to come out it will be
+going to people who participate the
+yeah good choices guys okay so quick
+disclaimer the pictures of my
+presentation may have absolutely nothing
+to do with what I'm talking about feel
+free to ask questions anytime and then
+we'll get rolling um so what this is is
+how to create an environment will people
+come and talk to you most the time in
+your field you're probably wondering
+what in the world is out there you're
+hunting it down you're finding things on
+your network you're wondering where in
+the heck they came from and who gave
+them permission to do then so this is
+about how to create an environment where
+people come and tell you and hopefully
+they
+tell you before they put it on your
+network so were you always the last to
+know anybody anyway why do you think
+people don't want to talk to you you
+smell them yeah they may be in turn
+dated by your infinite wisdom oh the
+last guy was mean that's true Engineers
+hate you he always know I t does always
+say no so let's talk about a few of
+those one I didn't hear with segregation
+how many of you work in one little bitty
+cubicle space with your own little team
+yeah how many of you work in a sock you
+are not able to get out and learn
+anybody in your company what they do or
+what's going on unless you integrate
+yourself with that so they want to come
+and talk to you they don't know you why
+was it you want to go in talk to you we
+heard of this on a lot no no no no no no
+no that's how you do you don't know what
+they want they don't know you why in the
+world would you give them extra
+permissions I'm not going to no one and
+talk to you if you're going to say no
+I'm sure many people have heard the
+quote I'd rather beg for forgiveness
+than ask permission right and once it's
+on your network and the business has
+started using it how hard is it to get
+off of your network
+you're you're going to struggle with it
+you're going to have your marketing
+people say no absolutely not we use to
+social engineering stuff to let we can
+we can get people in we can get
+information so once it's on there it's
+hard to get off you're the best business
+obstacle so let's take for example
+two-factor authentication right to be
+secure its heart usually have to put
+some controls in place usually want to
+work around those controls why in the
+world would you want to go to two-factor
+authentication if normally they can just
+click in get right into the network be
+good to go on the flip side of that now
+you're going to enable to factor they're
+going to log into the computer and then
+holy [&nbsp;__&nbsp;] i left my phone in the car i'm
+going to run out to the car i get i
+tried in a cape it fails then i got to
+go back in and relog in again and you
+hear it all the time so you're you're
+that work around your the extra step
+that they have to take they don't want
+to take that step once again beg for
+forgiveness and then because of our
+segregation because of our jobs we have
+no idea what other people do no idea
+so how many people here know the way
+that their lawyers are exchanging
+information with their outside counsel
+okay more than I thought how many people
+understand how people are getting
+treasury reports from your outside
+company back and forth who they're
+sharing that information with how they
+need to share hell are those files are
+what systems are required to do that any
+money if you don't understand the
+business and you don't understand how
+it's running how are you supposed to
+provide them with a useful product how
+are you supposed to tell them yes if you
+don't understand what they're doing so
+how do you change it how do you go from
+being your company's no guy the person
+that they avoid all the time the person
+that they don't want to speak to to
+their best friend to the most popular
+guy in school the people that they want
+to come and talk to and tell all the
+company's dark secrets to how do you
+switch it up and become that person k is
+a very good option I actually thought
+about brain candy to encourage the
+participation but then people would have
+to go to work soon or explaining why
+they got beginning with the sack of M&amp;M
+peanuts from a pregnant lady up front so
+I didn't do that can't is a good option
+for lunch and learns that that's another
+good way that's a way to get your name
+out there too so they can start talking
+so be clear about what they're doing
+their intentions so that way they
+understand so let's talk about a few i
+think that are super helpful today nice
+become best friends with the people that
+you paint most so that one person that
+that's running around and it is making
+your life miserable that's the person
+that you want to seek out those are the
+people that you're going to find that
+are going to talk more about you and
+press and spread your work so let them
+be your advocates learn their names
+common courtesies learn names learn
+faces learn what they do when you see
+them and they provide you something say
+thank you even if its opening the doors
+have them associate your face with a
+friendly face so that way they get to
+know you a little bit better they feel
+comfortable talking with you you can
+start creating those relationships if
+they send an email to your group and
+it's a really dumb email it doesn't
+matter it's from some random prints of
+Zimbabwe and you look at it and you're
+like okay they sent me this email it
+also went to about four or five other
+people send that email back to them so
+you see all of those people at the
+bottom and say thanks Bob for sending us
+this phishing email we really appreciate
+it you are the first one to let us know
+about it Bob gets the kudos he gets feel
+good about himself and everybody on that
+CC line is like damn I want to be the
+first person its brand rights it's the
+natural bragging rights so say thank you
+publicly and put it in a way where
+other people say okay this guys getting
+recognition I like a little like to make
+them feel like their input is important
+and that what they're providing you is
+making the difference to the company and
+when you add those people to the line
+other people see that to other people
+like to be involved other people like
+that recognition so bring them in let's
+try at home the other guy you love
+there's the people that make your life
+what it is you gotta do you gotta do it
+does if you can tie a message back to
+someone's family and say if you click on
+this link your children's medical
+records are at risk if you click on this
+link your private photos are trestle
+that is something that they're going to
+remember and they're going to take that
+home and they're going to tell their
+family about it they're going to tell
+their kids about it hopefully they tell
+their elderly parents about it that are
+subscribing and giving away money every
+month but they're going to take those
+same actions that they learn to do at
+home they're bringing them back to the
+office and they're going to appreciate
+that because they're in a feel that you
+help them keep their information safe so
+think about how you can link it back to
+these guys that we may may not the most
+product but we love satin Lincoln on
+your knees and ask people to teach you
+what they do sit down and talk to them
+about their daily ins and out who they
+interact with what they do what files
+are important to them what are the size
+of your files are they sending videos
+back in for
+do they need pictures back and forth I
+deal in a retail space that deals in
+movies files are huge huge so they may
+come up maybe email is not a regular
+option for them what can I give them to
+do their job learn their job because if
+you can't learn their job you cannot
+provide them a solution and this goes
+back to being the answer man once you
+know what they're doing you want to
+provide them with a solution that not
+only fits their job but something that
+gives them more than they had before so
+if they couldn't share files before
+maybe you have some kind of solution
+that hey has security baked in and then
+also allows them to the job to do their
+job that they need to do if you
+understand what their job is and who
+they talk to you may know that hey maybe
+some an HR has the same responsibilities
+of someone in Treasury they need to do
+the same thing so I can provide them the
+same product so not only did you provide
+them a good product not scalable I don't
+know if anyone's coming to any situation
+where you give someone a product earth
+they went out and got it more likely
+then it comes to you because now it's
+it's too big their whole department is
+using it it's too big we're trying to
+share stuff we can't do it anymore and
+that product is not scalable so they
+have to transfer everything that they
+were doing to a new product to a new
+process it's time consuming for them it
+sure as hell frustrating for you because
+one you didn't even know it was out
+there but if you know what they're doing
+and how they're doing it you can provide
+a product that works for both
+organizations and it can be something
+that's scalable to your entire business
+so think about that whenever you go and
+sit down
+you talk to people think about exactly
+how they're using it who they are
+sharing with it sharing it with and why
+they're even doing it really discuss the
+why if you take the time to do that once
+again they will come back to you and
+they will say hey this person took the
+time to understand what I did they made
+me appreciate my job a little bit more
+they gave me a solution that worked for
+me that could do more than I could do
+before so next time that I go to do a
+project we're going to go talk to you
+not the [&nbsp;__&nbsp;] through cubicles over
+they gave me the stupid product that I
+had to review two years later down the
+road especially when I found I had some
+licenses that were attached to a network
+super pricey they're going to come and
+talk to you because you're provided in
+the product that made their team work
+better that made their job easier yeah
+so we have a tradition here at set kc
+row and that when you talk to the first
+time you can fish up and to put some
+great pictures up this sprite shot oh
+it's bright and eager shot you to assign
+didn't ok hmm I'm going to go with this
+gentleman here in the Franks nobody's
+right oh we love the gentleman to where
+Oh
+two tiny sips Sharon just sold me out on
+that one okay next play politics it
+sounds horrible doesn't it don't you
+hate to talk to people and you hate to
+get in their business you hate dealing
+with that guy that's always talking
+about everything i knows everything
+around the office but use them use them
+to your advantage manipulate them to
+become your spokespeople so think about
+the boss is sure you got the guy that
+always walking around the office that is
+the best at everything period he knows
+the most about every topic that's going
+on that's a guy that you want to say
+thank you to on the email that's the guy
+that you want to say hey Bob you are
+number 1 i'm reporting this step because
+bob is going to go around and say I am
+the best out of reporting security and
+he is going to talk it up he's going to
+say how awesome he is and then another
+eighty percent of the people that hate
+Bob are going to start reporting it
+before Bob so it works play all day Bob
+also you want to look for the person
+that's always in everybody's business
+they knows what somebody did that that
+weekend that that like to get all the
+details and the invite inside
+information you want to make them still
+feel very special that they know what's
+going on in your group because whenever
+they go to get coffee in the morning
+there's friend for you they're talking
+about it so fun that person that's
+that's super nosey that wants to be in
+the know that thinks that they know
+something that new
+one else that there's no lady that's
+bringing cookies every day everybody
+loves that late everybody is talking to
+her every she is is the the power of the
+company the no.1 leverages every time
+someone comes to talk to her they're
+happy because she makes them happy make
+miss cookie may be happy make sure that
+you go out of your way whatever she is
+working on provide her a good product
+because she started talking about it and
+she gets a lot of traffic through that
+desk as she's handing out cookies so
+talk to her and make sure you take care
+of her because if you don't take care of
+her nobody's until like the guy that
+doesn't take care of little cookie lady
+and then the golden boy if your
+management isn't really buying into what
+you're doing if you feel like you can't
+really leverage them find the golden boy
+of management help him out whatever
+problems he's God see if you can resolve
+those because in the meeting behind
+closed doors he's going to say oh
+security did this for me that's going
+straightening the next year he hears
+that enough times he's going to start
+coming to you he's going to tell his
+peers about the things that security did
+his peers are then going to talk to the
+people that work for him and say hey I
+heard security does that so talk to that
+the golden boy he's got the right here
+that CEO or that head
+or that you want to get into and let
+them talk so after you've done all these
+amazing things people want to talk to
+you now people like you congratulations
+you're popular what did you expect it
+kind of looks like that super
+overwhelmed how many people right now
+have are receiving a whole bunch of
+phone calls and emails that are telling
+you that are recording two incidents
+that are happening in your company do
+you guys have that super customer
+support desk that's responding to those
+whenever you start to receive all of
+these phone calls and emails the first
+thing that you need to do is go ahead
+and identify who your customer service
+people are going to be ideally you want
+them to be people persons you don't want
+them to say no you want them to walk up
+to someone's dust and say what you got
+oh man you got you got Malware again let
+me help you out and step in you don't
+let them to feel bad ever that they've
+done something wrong you want them to
+keep reaching back out to you want to
+feel like you did a good job because you
+reported that we're all very familiar
+with customer service think about all of
+those traits that you usually get along
+the line then look at your workforce and
+say which one of my people would be best
+to start responding to those customer
+service remember these are the people
+that are going to create relationships
+within your business within your
+community so you want to make sure that
+you had those right people those people
+skills those soft skills that a lot of
+the security people don't have you want
+to make sure that they're the people
+reaching out because they're the ones
+that are going to make an impression on
+your company so then you will be amazed
+at the [&nbsp;__&nbsp;] you get you will have no
+idea where this stuff comes from be
+prepared to research you're going to
+research what the heck people do you're
+going to research where the heck this
+product can run you're going to say what
+in the world did you do to get this
+email it is amazing the stuff that you
+come across so these people that are
+answering all these questions filling
+these customers supports take a deep
+breath and realize that some of the
+stuff is just out of this world I can
+say as you're starting to give
+information stuff that you think is
+absolutely ridiculous ie you get some
+random phishing email from Russia if you
+respond back and say awesome great job
+you are just trying to be fished by
+Russia that is amazing to some people
+that just blows their mind that they are
+so important that someone from Russia is
+coming after that so here's it use those
+little tidbits of information because as
+soon as they found out that they were
+trying to get act by Russia they're
+turning to the person of the left and be
+like dude Russia and everybody on that
+CC lon sees it so as you start getting
+these things think through your response
+if people come and tell you things
+because you're going to start to hear
+things about not only their apartment
+but other people they work with and
+they're going to say did you know
+marketing was doing that did you know
+that this treachery group was doing that
+play your political cards right pull it
+down hopefully you build some really
+good relationships and there with those
+other departments as you started to
+learn what they do so you have a contact
+that you can reach out to that you feel
+comfortable talking to and say hey we
+heard you guys who are using this we
+offer this solution I don't know if
+you've heard about it but it's probably
+better than what you're using now you
+can do more you can collaborate more and
+we're willing to help to get you there
+to make you better and so that way you
+don't have any negative side effects
+that come with it you're still reaching
+out your hand for someone to to grab it
+and hold onto and they'll come back to
+you so with that being said I'm opening
+up the floor for questions you can fire
+away i can give you one recent statistic
+that we have so i'm sure a lot of you
+are familiar with a dragon Dvir report
+pearson campaigns usually on average
+most businesses see about 12% people
+click on links they only have about
+three percent of people that report
+whenever they see a phishing email so we
+just got finished during the fishing
+campaign we had three percent of people
+that clicked on it we had thirty five
+percent reported it's amazing it's
+amazing material in your company so with
+that being said that
+so about 360 emails of reports that my
+team had to feel so go back to that
+overwhelmed right um so open it up for
+people are intimidated by me I get that
+a lot answered all their questions I am
+classified information search terms are
+classified for my pictures thank you
+anything else all right let me have any
+questions feel free to get in touch with
+me women women in security room hunt me
+down hunt them down I appreciate it
+rings effect with the wind the next
+moments and security group i'm so glad
+you asked us in october will be facing
+information on our are linked in our
+facebook page another so 20 or sites we
+do have a twitter it's women security
+Casey no say it again I could figure out
+right to recover they did instead Casey
+argued we re Twitter to our twit we're
+going to love that alright I appreciate

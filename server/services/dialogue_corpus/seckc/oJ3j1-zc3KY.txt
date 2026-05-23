@@ -1,0 +1,165 @@
+thas Gardner um if this is your first
+time here maybe you're trying to get
+into infos SEC this talk is probably a
+good one um inmap was one of the first
+tools I got encountered with it's a
+pretty common tool when you're beginning
+because it's easy to use easy to
+understand it's simple Port scanner um
+so you kind you can kind of just say in
+map and whatever you want to scan let it
+go we we get into that um also if you
+were here to listen to the National
+maternity action plan I'm sorry but
+hopefully you'll find something
+interesting
+anyway so uh to begin with in's
+importance use it's used to collect
+information on systems it's usually a
+first step kind of penetration test and
+it's very verstile it does Port scans
+and even do version OS detection and
+later on we will get into some scripts
+that it can
+use um it's mainly meant to be used from
+the command line there's a tool called
+Zen map it's graphical version of Z map
+but it's kind of shitty and don't use it
+um that's a personal
+recommendation um every option is
+available from the command line as
+opposed to Zen map uh if you're not
+comfortable with the command line get
+used to it uh because it's and you want
+to use inmap please get used to the
+command line because this is the best
+way to use it
+um like I said before using in map is as
+simple as in map and then an address or
+a host name or an IP range
+um for for input you can do an IP
+address a single IP address a single IP
+address
+like 192 blah blah one um and all that
+different was up there you can also do a
+file name and you have specific
+addresses that you don't want to type in
+one by one just throw in a file name and
+then in map will scan the file and do
+whatever you want to do it's very nice
+also if you're of a certain malicious
+type or have some other to scan random
+IP addresses on the internet I won't
+judge but there is an option for that um
+you just give it an IR flag and then the
+number of posts you want to scan and an
+app all
+that so on some of its particular
+features um there's something called
+list scanning list scanning is great for
+host Discovery if you go on inaps uh
+documentation page it'll actually be
+under the host Discovery page um it
+basically just calls up the router asks
+who lives at
+say can everybody see that even in the
+back no I'm sorry that's as big as I can
+basically um basically all this is just
+a list of IP addresses and um names of
+what devices live at those IP addresses
+from the network there's no information
+no packets sent to the actual devices
+themselves it's just from the router to
+whatever scanning machine you
+use um ping a host if you ever heard the
+term ping some computer there is a tool
+called ping and inap does use it it's um
+part of the icmp
+protocol it's nice sometimes to
+determine if a host is online or offline
+but it's inaccurate some hosts just
+completely block them because they don't
+want to be found at all and in map uh
+you can specify it and tell inap not to
+Ping anybody so you're a little extra
+selfy but it might yield some kind of
+weird
+information so always be careful when
+peing within
+that um service finger printing this is
+actually a really cool feature I've had
+to do a lot more uh research on this to
+this particular presentation andap has
+this giant database of services that uh
+services
+that live on certain ports like SSH on
+Port 22 or HTTP on Port 80 common
+services that it expects to find when it
+sees that Port 8 is open um and it'll
+send particular particularly crafted
+packets to these ports after it's
+already determined that they're open and
+depending on how the response is set
+let's say it's an FTP banner and then M
+recognizes that it will tell you with
+near 100% certainty that is FTP living
+at that Port because uh it's possible to
+say put FTP at a different port like
+Port 80 if you
+want uh it does this by again analyzing
+uh what the response from the server is
+like TCP buffer size which is kind of
+the the max size that TCP packet can be
+at um some os's even have different
+buffer
+sizes um here's where what is
+that um here's where also OS and service
+finger printing come in too um this
+there's a dash a flag capital a right up
+at the top um and it turns on a whole
+host of what internap calls Advanced and
+aggressive uh services or fingerprinting
+techniques that's why cap so it does OS
+detection um and service finger printing
+like specified in the previous slide
+also does trace routing which can be
+useful for if you're inside a network
+and you need to know what path it takes
+to uh a server and it does script
+scanning which is a very neat little uh
+flag that I will get into in a second
+the only problem is if you're trying be
+really stealthy um it has very heavy
+Network usage do not use this flag be a
+little more specific what you want to
+find because literally tens of thousands
+of packets are sent at any time you can
+try a TCP dump and analyze the the
+packets sent from your in that machine
+and uh find that out on your own so inap
+scripting um this is the really cool
+part of inmap that isn't un
+unfortunately is not commonly known um
+in map can do things like BR Force FTP
+credentials or uh check to see if
+there's Anonymous logins on EX on
+graphical X servers and FTP servers they
+can see if there default passwords on
+certain ports is very cool and the inmap
+database has uh the inmap website has a
+lot of references to these scripts you
+can find them at the bottom there
+um and for example if you want to run
+one of these scripts you just specify a
+D- script flag and then whatever script
+name you want
+um and for example this is SB OS
+Discovery and you can enumerate S&amp;B data
+over a network just using you don't need
+an external Tool uh there's also a
+script help flag in in MF itself that if
+you don't know exactly what you're
+looking for but you know the general
+idea like you need something over HTP
+you can use Rex to find a script name
+that might help you and that is it I

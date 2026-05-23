@@ -1,0 +1,704 @@
+tonight I'm going to talk about so you
+want to build a security ladder
+speaking of building security labs who
+here has seen my little lovable lab in
+the back pretty pretty nice isn't it
+I like to travel around with it wherever
+I go just you know card it you know the
+brush to go when I need to the Walmart
+or Target that way my lab is never far
+from wherever I go that's why I brought
+it here tonight so you can see it so
+let's get this show on the road for
+first of all meat I'm jarred seats I'm
+just a normal guy graduated back in 2011
+in turn of the you know state of
+Oklahoma
+I did four point five years at a little
+company called Cerner that's how I ended
+up in Kansas City that was a lot of fun
+I'm currently a security engineer at the
+company called defense point security I
+do spunk consulting stuff for clients
+and it's a lot of fun but like I'm no
+huge security guru guys so I'm serious
+you asked if you guys want to give a
+talk you don't need to be you know super
+Red Team pen testing machine guy you
+could be up here giving this talk by the
+way that's the theme you guys could be
+giving this talk but forwarding that
+with this topic cover all over the basis
+of us just a security laughs home to
+work based and then what you can use it
+for whether you want to be like you know
+pentesting gonna do forensics stuff like
+that the things that another thing like
+where would you get pieces for the
+security lab would you just walk it's
+like your nearest you know grocery
+or I'm sorry if I keep pulling the
+microwave just realize I'm doing that so
+and then what to watch out for when
+you're looking for equipment and stuff
+for these labs it's also different
+because this is considered lab
+environment not necessarily what you'd
+look for for a production environment
+your cost of private e lower stuff like
+that and this might be just for your
+personal use so that's something else to
+keep in mind we'll also talk about a few
+examples where you can use a four also I
+did a survey earlier this year we'll
+talk about that and you guys if you guys
+use the labs some like that and then you
+know time to learn in case you know it's
+15 minutes and the talk is already over
+but you guys probably care because you
+guys want to get that prize so then like
+a lot of questions so one thing is how
+would you set up a lab for all
+environment doing security so there's a
+few things to keep in mind one is your
+budget actually who here needs to have a
+budget who has unlimited money first of
+all does anyone have unlimited money
+because I want to be your buddy you have
+all the monies you in the back all right
+we're friends now just so you know
+unlimited money guy yeah a long time
+done tradition here at sec kc budget
+yeah is it so whatever thing about your
+home use all this stuff is important
+because no one's made out money so you
+need to have a goal in mind like what do
+you want to get out of this lab so
+another things like what do you already
+have do you have like a spare laptop
+that you don't really use anymore that
+you could use for temperature do you
+have like these five you know raspberry
+PI's that you keep buying every week
+when you go to Micro Center because that
+may be B and like the other things to
+keep in mind is like how long is this
+does this need to be on the 24/7 so I
+guess it the NASS or is there something
+like you can spit up the once a week and
+you don't really care about power and
+stuff like that
+other software is this thing going to be
+running like VMware ESXi its host or is
+this going to just like a FreeNAS even
+rate stuff like that so what you're
+gonna use it for and then like what
+software you're going to need and then
+how are you gonna keep it up keep it how
+is the upkeep gonna happen are you just
+gonna like wait for it to die in five
+years and then buy new pieces or just
+you know phase it out after you don't
+think you could use it anymore and like
+give it to you know a charity or
+something
+it didn't the other thing is do you need
+approval from others in the house cuz
+some people have other people that live
+they live with them so you can't just
+get the loudest you know server and
+possible that you know drains 800 watts
+every minute and just look with it
+because some people with that
+I get angry you know having that massive
+server sitting underneath your TV in the
+living room you may not mine but they're
+going to be able to people in your house
+that do mine
+so it's just something to keep in mind
+accessory columbia's you still have
+restrictions now we're going to go to
+work so the other thing is a teen line
+lock again a budget and what's that
+budget ten percent less than what you
+were promised at the beginning of the
+year because I'm sure that happens to
+everyone that you can oh yeah here's
+your budget oh by the way we're gonna
+cut it by ten percent because that's how
+we make our goals and everything that
+way we can you know tell everyone that
+we're doing a great job saving money for
+the company again what's the goal is
+this for just like your team is this for
+the company who's going to be using this
+lab and for what purposes again is it
+possible to use what you already have do
+you have production servers that you
+could use and maybe use us of having to
+go out and buy a new hardware for just
+your lab environment or maybe there
+isn't anything that relates to what
+you're trying to do now and you're
+trying to plan for the future so example
+if you're trying to move stuff to AWS
+you may not have any to give us hardware
+so you're gonna have to buy stuff so
+keep that in mind
+same for software are you going to be
+using software that you already have and
+use one new version or are you plant is
+bit of new hardware our new software and
+then once you do that what's the cost
+going to be
+they upkeep do you need to have this
+server running 24/7 again does it you
+know need to have specific license for
+you so our free license stuff like that
+as well and then again do you need to
+prove from others
+so like is this a personal project that
+you're working on for the company is
+this a teen project do you need you know
+approvals from directors some like that
+so it's just stuff you got to keep in
+mind whenever you're looking for these
+labs and trying to set them up for work
+it compared to like your personal use so
+again what should you actually use when
+you're doing this lab are you just going
+to buy like 10 15 physical servers
+install a single OS on each one of them
+and then use that for your lab although
+many people might do that and no one
+ever does that you might want to start
+looking at VMs and containers instead
+the important thing the other thing to
+keep in mind is maybe you do want you
+know some hardware to have a specific OS
+like if you're using either aid you want
+that piece of hardware just have you
+write on it and then have a bunch of
+discs on it and then you install docker
+containers of VMs on that again you're
+looking at like what OS Linux Windows
+Mac es das hp-ux has anyone ever used
+clearos before or is hands clear of us
+no once so you should always keep in
+mind the most popular Oasis and install
+them as well like clearos everyone
+should install for your OS at least once
+because it's the best again back to just
+having like the software using are you
+gonna use like spunk are you gonna use a
+gray log or are you gonna use specific
+forensic tools if you want to have
+Metasploit it
+what you're trying to do with the lab
+and what you're trying to get out of it
+also version properly so I mentioned
+this because you need to pay attention
+like what versions you're trying to
+install software eyes on your systems
+compared to like what you want to use in
+the future
+and making sure stuff is compatible with
+each other so that's the important thing
+to definitely keep in mind because there
+have been times where I've installed
+VMware stuff thinking that I would be
+good and finding out that wasn't working
+with my license and I wasted like all
+week trying to figure this out so don't
+be me look up your versions and make
+sure you're using the right stuff also
+we'll go into like hardware but I'm sure
+everyone can just have one of these as
+their home lab because Watson who has
+watched it in their basement that they
+use for their home lab you in the back
+can I borrow some CPU cycles oh no but
+that's the other thing keep buying is
+like what is overkill what do you
+actually need I know a bunch people say
+oh I want to get the coolest most
+awesome most powerful server that money
+can buy and then you're looking at like
+a 10k 20k bill on just one piece of
+hardware where your end goal was just
+trying to get blinky lights which could
+have been done with the Raspberry Pi and
+the Ethernet cable so keep that in mind
+so now we're gonna go to like where you
+should get your stuff which is obvious
+or money but eBay
+who's used used eBay before guys raise
+of hands if you used Evie it's a small
+site a few people's never heard of it
+but apparently you can get it like
+people sell their stuff it's like an
+auction time kind of deal so you're
+bidding against other people so but eBay
+is a popular one site I really like this
+lab Beauford this gives you a list of
+stuff that you can get on I know some
+gonna sound crazy on eBay and it prices
+up specs based on what the server has on
+eBay listing and tells you whether it's
+a good deal or a bad deal so it's
+definitely a go to place also Oh
+micros ever has anyone ever heard of
+micro second by the way so Micro Center
+if you guys want raspberry PI's they are
+the best place to get PI's trust me I
+know I probably have an eighth right now
+another place is Craigslist believe it
+or not people get rid of their stuff on
+Craigslist and you can sometimes get
+good deals but sometimes people think
+there are parlors were more
+so you got to figure out what it is most
+of time for me and I got my old server
+rack from Craigslist for pretty good so
+you just have to look at the local
+Craigslist and see you know what people
+have what people maybe giving away stuff
+like that um also check out your
+basement if you have a basement you
+might actually have leftover stuff that
+you forgot about they like oh yeah I
+could use this old computer and spin it
+up and see if this will work the way I
+wanted to before I go buying real
+Hardware some where are your friends
+basement
+I don't know also there's another to
+this website called Freddy there's a
+subreddit called at home lab is pretty
+nice you can also get you know envious
+of other people who's like oh yeah I've
+got this 20 blade server with like 50
+terabytes of hard drive space ah I don't
+know guys I may not be enough I wanted
+to upgrade 80 terabytes and you know
+watch these people live out their lives
+with you know hardware that would be my
+year's salary and like sitting in their
+bedroom so but it's an awesome website
+they have a lot of great tips and stuff
+there as well also again the repurposing
+girls equipment that you already have
+and already using to try new stuff is a
+great idea
+if you're doing it like a computer
+upgrade and you're not just you know
+blowing away the whole system maybe you
+just take the motherboard and get it
+like a cheap hard drive and install it
+in different case and see what you can
+do with it also there is a who's here on
+set KC slack guys crazy
+have you heard of the SEC you see black
+market you can find some real nation
+there yeah if you get a serious guys if
+you guys want to find cool stuff go
+there and I mean there's a lot of neat
+stuff that goes there also IKEA which
+brings up this next slide that people
+like to use this thing called lack racks
+does anyone have a lack rack in here
+come on don't be shy
+that guy says he does I think he's lying
+to me but I'm sure but these lack
+products work I don't know about this
+picture on the other rights I don't know
+if I had stack them that high but people
+love them they're about the one you
+least Arthur they work for rack-mounted
+equipment so people love to use them to
+just you know give a nice you know look
+to the rack and like they're super cheap
+like six pots so instead of spending you
+know $100 for a rack just go to Ikea get
+one of these end tables and eat blocks
+and you have your rack tell all your
+friends yeah
+my rack equipment all this stuff so yeah
+so that goes on to the next thing about
+like Tom on eBay
+we do looking at eBay items make sure
+you pay attention to the specs of the
+items and not cool cat pictures that try
+to entice you to buy it because they
+have a cool cat on their server they're
+like please buy me but this server that
+this picture is isn't actually the
+server you're gonna get and this is true
+this is a real seller and when I was
+doing this talk he really had that
+picture on like five different servers
+and he was trying to sell so keep this
+in mind they're gonna you know use you
+know enticing you with cool cat pictures
+to make you buy their stuff but pay
+attention to like CPU specs and what
+versions cuz a lot of the Intel Xeon to
+have like v1 v2 v3 s you gotta pay
+attention to that not just the number
+itself and then how much RAM and whether
+the drives come in it and the other
+important things especially server guys
+is make sure that the server sleds are
+included in your pricing because it's no
+fun to get a server think you're going
+to get like eight server
+you know spots when there's absolutely
+no sleds and you find out the sleds are
+like 15 bucks a pop or you know thirty
+bucks a pop from one guy who you know
+has a monopoly on them
+so because he's been buying them from
+everyone else so keep that in mind when
+you're looking at these real Hardware
+servers to see how much sleds are before
+you click the Buy button also back make
+sure you our because you know a lot of
+these old servers to a powerful
+no one's business and when you're
+looking at these servers you'll see
+titles it's a virtualized virtualized
+docker docker and you'll see this all
+over their specs if they don't give you
+the real specs of the server it's hidden
+I would be kind of cautious to that
+seller guys one more thing well now one
+more thing but another thing that people
+forget about when they're doing their
+lab is uh you got to connect all the
+[&nbsp;__&nbsp;] together guys and who here know you
+who here knows networking very well if
+you have to ask the answers never are
+you sure about that yes but keep this in
+mind unlike what other equipment you're
+wanting to get so if you want to just
+throw in some dumb switches so
+everything works like I do go for it
+but you can also you know go crazy with
+like these you know manages switches
+manage routers you know funny piece
+actually you know it's fun ubiquity gear
+there also been pretty and easy to set
+up so you guys want to do it networking
+you bet booty is the way to go the other
+thing to keep in mind is you got to
+figure out your need whether you just do
+10 100 or if you actually need Gigabit
+traffic and your
+or you may be like oh oh here's there's
+no way I want to use that up once you
+start getting like major with multiple
+terabytes of storage you're wanting to
+move files around your internal network
+actually doesn't matter surprisingly
+enough not that I would know or I have I
+may have 30 terabytes of storage so I
+don't know anything about that though
+but you can also use different software
+as well like if you want to virtualize
+your router like pfSense is a big one
+there's one more I forgot I thought I
+had to write down my notes but I sure
+don't what's another good software
+router guys what was that I ops all
+right I'll take your word for it but be
+sure that you can virtualize that as
+well so oh yeah show me the power guys I
+mentioned this quite a few times so if
+you guys see my B site stop actually
+brought in this older server that's
+really loud and noisy so I took the
+power draw of a few servers once a TS
+440 which is a fairly popular server
+from like last year that one onin
+discount so people bought a few of them
+like I did and it's got slots for a link
+eight drives so it's pretty awesome so
+that's a fairly new one it's a tidal
+it's strong five watts and when it's
+turned on its got about 105 one draw
+with about like four discus so not too
+bad that little mini lad surfer thing
+over there it's a twenty three watts
+with a bunch of stuff in it's like I
+think that that you Mako dat plugged in
+another firewall point as well and then
+turned on with the circle running with a
+few vm's there's about 65 70 watts so
+pretty good for that whole rack setup my
+old server was 26 watts of plugged in
+and when I turn it on it it cranked up
+200 watts easily so I was gonna look at
+a major power bill if I kept that thing
+running all the time and that's not it
+doing anything that which is it just for
+running an idle with nothing installed
+so if I even install the Nova so I had
+to do a little bit work that number shot
+up to like 250 300 so keep that in mind
+but while we're talking about power
+unless you don't pay your power bill
+does anyone not pay their power bill
+actually does it don't answer that
+don't answer that but for those of you
+who don't you could do this and make
+money
+well maybe not anymore because I mean
+well you guys combined SEC Casey coins
+Rickson we're looking at here right so
+uh so you could mine and just pay for
+your lab yourself so you just buy this
+draw it up and you like oh yeah I'm
+gonna pay for my own lab in like two
+years
+what's Bitcoin shoots back up or I mean
+sexy coins I'll buy a bunch of swag
+Reese on the black market op he'll pay
+for my lap and my next lab so it's a
+great marketing scheme guys go for it
+the other thing to keep in mind is
+storage you have to store all this stuff
+so look into the specific storage
+solutions this reddit website also has
+another subreddit called data hoarders
+they're equally dangerous like home lab
+because they'll talk about their 30 60
+70 hundred terabyte you know home usage
+storage solutions and then they'll
+complain about you know Google putting a
+data cap on a few terabytes so keep that
+in mind
+um but whenever you're storing your
+stuff you have to have some place where
+you're running your VMs and running your
+software and on a security to know if
+you guys are doing stuff like looking
+into specific malware and then I'm
+trying to
+there's a specific Mauer that does what
+to the drive and you know oh yeah so
+Brants ransomware I think I think it
+completely encrypts your drive and
+l-look for network drives so if you're
+looking into your live environment to
+you know do some reverse engineering you
+might want to be careful like what kind
+of storage solutions you have hooked up
+to it especially here at work because no
+one wants to say oh yeah I was testing
+on this looking into this malware
+infection and it connected to our fraud
+you know sand storage and how the whole
+company is encrypted and we're sending a
+bunch of you know foreign possibly
+Russian people 80.5 bitcoins because I
+didn't look at my storage properly
+because whoops that may have happened to
+some company not me though and I won't
+mention them but keep that in mind
+whenever you're looking at what you're
+wanting to do and making sure you have
+your stuff split up properly what we're
+looking into the future on what to do
+with your lab what do you really want to
+do with your lab and here's the
+mandatory xkcd comic for any talk has
+anyone done this yet because because I'm
+wanting to do this set up a few viruses
+you know somewhat you know with a UI
+form watch them watch them grow and live
+yes you should always name your malware
+and virus strains or else you'll be sad
+fire exe sounds like a great name but
+goes going a little bit of this this
+will what you're looking into what
+you're doing for your security life
+whether you're going to do you know
+specific stuff for virtual eyes using
+talker different doctor or different
+container solution so there's doctor
+OpenShift kubernetes stuff like that
+also going to like paint cuckoo cuckoos
+anyone use cuckoo sandbox I haven't used
+it in a long long time hazy so you can
+lose that if you're trying to you know
+sharpen up skills also whether you're
+using like VMware versus VirtualBox
+versus whatever Windows is trying to do
+oh yeah as your AWS you can go into like
+blog banjo as well having spun out brain
+log trying to figure so you can also
+look into certain websites I think over
+the wire door is a pretty good site to
+get started on you know looking in to
+break into specific boxes but it's up to
+you guys by the way if you
+go to remote sites till yourself make
+sure you follow the rules and don't do
+anything stupid
+please another thing that a lot of
+people in security don't think about but
+maybe they should start looking into is
+have you guys never heard of this DevOps
+I hear it's the best thing ever I hear
+it'll solve everything and they'll be
+the best but making fun of this I'm kind
+of serious you guys if you're in
+security trying to get security in
+DevOps and you know making dev sac cops
+or whatever they're trying to claim the
+term now is actually important so like
+trying to learn some you know these
+DevOps solutions
+well DevOps solutions I'm so like trying
+to figure out you know using Jenkins and
+your workflow to get chef ansible puppet
+just trying to figure out how DevOps
+sees a workflow and trying to get your
+security situation in front of it and
+trying to get the security at the start
+pretty much to like make it so I you
+look like you look like you're helping
+people who long and so trying to look
+like an obstacle like security always
+does but this is something you could use
+your lab for and
+that's what I'm trying to do with mine
+is try nellie make stuff secure and like
+hack into different things but I'm
+trying to
+learn dev stuff a little better because
+I suck at it so like I said before back
+in March which was several months ago I
+sent out surveys a bunch of people asked
+him what they were using for their home
+lives and lives at work and I got a few
+new it's about 20 people responded it
+was a missionary action different things
+most of them said they were using it for
+home there was one and a home and work
+lab there was a variety of different
+devices many of them used like VMware a
+lot of VirtualBox proxmox was a big one
+few people use end server as well which
+was interesting has anyone used that
+server I haven't used it in a long time
+no yes baby oh I'm hoping to do another
+survey I was hoping to do another survey
+tonight and like have a link free but
+the professor I was working with that
+does a service and the cop the
+disclaimer of the college that I
+graduated from his alumni was gonna help
+post the survey we were going to do it
+like a white paper on it and they closed
+down the server because it was old but
+they didn't want to pay the license for
+it anymore so he lost access to it so
+maybe in the future I'll post another
+survey out and if you guys would be
+awesome and fill it out whether you have
+an open lab or not because I'm hoping to
+like figure out like what the community
+would like to see what they're using and
+stuff like that and trying to make it
+useful for everyone so what are you guys
+using honestly like anyone want to yell
+out what they're using right now free
+their home or work
+switch so an Intel nuke
+dealing switch and a managed switch in
+two network storage what are using for
+the OS and the storage Oh QNAP and
+Synology nice I have I have I have two
+HP micro servers I think that HP 54 else
+knew a fire sold in several years ago
+for like $150 a pop so these little
+servers with like little like AMD atom
+processors with like four hot swappable
+drives slots 450 bucks bought three of
+them and use them for like Xfinity
+storage it's like one of the reasons why
+have like several terabytes of storage
+down but they're awesome I use them for
+Plex they're not the best Plex servers
+but man they can hold a lot of storage
+what is this
+oh it's a nut Hey look at this we could
+use that security
+oh so you drop this in the trash can I
+hope no one notices it and oh okay yeah
+this is for the capture the flag event
+sure we're running the throw together
+little no these books are amazing guys
+they can host how many BMS team you're
+that 16 virtual tours the virtual
+machines
+yeah then why five sixteen years Aram
+that's pretty nice for threads about
+sixteen little VM throwing for this
+thing ho terabyte drive is an SSD oh by
+the way guys using SSDs versus spinning
+disk is another important factor in your
+life choices another thing to keep in
+mind is again licensing it's like if you
+have an HP microserver which i think is
+awesome but they're doing ones you need
+to have you know an ila license to like
+remotely manager them in a way and well
+how you know going to the internet and
+finding your own Island license handy
+tip Iowa licenses are pretty close to
+being the same so if you find one
+you should keep it close to your chest
+and use it nice another thing you keep
+in mind is whether you can get like a
+dev license so I don't push squonk they
+have a specific they have to demo so
+that you can use one is for like a 50
+gig a data in just a day and another
+license is I think five gigs but you can
+have like multiple servers running on
+the license so keep that in mind when
+you're looking at stuff so you're not
+only looking at
+hardware prices but you're also looking
+at software and also keep in mind of
+power because powers will something that
+people always forget about whether
+looking at these servers and I don't
+want you guys don't go D make it the
+first server you see and then find out
+you have a you know $800 electric bill
+because you know KC does KC powerline
+decided jack up everyone's right over
+the summer and they're blinding your
+server for what do you know they're just
+lying to you so keep that in mind
+final thoughts is pretty much what I
+mentioned just pay attention to what
+you're buying what you're looking for
+and if you have any questions or you
+want to talk to me about this stuff I'm
+here a lot of months I obviously have a
+yellow badge orange orange Lander
+tonight come talk to me fine so I want
+to make this important slide right here
+it's the cyber kill chain it's mandatory
+for security talk look at it and know
+that when you tell people you saw a
+security talk sedated with the cyber
+kill chain that's like three C key
+credits right there guys
+any questions now okay hey have you
+heard about sec Casey hey check out our
+live feed if you can't make it guys

@@ -1,0 +1,215 @@
+okay that start off with there's one
+thing I want to emphasize there's a
+whole perspective people those system32
+bullets go out look at each one of them
+if you don't do anything there are so
+many things out there in the system32
+folder that most people don't even
+realize have a clue what they actually
+do so we're going to just talk about
+start off with something fairly simple
+godhood you know probably everybody here
+is inspired and potentially but it's
+really a very simple thing that you just
+have to bring a folder and a part of the
+creation of the holder you get okay here
+we go
+kamo and it's basically every simple
+Administrative Tools that you have all
+the way down backup devices printers
+everything and one handy baby
+one-stop-shop yeah a lot of people
+forget that that's even available it's
+really only Windows 10 there's sort of a
+continuity and that some of the others
+Windows 8 with those seven but not
+really and
+witness the first one that really offers
+a cool gone mode now there will be a PDF
+available as well but all you have to
+really do is create a folder plot that
+string and a little bit okay we speaker
+at that put the context of the god mode
+including the properties of the folder
+and hit enter in your dock that's
+basically is so they're going to go back
+that's basically another slide capture
+of it now these are some of the general
+security useful pfeiffer a lot of people
+forget that you can wipe the free space
+for an entire ride every format with
+Jesus library I use it primarily just
+for generic white because the whole lot
+easier white and if it does DoD levels
+right and whether you're doing SSDs or
+desert-type robocopy we'll talk about
+that past pain and get an act GPR result
+you may think it's only bird with its
+domain services that you can use for
+other little things to get property to
+sell out Suri till it's erect as well
+for a Swiss Army knife of GP certs
+primarily if you're dealing with another
+certificate authority but it does come
+in useful with other things and a
+traitor report I primarily will use
+trace report to examine and compare
+involves so it's lifer is totally
+dependent on rights and only NTFS and
+even more solid as home versions of
+Windows 7 which is this 8 whatever even
+if it's the personal or home if you
+can't encrypt but you can decrypt the MS
+files if you have the cert and more
+importantly you can use it like this to
+do a cyber slash W and then submit the
+drive or folder and it doesn't three
+times wider free space no it does not do
+black space and if you know what slight
+space is I don't need to tell you but
+it's at the end of every block of files
+there is not right to every single eye
+so consequently that is this black space
+robocopy
+I like rebel copies so much better than
+what the X Copy and all the various
+different I still will be our there are
+other copy utilities that they old today
+well I really use it for is this spring
+that you see down at the bottom is doing
+servo copies to copy the Mack modifying
+access and change attributes so
+consequently we will copy from the
+target writers s to a server vector with
+all of the attributes copy all and
+verified and then retry but and then
+display to send the results to a results
+log the whole purpose of that is so that
+I have something I compare the error
+otherwise it's just going to output
+there's other ways to do out that this
+is the way I consistently do it now it's
+hard it's worse by work if it's NTFS the
+NTFS you can do exFAT you can't do a 32
+but it seems to take forever
+and there's known issues with expat
+fat32 that not fully I copy all the
+attributes it will try get max path peg
+now get act is your basic shows all the
+MAC addresses and you or other devices
+what I like to do is that if you are
+using sort of like any of the sis
+internal tools you can use it to display
+the local active devices on another
+device as the attempted user that you're
+trying to authenticate against so like
+if you do get back slashes one nine two
+one six a concurrent - - you'll get in
+for a fully qualified domain name it
+will provide it to you if you have
+existing authentication against it or
+you can add strings to it - and the
+elements of authenticated pass pain is
+basically throwing a mix of 10 and
+traceroute and combined and then it
+basically shows the hops and you can do
+it and it shows that
+duration as such is to be it so much
+sir until answer reckon now primarily if
+you're using a encryption or any type of
+public key type of process you're going
+to need to learn how to use all begins
+and outs of sir detail and servant sir
+rec if there's other things you can use
+out online to create the csr create the
+certificate or certificate signing
+request or you can use other things but
+more portly what I intend to use insert
+util for on a local device is repaired
+certificates course lots of times people
+will come in and they will corrupt their
+certificate stores or that there will be
+invalid krills certificate revocation
+lists you can import you can also I'm
+trying to create an example that I could
+do but everything I did was blowing up
+on it so sorry I what I'm going to try
+and do is is that with this with the
+request line app you can create if you
+have a device that does BitLocker or ESS
+you create a key based is strength or
+that it's the one thing that if you have
+a certificate authority that you're
+referencing there's a recovery key if
+you are using a professional version of
+Windows 10 when to seven that is eight
+or any of the others is going to in
+create a sullen search on your own but
+what you can do is you can get a present
+service provider of a search and you can
+convert it into a cert that is trusted
+and you can then use it to export to
+create your tf-x private key that's more
+fully trusted
+the thing also is that it will Cerrito
+if you are dealing with a Microsoft
+certificate authority you can also use
+it to fix of certificate authority or
+update the certificate authority start
+the certificate authority thought the
+certificate authority all the various
+different things to do with the
+certificate authority from your local
+device TBR revolt most people just think
+of it for an ad FS that such but what I
+like any offense more is when I'm trying
+to set that device local I will use it
+to show what is is the various different
+groups are so it will show things like
+and blessing pathology was updated as
+well as the mastery levels of the
+various different groups as well as what
+the organization the user are currently
+use more authentic it as if it's it will
+also show a very we go up it will show
+things like the various different
+security groups at the functional
+elements of the device as well so it's a
+stable own domain member and what the
+version is so it provides everything in
+a one-stop look as well as the
+connection link and as you can see
+because of global it's only showing 500
+kbps and if it was normally be showing
+it to a bank server it be showing like a
+10 megabit whatever makin it or what gig
+connection
+trace report well I use it for primarily
+and I've tried to do this also to pull
+it up is that with Windows 7 Windows 8
+you could use it to pull up in the NT
+kernel longer and output it to of the
+law of CSV and more importantly what I
+use it for is you can compare two
+different ETFs and try to find
+comparison if you're dealing with two
+different examples you're trying to
+track down where computer might have
+come in you can look at when trace
+report to do the same identical thing is
+score before and I rush through it so
+long and thanks for the fish but one
+thing like I said at the very beginning
+is look at system 32 I mean if when you
+look at it there are you know this is
+that handy dandy one that I just brought
+is that's right well yes under system
+three is system 32 you have talked to
+myself you have a tremendous number of
+executables that range from the mundane
+to the obvious to things that they never
+had before in Windows 7 and within like
+on this Windows 10 device that you have
+also MSI files you have in yards you
+could have the ability to do far more
+than you realize within your Windows

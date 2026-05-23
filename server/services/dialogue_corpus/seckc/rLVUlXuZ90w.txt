@@ -1,0 +1,753 @@
+[Applause]
+[Music]
+eat the mic
+what
+all right how's everyone doing tonight
+you hear me all right
+sometimes i'm a little quiet
+so it's probably been a while my last
+history meeting was like
+february 2020. i don't know about you
+guys
+who went to the picnic last month
+[&nbsp;__&nbsp;] yeah it was awesome we got kicked
+we stayed too late and they're like oh
+we got three cops on overtime so get the
+[&nbsp;__&nbsp;] out
+yeah
+uh all right so this is my talk about my
+home lab my journey
+yeah
+and uh yeah so if you like software
+hardware networking stuff you might want
+well it's not started not clicking oh we
+got it
+all right the gifts are going to come
+through really good so
+that's awesome
+so i'm patrick i'm a programmer i work
+at a small logistics company in town
+called freightview
+and uh my first qc meeting was probably
+three or four years ago jiggle billy i
+used to work with he dragged me here
+and
+[Applause]
+i'd been messing with microcontrollers
+and arduinos and stuff and he introduced
+me to the bad pirates
+yeah exactly
+and uh the next thing i know we're going
+to vegas and rickson made some crazy ass
+badge with like 400 650 leds or
+here we go so what is a home lab anyways
+home labs whatever you want it to be
+really
+for some people it's running vms for
+for me i just started a job and i they
+used apple hardware they used command
+line tools
+and git and i wasn't familiar with any
+of this stuff i came from like a window
+shop where they have gooeys for
+everything
+so i was a little a little bit of a
+imposter syndrome
+so i wanted to like level up my command
+line foo
+and learn about git and learn about
+stuff so
+yeah
+also i wanted to try to run some of my
+own services like we run apps at work so
+how hard could it be right it's a
+so if you want to get started you can
+use something as simple as like a
+raspberry pi or an old laptop or
+computer that you have lying around
+or you can go on ebay and try to scalp
+some good deals
+click
+uh so humble beginnings we started with
+a raspberry pi of course for any like
+hacking project
+and i got a
+external hard drive caddy
+and i hooked it up and uh
+the raspberry pi if you don't know it's
+like a 35 computer that's like the size
+of a credit card
+and you write an iso to an sd card and
+then you're on your way
+so i set it up i'm in now what
+we need a project to work on of course
+so we we had just had a lan party and we
+were like passing around a usb drive and
+it seemed shallow and pedantic to have
+such basic technology so let's set up a
+nas and share the files
+so i hooked up the usb hard drive and i
+had to this time i had to learn how to
+format a hard drive without using the
+gui
+so f disk to the rescue
+and then make fs to make the partition
+and then fs tab to mount the hard drive
+on boot
+uh so the raspberry pi is really great
+for getting started because you can
+google anything and learn how to do it
+on that system and it's going to
+all right that works so let's get some
+more stuff set up on here so
+i set up a pi vpn
+you can go to pivpn.io and they have a
+shell script
+back in the day it's set up openvpn they
+support wireguard now i haven't tried
+that out yet
+wireguard's the new cool vpn
+openvpn sucks use wireguard it's [&nbsp;__&nbsp;]
+awesome oh sorry
+try to keep it clean i messed up
+what are you doing up here
+pantry is laying down some [&nbsp;__&nbsp;]
+knowledge right now and i'm having
+[&nbsp;__&nbsp;] trouble hearing them because i'm
+old and i'm deaf
+all right now a reminder we don't have
+to shut the [&nbsp;__&nbsp;] up wall
+so the shuttle [&nbsp;__&nbsp;] wall is the
+[&nbsp;__&nbsp;] door
+all right
+[Applause]
+all right
+so then i also set up a pie hole which
+is a dns and it gives you ad blocking
+you go into your router you can change
+the dhcp settings so the dns pulls from
+your pi hole and it will start blocking
+ads across the whole network which is
+awesome
+the pie hole
+click oh there we go
+all right so i set all that up uh and
+then tried testing it out i tried doing
+a speed test over my vpn and it kind of
+sucked
+yeah you're not going to see any of
+these gifts sorry that's a panda shows
+all my hopes and dreams he's got burnt
+cookies it was crazy charlie trying to
+uh so basically the problem was usb
+it can do like 60 megabytes this was pi
+3 by the way
+uh not pi 4.
+so there's like 60 megabytes a second
+for the whole bus the gigabit can do
+like 100 megabytes a second the hard
+drive can do like 100 megabytes a second
+so basically there's gonna be a lot of
+contention on the usb
+so i wanted to upgrade basically
+i also had problems where uh like pie
+hole would pause periodically the whole
+internet would shut down couldn't figure
+that out assume just google fiber of
+course it's dns it's always dns
+i had crappy sd cards you have crappy
+you can get a corrupted sd card and then
+you gotta start all over so then you
+learn to back up your sd cards uh dd is
+great for that pipe it into gzip so you
+get rid of the free space you know like
+a 32 gig image file
+oh
+uh so it's maybe i'm doing too much on
+one little pie you know
+so let's uh scale up a little let's
+build a pie cluster i got four pies i
+put them in a little
+acrylic rack or whatever
+i spread the apps out across them so
+one's not doing everything
+and around the same time the pi zero w
+came out so that's like a raspberry pi
+one basically but it's the size of a
+stick of gum and it's wireless
+so uh same time micro center is running
+a sale whereas one dollar per raspberry
+pi zero w per customer per day
+so of course me and my friend eric did
+the reasonable thing and we started
+going to my center over lunch every day
+for like weeks at a time so we had too
+and uh
+so i was looking for a project to do
+with my raspberry pi zeros
+and you can put a camera on them and
+then there's this distro called motion
+eye
+os that's a like video surveillance
+thing it can run on single board
+computers it can also act as like a
+hub for all the other ones to feed back
+into so i had all the pi zeros set up
+to like stream so i put one on the north
+side of the house one on the south side
+of the house the raspberry pi zero comes
+with this case it's nice and has like a
+hole for the camera and i 3d printed
+these mounts to like put them in the
+windows
+it was working great
+and then uh turns out
+running a ton of hd streams over the
+wi-fi is not a great idea
+you will saturate the wi-fi pretty
+quickly
+and my little google fiber network box
+just crapped out
+so each one was like doing like 10
+megabytes a second
+it's wi-fi in which i don't know
+anyways
+so
+wi-fi
+click
+uh real quick nope go back one
+this is uh like alexa says uh it's a
+reminder it's like maybe you need to
+order more raspberry pies
+and there's uh john luke picard doing a
+face palm this is the pie zero w
+so you can see how tiny it is that's
+like a guy's finger that's the whole
+thing
+uh so yeah it's time to level up to
+improve some stuff we'd like a better
+performance on the nas right now we're
+getting like 30 megabytes second on the
+usb drive and the gigabit running at the
+same time
+we need something more deserving of our
+gigabit connection that's not just going
+to crap out
+we'd like to have a low power draw one
+of the cool things about the pi is they
+use three watts so like you hook a
+battery up to that it'll run for a while
+uh i would also like to avoid the
+all-in-one cheap
+oem
+wi-fi router combos
+and i need room to expand i was like
+daisy chaining switches which is not
+what you want to do
+and we need something better than
+managing a bunch of individual raspberry
+pi's because that's a pain
+so enter the big boys synology unify and
+docker
+synology makes nas systems for small
+office home users type setups
+unify makes
+commercial and prosumer hardware
+pretty reasonable prices
+synology supports docker which
+so i was installing all the stuff on
+bare metal and that became a little bit
+of an issue like something on python
+threes and one python two
+which is this next kcd comic shows all
+but yeah so docker made spinning up apps
+really easy there's no dependency
+conflicts
+i was just able to up down tear down an
+so what apps do i run
+so i got docker going and i spun up all
+the apps so i found this
+github page that's awesome self-hosted
+and it's just a list of open source
+projects that you can run locally
+and then i found this other site
+linux server i o where they make custom
+docker images for all these open source
+projects
+and so i run radar and sonar for media
+organization
+it will like uh
+move stuff name files name folders
+whatever you want basically it'll also
+download like subtitles cover art stuff
+for plex
+and then i ran a bunch of i did i didn't
+say i
+i mean you can use them for downloading
+i'm not saying i use them for
+all right there's hey we're all friends
+here right
+uh so i had a bunch of containers for
+the networking stuff so i had the
+unified controller on my container i had
+pie hole on a container i had the vpn on
+a container
+caddy is cool to reverse proxy
+and you can set it up it'll pull down a
+let's encrypt cert and then we'll
+reverse proxy all your containers for
+you which is awesome
+uh home assistant for home automation
+obviously grafana and influx for stats
+and graphs you need a cool
+next dashboard
+for like cloud storage
+plex and air sonic for streaming like
+movies tv and music
+that's all the things this is a heimdall
+yeah so i'm just downloading linux
+distros over bittorrent with a vpn in
+so things are going well it's time to
+think about changing everything because
+that's what you do
+uh so i started filling up hard drives
+again
+and again i started with two terabyte
+hard drives went to four terabyte hard
+drives went to eight terabyte hard
+drives
+and then that [&nbsp;__&nbsp;] gets expensive pretty
+quick so we need
+we need something a little better than
+our synology two-bay navs
+uh it runs raid one which will mirror
+the disk so i'm only getting like half
+my capacity
+uh and then the synology nas is running
+out of memory and cpu cycles because i'm
+running all this crap on it so we need a
+more scalable nas solution
+here's a picture of a cool rack i will
+never have one this pretty because i
+would always tear apart
+yeah so it's time for a new build
+yeah you guys know what i'm talking
+about
+truth be told i built like five or six
+systems this year
+i might have a problem i don't know
+we'll see
+jury's still out so
+i built a new gaming system for myself
+my system was a server workstation
+motherboard from like 2010
+and so i i built an amd ryzen system for
+my gaming pc and i repurposed that old
+gaming machine as my nas
+i wanted to mess with pci express
+pass-through this kind of goes in the
+home lab stuff like i was experimenting
+learning
+i wanted ecc and sas drives for
+like our true enterprise nas basically
+and i wanted gpu transcoding for the
+plex because the synology only had like
+a celeron dual core it would crap out on
+hd streams so basically we're going to
+need some vms
+this is a picture that says mommy why is
+there a server in the house helping your
+kids understand home servers
+so now we have proxmox truenas and pci
+express passthrough
+these this is like the new software side
+basically it's going to replace
+technology so proxmox is an open source
+enterprise virtualization environment
+it's a lot of words but basically you
+can run vms and containers on it
+pci express passthrough lets you pass
+hardware directly into the virtual
+machine instead of having a virtualized
+and virtualized hardware and trunas is
+open source free media bsd based nas
+system
+you can't see these but
+basically if it's virtualized has to go
+through the hypervisor and the dma
+remapper there's a whole lot of steps in
+between you pass it right into the
+hardware it goes directly to the guest
+os
+so you get performance like
+lower latency
+higher performance and you can do
+offloading which is what i want to do i
+click oh we got
+so yeah it's time to buy some more
+parts apparently
+mind you this is over like two or three
+years i didn't just do this all in the
+last six months or whatever and maxed
+out my credit card
+but uh so
+[Applause]
+[Music]
+so uh i had this old server platform
+from 2010
+and i bought uh the parts for cheap like
+it was a hundred dollars for the second
+best cpu the first one was like extreme
+edition which is still going for like a
+thousand for some reason
+but the next step down was a hundred
+dollars for a pair of cpus
+i got 64 gigs of ecc ram for like 60
+bucks so a dollar a gig
+i got a quattro p400 gpu so most server
+stuff is passively cooled i was running
+in a desktop
+case or whatever so the quattro p400 is
+nice because actually there's a fan on
+it it doesn't need external power you
+just put it in it works got an lsi sas
+card because that's what the cool kids
+were doing and i got a gigabit card to
+pass into the nas so it wasn't using
+virtualized ethernet basically
+and then uh you guys remember when i
+said i wanted a low-power nas i like the
+synology because it was like 15 watts
+and the pi was three watts
+this is no longer this is like a order
+so a new build who dis uh so we
+installed proxmox
+that works great it's easy like spinning
+up vms containers it's really nice
+uh and we set up truenas vm in a vm
+which you're not supposed to do in
+production but i'm not in production so
+we don't care about that
+and i would pat i passed through the
+raid card i passed through the gigabit
+adapter
+and uh set it all up and i mounted my
+synology as a network share i started
+rsyncing the data over to my new nas
+i also set up a windows vm with gpu
+passthrough testing that was a huge pain
+so nvidia does this cool thing they
+don't do it anymore
+but when
+the system boots up and initializes the
+gpu and then when your vp vm boots up it
+initializes again and their card makes
+note of that it's like i'm running in a
+virtualized environment
+and it will give you this code 43 in
+windows basically it won't let you run
+so you gotta do a bunch of hacks to get
+around that
+which we did of course
+yeah
+but then we found out after all the
+trials and tribulation that you want ivy
+bridge and sandy bridge cpus and i had
+the westmire whatever the one before it
+which freaking sucked
+so we could not game on that i was
+trying to build a cloud gaming machine i
+had a vpn set up i wanted to like remote
+into my network
+remote into this vm and then be able to
+play games over the internet
+this was before stadia like
+i'm not going to tilt my own horn buzz
+cut i was ahead of the curve a little
+bit
+and so that didn't work so we scrapped
+that we set up a linux vm we passed the
+gpu pet through don't do any of these
+weird window hacks
+and it all worked i was able to mount
+the synology nas
+as a share so i'm not using any like
+it's just for storage now which is nice
+because it was running out of resources
+basically
+so when it rains it pours
+everything started to break basically my
+server died
+i opened it up it wouldn't post it would
+spin up it wouldn't post and this heat
+sink fell off
+and you probably can't see it because
+this brick wall but all this is like
+super brown
+like
+it was suspect as hell there was nothing
+right there
+it was all wrong nothing right
+so i got a new motherboard guess what it
+supports even more ram
+we're going to need that
+so then i bought more ram and then i'm
+like well we got the good cpu we got the
+good ram might as well and i noticed i
+had
+12 gigabit per second sas drives but i
+only got a six gigabit per second raid
+card you're not gonna you're gonna want
+12 gigabits you're gonna need all those
+bits
+so we bought that and then i bought four
+more i was like oh the system's all
+kitted out might as well finish the
+build and finish out the hard drive so i
+bought four more eight terabyte hard
+drives
+that was expensive
+if you or a loved one notice any of
+these symptoms they might be a data
+yeah you guys know what i'm talking
+about
+so the current status the new board died
+i hooked up all the drives
+and it just crapped out and i don't know
+what's wrong with it
+uh
+ipmi doesn't have any errors for me to
+follow up on
+so maybe buying old server hardware off
+ebay for really cheap prices is not the
+best idea i don't know maybe that's
+obvious to some of you i don't know
+and then uh maybe that's what i get for
+so i have a new build going now it's not
+i'm running off the synology again so
+that saved me
+well
+so let's do a retrospective really quick
+raspberry pi is awesome for learning
+linux
+uh you can like set it up headless you
+can give it wi-fi creds and ssh into it
+with default creds run your commands see
+what happens break it reflash it go
+again
+synology is a pretty decent nas system
+my uptime
+alone like it saved me more times than i
+would like to admit
+uh
+unify makes pretty decent networking
+gear so the cool thing about unifies all
+their stuff was separated out they'd
+have switches they'd have access points
+and they'd have controllers the
+controller would be like smart enough to
+tell your phone hey i'm switching to
+channel four when really channel four is
+the next access point down the hallway
+so you get these uh seamless handoffs on
+wi-fi
+and docker made it easy to spin up apps
+i had like
+i don't know 20 30 40 apps running at
+the time
+proxmox is really cool for spinning up
+vms testing out new stuff
+true nas is pretty cool
+i need to mess with it more and validate
+they do a bunch of crazy stuff on the
+truna side that i don't know about yet
+one cool thing about truenas is it uses
+zfs which is uh
+yeah you like that
+sun microsystems for the win
+so you get a bunch of cool features uh
+you get storage pooling so you can just
+add this to a pool
+you get data verification
+so it knows like the hash of every file
+i'm assuming
+and so it can tell like if you just have
+raid and you have a corrupted file it's
+just going to copy the corporate file to
+the other disk and you're screwed still
+this actually like will know the file is
+corrupted and be able to repair it
+there's also a copy on the right so
+anytime you make a change to a file
+it will uh make a copy of that put the
+changes in that one which also gives you
+snapshots
+so you can do like windows previous
+version and see all the versions of a
+file self-hosting is pretty cool you
+guys don't you should check it out so i
+was on like a
+anti-cloud kick at the time like the
+whole internet's getting decentralized
+basically it's all google microsoft
+apple and
+i don't know amazon yeah
+basically if uh aws us east goes down
+everyone's [&nbsp;__&nbsp;] that's what the deal
+is
+but uh so i wanted to like
+my friend told me that uh self i was
+asking my friends what self-hosting
+means to them and my friend said that
+self-hosting to him was digital
+sovereignty basically you get to run
+your own apps you own your own data
+oh yeah
+so you wanna know how i fill up hard
+drives you can get a mirror of wikipedia
+that's like 100 gigs compressed
+you can get a mirror of open street maps
+for the whole world
+yeah now people ask me why don't worry
+uh so i mean a lot of this was just
+learning stuff like uh i downloaded the
+openstreetmaps because at work we got
+hit up by google for google maps for
+like 20 grand to do [&nbsp;__&nbsp;] maps or
+whatever it's like yeah so we tried to
+like spin up some open source stuff
+ultimately it was easier for us to go
+with
+google but i learned how to import like
+gis data into postgres so that was cool
+uh
+old server hardware is not cool
+buy semi-recent stuff
+don't buy 10 year old hardware it's
+yeah
+uh but yeah i learned a ton of things
+like pci express pass-through is really
+cool
+proxmox is cool yeah i already went over
+that it's just good stuff
+i'm learning now basically
+uh so if i had to do it all over again
+i wouldn't buy old hardware
+but if i had like my dream set up it'd
+be three proxmox nodes and a cluster
+do is do share between your prox boxes
+and then basically if a vm or a node
+dies it'll just migrate that workload to
+another node so you get high
+availability which is the problem i ran
+into
+uh i would also have a true nas system
+just for storage basically to separate
+and i would have a backup system which
+right now is like my synology it worked
+out for that
+and raids not backup
+have a backup
+starting over is not fun
+and synology saved me a couple times and
+also stick to a budget
+i don't know if it
+yeah i don't know if you noticed
+but i kind of went in i was like oh
+fifty dollar make you holler and like
+the cpus were fifty dollars the ram was
+a little over fifty dollars next thing
+you know
+you're in pretty deep
+and then your server dies and you have
+this something cost fallacy where you're
+like do i just keep buying more hardware
+yeah
+hardware no
+but yeah so basically
+yeah so that was the other reason why i
+wanted to run that's why the synology is
+cool to me so he asked if about
+electricity
+basically these old servers draw a lot
+more electricity than new ones too and
+if you kid them out like i did they're
+going to draw even more
+so
+synology is cool because they drew 15
+watts which the pai drew 3 watts which i
+have light bulbs that draw more than
+three watts so it's like a 5x step up to
+synology so that was like a good upgrade
+path for me
+and then i just kind of got
+i was chasing the dragon basically i
+wanted more speed
+more hardware
+and i started buying stuff and then you
+and i think that's it
+i think i'm five minutes early
+we'll see
+yeah you can download ram as a zip file
+you just put that in your downloads
+uh so that's actually a good question
+how do you tunnel traffic so i have this
+stuff pointed at my house you actually
+don't want to do that that's actually
+not good so there's a cool trick you can
+do where you do a reverse vpn basically
+you set up a node in aws or google cloud
+it vpns back to your house it has the
+reverse proxy
+and it's basically serving up all the
+traffic from
+your home but it's not your home ip that
+eric
+how come i didn't use kubernetes
+kubernetes is a wall of text that's
+called a yaml
+that is insane
+and nobody should use it i'm just
+kidding i don't know i don't know
+kubernetes it scares me
+i've seen people set up raspberry pi
+clusters with kubernetes it works pretty
+good for them
+i feel like i'd run in the same problem
+though where the hardware would
+basically be the limitation
+the raspberry pi is great for learning
+on but it's uh it's basically like a
+embedded soc or like a phone associate
+it's not meant for like
+gigabits of traffic being thrown at it
+says aaron are you gonna save me
+yeah so uh one of the things i liked
+about synology was the celeron processor
+support aes in i which is a new
+instruction set for aes advanced
+encryption standard
+and it basically takes eight
+instructions to one
+and so if you're running uh so one of
+the problems i had with the pi vpn was
+it's not super fast at cryptographic
+operations so i threw a gigabit at it
+and it the usb pegged out cpu pegged out
+wasn't ideal
+but then the synology was able to handle
+most of that traffic i would say
+also the synology you can upgrade the
+ram on it comes with like two gigabits i
+open it up it's a sodium slot put in
+eight gigabits it's like
+you know way better
+can run a lot more apps that way
+[Music]
+i don't know why proxmox is cooler than
+esxi i'm guessing because it's open
+source
+yeah so all those projects i was running
+are open source projects
+[Music]
+uh

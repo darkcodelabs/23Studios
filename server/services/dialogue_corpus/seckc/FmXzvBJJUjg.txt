@@ -1,0 +1,192 @@
+so you may be wondering how do I bring
+in two things for a living
+maybe you're coming from an existing
+career looking to transition and maybe
+you're starting from scratch and our
+next speaker who is a first-time speaker
+at sec casey is going to give us a
+little bit of insight into that i'm
+guessing from his own experiences so les
+for the next 15-20 minutes learning
+about how to get started in the
+nutrition testing professionally let's
+give this Ferriero a big round of
+applause good evening
+so what originally submitted for this
+talk there was quite a few people had
+joined said Casey and said hey I want to
+be a pen tester how do I do that
+so it's like well hey here's one of the
+very few things that I actually can
+speak about let's sum it see how it goes
+it looks like there was some interest
+there so we're to kind of discuss my
+path what I would have done differently
+what worked out well and what was just a
+burning crashing failure so if you would
+it be a pen tester well I get started
+Luke pass that slide but I guess my
+phone I'm also entering professor at NCC
+Casey we're doing two security stuff
+like that and I get this all the time
+this is what I want to be when I grow up
+okay cool so how do we go about doing
+that
+the first thing you want to do is begin
+with the end in mind what you want to do
+is say oh I wouldn't be at pentester
+where are you now you need to identify
+the gaps between what does a pen tester
+do versus what do I know now
+analytics to unknown networking you
+don't need a brush up on tcp/ip stack
+wanting to do here in his specific goals
+smart goals there are specific
+measurable attainable they're realistic
+and their time oriented so then what you
+do is you take those goals hey I want to
+pass maybe the sec plus by the end of
+2019 and then move on the CTA to move on
+to send to whatever is next for you
+that's something you can do specifically
+hey I want to be a pen tester not a very
+good goal it's a great place to be but
+it's not specific measurable it's not
+necessarily realistic if this is your
+first time speaking at site Casey good
+luck on the rest you talk for ease in it
+you're intolerant a gentleman sir I much
+appreciate it all right so you want to
+pair up your gaps with your smart goals
+and say this is where I want to be these
+are the specific measurable things that
+I want to get to so after that you
+really need to you need to deepen and
+understand your technical words your
+heart it's difficult knowledge excuse me
+be very curious about anything and
+everything would I do this why does it
+work what makes sequel injection tick
+pun intended right how do I break stuff
+I don't have to pick up art stuff you
+really need to develop kind of a hacker
+mindset of what's behind the scenes
+what's behind the smoke and mirrors
+what's behind the curtain and then you
+got to break more stuff so invariably
+the question that comes up when I talk
+with students or talk with somebody else
+who wants to be a pen tester do I want
+to do experience do I want to go the
+SIRT routes or
+to get an education and the answer is
+yes all of them are ballot paths to
+being a pen tester generally you want to
+do two out of three to really ensure
+your chances of getting past the spam
+filters for HR and that kind of thing
+but they're all valid diverted to the
+pass to do so and you'll see me leaning
+over here I don't have a thank you so
+some good search to start second plus CH
+a good search to start they're not going
+to get you all the way across the finish
+line but they will give you a very good
+foundation and what it is you're trying
+to learn in security if you already have
+a technical background may be a better
+place to start would be something more
+like the O SCP the u.s. AP is extremely
+tough but it will prepare you for
+penetration testing much more so than a
+psych class or CT edge will sins are
+also great certification sins are
+sometimes cost prohibitive if you're
+doing it on your own but there are very
+fantastic training so in encourage you
+to look for those also degrees any
+degree that you gain that is IT or
+kansai related is extremely valuable for
+you because even though it's not
+necessarily in security you still have
+that underground excuse me the
+underlying foundation of what it is
+you're breaking into what it is that's
+going on behind the scenes if you
+understand networking if you understand
+Linux if you understand Windows servers
+I can at least give you a little bit a
+better idea of why Metasploit will work
+with the Samba module or insert
+arbitrary halo that you're breaking into
+there and finally experience experiences
+perhaps one of the best of the three but
+it's hard to do by self because you can
+find yourself in a chicken or the egg
+sort of thing we're like I want to go
+apply for this job and I'm like well you
+gotta have experience like that sucks if
+they don't have anything so you want to
+get some kind of maybe an education or
+certification as well but experience is
+extremely valuable I certainly don't
+want to diminish
+the value that experience brings to the
+table so how do you get experience
+experience is not always but NCMA
+pentester role experience could be
+contributing open source projects
+experience could be doing developing
+your own tools and github but here's
+some also some great places to get
+experienced juice shop is one that
+really works with the web apps that you
+will find a wasp type 10 that sort of
+thing
+additionally a menace portable -
+political - throw it into a VM and hack
+away it's great way to get started with
+Metasploit which you will use if you're
+doing pen testing pack the box is my
+personal favorite it is really not for
+beginner it's probably something after
+you've done a little some of the other
+stuff hack the box is fantastic because
+you can learn all sorts of just really
+weird stuff vulnerable great download
+some bull hunt so Manavi em again real
+safe easy to do very very easy they're
+not resource intensive at all pen tester
+lab costs a little bit but it's also
+great there's lots of other ones here
+perhaps the most underrated I think is
+Rathbone is this like Aidid one you have
+webgoat you have utility have a lot of
+other different ones that you can break
+into all of them using rasp felony can
+run on a PI for like 50 bucks really
+easy to do
+set KC one of the best places to learn
+it in slack if you got questions dump
+them in general people answer
+I decided at the last year I've had
+people answer some pretty wild stuff
+I've seen people doing some decoding of
+each other's Python and all sorts of
+stuff in between so jumping in a slack
+channel and people will answer so in
+conclusion there's just really a couple
+things that will make you a good pen
+tester but to get started ask a million
+freaking questions the only dumb
+question is why didn't I ask this before
+so ask everything under the Sun Google
+everything get really really comfortable
+and familiar with Stack Exchange with
+security exchange with all the different
+things just Google everything in finally
+OSC peace mono was try harder try harder
+never give up having that mentality will
+take you a long way so thanks guys have
+a good night happy happy
+[Applause]

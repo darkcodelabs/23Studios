@@ -1,0 +1,234 @@
+some people may or may not want to
+eventually work on a red team yeah here
+we go I'm not going to tell you who I am
+if you want to know who I am you got to
+come ask me but I sent some Twitter's
+back and forth with Aaron he's nuts
+squirrels in a barrel i guess as his
+twitter feed but he does some red team
+stuff too i was hoping it could be here
+to help kind of argue with me or do
+whatever but I guess I'm the only one
+here so and then if anybody else out
+there works on a red team and you don't
+like what I say just stand up and say it
+say you're full of so all right the
+idea so we're going to talk about what
+we look for when if you want to join a
+team like ours so what exactly is a red
+team wikipedia says an independent group
+that challenges an organization to
+improve its effectiveness there's some
+argument over what exactly a red team is
+some people say it's a team that just
+goes in and tries to get whatever they
+can no rules that happens people do that
+in our case usually it's more specific
+we have very specific goals that we're
+trying to fit meet and we have an
+engagement a plan of rules of engagement
+that are said ahead of time we say
+you're not going to attack this system
+you're not going to tack this system
+you're going to go after this one
+because when you're trying to scope an
+assessment like that and try to be
+really effective at what you're finding
+you got to be careful with that stuff so
+the bottom line is that we all get to
+break into a lot of stuff that's what we
+do for a living I break into a lot of
+applications and networks Aaron you guys
+have seen his talks he does a lot of
+social engineering breaking the
+building's seeing what he can grab doing
+that kind of stuff so dif different kind
+of teams specialized in different areas
+so in the end if you're looking to join
+a team like this you want to find a team
+who
+kind of lines up with your interests if
+you want to do the hacking stuff you're
+sitting behind a computer and banging
+away on applications our team does stuff
+like that and the networking and we do
+some physical assessments but if you
+want to do the social Engineering's time
+style stuff we do it every once in a
+while but not nearly as much as Aaron in
+them do so okay starting off your
+baseline is everything that bill talked
+about in his talk when you're getting
+into information security so you want to
+read a lot hack stuff a 10 sec AC talk
+to a lot of people if you're not talking
+to people nobody knows who you are you
+don't really know anything you can read
+a lot of books you're not going to learn
+a lot that way make sure you're talking
+to people and trying things out don't
+definitely as bill said make excuses for
+not trying to learn yourself because
+this job requires a lot of self learning
+and if you haven't shown that you can do
+that probably not going to be a really
+good fit you don't want to go around
+thinking that you know everything
+because guess what we all have a lot to
+learn no matter how long you've been
+doing this and the last one is big don't
+pretend to know things that you don't if
+you walk up to somebody and say hey I
+know a lot about this but could you
+teach me and no i'm not going to teach
+you if you ask me hey i'm having a hard
+time with this can you help me out then
+i'll do yeah great sure i'll do what i
+can so the next one is this is key you
+don't already have to be elite hacker in
+fact some of our team members or hired
+straight out of college and had very
+little background experience seven to
+ten years later they now have a lot of
+experience but if you have IT admin or
+software development background it's a
+really good jumping off point
+some other guys on the web post this a
+lot too especially developers become
+very good application pen testers IT
+people tend to be really good Network
+pen testers because they're familiar
+with the systems on our team
+specifically we have an apprenticeship
+style training system so you come on you
+don't do anything on your own until
+you've proven trust with the other team
+members and what you can do and it's not
+about you being able to do it SS it's
+about us being able to trust that you
+can do it to the standards of the team
+and that's how you progress throughout I
+personally that second a last line I
+have doubled what I knew after 13 years
+of software development doubled what I
+knew about application security in a
+couple of months so this job you will
+learn a lot about security and as I said
+before there's always a lot more to
+learn Trixie is another one that's
+coming up where I've been doing a lot of
+research and just kind of going outside
+of my comfort zone so um this one is
+also important ok all the slides that I
+put up your important all right just
+assume I'm gonna say it anyway but
+they're get there they're all right
+thing about this job is you can't really
+talk about what you're doing there are
+so you can talk about what you're doing
+with the team talk about your clients
+all that stuff but outside you generally
+are not going to be able to talk about
+what you're doing in the end we want to
+help our clients we're not throwing them
+into the fire also you have an NDA so
+guess what you can't talk about it I
+find 0 days on a regular basis you've
+unfortunately if you is that if that's
+the kind of thing you need to make you
+happy then that's probably not a good
+job for you you should go to the black
+hat side of things and just hack into
+things and get caught by the FBI one
+thing i do a lot is i do a bunch of
+training and i present research project
+results and it helps me kind of pass on
+lessons learned you know also just
+talking with people they tell you about
+things that they're probably they're
+having and you can kind of draw on your
+experiences and help them out also this
+I find particularly necessary for this
+job you genuinely want to help out your
+clients nobody is going to pay you to
+break into their stuff just for the sake
+of breaking into their stuff right they
+pay you to help them improve their
+security posture they don't give a crap
+how cool it was right so make sure you
+know the need their needs provide the
+recommendations that are appropriate to
+them and when you give those
+recommendations they're not mandates
+they can choose to ignore your report
+that you spent forty hours writing
+entirely and you just have to suck it up
+that's part of the job
+hopefully you explained your findings
+and recommendations effectively so that
+they don't do that and that they take it
+to heart and you only provided
+recommendations that are going to be
+valuable to client yeah so we have
+somebody in here don't give a crap about
+so
+one of the major things we do 40 for
+fifty percent of this job is
+communicating you're talking with people
+you're talking with your team you're
+talking to the clients you're writing
+reports if you if those are skills that
+you don't really have or don't want to
+have it's probably not a great really
+good fit last point your team will help
+you through a lot of these things when
+you first get started and kind of help
+you understand the team strategy for
+reporting things and getting them
+delivered to your clients analytical
+skills this is the hacker side of us so
+the other fifty fifty to sixty percent
+is just figuring out how things work and
+then breaking them in order to break
+things efficiently you need to
+understand exactly how they work so you
+got to know what the protocols are
+involved but the frameworks are involved
+so you can kind of make these educated
+guesses about what's underneath and then
+test them sign typically and as Aaron
+says if you don't collect evidence it's
+like you were never there you have to
+collect the evidence and then turn those
+unfortunately in most of these
+consultants I'll jobs or if your read on
+a red team you're generally going to be
+a consultant there are exceptions some
+teams run internally and that's a
+different story but in most cases your
+consultant so sometimes when you're
+doing engagement you have to be there
+physically either because you're
+breaking into a building or because the
+security zone that you're getting into
+doesn't allow access from outside and of
+course conferences unfortunately I had
+too much work to make this year's Def
+Con but next year of course it'll be
+lame next year so yeah another
+interesting perk though is that I get to
+work from home so so end of the talk all
+those things if you engage you want to
+learn you want to help clients you don't
+really give a crap if you're going to
+stand in front of people and present
+cool hacker stuff besides your research
+projects good communication skills good
+analytical skills and you don't mind
+travel occasionally you know it's a job
+you could probably get so don't think
+you have to be the uber hacker to get
+into a red team and start learning stuff
+you will get trained either way and
+chances are you'll probably learn a lot
+more than you actually know so that's

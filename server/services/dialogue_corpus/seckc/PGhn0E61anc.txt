@@ -1,0 +1,399 @@
+who wants to hear about some ATM
+skimmers all right so I don't think it's
+going to be an actual talk it's going to
+be Matt telling a story so let's talk
+about skimmers my name is Matt by the
+way Matt's out I work for trust foundry
+it's America's number one penetration
+testing security company pretty much
+this is a story of me finding an ATM
+skimmer in the wild in Bali Indonesia so
+I was in Bali on vacation with my wife
+Elizabeth and Elizabeth kind of paranoid
+there she is
+coming up here that's me and Elizabeth
+she every time she types in her pin
+number at an ATM do to those that were a
+little bit she hides her kid number with
+her right hand or with her left hand as
+she types it and I told her she is Tripp
+and I'm like Elizabeth you're crazy
+you're paranoid you don't need to worry
+about it but little did I know that her
+advice would come in handy later down
+the road so does everyone here know what
+an ATM skimmer is have you guys ever
+heard of it okay so a few people if you
+haven't heard of what a skimmer is read
+Brian Krebs he's an author who he kind
+of specializes in ATM skimmers among
+other things
+but it's essentially a device that sits
+in front of your your ATM and tries to
+read your card number so that's the
+short version there they're after two
+things number one they want your card
+number
+and number two they want your pin number
+and with those two pieces of information
+their steal money from your ADM so how
+did they get your card number
+traditionally they affixed a device in
+front of the card reader here's a photo
+of like a piece of plastic that sits in
+front of the card reader and as you
+slide your card in skims the number off
+the top and so that's where the name
+comes from they'll even replace whole
+cables of ATMs I recently saw a picture
+of a guy who like put a laptop in front
+of like a screen and like made like a
+fake ATM that kind of sat in front of
+the ATM so they're pretty clever about
+it they'll even do tiny inserts there's
+a picture of a card skimmer that goes
+inside of the card reader you need a
+special tool to pull it out and lastly
+they'll do card numbers over the wire so
+they'll put some sort of Wireless like
+like wireless access point or something
+like that to skim your card number over
+the wire for pin numbers they usually
+just hide a camera there's a tiny you
+can't even see that hole but it's a tiny
+pinhole camera that's in a piece of safe
+plastic with the camera built-in there's
+another one in like a card insert
+something like that
+sometimes they use PIN pad overlays
+where they put a pin pad over the top of
+and here's an example of a point-of-sale
+machine with it with that entirely
+overlay thing okay so let's talk
+logistics if you guys pretend for a
+second that you're criminals right and
+you want to steal people's pins and
+their card numbers and what kind of
+stuff do you need to make this happen
+I'll give you I'll give you the first
+one you need power so usually it's a
+battery you can't have like you can't
+plug this thing into it into a wall
+outlet right so you need to power this
+thing somehow usually it's a battery
+what else do you guys need if you want
+to steal card numbers anyone storage
+booyah
+that's right oftentimes it'll be like an
+SD card you'd have to be crazy to use a
+hard drive or something like that what
+else a reader
+yeah a retrieval mechanism so oh that's
+something like they'll use bluetooth
+sometimes the sophisticated one still
+use cellular wireless or even like using
+a cable to hook up to it and pull the
+data off so how do you protect yourself
+well turns out all individuals walk
+right you cover your your PIN number so
+that cameras can't read you although
+that won't really protect against life
+like the PIN pad overlay as I showed you
+but it's so easy to do just cover your
+PIN it's easy right like why would why
+wouldn't you secondly Eugene so don't
+beat out the crowbar don't like thrive
+pieces off of it just kind of wiggle
+usually they're attached with like light
+adhesive or like they'll clip the clip
+on so you just kind of wiggle wiggle
+stuff and that leads us to how I found
+skimmer in the wild when me and
+Elizabeth were in Bali we we've used
+this ATM before that's a terrible
+picture but there's a bank of ATMs there
+on the left and a big tourist grocery
+store on the law on the right it's
+enclosed so little scared tourists like
+us feel safe in this tiny little room
+it's got air conditioning which is kind
+of a like a luxury and it's off the
+street so people can't see you pocketing
+cash this is what the ATM look like it
+looks like a normal ATM but just a
+little jiggle in and that's not supposed
+to happen the whole hands canape came
+off um within a like I looked at it very
+quickly identified that it was a skimmer
+because see that little little port on
+the bottom and there's a little switch
+on the right why doesn't ATM need that
+like like the hand canopy is a piece of
+plastic that hides your PIN number it
+doesn't need that stuff also I couldn't
+get a picture but in the in the in the
+night if you see like a faint blue light
+in there so like this thing was powered
+so what do we do with this so we could
+leave it alone like because it's not
+mine this is a piece of a banks ATM that
+came off like I can't just I can't just
+claim it so but but then people get
+hacked right and then ain't cool like I
+don't want people to get their stuff
+stolen so that wasn't an option we could
+call the cops
+but in Indonesia cops are notoriously
+corrupt sorry if there's any Indonesian
+Xin the Chrome
+they'll pull you over and shake you down
+and say you broke a law give me a
+hundred bucks or I'll take you to jail
+that kind of stuff I did not want to get
+involved in that so that left us with we
+decided to take it home and call the
+bank so we talked excitedly we knew we
+had a skimmer and we're going to take it
+home we're going to we're gonna take it
+apart we're like what's the quest
+excited bit like what is it is like like
+maybe make who put it there is it
+organized crime like like like there's a
+really card number at the camera like we
+don't know what it is like we've got all
+these questions we're very excited we
+said we feel like we're in a movie like
+oh man like like maybe there's monsters
+means there's criminals maybe it's
+conspiracy but then we got to this part
+of the movie oh [&nbsp;__&nbsp;] sorry professor Oh
+what if the guys who put it there
+want it back and so Elizabeth was asking
+me hey Matt does does this have a GPS on
+it does it have like a LoJack's or
+something like can they find us and I
+said babe I don't know like until I get
+it home and take it apart I don't know
+what's in it and she says well once you
+get it home they know where our home is
+so like we're at kind of a catch-22 we
+decided to compromise I asked the waiter
+to bring over some tinfoil and weari
+and so that kind of children enough to
+where I can sink at home and take it
+apart and so I woke up the next day I
+was a shot I wasn't dead and I called
+the bank and the customer service guy
+was very confused he's like what now and
+I'm like I didn't want to let him know
+I'm a hacker and I know exactly what
+this is
+but I also wanted him to go investigate
+what was going on so I'm like a piece of
+plastic came off the ATM and I don't
+know what's going on in their life like
+what's going on in like eventually
+they're like we'll see the technician
+I'm like good Justin the technician
+check this HTML and I could not wait to
+take this thing apart so the first thing
+I got to was that port on the bottom
+here's kind of a close-up of the pork
+what so there's four wires any computer
+nerds like if you see four wires what do
+you think USB Booya so that's the first
+thing I thought I was like USB yeah well
+I wasn't I didn't have my lab no
+soldering iron no nothing so we have to
+go low-tech
+MacGyver style I took my cell phone
+charger and I cut it off I got four
+wires out and then so what order do you
+put them in I had to kind of get I found
+this image online of black green white
+red and I had to thread it like like one
+at a time and I had to hold it with my
+right hand it was a pain I finally got
+wired up but I had like keep I didn't
+have solder or tape or anything I had to
+like keep it held and I plugged it into
+my computer and grew it mounted as a
+hard drive I was so excited I almost
+peed a little I called Alex Li oh I got
+this thing mounted there's video files
+on it all as freaking out but I had I
+had to do it all left-handed because I
+was holding this thing with my right
+hand is complicated
+so in inside this hard drive when I
+mounted there are two folders one that
+said Google Drive that I think was an
+accident it was empty
+and one that said DCIM in the DCIM
+folder there were 11 gigabytes of little
+30-minute video clips yeah they're like
+they're motion activated so it started
+recording whenever it's all motion the
+date/time stamp was jacked up so I
+couldn't get any information off of that
+and here's the files so most of the
+vials were just this so people using the
+ATM it's upside down but I imagine the
+criminal could pause it and hold it but
+you can't hear me either but there
+sounds so whenever you hear a car going
+you're like choo-choo-choo
+and then you hear the buttons press with
+like Bing Bing Bing Bing Bing as they
+hit each button and then what a pin
+number is legitimate you hear the cash
+dispensed so so the audio kind of plays
+a role and like you know figuring out
+what buttons are pressed and stuff
+here's a little clip of the guy
+installing it you can't really the video
+quality is kind of crappy but all you I
+love to see I try to play detective like
+oh does he have tattoos you know this is
+you like you see his face but I you
+can't see anything you see the side of
+this guy's left hand and then you see it
+he eventually like puts it on the thing
+and it goes upside down the most
+exciting file was probably being
+Elizabeth discovering it so the last
+file on the folder with me and it's kind
+of like oh [&nbsp;__&nbsp;] oh that came off there's
+[Music]
+and there's like 30 minutes of us like
+you can hear us like it's in her purse
+and I'm like oh well organized crowd
+this is a quote almost directly
+Elizabeth I was like well I think it's a
+screamer what's going to do Elizabeth
+says ticket Alex would be so excited to
+hear we've got a steamer so how is this
+thing made okay so this is the picture
+of the canopy when I got it home and
+this kind of describes the cutaway so so
+your hand goes in you type a PIN number
+what they've done is they added some
+scoping material and they put some
+electronics in that little black box and
+then up on the top is where the camera
+is and whole camera so I had to get out
+the chisel that's the skimmer
+that's me like kind of breaking it apart
+so the outer the outside is that an
+injection molded plastic so it's like a
+commercial actual thing and then I kind
+of broke it apart broke apart although
+that yellow stuff is the sculpting
+material there's a Samsung battery in
+there you can see the like a like a
+board in there that's where I dug down
+to the camera and there's a picture of
+the pinhole camera oh and so what is
+this board this is a modified like spy
+camera board you can see that that
+little switch is the switch you saw on
+the bottom so he soldered lines to it
+and put a switch on the bottom then
+moved the USB port and put a 32 gigabyte
+chip on there that's an 808 micro camera
+board and when I googled it I found a
+bunch of spy camera stuff and so he just
+bought like a commercial spy camera
+thing took it apart modified it and put
+it into a
+I'm saying like a hood okay so final
+thoughts the overall design choices were
+actually pretty pretty decent I thought
+it was kind of being lazy using the like
+recording the sound but actually it kind
+of helps like when they were moving
+their hands over the buttons like
+hearing which buttons are dinging the
+sound was a good choice cell phone
+battery I thought I pictured this guy
+like just had a battery lying around it
+he and he used it but if you're talking
+high high power for a long time in a
+small profile like cell phone batteries
+like the perfect choice and then using a
+premade spy camera board had a lot of
+advantages it's small its motion
+activated it's got a little pinhole
+camera already so it's like I'm looking
+for 15 bucks I also thought that the
+device was handmade not mass-produced
+and you have to hook up a USB thing to
+get the data off and recharge the
+batteries and all that so I suspected
+that this guy had a few of them and he
+would go swap you know so I visited the
+ATM a couple days later and there was
+another one there I just I poked in real
+quick and took a snapshot and ran away
+like a scared little [&nbsp;__&nbsp;] I was still
+scared the motorcycle guy shooting me in
+the face down so the bank had my phone
+number and stuff they never pulled back
+they never investigated this I kept it
+around for the entire trip and threw it
+away like on the way to the airport
+because I didn't want to fly
+internationally with this thing so the
+the card what about a card number so my
+suspicion I juggled really hard on the
+card reader and I didn't find any any
+skimmer on the card reader I suspected
+they were doing the over the wire
+skimming and if you look at this picture
+you probably can't see you but there's
+like there's the power wire for the ATM
+and then there's some extra junk over
+there
+like three wires where I would only
+expect to be one so I thought they were
+doing some over the wire stuff and then
+a few days like a few weeks later I read
+a news article about a guy who was
+arrested 20 minutes away from where I
+found this skimmer
+through the Bulgarian man they said he
+was using a canapé hidden camera in the
+canopy sound familiar
+and he was skimming ATM or credit card
+numbers over the wire using a wireless
+device sound familiar so I'm pretty sure
+that's that's what he was doing but
+that's it if I missed anything I kind of
+tried to blow through that anyone have
+any questions hit me how long before you
+think you recognize how long the
+question was how long before he was
+right behind me before I replaced it so
+I took it I took it home went to bed
+woke up the next day took it apart and
+then the day after I replaced it and the
+timestamps were messed up on it so I
+don't know if it was there for you know
+five days or one day but I was
+estimating with the cell phone barrier I
+think you probably had to swap em about
+every three days like give or take so
+anyone else did you touch the data bus
+to find out and the numbers in were
+accurate because she wanted did I test
+the data file to see if any of the
+numbers were accurate and no I didn't I
+didn't steal any money no Indonesian
+currency for me how did you find that
+article I wrote up a blog post about it
+and someone linked it to me on my blog
+post so so incentive to me did I guess
+the inside for prints no again I was
+MacGyver at the moment I didn't have my
+fingerprint testing kit and access to
+the federal database that I normally

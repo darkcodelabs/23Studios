@@ -1,0 +1,484 @@
+so we need a Parsa
+[Applause]
+hi everybody I cannot see anyone out
+there feels really weird Hey
+so I wish I had known about you all a
+year ago because it would have made this
+process a lot easier because when I got
+some of the information I got during
+this process I really didn't know where
+to go I didn't know you all we're here
+in Kansas City my name is Anita I just
+sort of stumbled into looking into
+cross-checked because I read an article
+back in 2016 when everybody in the world
+is kind of worried about Russians trying
+to hack her voter databases did they
+interfere with the results of the
+election yada yada yada I wandered
+across an article that was about a
+Kansas program called cross-check it's
+run out of Kansas paid for by Kansas run
+by our secretary of state Kris Kobach
+the idea of the program is they take
+voter data from however many states want
+to send it at its peak it was about 30
+put it all in a big database and
+supposedly look for duplicate
+registrants and double voters which was
+Chris's you know main passion so the
+complaint in this article that I read
+was about how cross-check is a voter
+suppression tool it's this massive thing
+to prevent people from voting
+specifically aimed at people of color
+there were some things about that
+article that were wrong but what caught
+my interest was Kansas is paying for
+this thing for free and we're broke
+we're not particularly good at data
+security in terms of the Kansas
+government I don't know if you guys
+but in the Kansas House and Senate
+combined there are two guys both in
+their 60s who have any kind of tech
+experience whatsoever their former
+programmers so we really don't know what
+we're doing in terms of data analytics
+data security or whatever so I started
+looking into it just to see you know
+what's going on with this article why
+are we paying for it as it evolved I
+realized that I was asking the wrong
+question my first question was why are
+we paying so much for this when I
+realized the data analytics look like
+this they take this database of a
+hundred million American voters with
+social security number and everything
+and they say you're a match if you have
+the same first name last name and full
+date of birth they completely ignore
+Social Security number
+so every John Smith in the country has
+somebody else who shares his date of
+birth what finally occurred to me is the
+same geniuses who decided then that was
+a match designed the data security for
+the hundred million voter database so I
+started digging into what kind of data
+liability insurance we have is Kansas
+liable if this thing is hacked I shot
+off an email to the Kansas Secretary of
+State's office
+a Kansas open record request back in
+April of 2017 and I asked him two
+questions
+I asked him how much do we pay for this
+how much did we pay to design the
+program and how much do we pay every
+year to run it and the second question
+was what's our data liability coverage
+like as is common with the Secretary of
+State's office I got no response until I
+don't know December so eight months
+later and by then it was a
+because a whole lot happened in between
+I started studying another program
+called an Eric electronic registration
+information center they had like a two
+or three million dollar startup budget
+to develop good data analytics and good
+data security so you know I realized
+either Kansas is spending way more than
+Kansas should be spending for a program
+that we provide free or we're doing a
+really really bad job guess which one it
+was [&nbsp;__&nbsp;] awful so I was kind of
+poking around I confirmed that Kansas
+was liable but I really didn't have any
+evidence and I didn't know how to get it
+but I sent a Freedom of Information
+request to the state of Florida because
+they joined the program in 2013 and they
+pretty much immediately dropped out they
+said it's terrible the data is
+unreliable so I sent him this request I
+really just wanted their email
+correspondence between the Secretary of
+State's office in Kansas and Florida
+just to see if they send anything
+horribly damning about the program that
+I could use to convince people how awful
+it was and I didn't get anything like
+that but what I did get was way better
+what are you doing tradition here at
+psych KC and here's an awful shot bread
+belonging Jaeger
+I don't need to sleep tonight hell yeah
+[Applause]
+I can't even remember what I was talking
+about I'm drunk already okay so I get
+these files back from Florida now I was
+a programmer back in the 80s
+pre-internet
+I COBOL exactly couple my tech
+experience expired somewhere around 1989
+when I left it to get my mba in
+marketing so you guys I don't know the
+tech part of what we discovered but I
+knew enough to know it was really really
+bad so they send me two things the first
+was an email attachment that includes
+all the private data for 945 Kansans
+just as an email attachment first name
+last name date of birth their address
+social security number all of it
+somebody got their hand up desk a
+question yeah sure exactly so it's not
+encrypted there's no password it's
+nothing it's just an email attachment
+they sent me Kansas had sent that to
+Florida in 2013 where it's at in their
+email until 2017 when they sent it to me
+supposedly all 945 people were double
+voters but given how great cross-check
+is guess how many of them were zero not
+one every last one of them's a false
+positive because Florida didn't provide
+their social security number to the
+system so every last one of them was a
+mismatch on social it was just a bunch
+of John Smith's and David Smith's and
+whatnot so I saw that and I realized
+that not only was there a risk when
+they're transmitting the data from the
+state of origin to Kansas for the to
+build the database and then back to the
+state but what they do with it after
+continues to put all the voters at risk
+and again we're talking about a hundred
+and ten million people who are thrown
+into this system so that file a couple
+things happened it confirmed my
+hypothesis that Kansas wouldn't was in a
+world of hurt if this thing got hacked
+because Florida got in trouble for
+sending me the file once I finally got
+the press to write about it got it
+covered
+Florida cop to the fact that yes they
+had done it it cost him about a hundred
+grand for 945 the release of 945 voters
+data yeah no I'm not giving it to you
+and I did not bring my computer here
+tonight sitting out in my car and
+protected slappy
+anyway
+okay anyway maybe I should not be
+talking about information security right
+now anyway so we got that we got the
+data to the press they released in
+Florida admitted they screwed up they
+paid these people for their life black
+or whatever Kansas said had nothing to
+do with cross-check wasn't a hack
+it wasn't Kansas fault it was Florida's
+fault so no responsibility in no way did
+they say oh yeah we have this
+responsibility we're taking control of
+private data for 100 million people we
+really ought to have our act together
+no they suck so it was cross-check data
+it was an excerpt from the file it came
+from Kansas and you can quibble about
+the definition of a hack but it was data
+that should not have been released to
+the public and it was so I don't care
+what you call it it shouldn't have been
+out so the ACLU has now filed suit
+against Chris Cola about this release of
+data
+we're hoping to make it a class-action
+suit so I you know on a Saturday night
+I'm calling some guy from the file like
+hey this is kind of weird but like I've
+got your social and can I explain D J
+he's a neighbor of mine he knows some
+people we know so he's the name the guy
+in the suit and it's got more really
+nice guy I've never met him but he
+agreed to participate in this thing so
+that's one thing that happened that I
+got in that Freedom of Information Act
+the other thing was so they emailed the
+encryption password over plaintext email
+not only to the state's participating
+but to like 40 or 50 other people now
+the water I got was the 2013 one so
+there's nothing I could do with it but
+it certainly suggested how sloppy they
+are right terrible so I wasn't sure what
+to do next but in the intervening months
+since I had been looking at cross-check
+Coppock had been named the chair of that
+bogus crap ass presidential Advisory
+Commission on election integrity which
+was really his search for 3 million
+fraudulent voters so that we could claim
+the Trump had won the popular vote yeah
+exactly
+illy yeah so and komak did his normal
+masterful performance on that commission
+and it disbanded within six months under
+a fire of lawsuits but the good thing
+that happened was because he was named
+and he asked every state for all their
+private data
+every nearly every state said [&nbsp;__&nbsp;] you
+and didn't send it it raised a lot of
+attention on the fact that Kovac was
+running cross-check and already getting
+data I spent about two days and like
+seven million tweets everybody who was
+complaining like Norway should my state
+send data I would say they're already
+sending it and they have it for a decade
+no one knows this is happening this
+whole cross-check thing is like
+completely not transparent
+there's no reporting there's no public
+accountability it happens like in a
+little backroom you know in the
+Secretary of State's office half of the
+bill legislate legislators that I talked
+to had never even heard of it when I
+called him up like hey I'm worried about
+this cross-check thing and like it could
+bankrupt hands they're like what the
+what so we we get the encryption
+password I don't know what to do with it
+the integrity Commission has created a
+lot of kerf levels so some guys in
+Illinois also started saying why are we
+sending this data to cross-check and
+they were separately from me working on
+trying to bring the thing down so I
+joined forces with them so I'm on a
+conference call with them and I tell
+them I've got this file and I got the
+encryption password and what do we do in
+this because they were they were back on
+remember I told you about the original
+article and it was all about Buddhist
+oppression and racial bias and not that
+that's not important but it doesn't open
+a lot of doors of the Republicans who
+are making the decisions in Topeka and
+so I said I think there's a lot more
+power in the narrative of they're really
+playing fast and loose with this data
+than there is in trying to prove this
+voter suppression thing we have no
+evidence that
+happening and in fact I don't think it
+is so these guys are like you've got the
+encryption password yeah so the next day
+a whole lot of Freedom of Information
+Act requests dropped to a bunch of
+states that are involved and within like
+two weeks we have the encryption
+passwords for every year we have the IP
+address we have evidence that the FTP
+server they've been using for this that
+for years for a decade they've been
+calling a secure FTP is in fact not a
+secure FTP they're sending all of this
+stuff over plaintext email to like 80
+people when it should be maybe 30 and
+they've basically done everything except
+you know hand the information to hackers
+and again this is a hundred and ten I
+think at its peak it was one hundred and
+nine million Americans information
+managed by Kansas so I mean it's so dumb
+so um and this is when it would have
+been great to know you guys existed
+because we were like yeah now what do we
+do luckily the guys in Illinois knew
+some people and they got a hold of Dell
+Cameron and his moto and Dell got in
+touch with three or four white hat
+hackers who looked at all of this and I
+don't know if any of you guys read the
+article that came out in November of
+last year
+that said that his bogus voter fraud
+program could have been hacked by a
+novice so come January 2018 or I started
+going up to Topeka to meet and to sit in
+on house election committee meetings and
+for the first time ever Kovac is called
+in front of the house election committee
+to answer these questions about
+cross-check what's going on the states
+meanwhile who are involved got scared
+because they all heard about this and
+they're like why are we sending our data
+to this guy you can't keep it safe
+there's no attempt to keep it safe so in
+January
+- pika I'm in the room when Kobach's
+says yeah they say it could have been
+hacked by a novice but come on they
+didn't have it it would have been a
+felony first of all we didn't try to
+hack it we tried to show how easy it
+would be to hack it I mean I'm pretty
+sure somebody could if they want to do
+so he says no worries I'm gonna I'm
+gonna spend twenty thousand dollars and
+I'm gonna completely revamp the native
+security to protect this this is twenty
+seven thousand sound good I don't know
+you guys think that sounds it sounds
+pretty ridiculous to protect 100 million
+voters data what yeah he'll know is what
+I got so I think about what could be
+done with his data aside from just like
+stealing people's private data if you
+really really want the [&nbsp;__&nbsp;] with an
+election and let's say Indiana has a law
+and it does that the only information
+they need to strip somebody out of their
+voter database is that they were
+identified by cross-check as a potential
+duplicate registry remember that's based
+on first name last name and date of
+birth so let's say that somebody got a
+hold of the Indiana results file and
+messed with it so that all of the
+picture party whoever you don't want to
+be able to vote all the Democrats now
+look like they're double registered and
+they get dropped from the vote
+you now have made sure that they can't
+vote and you've manipulated the election
+yeah exactly I mean you could mess with
+all sorts of things you could change
+somebody's middle initial yeah exactly
+so there's all sorts of malfeasance that
+could happen in addition to identity
+theft and you know at a more basic level
+anything that affects the voting rights
+of a hundred million Americans should
+not be in the hands of one high
+partisan state with no oversight
+whatsoever with no ability to protect
+the data with no integrity at all
+so anyway kodox like yeah i'm gonna fix
+them and fix it well he did never fix it
+he also never announced to the public
+that there was a problem in any way
+somehow or another and I don't know how
+DHS got involved and they came in to
+review what his new data security was
+going to be and 2018 is almost over
+they run cross-check I should have said
+this they run it once a year between
+February and April it never ran this
+year it got shut down but the whole yeah
+exactly it's so he didn't to fix the
+midterms at all because we shut it down
+I think you know that's none of a [&nbsp;__&nbsp;]
+sorry if anybody loves Kovac but he
+never admitted that he didn't run he'd
+never admitted that he screwed it up he
+never admitted the problems in any way
+it was all like oh he said literally I
+don't concede that there's a problem
+whatever he couldn't run it he said I'm
+gonna take this program under my wing
+and you know a couple years later eight
+states have dropped out because the data
+is terrible another couple of states
+said they are gonna send any data
+anymore because he can't keep it safe so
+here we are we did not elect Brian
+McClendon as Secretary of State which
+would have fixed all of this instead
+Kansas elected Scott Schwab who vows
+he's going to continue cross-check the
+way Kovac did we don't know if he's
+going to be able to we don't know if
+States will send the data we don't know
+if he has the money to fix the election
+that the data security to protect the
+data we really don't know what's gonna
+happen next year what we do know is we
+have the opportunity with a different
+leadership at the top and Kansas like
+for example if if the governor
+passed an executive order wrote an
+executive order that said you can't do
+this unless there is data liability
+insurance
+maybe we can shut it down again in 2019
+one thing that happened in 2018 when we
+were meeting with the Kansas Legislature
+as we got a Republican to write a bill
+that said the group to require data
+liability insurance because we have none
+we're covered by the Kansas support fund
+which has I think $200,000 in it which
+would touch what to that release it like
+2,000 names or whatever based on what
+happened with Florida the the data
+liability law it was super simple that's
+all it was
+this thing has to be protected by
+insurance coverage a coop crony got
+ahold of that and pocketed it it never
+got heard so we're still completely
+unprotected if this bill if this program
+starts up again in 2019 still just wide
+open for anybody to attack unless they
+suddenly unless suddenly the same people
+who design something where the you know
+the FTP is not secured and the
+encryption passwords are being sent all
+over town suddenly become experts in
+data security Kansas is vulnerable I
+think we calculated if the entire file
+were hacked we're talking about a
+billion dollars of liability for Kansas
+which would bankrupt the state so we're
+hoping to shut it down again permanently
+Kansas could use this other program
+called Eric which is excellent every
+other state could use this other program
+Kansas really has no business running a
+voter registration database so you know
+what I can't tell you guys a whole lot
+about the
+the super technical part of what we
+found but I can connect you with anybody
+who is involved in doing the analysis
+and I can you know point you to the
+details and the data on our websites if
+anybody has questions I'm happy to
+answer them either up here back over
+my website is leave cross-check comm and
+the guys out of Illinois did and
+cross-check comm they've got all the
+tech data on there so end cross-check
+comm is the one you want it for the tech
+stuff and then that one of the hackers
+were used as a guy named Adriel this
+scientist I think is his name Greg
+brimstone on Twitter and he's a great
+guy Dell Cameron it Gizmodo is great
+they both have a lot of information
+about this on on on their Twitter feeds
+for another hand guys
+[Applause]

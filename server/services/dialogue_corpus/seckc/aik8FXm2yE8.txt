@@ -1,0 +1,1112 @@
+timer so anyway listens here for Ryan
+and I'll turn it over to you like I said
+my name is Ryan
+I do have these slides like linked I
+it's a very undeveloped github currently
+but I'm working on that as it kind of
+goes here it'll hopefully be like a full
+course and yeah like I said like the
+whole thing is a series on I am focusing
+on mostly on Active Directory but after
+some feedback found out like I might as
+well start from the very beginning of
+like what even is the infrastructure to
+set up with how can you even start to
+get into someone's network from the
+outside and so the first talk which is
+also in the github does cover kind of
+like it's more like a theory of what as
+a pen tester I'm really trying to do I
+know a lot of people kind of think it's
+just like throwing out exploits and
+using a bunch of fancy scripts that you
+write up and it's a lot simpler than
+that for a lot of the time and I prefer
+things to be a lot simpler because it
+means I have to do a little bit less
+work and I can do it a lot quicker so
+it's nice but today we'll be talking
+about the infrastructure for your
+command and control and kind of just how
+to set that up and where you can set
+that up and then we'll cover a few of
+the initial footholds and how kind of
+easy that is especially once your
+organization is over a couple hundred
+people it just gets easier and easier
+the more kind of target space you have
+so we'll do a quick review you missed
+the last one and I'll try to get through
+that quickly cuz I've a little bit maybe
+more to talk about than I should and
+then what do you see to set up since
+so last time I talked about the whole
+basic theory so we have the you start
+out and you get some credentials you try
+to see if those are high privileged
+credentials or not if they're not you
+want to find out where those credentials
+can go and then you're going to migrate
+to other hosts that have more
+credentials for you to steal and you'll
+kind of cycle through that and
+eventually be able to take over the
+whole of domain from the inside and we
+kind of talked about this a whole attack
+path is if once I get Bob spreads and I
+have a computer I can go to there's
+maybe more people on those computers
+that I can steal creds from and you
+spread this out until eventually you get
+somewhere where you've got a domain
+admin but first we need to actually get
+Bob's credentials in the first place and
+before that even we need somewhere to be
+able to be able to send our shells and
+talk to the in the target space so we've
+got command and control command and
+control or there's like ten of two sides
+I mean that's commanding control of it
+the server itself does command and
+control and then you need the actual web
+server itself sitting out somewhere like
+if your house you can't send a shell to
+your computer your router is going to
+block that like you need open ports on
+the internet right some design
+considerations think of front are like
+you need to be stealthy that's kind of
+how complex is this infrastructure you
+need to be the skill of the target
+you're going after are they going to be
+actually actively looking at your
+traffic and traffic inside and outside
+their network and what are they going to
+be looking for how long are you gonna be
+on this attack once we kind of get into
+it some of the longer attacks you might
+want to have backup kinda servers where
+you might send one shell but never talk
+to it like it only checks in every three
+weeks or something because you want that
+guy to stay super hidden just in case
+your main guy gets burned and then
+what's in scope like you don't need to
+set up all the servers for different
+like phishing attacks and
+like that if you don't have to so that
+comes in there for us and well I guess
+for me Kali Linux is kind of the go-to
+operating system I want running on my
+different servers and then for the
+handlers that are gonna catch things and
+send a lot of my traffic we use
+Metasploit in PowerShell Empire they're
+both free there's some paid for ones
+that we can talk about to a little bit
+later and then hosting AWS and
+digitalocean are great you can use your
+own home address we kind of set it up so
+that'll work and that's kind of
+different it's much easier just to throw
+something up in the cloud that's already
+built and you get some other benefits
+from that too so a simple command set up
+and this is like the basics right you've
+got your command and control server the
+internet is there and your victim right
+and you just have a straight pipe
+straight from the victim
+through all the hops straight to your
+server and then you are probably SSH
+into your attack server I guess I could
+go directly to the attacker box if I
+wanted to but for this we'll just say
+there so the attack host can really be
+anything
+I prefer Kali but anything that's got
+SSH because we're going to be SS aging
+into our Kali instance that's the actual
+holding our shells what we're going to
+coming into everything from and in the
+victim these are not necessarily just
+users they can be like web servers just
+anything that's out there talking back
+to you setting this up in the cloud is
+actually really easy and quick and if I
+really better than anyone wanted to
+follow along they could almost keep up
+and do this but AWS is like free
+infrastructure for attack servers kind
+of out there you can actually use their
+micro instances and sign up for a free
+account and deploy this stuff so I got
+every step even in you
+like this is after you sign up this is
+kind of the dashboard you see this is
+for a free account and then you can
+launch a new instance and nice enough is
+that Amazon actually includes Kali in
+one of their pre distributed instances
+so if you go to the marketplace on your
+instance you can search for Kali and
+find Kali Linux in there and get going
+you set up a Kali to launch and I chose
+the t-tube micro just because that one's
+free unless I think you get over some
+amount of bandwidth they might start
+charging you but it's very less like 10
+cents or something but this is just to
+get set up it'll ask you to generate a
+new key pair you'll create a new one
+call whatever you want you save this
+back to your own computer and then as
+soon as you launch it it's going to tell
+you your public IP address that you now
+have and there is a your public dns also
+which is nice that if that root domain
+on there is Amazon AWS comm and so that
+gets through some things just because
+it's hosted on Amazon a lot of people
+trust Amazon traffic for some reason so
+it already doesn't really look like a
+malicious box out there as far as
+connecting to it you basically are just
+going to SSH with the key that you
+download it straight to and they start
+you off with this ec2 user to the IP and
+it's as simple as that and now you're
+logged in to your Kali locks on the
+internet just about ready to go the only
+thing you have to do left is set up a
+security group the security groups kind
+of control what can talk inbound and
+outbound to your AWS instance and
+there's probably a lot more AWS can do
+that I just don't really mess with this
+is maybe the worst way you would set
+this up is
+allowing in these stuffs just every port
+basically I want to be exposed to the
+Internet to talk inbounding up out
+because depending on the situations you
+might not just need to talk over web for
+it so you might need some high-level
+port or depending on what protocol
+you're messing with like I just want
+everything to be able to talk to the
+Internet this is kind of just setting
+that up you got a new rule allow all tcp
+from any IP address and when we get into
+the more advanced setups you can
+actually restrict your IP addresses that
+they're only coming from your target
+sources and that way you kind of just
+protect your own infrastructure from
+other hackers or like if blue team's
+started actually digging and look for
+stuff they might build a fingerprinting
+that way but it really is as simple as
+once you set that up you can set up like
+a patchy there's to kind of test and hit
+your IP address that I gave you and
+you've already got your whole command
+and control like at least this basic
+server setup in the cloud ready to go
+and catch shells from anywhere all those
+steps are kind of just gathered there
+but it's not that many steps to really
+just get yourself up out on the internet
+and it's nothing to do with your own
+home and you can SSH in from really
+anywhere - you're now free sitting up
+commanding control instance and that's
+kind of just the most basic set up some
+better setups and like depending on how
+stealthy you want to be you're not quiet
+and sneaking and everything if you can
+kind of introduce domain redirector x'
+domain redirector is where if you want
+to go by like domain names and then have
+those set
+Amazon instances basically the idea is
+that these things are burnable we'll say
+so if you do get caught or you notice
+that all of a sudden none of your
+payloads start workings they they found
+your reverse reverse shells out there
+and they did like okay we found this guy
+we're gonna block that IP we he can't
+get there anymore and that this is kind
+of the whole point of having a secondary
+guys setup but you can just get rid of
+these things real quick because all they
+are is just a domain that's sitting out
+there or a simple server that's port
+forwarding everything straight through
+to your real communicant role the idea
+here is that you don't have to once you
+do set up like that Cali box you might
+want to install a bunch of other tools
+to it and you just don't have to keep on
+doing that every time you need to set up
+your situ so you'll keep redirector Zout
+in front and these will kind of just
+mask your actual situ in case it ever
+gets burned or even if you're using your
+home address for the actual command
+control you can just use these
+redirector so they could get burned all
+the time and you can just keep on
+setting those up real quick just change
+the domain you're shooting into and and
+you're fine you know they're meant to be
+easy up-down and just so you don't to
+deal with all that I think they call
+like malleable c2 or something but it's
+so we can just like quickly be changing
+domains ip's whatever that stuff doesn't
+affect us as much now you really want to
+get crazy and move on to the the real
+stuff like you get into these chained
+redirect errs because there's like some
+advanced to blue team techniques that
+can kind of try to fingerprint where
+that traffic is coming from even if it's
+going through multiple hops or if it's
+changing the idea is here is that each
+one of like your actual community
+controls is hosting something different
+so like one might be for the phishing
+campaign and one is like a like a
+different email server one name is FTP
+you have payload stagers this is so that
+you can actually host payloads from
+different places the idea here is that
+if you blend your traffic out amongst
+enough
+places it just looks like normal it's
+like really hard to determine where the
+actual like attack is coming or what you
+can block that will actually stop
+anything because anything you stop here
+I can just switch over to a different
+one and like you're gonna have your
+primary and secondary command and
+control the idea is once you get kind of
+your first shell and some people have
+different like ratios but like one in
+ten boxes you pop you might send over to
+that secondary and set some really long
+duration like check-ins so that just in
+case you do get your main one burned or
+figured out or blocked you've got this
+backup that's still in there but he's
+spending so little traffic it's really
+hard to find them there is a blog blue
+screen of Jeff it's Jeff I don't even
+actually know his last name but I think
+it's like Twitter handles blue screen of
+Jeff so I just I consider everyone by
+their handles he's got a full post or or
+quite a few of them on like covert red
+team attack infrastructures and just
+different levels of the setups depending
+on what your scenario is and his main
+thing is that you defy the server's by
+function don't overdo it because it's
+it's really surprising how often that we
+can just use the same IP for the entire
+engagement and it never gets caught and
+then maybe like five or six months later
+we'll get a call like hey you guys did a
+pin test for us is this your IP and it's
+like they're just getting to figuring
+that stuff out so it's not as like tough
+and you don't be as sneaky as you you
+might think you have to be before
+because attribution is a really hard
+thing to do and big networks I know
+that's like a big problem for blue
+team's just because it's just there's
+just so much traffic and network all the
+time and if you're using the right
+protocols it's an attack
+you just look like normal traffic and
+part of this whole series is getting at
+that like we're not using these crazy
+exploits and stuff right we're getting
+in as your normal users and then just
+looking like normal user traffic and so
+I don't know how many people are really
+monitoring just their everyday users
+traffic if they're just surfing the web
+and stuff that's that's what all I'm
+trying to look like is the the counter
+ops they get into some of the you might
+figure out that they're like using with
+their mail server like and phishing for
+example like uses a some really unique
+user agent header or something and you
+could make sure you're mimicking all
+those things and just just more things
+you can do to kind of distract the blue
+team's from actually finding you and
+giving you more time on the inside but
+once you get on the inside and we'll see
+probably in the next talk they actually
+like covering in the inside lateral
+movement that it goes pretty quick once
+they're inside so it's tough for them to
+find you if you've got enough of this
+spread out and catch you in time but you
+can't make it just really really hard to
+get rid of you as an attacker I guess I
+should say the protocol choice does kind
+of matter - he's got different tips
+we're using whichever like we primarily
+use HTTP but it's fairly simple and a
+lot of times your appliances just assume
+stuff over 4:43 like they're not
+terminating and everything they're not
+decrypting it they're not looking at it
+you can do this all over DNS requests
+back and forth it's a lot slower but
+it's doable domain fronting is a
+technique that's been kind of recently
+popularized and and somewhat you could
+say even setting up in a VW ass's domain
+fronting but the whole point of domain
+fronting is the main one who like was
+using Google Google's a
+engine or anyone can sign up and get a
+google or your app named appspot.com and
+it comes from like a trusted google
+source but those are actually the
+command-and-control redirect errs so
+their app looks like it's going out to
+reach to Google but I just redirect that
+request with my app to my actual situ
+and that's been in the domain fronting
+set up third-party command and control
+these ones are like the really sneaky
+tricky ones I don't know if anyone saw I
+think this summer there was kind of a
+big post about someone was running there
+commanding control of Britney Spears's
+Instagram comments and so they were
+using like they would basically have
+random accounts posting to like famous
+people's Instagram accounts with a
+comment that was actually some encoded
+command for their command and control
+servers for reaching out and just
+checking comments on those posts looking
+for that and like that from a blue team
+is really hard to figure out like that's
+what's going on I don't even know how
+those guys actually even caught that but
+it was a like discover thing that's kind
+of like the third party like using
+Twitter or some other means I've seen
+even like shells being caught and used
+in slack there's like integrations now I
+think even Empire has like an actual
+module for it
+but using just these third-party apps
+that become trusted and so the traffic
+just looks like it's very normal traffic
+but they're actually talking to your c2
+servers you're just not even hosting
+your c2 anymore
+[Music]
+so there's lots of design theories on
+all this cobalt strike Mudge has written
+quite a bit about it they're really big
+into red teaming the whole kebab strike
+that is a paid-for product though but
+they have like their team servers and
+they have a bunch of different shared
+infrastructure black hills wrote one up
+on just setting the same kind of thing
+up on digital ocean for really in these
+cloud providers it's fairly simple to
+set these things up quickly and then
+tear them down quickly so that you can
+just keep rebuilding them out whenever
+you need them ideally a new one for like
+each engagement just so you don't
+cross-contaminate any data or anything
+or the tools nowadays also will like
+share like they catch some malicious
+stuff on this network coming from these
+IPS anyone that's part of that product
+will also get that protection and so
+we'll just change every time so that
+even if one does get caught it it just
+doesn't matter anymore and so yeah the
+command control choices these are as far
+as just actually running your shells
+which we'll get to eventually but
+PowerShell empire municipal II J s rad
+is kind of a newer one where they're
+they're kind of they're compiling
+everything using the.net to JavaScript
+like libraries that I won't get too much
+of that but then there's like there's a
+whole powershell c - that's the whole
+thing is written in PowerShell there's
+lots of free ones out there so it's not
+like any any like kid can just go ahead
+and start doing this without meeting
+like some nation-state backing them like
+this is all just free stuff there is
+paid ones Kobo strike is actually got a
+lot of good features which are nice
+canvas core impact I haven't actually
+used but I hear a lot to talk about and
+then noticeably Pro there's a pro
+version I think that mostly adds a lot
+of
+attack stuff I've never had a need for
+it but it might offer some things I just
+don't know about so now that you've got
+that Cali box set up just to quickly set
+up your actual where you're going to
+catch the shells is I prefer PowerShell
+Empire which is as simple as cloning
+their github project changing into the
+directory and just running the install
+and so the idea that it like you can go
+back through these slides and actually
+launch all this stuff within a
+relatively short amount of time have a
+full set up running once you kind of get
+Empire set up you can launch it it looks
+like this I don't know if you can see
+that at all but you know it's a little
+bit Metasploit ish like it gets
+confusing switching back and forth
+between the two but because of the
+command syntax they for some reason for
+a long time are using the same syntax
+and they just decided like or different
+so we're gonna switch and but it's not
+too bad
+Metasploit itself is built-in by default
+to Kali it's recommended that you like
+kind of start up the database on the
+back end just to make searches quicker
+but most what's also a great tool some
+other notes on the command control that
+we use and that kind of comes in helpful
+is when you have these things up running
+in the cloud or whatever and say like
+you want to change where you're coming
+from and even login to your C to will
+scream or like tea mugs is a great
+application be using so that way you can
+run all these programs we you don't have
+to stay connected to the Box the whole
+time it's fairly simple to use once you
+get it up and running this is kind of an
+example of coming from one of our attack
+boxes where at the bottom of the screen
+there you can see like you'd see or your
+source IP what other wind
+opening screen and then like any open
+ports you maybe have open one good thing
+is not to leave a bunch of open ports as
+I can kind of leave you more open to be
+getting caught kind of stuff and you
+want to protect the data that you are
+stealing because especially if you're
+doing a pin test for like work you don't
+want if you're transferring all their
+passwords out you don't really wanna be
+doing that plain text across the
+internet and exposing your clients to
+more kind of impact and then we use
+two-factor on all or SSH stuff so we
+keep all our stuff up in the cloud but
+then besides just SSH with keys we have
+two factors set up which you can easily
+set up with Google Authenticator and you
+probably should do that on your internal
+SSH every appliance anyways it's a
+little bit of a hassle if you're do
+login all the time I get that but we'll
+see that like just two factors really
+pain to get past as a tester and just so
+many people don't implement it it's it's
+fantastic when they don't because all I
+have to do is find those creds and then
+I'm in so that was the setup but like
+how do we actually get somebody right so
+we've got our hack command and control
+server set up we've got Empire go in
+some of these initial footholds and I've
+kind of been harping on this through the
+last presentation too it's just that
+like it's not exploits yes we do have to
+get in sometimes with exploits but like
+I'm gonna go with the easiest route
+first right and this isn't even like
+low-hanging fruit as far as like missing
+patches which are an issue too but it's
+mostly targeting your users and the
+first thing we're going to do is
+identify those users which is a lot of
+times really simple if your company has
+like an about Us page and links
+everyone's email address there that's
+probably also their login you know so
+things like that people don't think
+about they think they're kind of helping
+their
+summers but really there is exposing
+themselves more you maybe want to just
+use like an info at your company kind of
+thing
+have I been harvested is it's a tool we
+developed a depth a guy Brian Berg one
+of my colleagues I guess you call them
+wrote this thing and if you've heard of
+have I been pumped I think Troy hunt is
+the guy that's right guy yeah yeah you
+can you can basically like type in your
+email address and see if you ever got
+home right and it'll tell you like this
+is the breach you got found in or
+whatever well how have I been harvested
+takes the idea of the harvester which is
+a tool that goes out and you can type in
+a company and it'll try to scrape the
+web like with Google searches or that
+company's domain just looking for email
+addresses that match that top-level
+domain
+have I been harvested basically that
+runs them both so I'll type in company
+comm and this will query all of the
+harvester stuff for email addresses and
+then take those email addresses and
+submit them to have Ivan pwned that
+didn't get the results which are like
+and running a seaman on our own company
+info at depth security which is one of
+the ones listed on ours was popped in
+some bitly email breach and having been
+powered will tell you like the name of
+the breach of what was released the date
+of the disclosure and the native
+references the part I won't totally
+cover and this is kind of somewhere
+outside of this thing so it gives you a
+little HTML file that shows the the
+users that got owned and what kind of
+breaches they're in well as an attacking
+groov we've been harvesting so whenever
+we see one of those dumps come out
+that's got like half a million or half a
+billion sometimes users and email
+addresses will go download them will go
+add them to our database and then ours
+will actually take those the
+that we know we have popped and if we
+have that domain dump will give us
+passwords of all these users already and
+there is a surprisingly large amount I
+mean like place was like LinkedIn get
+get breached and you might think well
+linked Inc I've reach like in 2012 I
+think is when I happened and so those
+passes passwords are out a date but a
+lot of those passwords to passwords
+sorry are like summer oh eight and so I
+can probably guess when they updated
+their password it's now going to be
+summer 17 you know and me when I want
+the Adobe breach is it gives select the
+hints also we're in the breach and it'll
+even tell you like password is dog's
+name and then you can kind of do more
+looking into someone about their public
+life that everyone likes to post
+everything about themselves online so
+it's very easy to discover once we have
+those security questions how to get past
+that stuff and this is all just free
+already on the internet we're not doing
+really any hacking yet these breaches
+can be found on like paste bin and
+there's different sites like I think
+like leaked source maybe but people just
+gather these things and even if they're
+all encrypted they'll even have sites
+that everyone's working together
+spreading out all the password hashes
+and trying to crack them off and put
+them in these giant divock databases
+that we can just search because we've
+been harvesting them for a while of just
+users and passwords so a lot of times we
+can even just start there with just
+typing in a domain in our database and
+just see all these different users we've
+already got passwords for but we don't
+always we always need the passwords
+because we're also going to try guessing
+passwords in a bit linked int is another
+tool
+part of MD sex active breech group they
+wrote this is going to it's pretty
+simple to install you basically just
+need a LinkedIn API key and it will
+search LinkedIn for that company and
+then try to discover all I can about all
+their employees and so that's another
+way of getting all these usernames that
+we're going to use for our attacks in a
+bit and it's it's gets into a little bit
+of a creepy spot where you create a fake
+recruiter with like some cute girl or
+guys picture on it and just ask everyone
+in the world to be friends with but you
+can use that kind of an account and
+attackers do to then use that to like
+discover all your third party
+connections and what we're really trying
+to do is collect as many possible logins
+as we can to your company once we have
+all those logins we're going to looking
+for different login points and the main
+ones we're looking at here for like
+really just targeting Active Directory
+because we want straight into ad is
+going to be your VPN gateways cuz that
+is just like a front door right into
+your company if I can guess someone's
+password and usually their usernames are
+going to be really close to that email
+address and it's just like everyone
+signs up for so much stuff with their
+work accounts that it's bound to be
+caught in a breach from some little tiny
+third-party site you never thought would
+affect you but password reuse is a real
+thing that a lot of people do and so
+it's really easy just to trial those
+passwords once and you might just
+already have a password and ready to log
+in webmail is another big one where it's
+easy enough to find on most companies
+because you can just type in like
+outlook company calm or their
+autodiscover address will kind of help
+you with
+or webmail company comm we also will
+look at Citrix file shares your share
+points things we can find they have like
+logins that are clearly going to be tied
+to ad or back to ad somehow the next
+step then once we have those users and
+emails is to spray some weak passwords
+and when I say weak passwords it's
+really just spring 2018 would be like a
+this current season I'd probably still
+stick with like winter because they
+maybe had to change their password
+recently the the typical ones like
+password one and you see those lists
+that come out I know they just added a
+bunch to the cyclist they talked about
+earlier but it's it's crazy I think too
+like security people to think people
+would put that as their password but I
+just can't tell you like how many times
+this gets us in so easily and the
+problem is that it's really hard to
+detect from a defensive side it's
+because if we are aware of the account
+lockouts and a lot of companies increase
+the defaults just because they don't
+want to have to deal with customer
+complaint tickets because they lock
+themselves out of their accounts again
+we generally I want I won't try five
+every 30 minutes but maybe one or two
+every couple hours on your whole list
+and you're just almost guaranteed to get
+someone's password especially if you
+have a large enough company if you've
+got over a thousand email addresses
+someone there for some reason choose the
+spring 2018 and by default ad doesn't
+give you the best ways to even prevent
+your users from setting spring 2018 I
+think even with the Advanced Settings on
+its like capital lower case and special
+characters so spring 18 exclamation
+point gets past that and that's all
+these users are going to try
+so there's tools for doing this that are
+fairly simple to which burp is an easy
+one on lease like Outlook there is some
+specific tools that even target outlook
+itself to do the logins for you but I
+kind of step through like literally
+every step that it takes is I'll go to
+your Outlook website this one was nice
+enough to tell me to please sign in with
+this format which said like company
+slash username one part about figuring
+it out is like sometimes your email
+addresses don't map directly to your
+user names but if your email is like
+Ryan Preston I can try our Preston or
+Ryan presidents one word like there's a
+few things you can just do to guess
+that's probably likely so we'll we'll
+proxy this request in burr you basically
+capture that request and you sent it to
+intruder which is a also a free tool
+built into Burke simple to use you don't
+have to pay for version even use this
+the sniper attack basically all I'm
+gonna target is I'm gonna pick in this
+example like I picked fall 2017 that's
+the actual I guess the post request
+happening and the user names the only
+field I'm gonna highlight because that's
+the one I'm gonna test my user list I
+gathered from those other tools you go
+to the intruder you load up all your
+usernames and you fire this thing off
+and surprisingly like in this example
+two people have fall 2017 as their
+password and it's like every time blows
+my mind like what year oh yeah how is
+this
+happening but it it definitely happens
+one nice thing about Outlook that's a
+little known I guess feature because
+Windows has lots of features is that
+response times can be used to determine
+if you have a valid username or not so
+if you're trying to figure out their
+username convention you can compare the
+response times to the password request
+to determine if it's a real username or
+not when they respond right away with a
+failure that means they had that user
+like in the worst this is not a very
+technical description but like they've
+got any memory so it can quickly check
+and say no that's not there and push it
+back if it is a username it doesn't
+already know it's gonna look in a
+different couple of different places and
+so the response is enough taking longer
+and so like this kind of example just as
+I'm highlighting the response times
+there but all the valid ones have just
+like a 300 millisecond delay and the
+invalid ones have a 3,000 millisecond
+delay so if you find a bunch of users
+you can try out a bunch of different
+forms of that one username and then just
+based on the response times determine if
+you've got a valid users or not from
+there oh I guess you're really looking
+to see intruder I guess if if it
+redirects out looks general kind of
+thing is to redirect you a couple times
+then you get to your actual like outlook
+inbox that's kind of what you're looking
+for is those redirects and the ones that
+just fail and bring you to the same page
+didn't work so as far as like getting
+that initial shell once we've discovered
+these passwords and again like this is
+all just I know it seems like it's like
+so simple but it really is that easy if
+they've got a VPN
+point you're basically already in one
+another feature of Windows is that by
+default every domain user no special
+privileges can join up the ten machines
+to the domain so if I were you our VPN
+access and I VPN anything from my Kali
+box I can launch a VM connect that and
+then use my users credentials that I do
+have and I've connected now now I have a
+domain joined windows box inside the
+domain and unless that person's already
+joined their ten I can get in and then
+that one's like a tricky I don't know
+why they do that by default by domain
+users it's even hard to find the actual
+like a tribute because you actually have
+to look at your domain level the domain
+contacts name if you like right click on
+check on the domains property there's a
+EMS machine account quota that's in
+there that'll be ten and so like you
+won't even see it on a normal users
+profile but it's actually on your domain
+level profile if you are guys going like
+look at this and maybe change it so that
+just privileged users can or whatever so
+maybe you don't have VPN access but you
+did find some valid credentials on
+Outlook there's a little tool called
+ruler we use that will get us shells
+through a trick in Outlook a few tricks
+actually but they keep trying to patch
+them unfortunately but there's new ones
+coming out ruler starts up it supports a
+bunch of different versions of exchange
+and office 365 and there was a point
+where Microsoft kind of touted like well
+you can separate office 365 from your ad
+accounts and that's fine is there gonna
+be different credits so like maybe I got
+your office 365 user and password but I
+don't have their ad creds well if I can
+still shell their machine then I can
+still get their ad creds what this does
+it take advantage of like weird windows
+quirks where if you look at the
+properties file on your inbox in Outlook
+so
+this is the desktop application outlook
+you launch this thing if you look at the
+properties for some reason there's a
+home page of your outlook inbox
+this hasn't been patched if you push the
+path there is one that will get rid of
+this inbox thing I mean there's been a
+couple other ruler rules that have been
+took advantage of forms but essentially
+what the inbox does is create a local
+kind of server that runs a webpage to
+kind of give you like the view of like
+welcome to Outlook that kind of stuff in
+but I can set that address to be any
+external URL and so I can host something
+on like github and just some little bit
+of script content that uses ActiveX and
+then like you know kind of run ads
+server level code here but their example
+and ruler just launches notepad but you
+basically would replace that command run
+to your PowerShell reversed shell or
+whatever you're looking for so now the
+next time that person opens their
+outlook and looks at it this will
+automatically run in the background not
+get detected by anything like it's a
+part of Outlook then and so even if I
+had just your oh three sixty five
+credits I can now shell your computer as
+that user because I'm actually going to
+come in from your ad creds to my box as
+the shell and it's it's that simple
+amazingly enough and the attack I mean
+that's like just running the actual
+command you know you give it the email
+the user the it does a few different
+tricks that have been patched and
+currently but I think the outlook
+homepage one was just recently like I
+know they came out with an October I
+don't know exactly when they got hash
+but it's been fairly recent and we still
+find this even like currently I will say
+like they do have a version since post
+the good guys they are they have the not
+ruler which you can run on your own
+company to see if you are vulnerable to
+any of the things it takes advantage of
+and there's like yeah those are the
+patches but the the main point that was
+like
+you enable two-factor on your Outlook
+external facing site it pretty much
+stops all of that attack like I might
+know that I have valid Preds but that
+redirect is going to take me to your
+two-factor like getting your pin code
+page and so even if I have real creds
+unless I can find us unprotected Citrix
+in point or somewhere else I can log in
+that doesn't have to factor then I I
+might be able again but it two-factor
+really stops a lot of what attackers do
+at least the easy way like there is
+crazy ways you can hack I think like ss7
+and get people's messages or something
+but we're not trying that and unless
+you're getting targeted by like some
+nation-state that's probably not
+happening either but two-factor is gonna
+prevent most of what's going on here I
+didn't so like I didn't cover everything
+clear there's a lot more to a external
+pin test these are just like these super
+easy steps that take very little like I
+don't need special scanners I don't
+either go it's easy enough to googled or
+for someone's VPN pages and things like
+that so we didn't cover like the
+discovery of the endpoints the IP domain
+reputation I think they talked a little
+bit on the phishing talk too but that's
+easy enough when you can just go by and
+expire if there's a website expired
+domains like dotnet where you can just
+go look at domains that just recently
+expired you can buy those point them to
+your readers and then you've got three
+directors that have already been
+categorized and will pass most of those
+like spam filters and things the actual
+payload generation I didn't cover in
+this one either and then there's some
+authentication techniques surprisingly
+most of the generic Empire and such
+payloads get right through most ad
+socially when they're launched as your
+user and the gathering the public breach
+data dumps like we use like paceman Pro
+and then pretty much just whenever we
+see the news of a dump kind of go start
+looking you can find these dumps real
+easy and then just us compiling them
+onto one just made it easier to search
+through and then also like another way
+in that's fairly simple is the default
+cred on management interfaces there's
+not really a reason probably to expose
+any of your main design interfaces to
+the internet but when you leave the
+default creds on your I mean you're just
+everyone worries about all those like
+crazy exploits but then they just don't
+change default creds and yeah even on
+the inside of your network like so now
+that I've got in through my VPN and I've
+got valid user creds well a lot of
+people were like well it's the internal
+network we can leave default creds on
+but if a malicious user is going after
+those default creds they still don't
+have to use an exploit to compromise
+more machines so even on the inside you
+should be changing default creds always
+and you know a bunch more clearly from
+the outside but just in this talk and
+like people think like oh that's not
+like super exploit stuff but we don't
+really need to use exploits a lot of
+times we're really just looking for miss
+configurations and weak users and then
+like would any of the tools you maybe
+have in place that protect against a
+bunch of antivirus stuff detected any of
+this probably not because it's just a
+user coming in from the internet like
+unless you're like actually restricting
+your employees to like their houses you
+probably let them login from anywhere on
+your VPN and so they can just jump right
+in and they're on your network
+there was a quote I wish I could
+attribute to actually who it was but
+they said like most people and vendors
+worried about zero days but forget about
+the 3374 days that was actually the date
+that ms o 806 five was released it's
+true cuz like Oh 806 five is still gone
+I mean rarely we will see it like in the
+last year I definitely
+on a test but like I guess M s ten the
+new the newer ones like they're gonna be
+there and people just think because
+they're on the inside there although our
+users would never attack us well maybe
+not your actual users but someone that
+has your users credentials might attack
+you through those things so for the road
+map of this series we kind of the part
+one's got the high level over below or
+overview and flow far too was some of
+this infrastructure and initial
+footholds the next time now that I've
+kind of some people that was like well
+how do you even get those first credits
+well it's not that hard we've seen and I
+promise you if you try that we get in
+quite often with those techniques but
+the we'll start with the internal recon
+so now we've got creds we're inside the
+network and how do we get to like take
+over the whole domain then we'll go over
+like the identifying attack paths I know
+in the first one I'd covered a little
+bit of bloodhound and how just like it's
+amazing how much Windows gives up to
+just domain unprivileged level users to
+find out about the rest of the domain
+just cuz of how it works
+part four will be like the different
+techniques to like the the actual
+lateral movement and taking over the
+whole domain itself and then part of I
+kind of was going to leave it open I was
+looking for some feedback on do we want
+like post X there's a lot of tools that
+can automate once we get inside where I
+can just push a button and it'll do on
+my attack pass and then we can also
+cover more important things for
+companies about like exfiltration and
+staying quiet like there's different
+ways you can package up data so I've
+seen tools that even look for like
+credit card numbers leaving their
+network to try to protect their
+databases but it's fairly simple to box
+all that stuff up and using some kind of
+crypto to even base64 encoding it
+sometimes and then transporting it out
+is simple enough we go to a avoiding
+detection
+in some of the persistence where you can
+just once they're in you they can make a
+really really hard to get rid of them so
+let's kind of roadmap and then you know
+any questions I'll answer this yeah yeah
+Federation for single sign-on through
+office 365 have you been able to kind of
+compromise the office 365 environment
+yes so like with that often 3 to 5 in
+that ruler attack basically like I mean
+using on 365 that's all I mean that's
+what ruler was like design for was
+tacking that like where it thought it
+was just protecting you cuz you just had
+a webmail but any of the changes I make
+on that web mail inbox affect your
+outlook app inbox so yeah like that's
+the kind of what how that works but I
+mean it wasn't passionate I just you
+know you push those patches out and make
+sure they're there and make sure you
+don't have that homepage available and
+that's where the not ruler you can run
+and kind of double check to make sure
+you're protected anything else all right
+hey thank you very much hey let's have a
+quick random Plus Ryan here let's give

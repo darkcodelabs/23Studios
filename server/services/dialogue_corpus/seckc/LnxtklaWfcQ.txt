@@ -1,0 +1,996 @@
+so Wayne gave this talk actually not a
+Def Con but both b-sides and he gave
+this talk in one of the villages which
+wich village pharmacy in the in the wall
+sheep village which is pretty cool so
+I'm excited to see this because even
+though I watched when I say 38 talks
+it's time for 39 and 40 tonight let's
+give way in a big hand hey guys soon it
+started ok I have 290 slides we're going
+to rotate through and if you see my talk
+no I like to do it fishing fishing
+adventures and chasing slimy creatures
+or the TMI of Wang Crowder legal
+disclaimer entertainment education don't
+break anything hacking Wi-Fi is breaking
+the law hey who is this joker wing
+powder you don't know me come see me
+afterwards TMI to follow all right I
+grew up in the great state of Alaska so
+when you think of Alaska you probably
+think about doors and fishing that makes
+sense you also probably think about this
+it's super cold so when it's really cool
+then you can't be outdoors and doing the
+things you love like fishing your price
+spending your time watching this guy
+right I watched a lot of bill dance I
+awesome do some crazy things he taught
+me a lot about how to catch fish that
+I've never even imagined that I would
+see because in Alaska they don't have
+the kind of fish that bill dance was
+fishing for you know you wouldn't really
+hook your nose back home with this kind
+of Lord so some of you may have
+experienced fishing with this all right
+how many here played this one of the
+game
+yeah I didn't know that the
+Globetrotters actually fished so there
+they are boom slam dunk right some of
+you know about fishing because of this
+second bass fishing all right but a lot
+of you probably spend your time on the
+water with Grandpa or another loved one
+and you had just this awesome time I
+know I had a lot of memories it's also a
+great way to impress the ladies all
+right caught you a delicious bass you
+know it is a great way to have a first
+date it worked for me and my wife all
+right no there is no hope for this woman
+so at DEFCON they were doing stuff like
+this they were fishing from their hotel
+rooms but there are those who in the
+fishing industry that can't go fishing
+okay no I let me get back to the basics
+Major League fishing big-time money to
+catch fish like this okay $100,000
+$500,000 million-dollar payout bowls
+like this equipment like this it's a
+serious stuff it's basically the NASCAR
+of water right some of them even driving
+sideways okay all these big beautiful
+checks if they feel stadiums like this
+and like this just to watch people
+whitefish and for the guy to get his
+trophy right that's why he's there now
+the TMI a wing powder this was me on a
+billboard many years ago I had a
+campaign with an auto dealership rock
+truck i bought this is me hugging my
+evil twin this is my rap this was me
+holding the same fish right trying to
+live that dream touching any kind of
+fish well it's trial sometimes I could
+caught weird creatures either wonderful
+opportunity to go to the Amazon and I
+got my trophy okay but more importantly
+I got to kiss fish right but then
+something happen
+seriously something happened this may
+have happened to some of you last week
+okay Windows 10 set up something
+happened in my life and this is what
+happened my oldest son who's actually
+named Fisher because of how much fishing
+I did he was diagnosed with autism and
+the only experience I had was something
+like that was there was one time than i
+had taken a kid out on the charity event
+it's called cast catch a special thrill
+and I taken the family out it was the
+first time they've been on the water
+because of the needs of their son and so
+I had to change my priorities okay I had
+to kind of think about what was going on
+in my life because I've been working
+jobs like this I've been kind of this
+multi hat-wearing guy and always loved
+security but I needed to kind of get a
+little more job security because I
+couldn't fall back on the moonlighting
+as a professional fisherman and a lot of
+my friends had told me hey you got to
+become a security analyst you're really
+good at what you do go out and do this
+so it brought me to Kansas City
+full-time gig as a security analyst I
+loved it and as I'm working I find out
+that hmm this is interesting because I
+found out we I found out that bro
+fishing has a lot of similarities to
+infosec okay you know with me you might
+be saying are you serious and yes I am
+serious cuz any monkey or a boring a
+tank can fish right but what does it
+take so let me explain we're on
+this can anyone tell me that this is
+anyone it's crickets this is Moxie
+Marlinspike any spearfishing this is
+moxie cleaning a fish I censored it for
+those who might find that offensive this
+is a lure named moxie okay no one knows
+Moxie Marlinspike one of the well-known
+hackers of the DEF CON era I thought
+that was interesting but once again I'm
+off the rails so let me get back to the
+similarities of how infosec analysts and
+fishermen are different but the same in
+many ways first off training ok how many
+here have been to a sans training this
+year alone and none yeah this is me in a
+sans class right this six weeks ago
+actually bass fisherman help training
+the past university very similar to sans
+travels around the country they have
+major events they're pros tha this is
+what you need to do these are the things
+you have to do ok so after your training
+it's time to get your serious analysis
+skills and start to do your research ok
+so a lot of times as analysts we have to
+look at maps here's a great map
+depicting what we need to worry about
+for this area telnet HTTP different
+things like that as fishermen we have to
+do research for maps like this where
+we're like okay well is it over here can
+I check over here things like that but I
+want to explain that research is
+something that a lot of times is hard to
+teach okay research doing research is
+the success of an analyst both as a
+professional fisherman or as a security
+analyst so nothing compares to time on
+the water that was a term that was used
+as fishermen you could do all the map
+research you wanted and it's it's a
+great skill but nothing beats that time
+a mohawk right nothing beats that
+experience that you'd have so obligatory
+Star Wars slide research stuff is
+researching this clones now
+infosec bro spent a lot of time looking
+at charts like this but they need some
+context or situational environment they
+need to understand okay will what is
+this so they're going to click on a
+bubble zoom in maybe fishermen are going
+to look at maps like this and here we at
+least know that this might be fall and
+winter so where would you find following
+your fish here's another screenshot of
+some analysis from the back it just
+looks like a bunch of white lines
+probably a front this is actually a
+sifter now it shows you a lot of data
+but you need a little more context for
+the fly fishermen in the room this is a
+river and there's 12 points that you can
+look out of where you might be able to
+find fish okay lot to analyze so another
+key area that professional fishermen and
+security on this tab is the big picture
+and this is supposedly an on a
+photoshopped goldfish that this guy
+cotten your big fan but what's the big
+picture well the big picture depends on
+the perspective possibly they may have
+something like this for the infosec
+people in the room what's the big
+picture here yeah haven't you miss that
+guy I love it so we called it up the big
+picture here is you probably want to
+throw this computer away because it's
+got every kind of browser toolbar in the
+world you want to get rid of right but
+really the big picture for info SEC
+alice is to catch all the bad guys okay
+you want to catch everything for
+fishermen you want to catch everything
+as well you want to catch all the fish
+so that's your big picture there's
+another comparison what's this one what
+could this one be shiny things right in
+infosec we get caught up in a lot of
+shiny things I think bill gave a talk
+the first time I ever met him it was all
+about avoiding the shiny things so
+here's one of those shiny things that
+sometimes we may spend money on for
+fishermen we have a lot of
+anything's as well something like this
+or look at this beautiful shiny thing it
+looks just like the fish right next to
+it right shut up and take my money I
+want that shiny server or I want that
+shiny lure it's no coincidence there's a
+company that was called fishnet thank
+you in the back right so I thought that
+go over a lot better special kind of
+city points security analyst and
+fishermen love points okay some of you
+might be salivating right now just
+looking at this beautiful list of points
+right a lot of fishermen pay money for
+charts that tell them that a this point
+probably is a good place to look for
+fish another fun thing that info SEC
+professionals and fishermen town or our
+t-shirts so I thought that was funny and
+of course have you been to any of the
+cons you know that t-shirts people will
+do anything for t-shirts for fishermen
+just about the same thing one day
+they'll name a lure after me and you
+know you have whole stores dedicated to
+fishing shirts you can have your hack
+naked or fish naked shirts quite
+personal okay patterns patterns are a
+big thing in both fishing and infosec
+anyone know what pattern this is
+actually it's a biblical fish pattern I
+thought that was appropriate for this
+when you're fishing along the bank you
+can see a point there on the left
+there'll be some structure maybe some
+grass on the right maybe we'll be a
+little bit deeper but the fish will
+usually tell you much like the bad guys
+what the pattern is what's going on okay
+so let's say it's the vegetation right
+well here is a pattern anyone on the
+front row tell me what the pattern is
+how about this WordPress vulnerability
+right we're looking at things we've seen
+the pattern scrolling through w p / WT
+big stickers stickers are something that
+are important to both fishermen and
+infosec professionals some of you may
+have a laptop that looks like this some
+of you may have a vehicle looks like
+this if your fisherman okay this is a
+weakness is up in Alaska the gentleman
+who was very passionate about his trial
+and salmon fishing some of the boats are
+even completely covered by stickers
+vinyl wrap who here can tell me what
+this is an HTC Desire now when I spend
+the time to put together a slide deck
+like this and I use a lot of visuals I
+really screw up my google profile and we
+start searching for desire I'm trying to
+figure out how to mix that with fishing
+and if you'll say you end up with stuff
+seriously these came from my searches
+yeah I gotta have a lot of desire right
+to make it through I even found a rule
+34 for fishing I'm gonna leave it there
+while I talk about desire so in fishing
+you have to have a desire to put up with
+the travel the the weather the
+environment you know the crazy days
+things not working out and in in full
+seconds it's pretty much the same thing
+you really have to have a desire because
+it's pretty easy to be a programmer and
+get to go home at five o'clock everyday
+or not to have to deal with an outbreak
+of the latest malware you know you got
+to have the desire the burning desire to
+want to stop this to prevent to clean it
+up and deal sometimes with the travel
+and maybe you just really enjoy it but
+designer thought was a key thing and now
+that this is burned in your brains good
+luck washing that out so organization
+that's it a big thing that I've seen and
+I've been very impressed with a lot of
+stuff i'll see if some of the cons
+switch the black hat i see some cool
+stuff this is looks beautiful it's very
+well organized if Todd for fishermen a
+lot of the same things they like to have
+their bags and their equipment very much
+organized a lot of default stuff some of
+you may even had a bag like this at Def
+Con if you went for in years past where
+you got just about everything to do what
+you need to a badge a DEFCON right
+friend of mine I stayed with in Vegas
+his garage looked like this I felt that
+was appropriate all his doors organized
+and label some of you may have your code
+here you like to organize it share it
+out with others another fun thing I
+thought I found out about was I've run
+into several analyst who like to have
+lots of tabs open and I thought I was
+fun to show the appropriate names of how
+many tabs you know 110 110 tabs
+them and you know that might be
+organized to to that person to me it's
+organized because I have it but also in
+fishing you'll have gentlemen will have
+their complete deck full of rods like
+this this is this is very common much
+like you're going to have somebody who
+has a ton of tabs open they're gonna
+have a lot of rods and I've had people
+get my boat and say what in the world
+are you going to do with all that well
+there's a purpose for each one right
+methodical you have to be very
+methodical as a security analyst and
+also as a fisherman you have to be
+patient there's a lot of time some
+things don't work out there's people in
+this room will probably not a pen test
+and it's gone two three four days on a
+five-day engagement and maybe you don't
+really have something good and you're
+worried about having to write a report
+with only a couple paragraphs so
+patience is key sometimes so you can
+break out sometimes you need to be able
+to adapt an adaptability is key in both
+the fishing world and also as a as a
+security professional you need to be
+curious you need to have the curiosity
+of the squirrel tum phir what's going on
+I love the slide I put it in because
+first off I was curious as to well the
+world was in the cooler there below the
+gentleman that looked like a float a
+barber but more importantly it's the kid
+in the look on his face like what are we
+doing here it says this look like I
+don't understand but curiosity is a
+fisherman when you drive by a lake and
+you really have the passion for it
+you'll look at a pond like this and
+you'll say i want this live in there i'd
+like to catch whatever Zender you're
+very curious you want to know and so you
+have to be data curious as well as it as
+a
+as an analyst you have to look at things
+like this and say okay wool what's going
+on with these unique computers
+communicating out I need to know what's
+going on or you may get a screen shot
+like this that says malware is it hip
+and some of you may just shut this off
+and close your browser but there's some
+in this room who will say I wanna know
+why this popped up right your data
+curious another example of data curious
+is maybe some dns points the characters
+in your your url maybe between this high
+point you'll see there that's where it
+is i did find it interesting that as I'm
+do this research up pop squirrel fishing
+there's actually a thing at swirl
+fishing i thought i'd share that will TL
+because you should research it one thing
+that info SEC professionals do is drink
+a lot and some of you can tell by the
+earlier presentation but in fishing we
+get sponsored by companies like a Yeti
+to keep your brood pool okay so here's
+the challenge let's see if we can get a
+cooler sponsor challenge accepted right
+or what's bill monroe's guys Wow
+mistakes
+this isn't awesome actually you can find
+this video it's pretty crazy truck just
+starts attacking this thing infosec
+professionals and fishermen have to
+learn from their mistakes and clearly
+this fish did not learn from its mistake
+but the issue like that the sony had
+there were so many mistakes both by sony
+and by the media and by companies like
+this they decided to say hey it's
+somebody named Lana used to work there
+you know they had to learn from their
+mistake I have a friend his name's
+Brandon he became a pro few years back
+he made a major mistake last year and he
+he pulled some fish meaning he removed a
+fish and replaced it with a bigger one
+in an area wasn't supposed to he lost
+the tournament he was actually bleeding
+the event but he learned from that
+mistake actually in the next event and
+why why why why I beat everybody this
+was a cameraman who was too close to
+gentleman fishing while I was trying to
+film in fishing and he got a pretty
+painful mistake even though he looks
+pretty happy there got 2 treble hooks in
+this some called this a mistake it's me
+a few years back getting a mohawk I
+don't really call a mistake I mean when
+you're going to get a mohawk and get
+away with it right I decided to turn it
+into an opportunity and put the puzzle
+piece on the back put my son's name on
+the side and to me it wasn't a mistake
+it was kind of a full circle moment you
+may be saying sorry bro what kind of
+boar was just have to do with everything
+and you need to fish or cut bait you
+need to make get on with it but i am i'm
+getting their promise so that takes me
+to DEFCON 22 and that's last year hours
+before flying out this is what happens
+to me and I do have some witnesses that
+can attest to that I think Brian's in
+the room
+had to put my socks on was at Def Con
+last year I blew my back out and I took
+a lot of these and maybe a few of these
+but it also gave me the idea for a talk
+for SEC Casey's talk later in the year
+and this is where i plug in my top side
+plucked set Casey both IV sites and Def
+Con and the idea here is you need to you
+need to have a local club this is what I
+told the crowd and just like local bass
+fishing clubs it's it's something
+similar I meet with some guys once or
+twice a month and what we do and we go
+over grassroots stuff about fishing and
+we teach each other things and we go you
+know we go do tournaments amongst
+ourselves so much like local bass
+fishing clubs we have a local security
+club and we had a challenge called
+Trixie and for Trixie the idea was to
+submit a live demo of some kind of
+hacking and that's what I did and we all
+did it for the Chromebook right role did
+it for the Chromebook so I had a great
+time at that and I submitted for both
+the b-sides and Def Con and I got my
+speaker badge to be sads ok I got to
+speak at the whole sheet in their in
+their cool room and then something
+happened to Def Con and I thought this
+was fun because this is our own jurist
+taking a picture something happened in
+the death on and while i was at DEFCON I
+had another injury and so I had to go
+see a doctor actually went to the doctor
+today to have this happen so that this
+could happen because i had bit almost
+clean through my tongue while i was at
+DEFCON so that's the kind of fun I had
+and this is kind of out of focus for a
+good reason but I just thought it was
+interesting two years in a row
+two major injuries see what comes with
+it well back to the equipment so the
+reason I'm here doing my talk is
+comparing fishing to fishing is for
+equipment like this this is some tech
+from the 80s juris prolly has this on
+his boat now right yeah or last year's
+model you might have last year's model
+okay no it does move slow a news past
+fishing technology move pretty slow I
+mean right here this is basically
+receipt tape it would print a graph on
+this kind of roll of paper and that was
+cutting edge and that was it was a while
+back they went to grayscale then they
+went to this cool light but style graph
+another similarity we have to look a lot
+of grass or info side so there you go
+graphing but we go back to build and
+build and says hey kiss traditional
+stone our goodbyes because we have units
+like this it's a big 12 inch unit it
+runs so no runs all pile of them does a
+lot of things it's four grand I mean
+these are full-blown computers and they
+give you an imagery like this you have
+some amazing detail this is sci-fi and
+left side of the boat right side of the
+boat you can also see down below plus
+the sideline above and you can detail
+all the fish down there though swimming
+you can see all the structure things
+that have been discarded or maybe stuff
+that was there when they flooded the
+lake of the reservoir you also have the
+ability to say okay well this is a lot
+of noise when I clean it up and over on
+the right side there you can say oh this
+is my anchor line this is the grass that
+are growing down you can see here
+there's an open field you know kind of a
+flat area would call you're out on a
+flat but it was like what is that weird
+Rob didn't meet that's not a rock
+where's my car there's your car right
+there so this isn't your story this is
+so true that in March a guy from my
+basketball found this car when he was
+coming in from fishing one day and
+that's pretty amazing clarity p asked me
+because that's the car right there that
+they drugged out after he notified the
+authorities so by him having this kind
+of technology on his boat he was able to
+close a cold case from 1972 and the
+family got some closure these units are
+also used sometimes to help find people
+who've drown and it's somebody down
+there they put a dog cage because
+they're on metal to help them find it
+later on they got to come back if they
+can't go recover it but back to what
+we're talking about these kind of units
+require a ton of networking and believe
+it or not there's some become hubs sonar
+hubs and they have some equipment there
+and they got a lot of cabling but they
+also have Ethernet cabling and now they
+have access points so this is a go free
+access point up here on the table
+there's a lot of people come up after
+the top I have already plugged in they
+run a special cable proprietary ends
+there it's basically 40 to 55 bucks for
+a six foot cable and I was wondering why
+in the world is it so expensive and it's
+five pins see here and just show them
+this if everybody wants to play with
+there is that they have one it's only
+two pair but it's shielded so that's one
+reason why it's so expensive and here's
+the pin out of it when I crimp somehow
+and I made my own little cable which
+allowed me to plug it into any device I
+want it now for those who may be
+thinking about hey I like to fish and I
+have some equipment I like to hook up
+you can take your favorite tp-link for
+twenty bucks you know take a loan out on
+a cable and then buy one of these from
+amazon and you can power up your own TP
+link and make a wireless access point
+for your fishing device as well but
+let's get back to a profound on so go
+free I said hmm I'm going to hook it on
+a computer and I'm going to run an nmap
+on it and I'm going to see that talonnet
+and port 80 are open it's kind of cool
+port 80 what's on port 80 what do you
+think the username password is for this
+yes I've been having I wish it was fish
+fish gonna be awesome he's so sweet so
+add an admin hey we're in suite look at
+all that status I get my SDK version you
+can see right here the platform it's an
+RT 3052 embedded switched got a lot of
+stuff on board here's the operation mode
+for bridgegate way they're building
+these so that you can pull your boat
+into your driveway hook it onto your
+home network and then basically go out
+and fiddle with your unit right talk
+about the features go through maybe
+upload some things they have an app
+store you know what could go wrong there
+with Wi-Fi and things right you have
+your simple settings so here's the SSID
+default you can see the passphrase very
+complex only eight characters all upper
+and numerical no lower case and no
+special characters but let's say that
+you didn't make a cable or you couldn't
+access the you know like that here it is
+right here every unit has them printed
+just below the mac address their
+password ok that's it was like are you
+kidding me but you know I guess they got
+to help these guys out so you could
+literally socially engineer your way
+onto a boat and a guy's garage or on the
+water to take his Wi-Fi password ok and
+then once you take his Wi-Fi password
+you could maybe go see the pros who are
+making money of this and if you still
+it'll wipe like Wi-Fi password you can
+maybe see where they're fishing what
+they're doing because that's the
+curiosity are you want to be like why is
+that guy there in that area what's
+belonging so double time i demoed this a
+trick see some of you are there i'm not
+going to go into the details of how to
+crack the Wi-Fi i'm just going to go
+through the screenshots of arrow dump if
+you don't know it you familiar with it
+you can watch the presentation last year
+but basically you're going to monitor
+you're going to see where it's at you're
+going to
+a bit and once you get it you're going
+to go ahead and crack it and I got the
+stats from the crypto village at Def Con
+and a password that's only upper letter
+and numerical can be cracked anywhere
+with an Amazon instance can be cracked
+anywhere within hours to a few days just
+with a generic video card we're talking
+less than 30 days so the idea that you
+could go out and do harm to some of
+these professional fisherman who might
+have this on their boat is a reality
+when they're using on these older units
+so we have the password we're going to
+get the Lorena tap all right there's an
+app that goes on the phone anyone who
+can come up and see this later once you
+get it on your phone you can basically
+turn your phone into a screen mirror
+what's going on display or you can put
+it on your your tablet and then your
+tablet can actually control the display
+so you don't have to go down to the unit
+you don't have to touch it you can
+actually just have a tab there okay but
+what if you have a fishing pole that
+then had one of these screens out of
+Wi-Fi antenna or had access to it and
+then you just walk around and its own
+our driver you drove around a lake
+instead of war driving your sonar
+driving all right you're driving around
+all the fishing holes trying to figure
+out who has these units maybe you made
+an evil sonar ap right you're going to
+have them connect these are the things i
+want i was trying to figure out so i
+wanted to see how the unit communicated
+with the access point so the sonar unit
+i let in map do its beauty and i came up
+with a screen rare technology and GT
+screener or gstreamer is the program
+they're using and also that here in a
+little bit but also decided we're on an
+nmap scan on the actual sonar unit
+because i'm like we'll wait what's right
+on the sonar unit and there's a lot
+riding on this one right and i was very
+surprised ftp 480
+rtsp that's your streamer and then NFS
+and bind so RPC line good I was like
+okay well let's go over to the port 80
+port 80 that's your Lawrence us our file
+where's jurist yeah what does that mean
+the lowrance us our file yes you want to
+download your user Waypoint pause that's
+what that sort for the user Waypoint
+file so what our way points well this is
+a tracking mechanism that bass vass the
+organization put in on all their boats
+for the for all their 11 12 tournaments
+a year where you can see where each guy
+goes on the water and I got a guy
+sitting in there with a phone that
+punches in data and that phone sends
+back where they're at and hey he got
+some fish and he's doing that so you can
+say hey Boyd duckets over here and catch
+him Creek I want to work point buckets
+doing well take his password up in see
+what's below see what kind of structure
+he's fishing on boom this is a bomb why
+is it a bomb because his Wade points are
+on that machine so once you have access
+to his way point it's kind of a big deal
+and let me explain why waypoints are a
+big deal if waypoints are taken that's
+like taking Moxie Marlinspike Skov repo
+that's like taking this gentleman's
+recipe book okay these are the things
+that are the commodity it's the kiss of
+death so I want to show you kind of a
+quick demo of this if you have time to
+up time on the wrong City okay okay so
+I'll skip the demo and I'll go through
+the slides of if my demo failed so one
+thing you can do is you can go download
+them the waypoints and now you have
+access to where everybody's been fishing
+on the lake but what if you wanted to
+blow a US are far what if you wanted to
+mess with people okay what if you wanted
+to say hey every point for what if you
+wanted to send a message so here we've
+uploaded a series of waypoints and you
+can see there's one big giant Waypoint
+and as we zoom in that's your waypoints
+that someone accepted okay so you can do
+that and this is what I demoed live at
+both of the talks is how you could
+basically detail someone's sonar unit
+and a sense of waypoints so here are
+some more features on the device the
+device actually communicates via the
+access point through telnet with and
+also ftp to be able to exchange that so
+so there are there are vulnerabilities
+I'm I can't I haven't gone into too much
+detail on my last talks because I'm
+working with the manufacturer of these
+units I reached out to them and I'll get
+into a little bit later but I talked to
+them about how there's some man in the
+mental issues there's some scooping
+issues going on maybe some buffer
+overflows it can happen with some of the
+technology they're using here's the
+streamer again and the fact that you
+have everything you need here to
+possibly exploit the streamer this is
+the telnet information so i don't know
+if you can see this but over on the
+right there it's it's basically issuing
+all these commands and getting answers
+and if you go down to almost the very
+bottom on the right you'll see that it
+gives out the wpa psk and it gives you
+the password right there so even if you
+can't get to that unit you can just
+figure out how to plug into
+I could be any good to go I also ran
+file on the colonel dumped in for the
+updater and found out that this is
+running Linux and what person it's also
+an ARM processor it's using busybox
+heavily and so I got some information on
+busy box and then I said okay what
+version of busy box is it 1 02 02 and
+then I found a lot of other things that
+made me think this is probably slacker
+all these packages are on there and so I
+thought about hmmm that has to do with
+some licensing probably and i asked the
+manufacturer the last time we
+communicated just before I went to be
+sides and death gone and said hey can
+you tell me two things can you tell me
+what you're doing about the GPL
+licensing on the devices and can you
+tell me in the act of phoning home do
+you send any anonymous to statistical
+data of like where the unit's been
+what's going on other features and I got
+crickets in fact I've ever got from the
+sense so I was communicating with two
+different people over the wireless
+access point go free stuff and one over
+the actual lowrance unit they've been
+really cool up until then but I haven't
+anything sense so I don't know if I talk
+to mirror for the lawyers got involved
+there what maybe there's waiting to see
+the recording of one of the talks but
+you know here's some more data this is
+the shadow file that's issued to all the
+devices and you can see the root and the
+one on the bottom NOS those are the user
+accounts we decided to see if we can
+crack those I was like well why not it
+didn't really take very long that was
+under a second right there to get the
+passwords and the passwords are Nos so
+we kind of let them know that
+information here's the screenshot of the
+information that you can actually turn
+off on these units and say hey I don't
+want this the phone home every hour
+because it does phone home to about
+three or four different websites for the
+manufacture the the problem i have about
+the units is that Wi-Fi is on by default
+i will tell you good things that have
+happened with the new generation that
+came out this year they made the
+passwords more complex so they've added
+lower so they're not quite as easy to
+crack but you can get to that password
+if you have access to the unit in five
+touches of the screen it's just boom
+boom boom in there you got everything
+you need so there's a lot of issues so
+I'm trying to work with the manufacturer
+there's a few more things that I could
+talk about kind of holding back until we
+get some more information and you know
+I'm hopefully going to work with him on
+a bit if you're doing something like
+this you want to make sure that you you
+work with them that you're contacting
+them and disclose the vulnerability
+right do it responsibly so some of you
+might be in the crowd saying fishing is
+so stupid how in the world did this guy
+ever get accepted to talk of all these
+places or I'm dying right now but it's
+nothing to do with fishing really I mean
+this is just a piece of hardware that is
+amazingly technical and more powerful
+every year next year they're going to do
+3d you know later this year they're
+actually going to do 3d rendering of
+everything underneath your boat and
+you'll be able to completely look in a
+3d model of what you've gone over and
+recorded okay very powerful but even
+more importantly these units especially
+the more powerful ones they have a def
+basically three companies within the
+same company and simrad is are the ones
+that they put on ships and other major
+boats and if you look below there's
+there's something that concerns me auto
+pilot now on my small units autopilot is
+disabled by default but autopilot is on
+a lot of a lot of the ships or boats
+like this ships like this and if you can
+mess with the you know like this because
+it has some Wi-Fi enabled or maybe
+they're using Wi-Fi just so the captain
+can look at the test the display while
+he's in his cabin at night you may be
+able to take a cruise ship like this and
+causing that right you can mess with
+stuff we know that the military has had
+some issues with some of their drones
+because of the quick push to get things
+automated
+here this this class of drone was taken
+offline by the Iranians with basically a
+Doss they flooded the communication
+systems of the wireless communication
+the default for this drone was to go
+ahead and land safely wherever it had
+access so they just waited it out on a
+thing landed right in their own country
+we know about the Wi-Fi enabled vehicles
+Chevy has theirs you have aironet what
+you're going to have to just let any
+other vehicle this was this made news
+for the last two weeks because it was
+talked about last week black hat DEFCON
+we have Wi-Fi on planes and we got guys
+like this that are in big trouble
+because they worked on this and talked
+about it and you know they might have
+were waiting to find out but they might
+have actually did it while the plane was
+running but I don't know i don't think
+so but it is true that you can have
+something similar on planes like this a
+smaller class you know maybe these more
+private jets or even a Cessna the garmin
+has tech like this where you can take
+your ipad and you can go ahead and chart
+out everything you want to do and you
+can modify how your plane flies for the
+tablet the Internet of Things deals with
+this insulin pump this is a guy who
+actually got sued by the company at
+manufacture the incident insulin pump
+because he was doing it and notified
+everyone of how old dangerous it was how
+insecure it is luckily they back down
+once everyone else said well you're
+crazy he's trying to help people a lot
+of your home's might have equipment like
+this you may have installed something to
+help you automate your home help you
+with your home automation this was
+actually in the house ice data in Vegas
+and some of you might have a nest the
+Internet of Things is huge there was a
+whole village of Def Con I think it will
+be even more prevalent they had a
+refrigerator at the Internet of Things
+they wanted you to happen if I had an
+extra cable as I'm so paranoid for my
+talk that I didn't want to leave it
+there because I thought maybe my unit
+with a cable would walk off because I
+needed it for my demo but they had a
+table at the Internet of Things village
+and they had all of these devices that
+were laying on this table and you could
+come in you could pick the IP address or
+something he could just go at it you
+could scan anything to try to exploit it
+do other things with it so the idea of
+this talk was I want you know I need you
+and we all need you to take her in to
+hack and when I say hi I mean it in the
+real sense hacking was something that
+made things but and it does make things
+better because it was people like this
+that did talks with Ted and did talks
+last year they talked about how hackers
+are the internet immune system right now
+we're experiencing parts of the world
+where there's no creativity allowed I
+talk like this would actually get me
+thrown in jail in some parts of the
+world and I'm talking first world stuff
+not third world stuff those countries
+are now they think the kind of meeting
+we have in the discussions we have we'd
+be in big trouble the idea here is to
+use your brains to do some
+problem-solving back to the squirrel and
+we don't just want words right we don't
+we don't just want manufacture saying
+things we want actions and sometimes we
+might need to be the ones who do the
+actions so I want you to have the amount
+of things for good and I want you to
+accept that challenge i'd like to see
+you do something this fall or the next
+year so thank you very much for your
+time
+that was great stuff I actually ran into
+the guys from the Internet of Things
+village in the line at the airport and
+they said to me that they had I think 28
+zero-day vulnerabilities discovered just
+during DEFCON by people to want it into
+the village and we started messing
+around with stuff so this stuff is is
+out there it's problem if you've gotten
+any of these internet connected things
+at home don't assume that the people are
+putting together know what the heck
+they're doing around and mess around
+with them mess around you never know
+what you're going to find and Trixie is
+right around the corner before i talk
+about Trixie for a moment only complain
+something so I know he wanted to spit at
+DEFCON he asked me if I thought it was a
+good idea and I was really pulling for
+him every time I see a round come out
+it's like man this talk is great this
+talk is great but I think what happened
+was that last year we had so many
+Internet of Things talks I think they
+were just like hey we got a village
+we're going to put it over there but
+this talk was really good this talk was
+better than some of the stuff that I saw
+even in my track for 3,000 people so I'm
+not gonna let Wayne get out of here
+without something to stick to his his
+safety vest next time they ease in the
+boat so here is a DEFCON 23 speaker

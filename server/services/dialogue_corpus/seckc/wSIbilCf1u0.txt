@@ -1,0 +1,388 @@
+what was that
+crowd non-cis system all right yeah how
+about that how about that so if you need
+to know something about fire
+extinguishers this is not the guy to ask
+I can't see the pixels at all
+all right thanks guys
+well my name's Greg Foss uh I work at
+logarithm Labs up in uh Boulder Colorado
+and today I want to show all of you how
+to break into common content Management
+Systems
+so the CMS systems that we're going to
+be looking into are WordPress Google and
+Joomla so these run some of the most
+popular web applications on the internet
+like whitehouse.gov and all sorts of
+so first let's look at how to break uh
+Drupal application
+so first
+we're gonna log in say we've already
+registered an account using a
+compromised email account or something
+like that so we're logged in we're gonna
+check out our account right and now
+we're going to go through and see if we
+can enumerate other user accounts so of
+course we can all we have to do is
+change the number of in the URL so we're
+looking at the manager's account which
+is great right so this is a little
+script that I wrote just to go through
+and automatically do this for us
+essentially we're going to extract all
+of the user accounts and then we're
+going to launch a Brute Force attack
+against every single user account
+so right here we're just plugging in our
+session information because we're going
+to use the session that we've already
+established from our uh our session on
+the application right now so you just
+plug that in
+plug in the protocol so if they're
+and so we're going after 10 accounts
+and we're just using uh uh passwords.txt
+files this is the word list that we're
+going to use to launch attacks against
+the uh
+so right here you can see these are all
+the accounts who've successfully brute
+Forest so it's pretty quick even in uh
+production and penetration tests like as
+long as you have a really good word list
+like a rocky list works really well so
+right there we've taken over uh 10
+accounts essentially in just a matter of
+seconds
+so how about cross-site scripting anyone
+here know about cross-site scripting
+you can do a lot of fun stuff with
+graphite scripting so first I want to
+show just the basic cross-site scripting
+attack this is kind of the foundational
+cross-site scripting attack right here
+so pretty much every Drupal application
+I've test or or uh content management
+system I've tested has had some form of
+cross-site scripting in it so a lot of
+these hacks you can use really easily so
+right here we're just plugging in our
+script within the comment field now
+what's really scary about this is this
+is a persistent process scripting so you
+don't have to socially engineer someone
+into tricking them into clicking on a
+link or something like that they just
+have to visit this page and essentially
+we're going to spill their session token
+so we'll save our comment see great pose
+we really like their content that's all
+they're going to see when they view this
+page so we fire up our netcap listener
+on our on our attacking system and so
+we're over here on the uh
+administrator's uh web browser here
+and so as soon as they refresh the page
+they see someone's commented on their
+post right oh they really like my
+content this is awesome
+well no we just stole your session token
+and
+so now that we have their session token
+we have to use that right so we'll go
+back to our attacking system and we'll
+plug that in we'll just switch out our
+existing session token with their
+session token
+so we'll switch these out real quick and
+save it
+and as soon as we reload the page we'll
+have taken over their session so now we
+so there's a lot of other really cool
+attacks you can do with cross-eyed
+scripting so the session token theft is
+just kind of the beginning so anyone
+here use the metasplay auxiliary
+keylogger the JavaScript keylogger
+this thing's awesome if you inject it in
+any page that has a login form you can
+essentially steal their uh anything that
+they type into the page as they're
+typing it and it's great in production
+and Pen tests because as people are
+typing it just fills up your screen with
+passwords and all sorts cool things
+so we're going to inject it in the same
+way just in the combat field here
+and this works really good on upgraded
+applications that have like HCB only
+flag set and stuff like that so you
+can't steal the session token so this is
+a really great Vector if you're just
+going after passwords
+so we'll just plug in our script Source
+here
+and now we'll switch back over to the
+victim that we're targeting
+and so they reload the page and right
+now we've already hooked their browser
+so every single system that we hook it's
+going to tag their system it's gonna tag
+all the keystroke so they've logged into
+a text file and so now we've just stolen
+their username and password
+so
+it's a fun very fun attack
+now this one's a pretty cool one uh
+especially if uh you're going after a
+company that's using LastPass Enterprise
+or something like that
+um I I really like imitating uh
+production tools that people trust and
+they think that it's their valid actual
+application so this is kind of the same
+Vector but it's just a different
+variation of his hat because it I just
+like showing all the different uh things
+that you can do with cross-site
+scripting so right here it's a fake
+LastPass drop down so in here you use
+LastPass or want to admit to it one guy
+did all right
+so as soon as they load this page they
+see our fake uh LastPass
+uh pop up there and so now that when
+they click on login it actually goes to
+our server and so whatever they enter
+here it just gets written into our uh
+our log file and we steal those
+credentials and this works incredibly
+so how about some other uh attacks
+against Google applications
+so one of my favorite modules that
+Drupal has is called devel and a lot of
+developers enable this and they leave it
+enabled for production applications as
+for development because it shows
+database data related to every single
+page that you view so right here we're
+looking at a user account and we can
+actually pull their password hash right
+out of the page you just have to click
+on this yellow box here
+and as we go through we can get their
+password hack and there's a built-in
+permutation within uh within John the
+Ripper to track these passwords
+so I wrote another script to go through
+and automatically extract all this
+information when I refine that the Dell
+module enabled
+so we're just it's pretty much the same
+uh format as the other script that I
+showed earlier because I suck at coding
+and I don't like redoing things so we're
+just going to plug in our session token
+again
+we use our existing section like in all
+the pretty much same parameters from
+before
+and we're going after 30 accounts so as
+this runs it just goes through and
+scrapes all this out so now we have
+every single uh email address and
+password hash and the nice list that we
+can load into John the Ripper so right
+there is every single user account and
+so it makes it super easy to break into
+Google applications
+so the next thing that devel comes with
+is the ability to execute PHP code
+directly on the server
+so this is probably my favorite part of
+the develop module here because you can
+just completely take over the
+application and the server so we're
+going to do is we're going to load the
+execute PHP module up into uh active
+frame within the site so the Drupal
+works by block so we can just activate
+and deactivate certain blocks so I've
+activated activated this block and now
+I'm just plugging in some PHP code we
+can just write whatever we want and
+it'll execute directly on the server the
+cool thing about this is you can execute
+whatever you want and there's no records
+of what you did in the log files or any
+anything else on the system so it's a
+lot better than writing a shell or
+something like that so we're just going
+to test that this works by reading the
+Etsy password file and it works that's
+great
+so pretty nifty
+and then so now we're going to go after
+something even more valuable so we're
+going to go after the settings.php file
+now this is going to give us MySQL
+credentials the Drupal half saw and all
+sorts of other good stuff it'll help us
+actually crack the credentials that
+we've stolen so right here's the
+database username password and the
+Drupal hash solve so we can plug this
+into John the river as well to crack
+this password
+so pretty much have almost everything
+that we need on the application right
+except we don't have a shell yet
+so of course we need to get a shell
+because we're pen test right
+so I'm just using the msf payload I'm
+going to generate a base64 encoded
+reverse PHP shell
+so we're just going to let this load so
+all I have to do now is copy this chunk
+of text here and load it into the
+application and let it run
+and as long as I have my listener set up
+it's going to shovel a shell back to me
+and now we have a shell on the server
+and you can actually do this with a
+netcat as well I was like showing a few
+different ways to do this
+so we have our listener set up and we
+just click execute
+and now we have a shell on the server so
+we can run direct commands on the hose
+so we pretty much own this server at
+this point
+how about uh SQL injection anyone read
+the recent news about drupal's SQL
+injection that affects pretty much every
+Drupal 7 application on the planet
+so it's this simple to exploit there's a
+proof of concept out there and that's
+all I'm really running it all it really
+does is it changes the password of
+whatever account you pointed at so I
+have it set up to change the admin
+password to change it to admin I don't
+recommend doing that on a real-time test
+but now we just log in and we have admin
+access
+super simple exploit that's why this is
+so scary and why you should patch very
+so that's Drupal
+how about Joomla anyone here like
+so Joomla has a very similar SQL
+injection within the core of Joomla
+um this one's not as easy to exploit but
+pretty pretty simple nonetheless because
+there's still a publicly posted proof of
+concept so right here it's just in the
+ID parameter I'll do the web link script
+here
+so we plug in an A and find out oh
+there's a MySQL error right so let's
+mess with this right
+so now we're going to plug in our actual
+SQL query here and so we're essentially
+just going to select the passwords from
+the database so we're going after the
+admins account here
+and that's their uh encrypted password
+which is very easy to break as well
+so now let's say we've logged in with
+the credentials we just stole so these
+took that that uh encrypted password we
+cracked it now we're logged in and now
+we need to get uh access to the server
+so we're going to go to extensions go to
+template manager and we're going to
+modify our template because it's all PHP
+code so we can just write whatever PHP
+we want
+so here's the theme where we we're using
+so we have to use this theme and edit
+this theme to actually modify the uh the
+existing site
+so we can
+this is 3.2.1 I believe
+so right here I'm just making a new file
+you could edit any existing file which
+is what I normally do on a on a pen test
+the first demo which is like showing
+that you know we're creating a new file
+so I'm just going to make a super simple
+uh shell here
+probably probably one of the smallest
+shells I could think of so all we're
+going to do is we're just going to take
+commands through the C parameter and
+we're just going to run them on the
+server
+so we'll save that
+now we have you just have to go to our
+so we load it up it looks like nothing's
+there right
+so we just have to plug in whatever
+commands we want to run through the C
+parameter so now we're listing the
+directory contents so pretty simple
+but it's not that pretty right so I
+wrote this other tool called command
+ejector and what this does is it
+essentially takes a URL like this
+that is either vulnerable to code
+execution or command execution and you
+can actually plug in whatever commands
+you want and it parses it out really
+pretty so it looks like an actual
+terminal
+so now we're interacting with it more or
+actively just through our basic little
+shell and now we've taken over that
+server
+this is on the WordPress
+did anyone here go to appsack USA by
+chance
+do an apps like USA
+so appsec USA they were too happy about
+me using the site for the demo but
+so I was actually helping out the with a
+development on the site and they gave me
+a task that they needed that I actually
+needed uh server access to complete
+instead of asking for it I decided to do
+this
+so what we're gonna do is pretty much
+the same thing that we did with Yuma
+we're going to edit the template and so
+I'm just editing the 404 page here
+and we're essentially gonna generate a
+reverse PHP Shell Code again it's pretty
+pretty similar to what we did within the
+Drupal application
+except this is a real production
+application that people are actually
+using right now
+just kind of app whatever
+so I'm just going to generate this code
+and I'm just going to append it to the
+bottom of this 404 page
+so once I plug this in all I have to do
+is pretty much go to any random page on
+the apps like USA site and this code's
+gonna run and it's going to shovel shell
+back to me
+Rochelle
+so as soon as we go to just pretty much
+shovel our shell back and now we have a
+shell on the apsex USA server
+well with that thank you guys
+um you can download all the scripts that
+I showed up there on my GitHub page and

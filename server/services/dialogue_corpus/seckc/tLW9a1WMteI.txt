@@ -1,0 +1,2331 @@
+[Music]
+Korean currency exchange they got hot to
+the tune of 48 I know [&nbsp;__&nbsp;] sucks to
+be up but apparently they're gonna read
+your customer so tomorrow is
+[Music]
+this one for a bunch of really big
+companies Patrick Cornell's doing some
+more cool [&nbsp;__&nbsp;] so he is
+[Music]
+this is a cool
+[Music]
+but good intentions really hoping
+Chanticleer implemented poorly it turns
+out these students because a university
+that's all lined up for recess this is
+my [&nbsp;__&nbsp;] I work for the university
+Missouri
+[Music]
+[Applause]
+yeah
+[Music]
+so
+[Music]
+[Applause]
+[Music]
+yeah this is a contractor
+[Music]
+[Applause]
+alright hello everyone this is the intro
+my name is Ryan my pen testers and I use
+Kali Linux a lot we're not going to be
+covering a lot of the weird crazy stuff
+we we do with it all the time it's going
+to be introduction introductory if
+you're wanting to get started out with
+pally Linux trying it out using it for
+the first time installing it learning
+what it's about that's what this talk is
+about so just curious show of hands how
+many how many of you have used Kali
+Linux before alright great
+how many are new to Kali Linux alright
+awesome
+after today how many of you or anybody
+that might be interested in trying it
+out later installing it ok for one or
+two of you that might be interested I
+have some USB drives that I pre-loaded
+I've got two of them to hand out per
+talk so if you want one come see me
+after all so I'm the slides I'm gonna go
+pretty quick go through the slides then
+after we'll just boot up Kali look at
+some stuff so if you want any slides
+later you can you can find me by Rin
+mezzo on slack Twitter and Google so
+message me up later there if you want to
+get a hold of me and get some of these
+slides but what is Kali Linux it's an
+right it's a flavor of Linux it's based
+on Debian I'm the big Debian fan those
+that have worked with me before know
+that and it's used Kali Linux used for
+pen testing hacking security stuff it's
+made and developed by offensive security
+which is a company that does the OS CP a
+lot of lot of incoming hackers have been
+looking into that certification offset
+the company actually maintains Kali
+Linux and it came out in 2013
+before that there was one called
+backtrack and use backtrack many years
+ago so it's the successor to backtrack
+what's great about it is it's kind of
+become an industry standard again it's
+kind of based on Debian there's some
+links there I'll have links and slides
+for you later if you need them again why
+why use Kali if you're gonna get into
+hacking and penetration testing and
+security anything in the security space
+Kali has a lot of those tools it comes
+preloaded with over 600 penetration
+testing tools and other type tools it's
+open source it's free you can fete and
+look at the source code on git lab
+there's common frameworks and tool sets
+Sun like Windows development happens
+behind closed doors Linux and Kali these
+are you know out in the open so you can
+you can go out and look at the
+development see what's going on and
+again as I mentioned it uses the Debian
+space on Debbie and so uses the Debian
+package system if you're gonna install
+stuff on on Kali you'll use the same
+commands you would on Debian Linux again
+it's mainstream it's the recommended
+platform if you're going to take some of
+those off SEC exams like the OS CP and
+it runs great on VMware virtual box it
+can also run great natively on your
+your laptop so whether a physical
+machine virtual machine it's supported
+on most of your platforms and more
+recently they came out with the version
+that is supported on the Raspberry Pi so
+if you have a Raspberry Pi and you want
+to do locality linux on it there's a
+there's a download for that can you all
+hear me okay out there a little bit
+louder okay it's okay
+okay I was just saying you can install
+Kali on a Raspberry Pi now so that's
+kind of a pretty cool new download just
+some of the popular tools you're gonna
+find on Kali Linux that are already
+pre-loaded Wireshark verb in map
+Metasploit air crack cracking tools
+sequel matt der buster these are some of
+the ones I use and they're some of the
+more popular ones so again one of the
+one of the reasons to try Cali out it's
+already got all the software you need a
+lot of times and believe it or not there
+is actually a kind of an introductory
+cally certification out there if you
+want to try out Kali learn more about it
+there's free training here's the link
+again if you message me here in mezzo
+later on I'll give you these links or if
+you just go in google Kali training and
+there's a PDF book that you can download
+so the materials see in this slides are
+from from those online and I believe
+that the exam is $99 so you can do that
+through Pearson VUE I've not taken it
+but maybe having that certification exam
+as an incentive to learn more about it
+might be the way to go
+it really starts off with installing
+Linux just like you would Windows or
+anything else you have to acquire the
+installation media
+which is typically a file you download
+an iso file
+you take that file that you download and
+you either put it on a USB drive or a CD
+drive so what I've done is I've created
+a couple of these USB drives that have
+Kali already loaded and the advantage to
+installing a Kali yourself versus using
+a pre-installed you can customize it
+it offers full disk encryption so
+everything is encrypted on your hard
+disk if you want that option it also
+offers with USB sticks there's a live
+boot so you could stick this USB into
+your computer boot up use it connect up
+do some good stuff on the internet
+remove it you're done
+no no trace left behind there's also a
+live boot with persistence so if you
+want to put a little bit of storage on
+here and save your files you can do a
+live boot with persistence well we'll
+talk more about that Kali works great
+with virtual machines so you've heard of
+VMware virtual box again and there's a
+link there on the training that I
+mentioned but there's a lot of
+information about installing Kali online
+what you have to decide on is do you
+want to install it on your physical
+machine or do you want to put it on a
+virtual machine what I recommend is just
+try to boot off a USB Drive if you can
+and see how it runs on your machine or
+install it on a virtual machine you may
+not want to install and partition off
+your disk and wipe everything just to
+try it out so again later on let me know
+but the advantage if you try out Kali
+and you like it and you want to use it
+more you may want to install it on your
+laptop or your desktop because you can
+take advantage of that GPU that graphics
+processor for cracking passwords and
+stuff like that
+with the virtual machine you may not
+have access to that that horsepower that
+your your system may have we talked
+about more that later it takes a little
+while to build a full install another
+option is Virtual Machine load
+VirtualBox which we're going to look at
+here in a minute and again he can you
+can take snapshots and make a copy of
+your your Kali installing all that so
+you're you're going to be looking at
+physical install or virtual machine
+those are the two big things we're live
+booth and again a live booth mentioned
+what that does and those are your
+options you go download what you want
+then you got to roll your sleeves up and
+start installing it so and when you go
+to download it these are the options
+they're going to present you with 64-bit
+32-bit light mate arm all this stuff
+you've got different X Windows flavors
+xfce is the new X Windows desktop so
+what I would recommend if you're not
+sure go with the 64-bit and the default
+which uses xfce but for those that have
+used linux and maybe you like No maybe
+you like KDE there's different desktop
+managers different looks and feels you
+may want to try out some of these other
+ones KDE gnome etc when you go out to
+the Cowie download link those are the
+options you're gonna have next comes
+preparing your installation media if
+you're making a USB Drive you're gonna
+want to use you've got a Windows machine
+and you're gonna want to create a USB
+Drive you might want to try out one of
+these three tools at your Rufus Loonette
+Budhan if you're on a Linux or Mac
+machine like me you can just use a
+command line tool called DD there's a
+really good guide on installing stuff
+later there's not enough time to install
+it today but I'll have all the
+information for you later on if you want
+to install it
+when you stick this guy on your laptop
+and hopefully it boots up this is the
+menu you're gonna get you can go with
+the live option it boots right up or you
+can choose to install it over your hard
+disk again I don't recommend installing
+it over your hard disk it might it might
+erase your files and tell you're sure
+you're ready go with the live boot try
+it out get into somewhere that so again
+like I said if you're interested in
+doing the full install you're gonna want
+to try out got online training today
+what I did was I one other option exists
+if you want to try Kali offensive
+security actually puts out pre-made
+images so again if you're gonna take the
+OS CP you might want to go out and
+download this OVA file from offset it's
+a premade Kali image you don't have to
+install it you just have to import it
+into virtual box or into VMware and so
+I'm going to show you some screenshots
+if when I did that earlier it took me
+about 15 minutes so we didn't have
+enough time but first thing I did was
+obviously I installed VirtualBox as I
+mentioned right there bullet point one
+install VirtualBox and here VirtualBox
+is installed we're gonna do import
+appliance right there on that menu
+second option down we're gonna go out
+and select that OVA file that we
+downloaded it's about a three three Sun
+gig file it take 15 minutes to download
+as we import that it's going to ask all
+a few minutes later five minutes later
+it should be imported now you've got a
+VM and VirtualBox we're gonna select
+that boot it up there was a couple of
+errors that I got I had to fix those so
+one thing if if you're not big at
+tinkering and in fixing little errors
+sometimes Linux might not be the thing
+for you so keep that in mind if you have
+any issues installing it booting it up
+I'm glad to help message me I had to fix
+the graphics thing and the USB
+controller after that this is what you
+get when you boot up again this is the
+OVA I downloaded from off sec I didn't
+install it here I just imported it once
+it's up and running you want to install
+VirtualBox tools if you're using
+VirtualBox notice it's not fullscreen
+it's a small window with these commands
+you can install VirtualBox guest guest
+additions and that's the commands I ran
+there and again I'll give you that
+information later then when you reboot
+its full screen it looks great
+everything runs a lot better so that's
+all we're gonna get into in far as
+installing it today once you get Cali up
+and running you may want to be familiar
+with some of the commands to configure
+it things like that so I tried to come
+up with a list of bullet points that
+things that are important to me when I'm
+using it that came to mind so first of
+all you almost always are gonna use
+route when you're on a cow a virtual
+machine typically you own that virtual
+machine you own that server so you can
+use route but if you need to add
+additional users you can do that with
+some of these commands add user these
+are typical Linux commands that you
+would run anytime so again we can get
+those to you later
+you're gonna have your typical Linux
+Network commands if config if config
+adapter down up if you need to re reset
+your IP address
+DHS client and if you need to edit your
+configs and such those are some of the
+commands you're gonna run one of the
+things you can't do is SSH into your
+Kali machine by default with Roo
+you need to edit your SSH config file so
+once you get this Kali virtual machine
+booted up maybe you want to shell into
+it from your Windows machine well in
+order to do that you need to edit this
+file and restart a service I got a slide
+another thing I'll show you when we
+booted up it's got transparent windows
+that bother me I like to disable that
+workspaces you got virtual desktops
+click between different desktops we're
+gonna look at some of these word lists
+we're gonna look at how you could
+install patchy a web service update your
+packages and then we're gonna we're
+gonna open up some of these applications
+real quick at the end of the slide I've
+got credits here links to all the
+applications so she wanted to make sure
+you to give everybody credit there with
+so this is the this is the one I
+imported that OVA file I'm gonna boot it
+up
+and you can see here like it's not even
+fullscreen so something's acting kind of
+weird
+so as I mentioned when you get booted up
+Linux has a thing called virtual
+desktops and so if you open something on
+this desktop there's a button up here
+you can toggle between two virtual
+desktops
+maybe maybe over in this window you want
+to open a command but in this window you
+want to have your notepad open windows
+all the other OS is have something
+similar but with this new version that
+has something called xfce the latest
+desktop environment you can click up
+here I'll just call it the main menu or
+Start button just type in what you want
+to load up I'm gonna put in burp here
+and open burp it's a popular web web
+testing a proxy tool and it's already
+pre-installed I didn't install these
+after
+so now that burps open we can load up
+Firefox and you're going to want to set
+your your proxy which is already set so
+we're going to go out here and look at
+the set KC website we're gonna run it
+so already I'm looking I'm analyzing
+network packets let me let me log over
+and look at a history here and you can
+see here their responses and the network
+traffic back and forth to the set KC
+website you may have heard of n map in
+maybe I want to port scan the router
+here and see what ports are open we're
+doing that now so the cool thing again
+about Kali 2 more minutes
+all these tools are pre-loaded let me
+show you how to disable that
+transparency in the window if you go to
+file preferences right here it's at 5%
+I'm gonna drop that down to 0 boom now
+this is black instead of transfer and I
+like that a lot better on a big screen a
+tool I use all the time it's called dare
+buster again it's it's pre loaded so I
+can I can fire up der bus or again
+there's over 600 tools out there so and
+maybe I want to go out and I'm not
+saying we want to pin test the set KC
+we hit start it's gonna start ripping
+through that website looking for hidden
+directories and stuff like that that may
+or may not be legal so look into that
+don't just start scanning stuff but
+bottom line is if you want to get into
+penetration testing if you want to get
+into hockey and Cally's where you should
+start and yeah I guess with that we're
+running out of time so are there any
+questions
+and that is a good point if you're one
+to do wireless testing you may actually
+want to install it on your machine and
+not use a virtual machine because if you
+click up here in the corner on my
+network adapter I just locked it sorry I
+don't have a wireless adapter on this
+virtual machine I do have one on my my
+Debian laptop I don't have one on on
+Kali so if I boot it up from this I'd be
+able to go up and manage my wireless
+just like you would in Windows or
+something else and it's would be
+something similar to this you get a
+drop-down you connect to a wireless but
+well so what you can do with VirtualBox
+is you can plug USB devices in and you
+can do what's called a USB pass-through
+so you can pass that through to the
+virtual machine it does work I have used
+multiple wireless adapters with the
+virtual machine before so but it just
+takes a lot of tinkering in and testing
+it but yeah if if you looked at the
+network's adapters on here
+it just shows I have an f0 which is a
+wired connection well it's not wired
+it's because it's going through my main
+computer
+so yeah million things we could talk
+about Callie for four hours let me jump
+back onto the slide here and and my
+contact info please write that down
+message me I stay connected on set KC
+slack and Twitter if you ever want to do
+any Cali hack the box if you're looking
+have attempted to use it and it's too
+confusing
+typically but about my coworkers are
+like why aren't you using VI superior
+ever you can do things
+very little very low osci have you
+I can move around it I prefer using cat
+and file pipes
+yes you're just gonna watch yeah you
+you have stupid terminals that are semi
+there are two basic things about the
+I guess you answered by
+you know your an insert then escape you
+get out of it
+you go behind your back there are a
+our answer
+I don't like them I just yeah there's
+you accidentally you get used does it
+undo everything you've done in insert
+[Music]
+escape ailment under
+also really
+just
+let's say you've really screwed up and
+you hadn't noticed until just now how
+badly you screwed up you can undo this
+through a different way
+while you pin sick you and it'll say we
+just like you haven't written a so
+I don't like what I've done but I made a
+we'll be in it
+[Music]
+drink file bath without
+while you make changes
+just just let me start over
+so everything you've done since you go
+through the fire or since you've written
+thrown away everything you've done since
+[Music]
+so there are movement commands and you
+know and movement commands are awfully
+important if you've ever played rogue
+makes me laugh pelvis right yes that's
+counterintuitive
+Oh
+new third
+[Music]
+you can find you perfectly undertake Gd
+and I guess
+you can delete the line you're on and
+the next line down because J would take
+you to the next line down I said
+DJ keep the saying I don't like these
+[Music]
+and one of the other things you can do
+/ms a-flat
+/
+the center you can enter regular
+if you want to get back to where you
+what was that single quote single okay
+it takes you straight back everywhere
+whoa
+is how you make this reference martyrs
+both much happens to be the place where
+less search so we can make a mark with
+st. Martin a
+and we could go to the bottom the pile
+with capital cheese and then we can say
+okay it takes us back to market hey how
+did you create a market gun and okay m4
+mark and then a letter all right hey so
+now I put our K here so he goes along a
+file when you say quote angry go back
+yeah
+if I don't like this
+I can I can use market find region I'd
+say mark a I could say mark camp
+[Music]
+because it's just a man it's faster to
+okay I would say work easier on the
+files they poke the I get back right
+[Music]
+and then delete from where it was a new
+marketing
+okay there's a there
+or you know
+other movement
+visible window support
+capital H takes you from the top of the
+basement window
+[Music]
+talent is the bottom line
+[Music]
+remember that father - the actual online
+and that's where community so we can
+give we can use smarts in the implants
+with the same footing be from market to
+market me we could do something we could
+sense to began the beginning a line
+karat the regular expression like
+everybody know that your expressions yes
+awesome
+[Music]
+and this is something you will do a lot
+once you know how to do it you know put
+put three pound signs in space beginning
+of every line and that
+marriage
+[Music]
+just to comment buncha crap
+[Music]
+we all do let's hear this no no that
+doesn't work I'm in and out because I
+might use it later so you can all see
+sake from put the Marcaida martini
+[Music]
+here we go when you do that does it
+delete including love including mark a
+mark a is not set and Mark V is no
+longer set but if we undo he is there
+I don't think originally I saw personai
+together
+you take the I it only worked on some
+turtles
+[Music]
+di does not work on the you could try
+and never go in line at it so we have
+function we have other motions like
+Capitol Cheney Texas at the end of the
+aisle Popo taking this faster there we
+: one for a lot of the times when you
+are working with somebody else maybe
+they're not in the same room
+it's handy to be able to number the line
+Sen you can edit but they're there on
+the screen so the person working miss
+can say look on line 27 let's change
+this and of course every command you can
+[Music]
+you can say I don't know what C stands
+for good if you hit enter it puts that
+line in the top at the top to visit
+window just scroll sit there for you
+[Music]
+is justice to be returned adjust her
+line
+[Music]
+see
+take that line puts at the bottom screen
+return when you're not answer
+that's another way to go you know a
+motivational famous
+usually makes it work free market line
+so if I don't want anything else to the
+end of that line all those delicious
+command line arguments we hit capital D
+and that suits it away one one
+you can delete one character time with X
+[Music]
+you can put it wherever you find one
+shade
+if you're really good you know that the
+last thing they did was right let's see
+one
+[Music]
+and y'all read that yes
+eat something they did it's good if you
+wanted to look for any asterisk and to
+meet everything after NASA so you search
+from where the cursor is to the end of
+line you got in the next line like that
+and
+it lets you just just repeat the answer
+we don't like the so we could say two
+apps
+yep which if you if you can play in your
+edit that's something you can sit there
+and you
+make magic happen when you could using
+region
+[Music]
+you could do a substitution condom on
+your own place doing the same thing for
+every asterisk followed by anything
+if you hit on view and decide to go into
+I've been using the AI a long time and I
+you can't invite anybody do anything new
+on vis you always want something this
+yeah
+[Music]
+configuration file here's here's that VI
+thank you and attacks today
+one of the useful wetlands yes close
+curly bracket which takes it to the end
+and yes you can start a pipe command
+you could say bang participate and the
+movement
+and a paragraph which is conservative to
+beat doctor line most of my experience
+that's to nine lines below which is the
+end of paragraph
+[Music]
+if you can righty
+me me that in Lemont so bang bang which
+is like in a current line fmt for
+matsing
+that's
+[Music]
+like Richard it's doing something
+earlier this week so I can tell you that
+to
+directory so much Arabic where you can
+[Music]
+so I took all of those because last
+night so it was in there it's been three
+years so I want to delete it side of
+music
+the service deployed as a year as part
+of one of the director games yeah that's
+okay but we decided that no air for the
+current year and really handing people
+access to walk outs they only want to be
+looking at the market so I went believe
+22 inator
+and then I had a bunch of in Natal
+honest because all suddenly a lot of the
+directors became the same so I went
+punch about through sort and it's huge
+it's hard - you delete stupid headlines
+show me show me only
+and it also happy to sort the funds in
+alphabetic order because I went and sent
+never
+[Music]
+so that's just never done Andy Andy Andy
+things you can do with the eye with
+start your short program
+not a different computer windows so you
+have to tell
+I get me sorted output so I can talk
+back
+right y'all know that the capital G
+takes at the end so you could say D
+one of my other favorite the man you
+know little being takes you back around
+you can also say see definitely change
+suddenly we ran in so there would be
+more than onward
+we're all doing
+[Music]
+so you could say Apple
+dammit
+good with Unicode what language is this
+Andy that's a project that's some genius
+you probably don't every started in the
+eighties Dallas is a responsive mega
+truth you'll page how much you think hey
+to know what you think
+[Music]
+faceball
+[Music]
+interfacing to my ex-wife the basement
+nothing a down our throats maybe a good
+old western electric telephone from
+Earth every dial into intercept you can
+put it on voice over IP number so when
+you're programming things you like to
+know
+you're coming in typing like Aaron Aaron
+the other one of the other ways to type
+go which opens a black line pull over
+that's not just here it'll just sent you
+what if the standard was before we can
+use
+three Jets attacked
+and you can set a mark here and then
+[Music]
+movement command that the girl is you
+since we make mark a full day everything
+over my shift
+[Music]
+the four or five minds
+[Music]
+beyond your vision you can set hearts
+and
+protests
+set your initial market Club and we go
+if your do it from the hospital it'll do
+when you're when you're in town
+you really want to get in there don't
+me
+[Music]
+Parkins from the days before he even
+detected
+it
+yeah we're talking you're talking about
+try using that over $300
+that's going to go back to the line
+[Music]
+you might want to get short your
+functions page where the coding
+standards
+and
+[Music]
+why is this file assume it's on an ascii
+okay
+it's okay none of this
+for this particular program
+[Music]
+really nothing big
+[Music]
+yeah
+you can do it
+[Music]
+how do you save a file as a different
+file
+mm
+[Music]
+my name is still there
+so if you make a change and then right
+go right to the original and not the new
+one
+[Music]
+winning
+that's important to know that's one way
+to quit
+you know there's if you know what you've
+been doing and you know you've got a
+good at it you can have the capital C
+capital C and if you have crazy changes
+in it but if you're in eight years
+configuration lines defining directives
+are all gone because the runner down he
+very very long time
+when I administer hundreds hundreds
+so that's what are reachable unless I
+know
+show my prowess
+during the DD
+[Music]
+I got that car buddy sippy
+all
+and
+okay deserves gonna be talking about a
+tractor needs me I need energy busy we
+[Music]
+we use this stage so I'm trying to get
+kinda cheap on voices so that
+everybody's not presenting on top of
+each other that's the paper equals not
+yeah mutant
+need some are nil sweet John read a
+little bit and see how this works thanks
+me
+are you going to be sides up and gonna
+taking my crack that's that a capture
+the flag man
+tract
+[Music]
+yeah
+I am RSI exbc and this is a talk SSH
+fingerprinting theory of mining rigs for
+those of you were just a theory
+SSH fingerprinting stuff in general that
+is poorly configured so if you're not
+aware aetherium is a cryptocurrency a
+theory of mining rigs make that crypto
+currencies are very high-value targets
+and there's a bunch of all okay internet
+this targets in the showing things one
+way to find them because of a miss
+configuration in there SSH ghosties so a
+little bit of background one of my
+buddies wanted to start a theory of
+mining which as an aside like it's
+totally fun it's not profitable don't do
+it but if you're just you know wanting
+to do it as a hobby it's it's kind of
+cool except that his mining rigs who
+kept getting intruded like every couple
+of days so it changed operating systems
+and then they got rude again he's like
+Richard what's going on here and we
+found an old firewall rule that was
+letting SSH in and that was okay that's
+that's the main problem for the second
+problem is if we took a look at the SSH
+logs and like there's tons of people
+that just scan SSH servers and brute
+force usernames and passwords but the
+one that got in connected entered the
+right password and then changed the
+mining address to make that money
+instead of us
+and then we changed operating systems
+and it happened again with the dinner
+so help how is this attacker walking up
+to a new 422 looking at the initial
+connection and guessing the right
+username and password most of the time
+[Music]
+okay so why do we need Huskies when you
+log into an SSH server if you don't know
+that SSH server is the one you want to
+talk to you are handing them your
+username and password so the host key is
+an asymmetric encryption key pair then
+identifies the server to the client so
+the client says I want to save to my web
+server hey I haven't seen this before
+are you sure this is the right one
+yes I I say yes because I recognize this
+host that's basically what it does if
+you're an organization you can use PKI
+for this and I highly recommend that you
+do but in this case all these mining
+rigs all these you know random my
+personal random web server on PKI so I
+just beg built the key one time put it
+on the server and verify it's the same
+this is what the key on my laptop looks
+like it's a public key only that I am
+showing you what's interesting about
+this problem is that you can do it with
+only the public key you don't need the
+so traditionally the reason you don't
+want to share keys is that a bad guy
+could take your key and
+man-in-the-middle you if they have
+access to your IP traffic they could say
+hi I'm the web server please log in to
+me Alan decrypt your traffic read the
+username and password and hand it off to
+the web server or to the actual web
+server and have your username and
+password or take over your shell
+connection so that's why you don't want
+to share it SSH keys there's a whole
+bunch of documentation about why this is
+a bad idea but we're going to talk about
+today is it multiple if a single key is
+shared across multiple SSH servers an
+attacker can use that to identify those
+servers and the fact that they have
+something in common
+some shared Genesis somehow they also
+haven't share the same public key which
+implies they have the same private key
+which implies they might be the same
+operating system
+they might be personal machine who knows
+what so why would anyone do this usually
+it's because of a minor issue they
+accidentally check the hosts keys into
+version control and they thought that's
+fine because they're private and they're
+small some company another common one is
+you clone a virtual machine and maybe
+you wanted to share the SSH nosfy maybe
+you want all of your VMs to act the
+exact same way
+that's a bad idea because if one of them
+is compromised they're all compromised
+but people do it
+if you had a load balancer for SSH which
+is kind of a scared thing it's basically
+required or I haven't I haven't found a
+good configuration that lets you get
+around it lots of embedded devices
+lots of embedded devices have the host
+keys baked into the firmware but what
+you should do if you're an embedded
+device factory is when you build the
+device the first thing you should do is
+to be in some entropy and generate and
+unique keys in the factory where you can
+trust it and then ship it to the
+customer but a lot of times what happens
+is you have like an SD card that's like
+the golden image and that gets flashed
+onto everything and that contains the
+host keys
+[Music]
+so let's take a look at a couple
+operating systems these are three ones
+that did it right
+if there's a file called first move
+delete the keys make new keys restart
+SSH that works you don't have to ship
+keys in your disk image to start with it
+but you know we're rotating them is fine
+also I'm not sure which OS these came
+from but they basically all kind of work
+the same way or they don't ship keys
+so let's go how do we if we have a
+theory mining image like one of the many
+that are they how do we get the keys out
+okay so this is a test image of some
+random operating system I don't remember
+which oh this one's only 4.4 gig I would
+have distributed these but I didn't have
+a way to distribute a whole bunch of 4
+to 15 gigabyte files so much people I
+didn't know who are they coming here so
+that's why I'm going to show you how to
+do this yourselves one approach is to
+actually just mount this on a virtual
+machine and go another approach is test
+disk
+test dishes are super useful tool for
+like undal eating and stuff so we're
+gonna take a look at this disk you have
+to select the partition table type which
+is usually Intel but sometimes efi its
+more common efi these days
+this one is Intel it up at all the text
+you go down to advanced you pick your
+operating system in this case you want
+to pick the largest one the smallest one
+is probably where they keep some config
+files like where your aetherium address
+is and and how you get on the internet
+but you want to go to the big one we
+want to pick list or if it's an awesome
+addition you want to pick undelete
+[Music]
+and now we can basically perhaps through
+the disk image and grab the keys real
+fast so we go to Etsy as to say we want
+two things we want the host the sshd
+config see if copying and we copy it out
+let's see again and then we have all
+these keys we've grabbed the private
+keys we grab the shadow file it doesn't
+really matter the people password for
+these is usually known we want the
+public key and we want the specifically
+there are four public keys here we want
+the one that showed an is going to index
+for us which happens to be basically in
+the priority order et ECDSA RSA adsf so
+when shown and connects it only grabs I
+think it only grabs one key and in this
+case we're gonna grab this one so we hit
+the only thing we want to check in the
+config is to make sure the system is
+pointed toward the key in this case it's
+actually commented out this operating
+system didn't write into the ship of
+didn't ship they shipped keys and then
+they said don't use these makes a month
+that's that's fine have this been
+enabled this would have been bigger this
+would have been the key to use so once
+you have the key you have two options
+you can scan the entire 422 ipv4 address
+looking for SSH there are tools to do
+this or you can just use show down so
+I'm going to show you some results from
+show down for different operating
+systems than I've worked on ok so we did
+that oh yeah and if you only have
+network access there's this tool called
+SSH key scam and it just listed the
+piece for you so here is my local host
+your SS HRSA here's my ECDSA here's my
+two five five one nine those are the
+so basically we would start showdown or
+CNS Sh ourselves at this point and I'm
+going to show you some screenshots that
+have had the important bits redacted so
+this was the first operating system of
+that day and I just found one hit and I
+was first I was just like oh this is
+terrible there's I did all this work and
+there's only one computer let's go come
+on
+but really this was that Lake and then I
+thought about it I was like no this
+proves that they're there messed up this
+proves that the SS ain't the same post
+key that I have matches some other
+random one on the Internet
+these guys also have fixed it they had
+one of the smallest exposures on the
+internet and they were the fastest to
+respond these guys also fixed it they
+had another one computer and they were
+like boom that's the thing we should
+care about these guys hadn't fixed it
+again one computer like and then it
+started to get interesting so here there
+were 40 of these machines that are just
+I'm using to show this how do you get
+that back this is show Dan and we'll
+we'll get to that in a second I'll bring
+up to an end if we have time for some
+more live demo stuff so then there was a
+Nolan that 76 mostly in Eastern Europe
+and then most recently there was one
+more that was just one random machine in
+China which is weird because I thought
+trying to advance into currency mining
+but you can identify random
+cryptocurrency mining rigs in China this
+is a Chinese made OS I believe so I
+filed for seven Seavey's of the ten OS
+as I tried they all had the same they
+had separate keys so I don't think they
+were at all related but they had all
+managed to misconfigure the same way and
+found 178 mining routes online this is
+just a sample size of randomly when I
+I'm currently working through with the
+vendors on making ship on and asking
+them to fix this I've given them some
+time it should be as easy as deleting a
+file okay how much time we have left
+what they did they gave me seven so we
+have plenty of time right sure okay so
+so far what we've done is we take in an
+existing software and we hold the keys
+out of it and looked on the internet to
+see does this have any friends are there
+any more clothes of this VM or a random
+thing well we can also use shown an kind
+of in Reverse and we can say show damn
+what if we just give me all the keys
+give me all the keys that you have and I
+will sort it out myself
+and if you were to write that Python
+program it would look like this and it
+would run very very slowly but that's
+okay because as long as we sample a
+large enough population which in the
+case of the four billion ipv4 addresses
+we don't need a whole lot as soon as we
+find like two ssh host keys that are the
+same on different IP addresses we have
+something suspicious so if you were to
+run this tool program it would it would
+look like this and it mark out loads of
+keys
+okay
+so with a little with little bash
+scripting you can take this this list of
+key value pairs that goes the key in
+this case the IP address the value as
+a little bit about scripting we can turn
+this into a sorted list by most common
+key and so now we have
+there are nine only my p9 distinct IP
+addresses with this scheme
+there are 71 with that this doesn't tell
+you anything other than those IPS are
+probably closely related in some way
+they could all be routed in the same
+but
+if we were to take that same finger the
+and go full up showdown you can search
+show it in for some of the SSH keys
+other ones cannot search because either
+the string is too long or it has a bunch
+of random symbols in it that calls the
+Soudan to fail the query parser I
+actually talked to the founder of Japan
+about it he's like oh just use the
+fingerprint and that'll totally work the
+fingerprint is basically an md5 hash in
+the public key
+I don't know what this is but there are
+twelve thousand I don't know what this
+is
+[Music]
+so in this way if you want to file some
+CDs you can use this and find out like
+basically if you can find the machine
+you a whole bunch of machines figure out
+what it is or do the contact it's a very
+easy way to get a CV filed in your name
+or according to the vendor give them
+plenty of time to fix it something in
+China whole bunch of stuff all this does
+is identify things this doesn't get you
+access to any machine it's just a way
+it's just it's basically a small
+information leak and so are there any
+questions a CBE is a common enumeration
+a common vulnerability enumeration so
+every year they start off the counter at
+0 and people find security bugs and if
+you find a bug and you contact the
+vendor and according to them and then
+you contact the contact mitre or one of
+the Parker's soon CNAs which is CBE
+numbering authority they will issue you
+a little thing that says hey on this
+date so it's so discovered that this
+thing was misconfigured I'll just show
+your CDs also you might see these I want
+to see if there's actually a Carrera
+yeah so it's like random internet points
+it's not worth good money I say
+you can if you want I don't want to get
+security - that they know so this before
+the date that was fixed does not have a
+unique SHP for each instance of the
+product short description I don't know
+how this is a 9-point but but yeah these
+are this makes it really easy to look
+for things more than this in this case I
+was looking at okay
+so earlier I told you a story about how
+does this machine keep getting uh how do
+they I suspect I suspect that what they
+did is they have it they have an SSH
+client when it logs in the clients
+exposes like through an API here's the
+public key I'm talking to and then they
+just have a list of like is it this
+public key use this username and
+password go that's how I would have done
+it but they changed the password right
+did you say did you say your friend
+changed the password in stone i back my
+friend reinstall the different OS which
+changes the password and it also changed
+the key and so when they came the next
+time the key had changed and i think i
+just looked it up and said ah here's the
+new one let's go
+let the default
+yeah he thought it was behind the
+firewall and he had like an old IP
+before a tall firewall rule that was
+letting it in and DHCP it like never put
+fire Mormons to tha VIPs that's a that's
+another problem if they arrived forgets
+have a question you have a second I do
+so the I thought one of your earlier of
+slides had SSH be to post keys are bad
+and I really miss remember that no no
+those keys are great okay sharing post
+keys are bad I think I could remember
+the details that slide on it sharing um
+a default right yes okay so why don't
+like I guess let's let's go back to to
+the slide the different operators
+there's one thing I wanted to say like
+okay if you have an operating system if
+you want to stand up an operating system
+you usually have an install CD or a USB
+drive or a network image that's just the
+Installer as part of this the Installer
+will set up SSH for you and build the
+keys that's how it almost always works
+what's unique about virtual machines and
+etherium mining mining rig images is the
+the way that you distributed is a disk
+image it's already baked it's already
+been booted somewhere same thing you'll
+find this on like a bunch of raspberry
+PI's where people distribute raspberry
+pi SD card images they'll have as to say
+toasty to their share but they usually
+aren't on the public Internet I don't
+know why any of these things were on the
+public Internet
+more questions what's up so the way
+start scanning is based in the first
+whistles units when up your own VMs to
+see like what most queue is giving you
+they just look into that same host key
+across the internet yep damn in this
+case I showed testa's but yeah if you
+buna vm and then run an SSH key scan
+against it it'll dump the keys that way
+some test is does not yet support better
+infest so if you have a VM if you have a
+disk image that uses that you have to
+halt the petition out which test this
+allows so test this will set up TV for
+T's just to extract one partition and
+then you can just mount that analytics
+and go in and take the files out just
+show name is a website that showed an is
+a website that scans the internet for
+just random crap and so it'll scan like
+HTTP banners SSH host keys apparently
+and so you could if you find a signature
+that like let's see I've got port 22 for
+80 and port 443 this is a bad query it's
+gonna return a ton of stuff you can say
+showed in what what on the Internet has
+those three ports open oh that's good I
+was afraid I was gonna be like
+all right any more questions well thanks
+I'm sorry guys okay so my name should be
+recording in the mouth of it obviously
+physics of a point I'm gonna delve into
+that I'm not really doing that tonight
+but I I do have at the end I have a
+sources page and if you are interested
+in something
+my thesis is there and in my thesis if
+you don't want to read that there's a
+whole bunch of sources where I got my
+information
+okay by the way I currently am a data
+analyst and I work for a contractor for
+ask me later all right you know what
+Tripathi
+all right let me get my note part out
+[Music]
+references
+it is a digital asset designed to work
+as a medium of exchange that uses
+stoping cryptography choose for your
+financial transactions control creation
+of additional units and verify the
+be quite
+is a cryptocurrency it's one of the most
+well-known image not the most fun you
+can actually have a paper you don't have
+that big wait anymore
+and you can and they just use the QR
+code to buy and sell stuff okay I think
+there's a option of Bitcoin that's
+pumped a big cash Bitcoin cash something
+like that that's something
+so that's odd I don't understand why why
+not just use cash
+all right so with the cryptocurrency
+they change the privacy model in a
+normal transaction when you're doing
+with your bank when you're dealing with
+sales anything the privacy wall is
+between the American public the public
+is out there your transaction or
+Medicare
+actually
+[Music]
+with Bitcoin with a cryptocurrency the
+privacy wall is just between you and
+everything else so the transactions are
+out there everybody knows exactly what
+the connection was how much money
+changed hands they just don't know who
+did it they know that they may not know
+what it's freezer
+but that's private in big point is you
+everybody who's above the computers
+knows there's ways to track down who
+that person is but it's not part of
+Bitcoin things between base keeps it
+private you have to do other things to
+figure out who is involved in the
+transaction you have to do other things
+to do that so that's the new privacy
+model with crypto currencies listen
+other basic transactions one of the big
+things you have to remember I'm going to
+go over one of the big things we have to
+remember in a Bitcoin transaction I
+think it applies to other
+cryptocurrencies I know it applies to
+the point is if I buy something from you
+of course yours there's a point zero
+zero one Bitcoin because I'm not going
+to spend a whole day when I'm buying
+wait zero zero one big point
+and I transfer that may point to you so
+my input is how much big point I have
+let's say I have one but my input is one
+big my output from the transaction is
+the point zero zero zero zero one to you
+but my output also has to be the change
+back to me
+if I don't have it out though
+specifically designating that change
+back to me it goes to the minor it goes
+to the guy who lines the lock okay nice
+tip 0.9999 big boy that's that's a
+pretty nice tip like so if you do your
+own bottles you can set up your own
+wallet on your computer the code is out
+there in the public you can do that if
+you set up your own wallet you have to
+remember to assign the change back to
+yourself where you're just giving it
+away
+all right most Bitcoin wallets out there
+the old I could think of is a coin based
+with their other ones out
+they automatically do that but I would
+highly recommend you check that before
+you take it because it doesn't
+automatically happen unless nobody
+intervenes so this is basically just
+showing
+with the transaction Alice
+coming from somewhere too long in Dallas
+Alice's all transferring on out somebody
+else okay
+basics just basic standing out
+transactions that they feel that you had
+remembers to change how the victory
+watch me work so or four to ten minutes
+a bunch of the transactions are
+happening at the end of two minutes a
+miner collects up all of those
+transactions and put that twist them
+into a locker okay once they're in the
+blocks they have to solve they have to
+provide people the ones they have to
+solve a highly complicated mathematical
+traffic puzzle in order to provide
+there's workings work I can tell you
+what that puzzle is and how to solve it
+but I most people are not interested in
+it but they have to provide proof that
+they have solved this puzzle okay once
+they solve the puzzle was one minor or
+five solve puzzle they broadcast what
+customs the rest of the Bitcoin network
+and everybody else verifies and then
+they starts so every 10 minutes you do a
+block
+one-step blockers verify this the
+freaking work is verified we start doing
+so this is the basics of the block okay
+there are actually six things included
+in a lock for who listed here and in
+getting every block the hash of the
+previous block is infinite okay the
+timestamp of when that block was created
+the nonce which
+and the transaction or the merkel pretty
+that's all of the transactions hash
+together - what - all right there's also
+the version wine based version that's
+being used and the difficulties the
+level of difficulty of the purport is
+included in that block is why alright so
+those six things are hashed together to
+create once you cook right and verify it
+even going to block four o'clock
+50,000 something
+[Music]
+when you create blocks as you might
+imagine when you've got thousands are
+working on the same project exactly the
+same time sometimes two people are going
+to come up with the same answer or a
+similar answer at about the same point
+right that is when a sophomore one
+instance of a softball is created in the
+box so let's say a guy in the US the guy
+in China or a note and note in the you
+hasn't a note in China both come up with
+their foods would work but at the same
+time they broadcasted notes closest to
+them on the internet so that could be
+anywhere
+get received a report first and they
+verify on both of their pitchforks and
+then once they verify there's two
+different blocks they start working on
+the next one okay
+so they've verified two separate blocks
+at the same time they're working on
+separate next blocks the swarm which
+ever one of those second blocks is
+verified first which work is shown and
+it's verified that's the pork that takes
+over
+[Music]
+just the one thing just the one so are
+fourth gear miss my friend
+o clock the block block Locker yeah luck
+okay
+no the blocks estates Public Works and
+walk okay and all of the transactions
+from that works and block are
+essentially already contained in this
+particulars of the block if there happen
+to be transactions that are not
+committed
+they know and they include the middle
+labor
+yes and this one is an orphan block and
+it doesn't it was there but it's nothing
+okay
+that's usually what happens when
+stopping work happens so again there's
+another way there's a valid block but it
+and there's something called the heart
+form this actually happened early in
+the big point base code that can't do
+that artworks can't happen deliberately
+not deliberately they can't happen
+accidentally
+okay so hard for cabinets and this
+perhaps would stop work to write hearts
+work is when notes on this webpage at
+least for bigger things all right and
+these notes are using the old code of
+these nodes
+and they both continue making flocks on
+their separate coats
+now
+last very long okay but initially happen
+there was one long hard work they had to
+there can't be that one
+even when they're stepping unless you do
+it deliberately
+[Music]
+there are a lot of crypto currencies
+that are based on big ones they are
+okay so
+they just decided some coaches out there
+between to become a big big point base
+coach decided I don't like that update I
+think we should keep the old way or I
+don't like that update I know how to
+code this better so when there was an
+update they took that opportunity to
+okay so you've got all of these things
+in careful yeah they are a big chunk of
+it is a separate currency of that
+apparently there are some that are still
+[Music]
+the coin diamond and Bitcoin gold
+at this point
+I'm praying the different names here
+there's big league gold between Diana
+and dozens yet there's dozens of others
+so the big point cash is not well it
+it doesn't tell me when it happened
+okay but if you look into a brown one
+so that is not part of big points
+technically it's a hard fork
+so it's based on the points
+I have identity reach out to me exactly
+what that means yet it's a hard work so
+alright so Bitcoin blockchain runs on a
+decentralized like ok so there's all
+these notes all around the world for
+Bitcoin trying to get out way it's
+really hard there's all these nodes all
+around the world of miners of Bitcoin
+all over the world
+okay every single one of those nodes
+contains all our heart of the entire
+lecture the entire history of the big
+point so if I have a cache of a Bitcoin
+because every Bitcoin has an own ID and
+every part of thing
+it's that point Sears is in there one I
+gave you so if I want to find out the
+history of that fraction of a Bitcoin I
+can trace it back to you creation
+because every single node has all or
+most of the left if by some chance it
+doesn't have the entire up
+if it does if I query this node and it
+doesn't know it just calls that note
+says
+till Achatz penis
+but it's decentralized so it's hard to
+tamper with you can't you can tamper
+with this note but what about that one
+that one that blockchain versus
+distributed ledger technology this is a
+lot of words it's a lot of readings if
+you want to read this please do I found
+it interesting I'm not going to read it
+to you it is at 101 blockchains dot-com
+okay it has some interesting information
+in there I did read it the other night
+it is interesting that's why I included
+it here but there is a difference so
+blockchain is a type of ledger it's not
+the only type lakhtin victual weak point
+because of the distributed distributed
+computer Fire Department is vulnerable
+to
+kind of attack that most other systems
+are not vulnerable to and that's about
+the 51
+so if a particular node controls 51% of
+computing power for mining bitcoins they
+in 2014 if you look
+gosh I
+controlled 50% of computing power for
+Bitcoin Bitcoin by the way has never
+been the victim of a 51% attack they
+could have been gosh I don't have the
+capability but 50% what they did was
+they issued a statement and said we are
+backing off to 40% control and he will
+they
+but in 2014
+they could have had everybody who had
+big metal balls
+they have the ability and that's the
+only way to find Bigpoint anymore it's
+you've got to be a better operation yeah
+you can't just in the beginning you can
+just set up your computer and mind there
+boy
+so what does everyone who's attacked
+what's the vulnerability why is it big
+deal
+I have 51%
+control finding this particular
+what I can do is create a fork that's
+pregnant nobody else knows about it
+and on the public side of the court I
+can buy a luxury car with one Bitcoin
+and yes when I read that in an article
+the other day I literally said to the
+are one big point luxury cars in [&nbsp;__&nbsp;]
+up
+but okay to Bitcoin three okay so three
+at Lake Street okay could be a useful
+you by you
+so anyway so bye-bye electrics are okay
+on the public court Wow I buy that I
+swim that big point on the public work
+I am technical transactions except mine
+and hashing them instachat in the box
+okay
+and then with my private change gets
+longer than publicly it when it gets
+longer than public one
+I cried pass it to everybody because my
+chain is longer than it's in the other
+line yes why my chain is now the real
+life
+and just what I got my luxury car and by
+that's dangerous 51 cents
+all right Krypton and [&nbsp;__&nbsp;] August 2016
+they were the victims there to
+cryptocurrencies based on experience
+they
+mate 2018 McLuhan born was the victim of
+a 51% attack
+they stole 18 million dollars of Bitcoin
+goals
+somebody else who knows magic together
+major knows math Mount ducks here knows
+that mount dog stands for imagine the
+other Yvonne line
+okay that's gathering online exchange it
+used to be in exchange for magic captain
+Carter
+somehow they became the
+until they want
+when I first research this in 2015 they
+thought it had to be an inside job to me
+there's no other way I'd lean inside job
+just doing some up to you on my
+information no that was stupid in 2011
+they had somebody come in cut an outside
+contractor okay this is a vulnerability
+that anybody where computers in their
+they got infected they lost a lot a lot
+but not relative to what they later was
+in a life
+they thought they fixed it
+and then in 2014 in February of 2014
+they went offline
+saying they had some bishops and later
+that month they closed their doors and
+filed for bankruptcy in Japan and later
+the United States because in February of
+2014 they had no Bitcoin level not zero
+they believe they've tracked it back to
+2011 when that vulnerability was
+introduced to their systems somebody
+gotta brush up I don't remember the guys
+name the FBI was involved in taking him
+in his Bitcoin South Bitcoin exchange
+down in Russia FBI in Russia depart one
+okay he slowly over those three years
+siphoned off every little when they
+first had their incident in 2012 where
+they lost
+they to exempt their their own Bitcoin
+that they own and put it in cold storage
+we'll start with you here again it's not
+on the network right I had an image
+leave you know flash drive office drawer
+you know something like that to say
+okay so what they think happened to that
+is as people
+running Schwartz has got somebody
+ok firstly I thought it was pretty
+stupid
+was run by Magic the Gathering which is
+not really fortunately the guy who
+created the website for magic gathering
+carnage we sold it to the crawlers it
+actually sold it I think before any of
+the ship so even
+so he got away
+but that's yeah it's looks like
+everything else and those are my sources
+and the SI source myself
+because I needed a place to start please
+brother
+and I also wanted to give you guys all
+of the resources from that but I didn't
+want to take that fire thing so I gave
+as you can see on the screen it's really
+hard to see I wish that we had a
+different have questions let me know
+but and I'm going to delete all of this
+afterwards so please just don't call I'm
+doing these presentations it's going to
+me but so empowered are you more focused
+on power share prices what do you want
+to know this is a great power show
+regime Python raise rain shouldn't be
+the other out so we'll start with
+Township it's pretty a partial report
+I'm running on Mac can one parish or on
+Windows but you have to have specific
+libraries right now power show is power
+stroke Wars like 6.2 new done whatever
+but they're releasing powers for seven
+in a couple weeks which basically gets
+you into Windows PowerShell and it all
+just goes to PowerShell anti ourselves
+for is on certain any Libya and the
+center wears whatever type of operating
+system windows it will be baked in so
+one of the cool things the history of my
+app icons tip which zip stands for like
+eight different things but the heat on
+it's white on installer package or
+packages whatever melodies work it is
+Python justice there's 100 no one really
+know what it's called PO pip install and
+this whatever those are the package in
+the PowerShell everything is hard
+last mission a unit that was packages
+are manly built into the operation were
+built into the platform his bird - man
+so energy Pope get set
+whatever analogy modulus hold it and all
+of this is accessible by doing like the
+get - command list or your built-in
+commands any third parties but part of
+this is going to be we're gonna use the
+built-ins
+keep them right we're fine is what they
+call install - Martha install - modules
+like so if I open up a terminal and I
+can actually I'm going to do and PW SH
+that's what they use instead of
+PowerShell
+or power so Portland because they will
+eventually probably go back to just
+regular power show but they needed the
+transitional name so here the studio and
+you could tell that I'm in a parish or
+console because the ps1 and one of the
+built-in commands is install module and
+one of the ones that we're gonna
+actually do today is called PS Twitter
+API third party package it's some
+published to what they call new get for
+the power show gallery and you can
+actually just down there it's like pip
+or if you ever been to pi PI that's
+where all the Python application the
+most part in a war you can actually with
+PowerShell it's all a couple powers you
+know gallon it's the same basic play I
+want two built-in commands instead
+powers from the module and we're going
+[Music]
+that clear no no sue okay let me bring
+it over here kind of sorry come school
+but if you want to just come up here you
+can actually look at it it's installed -
+module PS Twitter it yeah I'm actually
+therefore since onyx already have room
+install and then right part it pretty
+straight pretty straightforward just
+like that one and if you don't it
+actually use their library that
+third-party land is not one that's
+hopefully recycle Python or whatever you
+have to that use import that modular
+from here you can see in this code
+import modules possible usually you
+I'm just kind of showing you in pretty
+basic but we're going to do what we're
+going to do is actually a ml this is a
+joke account in tweets that actually
+contain artificial intelligence but
+don't mention I'm assuming I'm actually
+going to read
+fix you meant machine learning because
+artificial word of you from there is
+totally taken out of context true
+artificial intelligence it means that
+you have a Turing test return is an old
+school of the 60s or even where Turing
+test is a national or international
+will simply say if you're in a room and
+you're talking a computer or something
+we can't tell and it's a computer and in
+a official artificial intelligence no
+one is ever catch anyone like this
+you're [&nbsp;__&nbsp;] just saying machine
+learning is on the sub stuff saying when
+you're all networks
+oh then sorry I'm not trying to go into
+it so machine learning so basically in
+artificial intelligence I'm actually
+gonna read read now we're gonna hate me
+so what we're gonna do is once we
+actually install this mantra we have to
+kind of understand a little bit
+there's two differently you use the help
+commandment but I'm actually just gonna
+go out to that actual website the person
+that created it and look at their
+documentation so it's on get up the
+source code those Python packages will
+probably gonna be a bid and then they
+have a whole bunch of communities they
+they have like an apron basically just
+continent and we're gonna actually so
+with PowerShell the first thing we want
+to do in this first one we want to
+actually import after again usually a
+very catchy installing but that's true
+we've already so one of the things that
+we're actually going to create is it's
+an author everything in PowerShell is
+enough as kids it has values as part of
+Python is some form of key equals
+stability
+I'm creating a bunch of and all of these
+are going to be my settings and so if
+you wanted to actually go out and do
+this go out to your Twitter you got you
+could say go onto the website sign in up
+in the right-hand corner there's no app
+create fill in a couple of forms and you
+get a pretty easy to do you enter him in
+here and this will actually be all our
+credentials you're not going to explain
+if you want to afterward you can have a
+beer it'd be awesome but so one of the
+functions are one of the methods that
+they have is going to set Twitter
+velocity we're just setting facilities
+within our our uppers or within our
+environment and this set Twitter oo
+setting we can actually go in it
+luckily because it's open source we can
+actually identify an actual code if you
+see this bigger cut arts but this is
+what you call function and empower show
+it's called the function and the key
+word is in Python in Oh show you the
+minute it's actually called for
+definition and that is a method or
+function of the exact same
+there's not really a parameters one
+language does it differently but over
+the function is a set block of code so
+you want to always run always when I run
+this code in the same manner as in
+with PowerShell have different regular
+functions which we can write any
+function and I'm just going to go up
+here we could just say function my
+function doesn't have to have a name
+just giving it a name and we just want
+to close it with brackets square
+brackets whatever but let's say we
+wanted to actually you know write
+something to the console that says okay
+this is my function
+okay one of the cool things with the
+power shelf that can kind of do it in
+pipeline but you can just highlight any
+of the code because you can actually
+just run it in the console just as if
+it's valid it'll run not you'll get a
+bunch of read but I can actually say
+maybe I should sort of this so much
+change my commander vosch sorry my
+visual studio is having room so I'm just
+[Music]
+so what happens in power shirts it's
+when you actually run that block of code
+it's actually going to load it into
+memory and that means it hasn't brain
+you're just defining what that
+contributions same with them just
+because you have it it's not calling you
+since I've just copied and pasted in
+your memory it doesn't really mean it
+but if I type my function on my of what
+Liam power sure we have a lot of
+completion my function now I actually am
+calling and what it does
+I'm getting some errors permission what
+basically is printed out this is my
+I'm going to believe that here this is
+just a script call this enormous but
+we're setting those all centers where
+we're passing in look at this velocity
+zone value variable when we've created
+and then we actually want to go ahead
+and use one of the built into this
+package for models they actually come in
+modules in PowerShell and packages are a
+bunch of different modules in Python a
+single Python cloud is actually a
+package really confusing that's not
+clear please let me know but a module is
+module is a set of functions and powers
+lawyer pack is twisted so we kitc
+Twitter search tweets and we know that
+based on my previous writing of this one
+of the parameters is - Q and we're
+actually going to Hassan okay artificial
+intelligence this means that we're
+what I only want to know because I don't
+want to experiment so and we're taking
+all of that output enslaving into a very
+public wheatless and tweets variable
+we're actually going to iterate
+iteration is looping up we're going to
+actually take each one of those now
+using that variable there's ten openness
+that we've discussed and we're actually
+going to run through each one of those
+properties both statuses and we're
+actually going to run a method because
+you can tell it's a method of empower
+show
+everything you know a method invoked
+Python in power show are going to be so
+we're going to say okay for each one of
+them if it's not chunky means the tech
+screams I mean let me show you what this
+looks
+[Music]
+I'm just going to make a bigger comment
+search
+[Music]
+what I'm doing here is to put this out
+I'm using the right host commandment I
+just built in that's how you do the
+French python and I'm saying okay tweets
+not status it goes that's just how the
+object just met and we're gonna run that
+and it should print out if I don't like
+mess up things so you can see there's a
+whole bunch of [&nbsp;__&nbsp;]
+a bunch I am part of this is going to be
+the different properties and we never
+created that and you can tell these are
+properties based on the wrinkles nestled
+all part of the
+an equal five key values say truncated
+user gos playing so I'm took all those
+are properties
+so when we're actually calling this
+reads we we actually are calling what
+one of the properties is called statuses
+and we're doing so for each another one
+in this dollar sign underscore means
+that pump so for each one we're taking
+that object lady that dolly and then the
+property or just Rumple so if it's not
+true meaning that the default value is
+false we want it to be or if it is true
+we don't want that make sense logic okay
+so if that text does not contain
+an equalizer a way to actually evaluate
+that condition is using a - not context
+there's one of them in PowerShell 17 or
+personal blinders contains in not in so
+on so you have to kind of dig through
+the job story about but if it does not
+contain like the word machine learning
+this then we want to actually print out
+the text whatever that property is and
+we want to ask a question here we're
+doing in Python it's both input power
+show us called and it's going to ask me
+okay do you want to read question typing
+yes because I'm doing an evaluation
+right below it that says if my my answer
+to that question is yes then we want to
+go ahead
+let me let me try to run this you're
+sure
+[Music]
+they took them through and you know say
+okay this is the text of that week that
+we just saw
+artificial intelligence real sass I
+don't even know what the hell that
+hashtag is - it's cool but let's find
+something a little bit more interesting
+so in there I'm actually going to say no
+our evaluation again well yeah yeah but
+trying to do demo artificial intelligent
+pasty that's the same damn one Biden
+says instead of USDA we need a trend
+America's yeah how are you going to the
+footwear
+deal with our net to deal with
+artificial intelligence channels all
+right I guess there's the debate kaga
+too skimpy but now listen so for this
+one I'm not gonna say yes I'd love to
+and I connected because I had a break-in
+which told the taxon after I selected so
+if I actually go to my Twitter account
+and we look perfect
+[Music]
+so i retweeted saying fixed you mention
+my reaction yeah
+so this is actually an entire bot that
+so that's one thing right and so really
+like a PowerShell if we're going to look
+at this we would we would honestly do if
+you use Visual Studio code which is what
+I recommend better support even just
+negative margin just agree it's possibly
+which supports any language but one of
+the cool things about Visual Studio
+Senator Jeff Howard show installers is
+there's built-in snippets and answer
+code blocks down that you can reuse
+they're really cool and really have the
+best practices in line one of them is
+pop up there there's several but we can
+actually copy that all of this stuff is
+I may actually City my imitates engine
+air you would actually supply their
+individual lines like given dirty or my
+then I can actually get supply hope to
+anybody that's ever going to use it
+awesome because you don't have to write
+document this is your back you disco
+they know how to use this you
+thanks so much easier like out here look
+this done
+never have to talk to Mary Gary and
+there's a bunch of different examples
+like all that but really it the
+apunching a basic function that we
+showed earlier was function you know but
+to make it an advanced function and we
+actually use what they call this command
+that binding command that binding gives
+you a whole bunch of attributes that are
+actually you don't have to work for I
+think if you wanted verbose or if you
+including
+it's already built in literally all you
+have to do is come and the binding and I
+had a couple of different online it's a
+miracle there's some extremes that you
+wanted to write just like Plato's anyone
+actually although if they calls are -
+your bows don't they'll never see that
+out there but helps with troubleshooting
+- something to make it
+additionally you have parameters and if
+one thing and difference between Python
+and PowerShell is this parameter of
+validation Python it's very limited you
+have to do a lot of your validation of
+what types they are any constraint
+around that you want PowerShell you can
+so this example we could say granted
+would it's true you have to provide if
+you don't I'm gonna throw a Python to do
+that basically show you
+mandatory perimeters are not mandatory
+means there's value to it and power shut
+up you can set a default value it's not
+really recommended you should say I
+don't give a [&nbsp;__&nbsp;]
+what do you know read a pass in this
+type if you don't know but you can also
+set what position in the command
+at the first position last whatever you
+could specify that you can actually
+provide a loan today so if you ever see
+PowerShell get help a pipe like you care
+to come down and then the other command
+is maybe another that is actually taking
+the filtered value first passing it over
+think of it as a rubble it's literally
+just passing a filter over taking that
+we then pass it over but the data is
+going to keep getting smaller you can
+validate that it's not null
+I mean there's tons of different options
+you just want to remember evaluation you
+can set the aliases so maybe if someone
+who doesn't want to type - computer
+there's just one name because relation
+you couldn't set an alien school so and
+there's tons of different ones this is
+also called Caston so I'm actually
+making sure that this variable the
+matter what you pass them has to be an
+integer number or anything so there's a
+bunch of other [&nbsp;__&nbsp;] in here but this is
+the basis of an advanced filter we're
+looking at Python in Python everything
+after the import you have to install
+that in that package or the module or
+get that library from the third party
+usually it's gonna so if you open up if
+you just go to your browser and type
+ipython org py fly that or any package
+out there that you can throw out
+something that you think would be peeled
+to be so proud what okay I'm just going
+to do a skew on
+[&nbsp;__&nbsp;] let's I'm gonna do one like tenable
+which one it's big enough tenable you
+probably wouldn't buy ten bowls because
+it's reading like them but so part of
+that is once you actually install it
+with let's say your terminal I'm gonna
+exit out of this I'm just a regular
+command show no no you can do him
+install tweet be already have it in salt
+it's probably not gonna say much
+it's gonna say okay my requirements
+already satisfied
+I've already I have all the dependencies
+everything else if I wanted to look at
+each everything that I do have this long
+[Music]
+no Twitter opens worship yeah and you
+you should review that's good
+make sure you understand
+what you're insulting Figgins there's
+been known just like the nerd and any
+other language new it's been breached
+how many times but because token source
+and people just say I'm just gonna make
+some I'll see owner for the week and
+they downloaded crypto miners and she
+was like really like understand look at
+how many stars on you didn't look it up
+many people were actually using it or
+there's a lot of Commons search usually
+the stacker or Python I want to do this
+thing you'll find like top Brazil told
+me like I use this like pretty and still
+be conscious but it's usually pretty
+good but you can see all the ones that
+you really should do what I married but
+I'm talking about virtual parties where
+you buy us one of the things with so
+just like Python PowerShell you have
+built in two minutes
+in the others instead of during that
+module that was important for
+wiedersehen in our show we have to do an
+import so in this case it's tweeted TP
+don't maintain this one that still works
+I use that also one of the cool things
+about my coin is if I do searched Whitby
+here
+part of it is that though I have like a
+home page link it's usually will take
+you to github or wherever for the source
+code and you can look through that but
+[Music]
+so I knew what the name is thuy B dot
+though they actually their own website
+it's usually something dot read the docs
+I oh I know I alter a geography for
+example I attack
+let's fly attack read the docs then I go
+and here's like all the detail on the
+documentation music populations come
+back
+so we have all these kind of you know
+examples find something with but if they
+don't have documentation every nice
+thing it means they just don't care if
+it's not on pipe I don't use it
+like if they don't put the effort to
+like just put it in get up and never
+like oh you have to clone my repo you
+always don't ever just because I don't
+want to remember what the hell I was
+thinking when I read this thing or
+explain it to anybody else
+I'm being honest so part of instead of a
+you know there's basic functions in
+Python where they go deaf my function
+and this is good for most men and you're
+going to say bye function I'm going to
+give it my Bram one gram - and require
+Ram equals one truth
+so they equals true doesn't really
+matter it's really the equals anything
+so this means that it this is the
+default value for this it's actually not
+sorry actual for him and the default
+value that I've said that it is true it
+could be pulse could be any string that
+I wanted yeah carrot this one you could
+be none whatever it's being anything
+that he wants there are some advanced
+things where you can actually specify
+that's about all the parameter
+validation you ever give there's no
+mandatory I mean it's kind of built into
+each one of these that doesn't have an
+equal means in community but you can't
+validate that what they passing is in
+the empty space for the shrimp not like
+I mean yeah there's ways to do it
+basically all your validation should be
+underneath that function and this
+function is all separated by this
+definition so if we skip past that we're
+gonna go into more advanced it's classes
+this is working really showing this is
+like so class is an object an object is
+methods and properties what you're doing
+in a class is for the finding that
+there's benefits in with those
+properties and so in a class instance
+that means one single copy of that class
+that you're freed and you're defining
+what that object means so in my example
+I'm going to create a Twitter sprinkler
+optimist I'm setting it to the type or
+but I'm also this were real Street as
+you need because it's before in the
+function call
+it's actually called a plasma plasma
+that means it's that it doesn't change
+from instant stances so I didn't create
+hundred different instances of Twitter's
+for work no matter what that value is
+always going to be the silver because it
+took five it's it's all about the class
+not the object or instance here we're
+calling this def underscore they call it
+a thunder - Thunder meth enjoy special
+methods
+you'll see them quite a bit but dündar
+means double on the screen has double
+underscored front that was cool under
+school and underneath or on the backside
+but in it is a initializer
+we're gonna initialize this and I've
+required when you create this this
+classroom this object you need to pass
+in these parameters which are consumer
+key consumer secret access to a key key
+access to the secret and I'm also we're
+actually calling and that we PE that we
+imported and we're saying because of
+this import statement here we're setting
+to EP that Olaf Angela pass in and we
+use of the two of these parameters will
+be passed in and set it to this very
+minute and then we're also saying auth
+dot which has a method inside of that
+created it called set access token and
+we're setting his accident all of that
+is being set into what they call the
+private instance method so if you ever
+see a fight in Python itself dot there's
+always a instance it's not a class line
+to it every every time you call always
+you will always be different on every
+swing and it's only within that instance
+of that
+if they stop - laughs you're a real
+Street doesn't have to happen under
+sprack tiss it's always there be stuff
+no matter what how many instances you
+ask so one of the other things inside
+it's method
+it's calling saying okay I wonder what
+my scope has this instance opens to one
+incidence
+and the I can pass in an optional
+parameter sensitivity by people that
+said to number then I'm actually looping
+through and creating all the bunch of
+tweets so you
+so based on our treaty library the
+cursor will passing in our query
+intelligence same thing
+count 10 these other ones are just there
+I'm not going to entertain if there's
+but each one that it's actually found
+I'm going to loop through and say for
+sweet
+creating a variable doesn't matter when
+they've been saying for each one of
+these 10 that have we found if it equals
+R if machine learning is denied my
+limits of the jack pack contains is in
+between
+next week then I want to go in and
+text doing this a little bit different
+fun
+so I'm gonna call Python mom you can do
+Python to my people to do when it finds
+on three but we're just ended by that
+jr. because one on in then I'm gonna do
+give it the path dinner
+and I have got a home
+and this bra input here which basically
+we know in a dangerous and complicated
+world understanding artificial
+so I'd sing instead of it's actually
+doing and this one
+every one of these
+because I don't care I just
+so I'll make a trip showing no signs of
+slowing down
+reimagining the future of travel and
+hospitality with
+who who is doing that sorry
+so I don't even understand how these
+yo Co opal trouble
+I'm learning business I love how all of
+these are my can accompany some animals
+I think it's funny but hi
+so I'm also crazy no slack but it does
+the same thing events run official
+see
+but any questions no I went long
+no it is not cases best practice yes
+Kimmel is an amazing yeah like a
+public-facing that that's how tricky on
+internal variables it's typically best
+practiced actually I don't really know
+why in Python yeah
+Python though these static where you
+sold at the very top I have these
+cutters for that I made my own meaning
+they're not really freighted they never
+but it's kind of a sick someone they
+I don't even know what that is really
+it's a whole bunch of documentation
+about best practice some people yeah so
+if you're interested invite them I just
+released this it's still really going
+but murder Lisa might have it and [&nbsp;__&nbsp;]
+through mostly work personal - it's
+you basically give it Parkinsons names
+in fashion like well where do you want
+to create it
+and then you have to enter in 21:41
+and then it generates and you select it
+grates this kind of structure it already
+has rebuilt
+Claudia
+just want to get a quick search yeah
+yeah hopefully you enjoyed it if you
+everything cost way more

@@ -1,0 +1,1680 @@
+so um the agenda tonight is we got a
+couple different things I'm going to
+kind of I guess I'm around a lot so I
+apologize if I'm kind dancing around as
+we uh go through this um basically we're
+going to really quickly go through what
+a traditional firewall deployment looks
+like uh we're going to talk about uh the
+external attack on uh specifically using
+a protocol called a h and what that kind
+of looks like and not so much leverage
+not so much the ajp itself in terms of
+being vulnerable but just the protocol
+itself how it was leverage uh to allow
+external attacker to basically do all
+kinds of really bad things on the
+internal Network we're going to look at
+how some security inant factors are kind
+of play in this whole thing in terms of
+what we need to look at uh from maybe
+instant response maybe I should give a
+little backround on that but basically
+I'm also an inent responder so I've been
+doing that for several years and then
+previous to that in for life I did a lot
+of engineering so a lot of the stuff is
+kind of near and dear to me put it that
+way
+um kind of interesting thing is we're
+going to take a look at the auto
+industry so I'm kind of a big believer
+of not trying to reinvent the will so if
+there is actually a problem that's been
+solved by somebody else I prefer to use
+their solution if at all possible than
+to come up with my own so I'm come lazy
+if you want to but that's that's kind of
+where I I fall so we're going to kind of
+look at the auto industry it's been
+around for say 100 years over that
+actually and we're going to see what
+they've done and in terms of what uh the
+assume crash model looks like then we're
+going to take a look at maybe what we
+should be doing in the infos world of
+trying to do it what we call assum Pre
+model right so just assume that that
+thing's going to happen and then we're
+going to take something from um the Auto
+industry that's called the crumble Zone
+we're going to see how that could be
+applied to our example of an external
+attack here especially using the H
+protocol so this is a traditional
+firewall deployment um those of you that
+might be seasoned Professionals in the
+industry this might look pretty common
+to you uh for those of you that have not
+really seen this before or looking to
+get in the industry this might be
+something relatively new um either way I
+hope that you guys kind of at the end of
+this talk learn something new and if
+nothing else I hope that you have
+something to think about and that's
+really my goal um out of this whole
+thing so if we kind of look at how
+firewalls have been deployed
+traditionally it's kind of one of two
+models you either have what we call
+single tier or dual tier that's kind of
+how things are played from a single tier
+perspective we could sort of ignore this
+DMZ area and just imagine one wall there
+not two where we really only have two
+clouds not three uh and that would be
+the internet or the external if you will
+the untrusted World versus The Trusted
+World which in this case happens to be
+porp internal um and so um if you if you
+expand that a little bit I guess a lot
+of larger corporations and companies
+will actually go ahead and de play a
+dual T model where they actually create
+a DMZ which is a demilitarized zone um
+to try to separate a little bit give a
+little bit more differentiation if you
+will between a trust versus partially
+untrusted versus trusted world that's
+kind of the generic way of looking at
+things this is the typical model that we
+see I guess in most corporations and
+most environments um and I wouldn't uh
+be too far stressed to say even the one
+that I work for so it's it's it's it's a
+very common model to have and it
+actually served as well for in the past
+for a long time um that being said we're
+going to take a look at how this
+particular thing plays out right so if
+you were to take a look at how the
+firewall would be deployed to kind of
+say an external attackers going break or
+uh in this case we're going call PP in
+his environment um we would say well
+okay so we're internal attacker we're
+trying to go through the the pach server
+here with
+2.222 and I just made these addresses up
+by the way just kind of go through this
+U and they're trying to reach this Ser
+the DMZ and so our firewall might
+restrict that to some degree right to
+say okay well we might let any IP
+address go through but they're only
+allowed on Port 80 which might be the HP
+protocol beyond that they really can't
+go anywhere so if they want to go
+anywhere else they're pretty much
+basically screwed at this point and
+they're going to have to leverage
+whatever they can do on the Apache web
+server well we could Lo that down a
+little bit more too you can say well
+ifach you web server can only maybe go
+through on some other course and have to
+deal with some backend stuff so whether
+it be um some SQL stuff in terms of
+database or some other protocol we'll
+see in a minute here HP or whatever we
+can kind of lock it down as well say
+well this particular web server can only
+go to certain IP addresses maybe in this
+case a passion Tom which be an
+application server on 1010110 or
+whatever whatever the case may be the
+point being is that we're really trying
+to restrict what we could do from an
+external attacker
+perspective so let's talk a little bit
+about what the ATP protocol is so I'm
+not going to go through all this but
+basically more or less what we have is
+that it's basically going to be a web
+server that's in like a DMZ type of
+environment where we have a fireball
+between and generally speaking that's
+how this is deployed and we have an
+application server on the back in and
+you can kind of see in the last bullet
+there that we have the P tomat this is
+kind of one of the the favorites if you
+will that's used along with the ajp we
+also have like Jetty circulate
+containers that that can also be used so
+it's there's a couple different ways we
+do this this particular case this
+example we're going to talk about which
+by the way is a real world example um
+that went through a penetration test um
+so this stuff is not entirely fabricated
+it's something we actually have seen uh
+it's uh you you'll be able to see that
+this in this example that we actually
+using the pat tom cat so the way to sort
+of think about this is that it's in a
+load balance typically when you use ajp
+the main reason that you're using that
+type of protocol is you're trying to use
+it in like a low balance environment so
+imagine having a web server that's in a
+DMC environment and you have a firewall
+that's separating that between your
+internal network uh and what you want to
+do is you want on the back end have an
+application a web application whatever
+that might be and that thing is
+basically taking those requests in in
+the web application
+web server taking that the initial frunt
+in and it's trying to say okay I have
+maybe four or five different application
+servers on the back end that's internal
+that I trust and I'm trying to kind of
+load balance against it so that's what
+we see ATP typically used for it could
+be used for other things too but that's
+generally what we use for and the idea
+of that if anybody is familiar with
+reverse proxy um is that that's kind of
+what it falls into web server functions
+as a reverse proxy for the application
+server so where does this whole thing
+kind of what are we leading to with this
+can you guys read that okay in the back
+small yeah so I apologize if that's too
+small so I'll try to walk through this
+the best I can I Tred the best I could
+to
+uh I tried the best I could to kind of
+get this thing blown up but obviously
+there's only so much real estate I got
+to work with so um that being said let's
+let's focus on a couple things first of
+all let me just start by saying then
+this is obviously real world this is a
+real world attack that was done through
+a um an an external basically assessment
+that was done through third party and
+whatnot um and this was this was found
+so there's a few things that are kind of
+I guess changed if you will the interest
+of U not they buing everything but for
+the most part this attack is is true so
+if we look at in terms of the IP
+addresses those have been changed a
+little bit report can changed a little
+bit U maybe even the URL has been
+slightly altered uh but the overall
+concept of what we're trying to see say
+here is is the same and that's what I
+want to stress on is that this is a real
+world example of a real world breach
+that was done in a controlled manner
+through a penetration test uh but that
+being said this is what this is what
+actually happened so if you look at
+specifically down towards the bottom
+there where we have the apach tomat
+server the 10
+101010 um the real vulnerability that
+was that that happened here was that
+that particular application was written
+in a way where it had a function if you
+will that was in this case we're going
+to call it page so that function that
+method whatever you want to call it that
+that code was written in a way that it
+was supposed to be able to grab
+additional content to return back to who
+the requester was right so that's not
+necessarily unusual it's not necessarily
+a bad thing that's just kind of the way
+it was designed so that if if locally
+maybe we had local file mounts or
+whatever that was on that server um that
+particular topcast they'll say oh yeah
+okay you need this page you need that
+page this content or that content you
+tell me what you want in terms of an
+number and I will I'll return that back
+to you what whatever the case may be um
+so it's not it's not necessarily too
+farfetched and I take that back in terms
+of the content equals whatever is what I
+was referring to on that so whatever
+that content equals you specify which
+one I'll return that back it'll
+obviously go back to the Apache web
+server and back to whoever was
+requesting it but the problem that we
+have though is is that if you look at it
+from a perspective of bad code of not
+being able to say well we differentiate
+that versus being able to add extra
+stuff to say well let's put in maybe a
+domain name or an IP address along with
+whatever that content is you now can go
+farther than the original code was
+designed to do right let's make sure
+we're clear on that um to go deeper into
+the network so in this particular case a
+request came through to the Apache
+topcast server and it processed that and
+said oh you you don't want a local file
+you want me to go over to whatever this
+inventory. cora. internal is and go grab
+something that has an ID equal whatever
+I return that um so kind of the the
+breakdown here was more the code itself
+on the Tomcat server but here's how they
+were able to leverage that this is the
+part I want to focus on this is kind of
+the whole gist of this this talk if you
+will is that if you look at it from a
+different angle you look at it from like
+a firewall perspective you got generally
+speaking in a large organization you
+have multiple people that are doing
+different things right so maybe the guys
+developing the code generally speaking
+are not going to be the same guys who
+implementing your firewall rules right
+they don't necessarily know they're
+doing the best they can to lock down
+those firewalls they're trying to
+restrict access the best they can and
+they're doing that based on certain
+requests that the application owners are
+telling them that hey I need this
+protocol I need this I need that that's
+what they're trying to say sounds fair
+so if you look at that and you look at
+it and say okay wall number one tier
+number one the one that's in external
+facing what are they trying to do with
+that I don't show it here but basically
+that wall the figure it's only allow for
+88 through so it said oh only allow only
+allow HTTP through to the Apache server
+well that's seems to be you know Fair
+that's a pretty fair thing to do lock it
+down so only 48 through any IP address
+on the internet little little bit but
+okay sure we don't know where they're
+coming from we can we can we can a
+little B B okay the next step is is they
+reached the apacity server the APAC
+server is saying okay I need to make an
+AGP uh underneath an ajp call if you
+will back to balance imagine down there
+at the bottom where I have one server
+imagine there's multiple servers there I
+didn't have real show it but where
+there's 10101010 just sort of imagine
+there's 111123 multiple servers there we
+load balancing against in this case the
+P server 2.222 says okay yeah we got a
+balancer here um I'm trying to find a
+worker I can use I've got this 10 10 10
+10 I'm going to forward that request on
+the port
+8009 and let this guy handle the request
+so what we want to do on the firewall
+between our DMZ and the internal
+networks we want to walk that down right
+we want to say well let's not just let
+p8 go through let's not let just any
+address through address through we want
+to control it we want to go well we only
+we only trust 2.222 to go through there
+and we only trust it to go to this
+destination IP you can't just go
+anywhere that's great that's really good
+firewall implementation that's the way
+it should be okay the problem is though
+when it finally goes through that
+firewall which if you look at the allow
+statement here we're saying yeah our
+action is to allow uh Source 22 the
+destination 10 10 10 10 and service on
+89 that's perfect and just also just for
+you get the rest of you guys can't see
+the rest of the the policy looked it was
+pretty much deny anything else right so
+that's only through there that's
+fantastic the issue is though is that we
+made that request on through the the Tom
+the P Tomcat server 10101010 not
+realizing maybe as an administrator
+those firewalls that there's a vulner
+not to say not really a vulnerability in
+the code but maybe the code wasn't
+reviewed as closely as it should have
+been to understand how it could be
+manipulated in a way that was not
+intended and that's that's key right
+that's a key thing you don't understand
+how the application's written you're
+doing your job as a firewall
+administrator to lock it down and you've
+done your job and this lock down as high
+as you can get it but you don't know how
+the cod's written on the back end you
+don't that's not your job you don't know
+so you're trusting that that application
+is designed the way it's supposed to be
+designed to not allow something like
+this to happen and so what actually
+happens is a request comes through the
+web server it gets ported on through
+through ajp it's not a fault of ajp it's
+not a vulnerability of ajp right it's
+not there's nothing wrong with this
+implementation the fact the firewalls
+have done the best they can to lock it
+down to restrict access to it and yet we
+get to the AP Tomcat server where the
+code is written poorly and now we can
+actually say hey by the way why don't
+you go look at this inventory. po.
+internal whatever internet or index
+whatever here's an ID number and whatnot
+so another interesting point of this is
+two things
+one that in that inventory. pora
+internal is an internal DNS name right
+right you can't resolve that on the
+internet it doesn't resolve anything but
+internally I pass you Tomcat server 101
+was all about that server he goes yeah
+yeah I can reach that server no problem
+no problem this is where if you were
+look at this you'd be like if you were
+an IR guy like me and you go back
+through this and you look through this
+this is the moment where back to the
+original title slide just say we're kind
+of [&nbsp;__&nbsp;] here this is not a good thing
+this is a very bad
+so you know it's nobody's fault it's
+it's everything's done the best they can
+by Design except for maybe the code and
+even then that's debatable right um so
+the point is is not only can they attack
+maybe the
+inventory. term they knew that domain
+name which by the way sometimes that
+stuff s out to Google really anything
+about that but sometimes that kind of
+stuff's out you you can search for that
+kind of thing do Intelligence on there
+um but also you could actually replace
+that domain name with an IP address
+right so you could just say I don't know
+let's just try 10 10 10 10 or better yet
+why don't we just do a sweep and just
+start trying arbitrary 10 dot addresses
+and see what iss and eventually I'm
+pretty sure you're going to find some
+things very interesting to you and and
+what's really cool about that is not
+only do you find that is if you look at
+the way this thing was designed what we
+actually saw in this particular attack
+is you generally would get the original
+page that was intended to be there you
+be content back of whatever probably
+care about that was part of the original
+application but then long with that
+because you said to go hey check out
+this other information pull back you
+will get all kinds of really interesting
+information back that could be inventory
+information from assets it could be
+building information whatever might be
+open that's not authenticated and I'm
+sure you guys know in this particular
+model especially if we look the last
+This Cloud here at bottom it's generally
+trusted so from a trusted perspective
+there's not as much emphasis worried
+about authentication ah don't worry
+about it leave it
+open it's all right we trust everybody
+on the inside don't worry about it so
+this is where you run into problems
+right you can't foresee this happening
+this is an un very unusual situation to
+run into and how do you how do you deal
+with this how do you prepare for this
+so let's talk a little bit let's GE
+slightly and talk about security inst
+factors so let's just say Okay y
+obviously we had a breach now maybe this
+particular one is control manner but it
+may not always be that way in fact it's
+not and we have some factors take into
+effect so this is only some only some
+that may relevant to this talk but um in
+in my world of this response some things
+we care about is well what's the
+Frequency or what's the probability that
+we might have to syst like what's what's
+the likelihood that this thing's going
+to happen is happen all the time it's
+kind of a long shot that kind of thing
+well that kind of makes a difference as
+how much I hate to say this how much we
+care I we all we're all busy we got a
+lot going on we're trying to figure out
+where we need to focus our efforts and
+so
+that's right ultimately was the risk
+right so that's what we're trying to
+come this is really what this is about
+is risk assessment that's really what
+this comes down to so you look at the
+scope the instant who what was affected
+the systems data people and what what
+actually matters to us what's the
+important thing what's the level of
+impact so we look at well we've got all
+these these people we've identified the
+servers we've identified maybe the data
+we've identified we've gone through all
+that effort what's the level of impact
+well maybe certain people say and I
+don't want to be little anybody
+Everybody Plays a very integral part in
+uh in in the organization a particular
+organization in terms of it being
+successful but let's just say
+particularly in this exam example um
+that it was something in marketing well
+maybe we don't May care as much as that
+or maybe it's marketing information
+marketing material um maybe maybe not
+depends on what it is right maybe it's
+some very sensitive marketing material
+generally speaking maybe not however if
+if it's going to be something a little
+bit more like maybe a database that has
+I don't know private keys in it and you
+happen to be some kind of a certificate
+Authority or something like that that
+might be a little bit more sensitive
+than we actually care about so it kind
+of depends on what it is depends on who
+the people are the systems are that kind
+of thing and ultimately it depends on
+the financial impact of the organization
+that's that's kind of the the bottom
+line there right are you going to be
+able to stay in business or not that's
+really what it comes down to um so the
+last bullet point here can really be
+looked at two different ways and I think
+you said it just a moment ago the risk
+assessment really comes down the risk
+what is the risk that we're taking here
+what is the main thing what is the main
+risk that we have and maybe another way
+to phrase that and I think probably the
+way that I prefer to phrase it is what
+is the primary component we're trying to
+protect what's the thing that we care
+about the most that happened in this
+particular breach or this incident
+that's really a pretty key
+question all right so let's kind of I'm
+going to use a little SP the Shi gears a
+little bit and uh we're going to talk
+about the assumed crash model the Auto
+industry had by the way I love this this
+is awesome I I don't know who these
+people are but this is fantastic so
+whoever came with this idea fantastic
+idea U but let's talk about the assumed
+crash model just just for a moment so
+the Auto industry has been around for
+100 years more actually right as many of
+you probably know and as such when it
+first started out like anything else
+there was only few people that cars
+there was probably no laws around what
+you could do for the most part there was
+no insurance nobody really car you got
+killed whatever guy had a car horses and
+buges jackass had a car so deserves it
+he can afford a
+car I mean that's kind of how it was
+right back in the day right back in the
+early 1900s nobody cared all right
+that's kind of how it was so as time
+goes on and more and more people get to
+the point where hey you know mid-50s or
+whatever there's more families that I
+can afford a car for my family it's a
+family car right we we've all all seen
+the shows back then and so um I hope at
+least to some degree so then at some
+point they start the Auto industry and
+and the consumers both right start
+asking the question you know what there
+we're having a lot more crashes wonder
+why that is well there's more cars
+there's more people buying cars there's
+a lot more things going on in the world
+maybe we should take a look at this and
+and and by the way our consumers care
+they care about the fact they might
+actually die so that's a pretty big
+thing so from the Auto industry they
+have to ask the question what is the
+primary component we need to comp we
+need to protect right what is the the
+main thing that we preserve if we assume
+that there's going to be a
+crash but I think that's a relatively
+easy answer for most of us I don't know
+about you but I'd like to stay alive so
+uh hopefully the rest of you would like
+to also stay alive there might be a few
+Suicidal Tendencies in here hopefully
+not U but for the most part everybody
+would like to stay alive so that being
+the case the Auto industry realized that
+it's really relatively easy thing for
+them to identify so they start changing
+their
+mindset let's assume that a crash let's
+assume let's stop saying if there's a
+crash let's say when there's a crash
+what are we going to do about it what
+are we what are we going to do so one of
+the first things that they probably
+start looking at is relatively an easy
+thing but what what things can we build
+and that we can just okay we already got
+a car we already have the car that's
+easy right mov what do we just build to
+snap into this thing to start being able
+to say hey we got this thing added we
+can help keep you alive better well one
+of the easier things that came about a
+earlier things with seat belts right so
+that's a great thing that's a really
+great thing um another thing um is is
+airbags so airbags is another another
+pretty big thing now I kind of want to
+talk about airbags for just a second
+I'll go into this more later but I'm
+kind of chopping a bit here so I'm going
+to get this out out right now so on the
+airbags when you think about it we're
+going to talk a little bit more about um
+I guess when you talk about scope we're
+talk about impact and that kind what
+really matters and what really doesn't
+um but for airbags it's really
+interesting thing seat bels your place
+if you will in terms of like trying to
+save lives but when you start talking
+about um what it means to try to look at
+what might be involved in an accident or
+assume you crash not only do you look at
+the car itself in terms of like okay
+this car whatever and and a person right
+you trying to say okay I'm trying to
+save a human life what does that mean
+what does that mean to you guys like if
+you wanted to save a human life what's
+the most important on your body that you
+might actually care about right so me
+unfortunately probably my head so that's
+an important thing Johnny what happened
+I know right so let's let's go down that
+road so uh unfortunately I wasn't fast
+enough to get away from a
+marker
+and imps impacts right
+withc stuff going on there
+away get away so that's an important
+thing with the airbags right so the
+airbags is not only were they looking at
+the fact hey we want to save lives but
+where is our main concern well head
+trauma obviously when you have head
+trauma you're probably not going to do
+too well I'm pretty sure that there's
+you there's few documented cases strange
+cases where somebody gets an arrow
+through their head and they miraculously
+survive and they can think and that's an
+amazing thing generally speaking I'm
+pretty sure i' be one of the guys would
+be screwed that would just be brain dead
+and you know and and that's how I'd end
+up so they really looked at this and
+they said you know airbags not only
+might help you from a chest perspective
+in terms of what's pun puncturing you in
+the chest but more importantly it's
+going to help you from head trauma and
+that's the big thing we got to we got to
+save people from having brain damage and
+that kind of thing so that's an
+important thing but beyond that let's
+look at um what we can do holistically
+let's not just look at the equipment we
+can install right the things we
+Innovations we come up to tap in how can
+we look at this from a different
+perspective let's just say that it is
+we're going to have a crash think bad
+things are going to happen what are we
+going to do to utilize that to our
+advantage how can we say bad things
+happen we know it's going to happen and
+we know we can can somewhat control I
+use that Loosely somewhat control how
+they happen in a way that might be to
+our advantage and this is where the idea
+of crumple Stones came from we're going
+to talk about that more in a
+minute so um I kind of gave the head and
+collision most likely a little bit away
+but there's some things that came into
+play in the assumed crash mod mod right
+so again with probability what's what is
+the most thing to care about again they
+had on collision not only had on
+collision but also had trauma so there's
+a lot of things they look at there
+what's the scope of the incident well
+there might be one lives there might be
+multiple lives there might be one aob
+might be multiple aobs so you kind of
+look at things in sort of a when you
+when you do the assume crash model you
+sort of look at things in a worst case
+scenario and you say well let's just
+assume the worst case scenario is a
+head- on collision worst case scenario
+is we may have multiple lives involves
+worst case scenario we have multiple
+automobiles involved
+um some of the other things on here in
+terms of the impact are not quite
+relevant but if you look at the the
+scale you might be looking any for
+anywhere between Minor vehicle damage to
+complete vehicle damage all the way to
+minor injury to the occum all the way to
+complete occum occup fatalities which is
+obviously what they're trying to
+avoid so again if you do use the assume
+crash model what you're trying to really
+do is trying to say well okay it it
+would suck right I mean come on if
+you're in the automobile industry you do
+not want to see your lovely automobile
+get destroyed in front of you oh my God
+that thing is worth $200,000 and it got
+completely that blows I mean right but
+if you're the driver You' be like woo I
+walked away woohoo you know that's like
+that's a great that's a great feeling
+right I it's that's what you want so as
+the automobile industry looked at this
+thing they were like all right so what
+we want to do is we need we need to
+figure out that we're going to have a
+crash we might have a total loss and
+they cost us $200,000 or what more
+depending on the vehicle that might be
+you know involved but ultimately
+involved ultimately though
+you you can't really put necessarily a
+price T go on a human life and that
+that's where they were looking at from
+so they were trying to say we can
+recognize insurance companies can worry
+about the loss of the vehicle we do not
+want to accept the loss of life and and
+that's a great thing that's a that's an
+great important thing so what I want to
+talk about a little more here is how
+that changed like where that switch was
+right so think about this for just a
+moment all right vehicles have been
+around for over 100 years and in 1950s
+the failing opinion was that a safe car
+was a original so if any of you if any
+of you have ever seen the old movies or
+what not you've seen the big tankers I
+get 5 miles to the gallon cars that
+basically were just big tanks going down
+the road I got a bunch of Steel you
+can't kill me kind of mentality right
+and that just didn't really pan out very
+well so um in 1952 interesting enough
+not that I'm a Mercedes-Benz fan but
+maybe more so um they came up with idea
+that at the time wasn't necessarily
+called the crumple Zone but this idea
+that you know what we should be thinking
+about the fact that maybe there's some
+Merit to looking at just accepting the
+fact we have a loss the car is going to
+crash if it's going to crash why
+wouldn't we try to use that to our
+advantage in a way that maybe we can
+save somebody and and oddly enough
+Mercedes-Benz whether you like them or
+not um has continued to prove themselves
+to be an industry leader uh coming up
+with interesting Solutions like
+this so let's talk about crumes zones
+and what they need because I don't know
+how many people in here know much about
+zones but if you don't um they are a
+wonderful feature that has been added to
+pretty much every modern car and the way
+that they work is just kind of imagine
+this so if you're traveling down a
+highway say I don't know you're middle
+of the night and not really paying much
+attention and say 75 mph and you
+shouldn't be um and you have a head-on
+collision with somebody all that energy
+that you have your forward momentum the
+mass of your car everything that energy
+that's that that potential energy that
+moving forward has to be transferred to
+something when you have a head-on
+collision in the old world the way that
+that was transferred was directly to the
+person that was driving the vehicle
+that's how that worked and so what this
+idea came about to be was like you know
+what we shouldn't be doing this this
+doesn't make sense we should realize the
+fact that okay the car is gone it's it's
+a head on collision this is bad thing
+this is is a very bad thing right and
+it's going to have a very bad outcome
+but we might be able to use this to our
+advantage and the way we can do that is
+we can say let's try to transfer that
+energy around the occupant around the
+person driving the vehicle in a way that
+maybe we can save that person driving
+the vehicle Ro passengers inside the
+vehicle and that's that was a very big
+breakthrough that was a very interesting
+concept and out of the box right so the
+prevailing opinion at that time was a
+orig car right was the safe car this was
+against popular belief
+people like that's ridiculous like
+you're let me get this straight you're
+intentionally weakening parts of the car
+so that you can allegedly save somebody
+that doesn't even make sense I mean
+that's what that's what that's what the
+argument was in the 1950s and yet today
+every car has this all right so that's
+very important to take take that concept
+away so I'm going to show you something
+here um just to kind of bring this more
+to light for you guys um and in in 2009
+the Insurance Institute for Highway
+Safety the IHS demonstrated a collision
+between two different cars built by the
+same manufacturer right so we have a
+Chevy Mal Malibu excuse me in 2009
+versus a 1959 Chevy goair now what I
+want you guys to do when you're watching
+this video and I'll try and play for it
+play a couple times for you to see it um
+really focus you'll see a lot of things
+first of all recognize the Malibu
+doesn't have a lot of the newer safety
+features does not have seat belts does
+not have air bags and does definitely
+not have a crumble zone so as you're
+watching this you'll see things that you
+recognize you'll see seat bels you'll
+see airbags and whatnot you'll see
+things flying everywhere and like God
+got to HT um but beyond that I want you
+to really focus on the cabin area look
+at the look at the drivers on both
+vehicles and look at the cabin the
+played
+yeah I would want to be that guy and now
+we see it SL motion we're see this from
+multiple
+angles yeah not good hey I got one of
+those I hope it's not was a gold is that
+gold I can't tell that is you're going
+to see angles from um the side you see
+from the back inside the cabin all kinds
+of things but really watch the
+deformation we're talking about the
+deformation of energy watch how the
+energy is being transferred that that
+energy is being transferred directly to
+that driver and that guy is in a bad
+state right there that that guy it's not
+not having a very happy day
+wa yeah not good now watch the
+uh Mal thank you look at
+that alling energy around him he's I
+mean regardless of the airbag regardless
+of the seat belt
+look at the cabin it's fully intact look
+at the inside cabin there's nothing that
+deforms
+there isn't that amazing so remember
+1950s this was against popular belief a
+you're purposely weakening the the
+interior the engine or whatever oh my
+God people are going to die left and
+right this is never going to work that's
+what the belief was and yet here we are
+today so I'll play this one more time
+just hopefully I will there we go
+because I want to talk about the crumple
+zones a little bit more and how they're
+how the relevant to us right to today in
+the information security World why why
+this matters to us I know please tell
+cars have firewalls
+that's cars have firewalls that's
+absolutely
+correct yes and they had zones much is
+even better
+so
+joke inde it is
+comp cars have layers of protection
+indeed lers of protection I like that
+defense and de actually that's very
+relevant extremely relevant to this talk
+because that's very
+true so you know one of the things that
+maybe is a take away from this is that
+we're assuming we're assuming the crash
+uh that we're going to have a crash
+right so this is what the the the big
+takeaway I guess is yes we're doing
+everything we can in the Auto industry
+to avoid a crash in fact I'm sure a lot
+of you have seen in recent uh headlines
+go to last year not only about um and
+and braks and lock breaking that's been
+around for a long time but just weird
+stuff like wow this car can stop by
+itself or this car can steer by itself
+and all kinds of really interesting
+things that they're trying to do to
+basically say hey you know what we can
+avoid a collision we can save lives by
+not even having a
+collision that is the philosophy that we
+have taken in the infc world for a long
+time we don't have a breach we can avoid
+a breach we don't have to worry about it
+it's okay we'll make our firewalls
+really strong and lock them down and we
+don't have to worry about that not the
+case all right that's what I'm trying to
+show
+here so let's look at this a little bit
+more how we can apply this
+name so this is a it's an important
+concept to take away right
+so we got to figure out a way how in the
+infr world we can say okay we realize as
+much as we hate admitt it right nobody
+want I'm sure in the 1950s they did not
+want to admit they did not want to admit
+and why it took such a long time to
+change the philosophy they did not want
+to admit that there was going to be
+crashes and more importantly that people
+were going to die from them um and so
+they had to change their mindset and
+that's really what we're talking about
+here so how do we get to a point where
+we can assume the crash model right so
+we need to continue to assume that a
+security breach will occur not if not if
+it's going to happen but when it's going
+to happen for all of us everybody not
+not even necessarily an organizational
+but even personally when's that going to
+happen when is your when is it going to
+happen that maybe your identity is going
+to be stolen it's out of control when is
+when is those things going to happen
+that's that's important to all of us so
+not only that but if we look at also in
+terms of like how do we identify the
+primary components to protect we got to
+look at well what does it mean to have a
+mission critical system or maybe we need
+to look at the data a little more
+closely as well not only in terms of
+whether it was stolen but is it is it
+destroyed and that might really vary
+depending upon the company right so if
+we look I'm going to uh did use a uh dig
+notar I believe is an example if any of
+you remember that where they had the SSL
+issue several years ago uh where they
+were issuing
+certificates and basically they had some
+hackers get in got their private Keys
+whatnot bad things happen um let's take
+a look at that for a minute so let's say
+that the attackers in that scenario if
+any of you are familiar with how SSL
+works it's in it's incredibly important
+that you keep your private keys to
+yourself you cannot ever let anybody get
+that information you can give up your
+public all your public key all day you
+want but not your private key that's the
+important thing to take away and so in
+this particular case that was breached
+so if you were them if you were that
+company give you a choice would you
+rather have that stolen or
+destroyed both are bad right but at
+least destroyed you might might might
+maybe be able to recover there might be
+something you can do to create a new
+private key maybe get your customers
+back you might be able to do something
+maybe
+right and so if you look at it stolen
+and now you have adversaries that are
+basically stealing data from God knows
+but customers and you have trusted C
+customers maybe some of your customers
+are military customers and now bad guys
+can basically do a man in the middle and
+they can acquire plans to the death star
+or whatever it is they're
+making that's a pretty bad scenario
+right so it really depends on the
+company in some cases maybe maybe
+destruction is better than stolen and in
+other companies maybe stolen is better
+than destruction it just depends on what
+data it is you're talking about so data
+is a very important thing that we need
+to be able to understand individuals
+oddly enough whether we realize or not
+gets overlooked a lot right so we talk
+about how everybody's trusted inside of
+our our networks or whatnot the reality
+is whether we like it or not is that
+there are certain individuals that play
+administrative roles and whatnot that
+probably need to be at a little bit
+higher level of scity than everybody
+else right so you have the guy who's
+maybe the uh marketing guy again not to
+pick on people anybody's in here
+marketing uh but you might have that guy
+who doesn't really have access to a lot
+of systems and not a whole lot of access
+to sensitive information we care about
+however you got somebody who might be
+your ad administrator for example well
+gee I'm pretty sure that if that got
+compromised your whole company is going
+to be in a whole world of [&nbsp;__&nbsp;] so that's
+kind of how that that sort of plays out
+so we need to be able to understand the
+people that are involved as well right
+in terms of a security breach and what
+that means and ass Su breach what are we
+going to do to protect those guys those
+guys are important to us we got to do
+something for them um the last point is
+probably the biggest point that I would
+make and that has to deal with data
+classification now I will raise my hand
+and basically say unfortunately my
+organization is maybe just as guilty as
+everybody else out there right now in
+terms of not doing a very good job of
+classifying the systems the data and the
+people that we actually are important
+right
+so but that's a very that's a very
+difficult goal to achieve it's very hard
+to achieve that goal but it's a very
+worthy goal to achieve let's go back
+let's go back for a moment the Auto
+industry what was it they were trying to
+protect life the money maybe money too
+mostly like they were trying to keep
+people alive and they knew that and
+that's a relatively easy thing for them
+to understand for us as infoset guys
+that's not so easy we don't know we're
+at the mercy of the application owners
+the data owners we're at the mercy of
+the business we the mercy of all kinds
+of different things we can't even begin
+to understand of what might actually be
+important to the company and what's not
+and and and that's a big challenge for
+us and that's probably the biggest
+challenge that we have is understanding
+how we classify this stuff um you can
+use different models you might be able
+to use uh something like a gold or
+excuse me a bronze silver and gold or
+platinum whatever versus a class one 2 3
+or some other system that you might come
+up with on your own I'm trying to be
+able to say Hey you know bronze means
+it's kind of not quite so important to
+us you know silver a little bit more so
+based on this criteria and gold even
+more based on this criteria the
+important thing is you have to Define
+that criteria right you have to
+understand your company and you have to
+understand your people and your data and
+your systems and be able to come up with
+a scheme that's relevant to your
+organization that's the important part
+to take away from all that so if we were
+to try to move on here just a moment
+well right before I move on the next
+slide one of the things that I really
+want you guys to take away from this as
+we talk about this and this is critical
+that you guys get this right critical if
+you actually go through all the effort
+to do this the last bullet point if you
+go through all the effort to say hey
+we've documented we know all of the
+people and the data and the systems that
+are bronze silver gold or FL one 2 three
+if we know all that for God's sake don't
+make that public knowledge all
+right that should be your gold thing
+you're protecting that should be a class
+4 thing you're protecting not everybody
+knows that okay very limited people know
+that as an attacker oh my God how
+awesome would it be if I found some
+marketing guy that had a spreadsheet on
+GE we got gold systems and gold people
+and class four individuals that would be
+the that would I I can't even begin to
+say how what kind of orgasm I might have
+with that that would be amazing so it's
+don't do that okay so think about what
+you're doing think about if you go
+through these efforts to do these kind
+of things how are you going to protect
+the data that you've got well how you
+going to classify that how is this going
+to be classified so it's very important
+to not lose sight of that all
+right and here's
+why because even the Auto industry
+cannot understand how things like this
+happen to God how how did this car get
+up here is this real it says Channel 9
+something I don't know where it's based
+out of but I'm assuming this is a real
+thing that happened those are some
+awesome
+so as an insurance adjust i' probably
+just deny this PL I'm like I don't know
+you I don't
+know this is an act of God this is an
+act of God I think I don't think this is
+something that is humanly possible
+honestly so God are covered oh is act of
+know so anyway the point being is that
+the Auto industry has accept this right
+they know this they understand that
+things beyond what they can even
+possibly foresee is going to happen and
+mysterious waves that cannot be
+explained and that they have to account
+for that and in this particular
+situation I'm pretty sure that guy would
+have walked away right you look at the
+guy oh I see you're going with that one
+all right moving on before I start
+all right so let's talk about how we can
+apply the crle Zone um to our our
+scenario we had earlier so we had the
+ajp um had the ajp protocol that was
+going on and again we're not blaming
+that protocol everything was done the
+best it could be done right and that
+protocol was used in a very legitimate
+way the firewalls were locked down in a
+very legitimate way so what are we going
+to do again this comes back to
+understanding and classifying our
+information if there is a way
+that we just say you know what we accept
+the fact that the Apache web server is
+going to be a class one or if you're you
+know a fan of Ron silver gold that it's
+a maybe a bronze type of Deal or
+whatever you want to use basically it
+lead lead right that's in there
+somewhere so if you how you want to
+classify that if you can say it's kind
+of more or less not that important to us
+um then then it need to be ranked that
+way there need to be a way to classify
+it that way now you might have a class
+three or a class four item that's in a
+DMZ or traditional DMZ area you might
+have maybe maybe your users use eras or
+VPN to connect to your network and
+that's an extremely important thing to
+you depending on your business that
+might be very important to you that
+being said you still need to classify it
+as such even if it's in the same um crle
+Zone if you will you need to classify it
+or make better yet move that to a
+different crumple Zone would be a lot
+better actually to do that but if it was
+in the same crumple Zone at least having
+an identified is a huge step forward of
+understanding this is a risk to us we
+have we have a class three information
+that's basically sharing a class one
+crumple Zone that's a very bad thing
+that we probably shouldn't be doing
+right that's that's the takeaway now
+what does that mean to us well maybe if
+we're using year as what we do is we we
+try to use two Factor authentication
+maybe we do some other things to
+basically try to to mitigate that risk
+and that's great maybe that's enough
+maybe we can we can live with that we
+can say okay we understand we have class
+three class one we can live with that as
+as long as we have extra security
+features involved to help us mitigate
+that risk maybe maybe not let's go a
+step further though let's take a look at
+how we went to the Tomcat server right
+remember that went to our our buddy
+Tomcat server and uh bad poorly written
+application allow us to make lateral
+movement so if we were to say you know
+what we recognize that maybe the
+internal uh or or inventory system is
+actually a fairly important system to
+this to us maybe it's not class two
+maybe the inventory system or something
+else payroll whatever that might be
+maybe we make weapons or whatever and
+our our death star information is
+actually very important to us and we
+actually don't want to lose that well
+that we'll classify that as be class
+three or class four but we have to
+figure out what that means based on our
+criteria that weine the important thing
+is the takeway is this we put firewalls
+or some other mitigating controls to
+separate out those zones right we create
+these crumple zones is what I like to
+call them that's again using the
+automotive industry term we create these
+these zones if you will to make it even
+more difficult and to build this shell
+of security around what we consider the
+most critical access to our organization
+to stay to stay alive that's going to
+vary so depending upon what your
+organization does whether you're in you
+know military defense or you're in
+healthcare or you're TCO or whatever the
+case may be that's going to vary a lot
+to you on what you think is important to
+your organization that has to be
+identified individually the important
+thing is is that you do that you try to
+create some separation you try to create
+these these pockets of you know what if
+if purple Zone 2 gets compromised and
+destroyed we have some level of
+Separation there we have a way to absorb
+that energy that's being used by our
+attackers to slow them down to the point
+where maybe we have crumble Zone 3 and
+maybe we can even use crumble Zone 3 as
+as much as we don't want to we really
+don't want to lose crumble Zone 3 but
+what we really care about the most is
+Crum Zone 4 we do not absolutely do not
+want to lose Crum Zone 4 that would be
+our whole business everything would come
+we would we would basically die if Crum
+Zone 4 was to was to
+fold
+so I recognize that there are a lot of
+people professionals out there that
+might be looking at this saying you know
+that's great looks great on paper and
+all but the reality is we can't afford
+that and to implement that is going to
+be is going to require us to be have all
+this monstrosity of policy that we can't
+manage and so forth and so on and I get
+that I I fully understand that let's
+let's take a step back for a minute
+think back in the 1950s the Auto
+industry again failing concept was you
+had to have a rich
+model our model today is we have one or
+maybe two layers of Defense from a
+firewall
+perspective now I know we have other
+layers of Def fense right we've talked
+about that we have IPS boxes we've got
+the host uh based um malare type thex
+all kinds of other things that are out
+there that being leveraged today even
+new more Next Generation type things are
+being played in terms of dware type
+environments to actually run malware and
+try to determine whether it's bad or not
+and that's great that's all great um but
+it's just not enough right we we need to
+understand that there are situations we
+cannot predict there are things that we
+don't understand that might happen like
+in the case of the a protocol when that
+assessment was done like how the [&nbsp;__&nbsp;]
+did that happen right so you have to be
+prepared for that assume breach assume
+that you're going to get compromised and
+and how or can we understand our systems
+our data and our people in a way we can
+protect them and separate them to to
+protect them our
+comp so I'm not necessarily advocating
+that this methodology is going to be
+relevant to everybody I'm not saying in
+a large corporation might even be
+feasible what I'm saying is in the 1950s
+everybody was basically against the idea
+and that whole entire mindset changed
+and it changed because mercedesbenz had
+the the insight to say you know what we
+got to change the way we're looking at
+what we're trying to protect and how
+we're doing that and we as an industry
+as infoset guys need to do the same
+thing right we have to change the way
+we're thinking about things we can't
+just sit there and stand back and go you
+know what I can put all these great
+firewalls in place and I can put all
+this AV and IPS and whatever and I'm not
+going to have a breach I don't have to
+worry about it I'm good you do have to
+worry about it it's going to happen it's
+not a matter of if it's a matter of when
+for every one of us all right and that's
+really the top that I'm trying to say by
+this so um you know if you guys come up
+and you you have some better ways of
+doing things that's fantastic I would
+love to he so let's have some last
+thoughts on this and ibody ready to have
+another beer and and
+chitchat so again let's do the assume
+reach let's assume bad things are going
+to happen we can't stop them we can't
+foresee them let's try to get some level
+of classification on our data and our
+systems and our people that
+unfortunately as much as I hate to say
+this have different levels of priority
+in terms of what we care about based on
+our industry based on our organization
+and we need to be able to figure out a
+way to classify that and it's going to
+be different for everybody you can't
+necessarily use the same classification
+model from industry to Industry it might
+vary and that's also important but the
+most important thing to take away from
+this is that we absolutely have to
+figure out a way that we can design our
+security infrastructure and our Security
+Programs right so not only the equipment
+that we're playing but the overall
+program
+to be able to say we understand we're
+going to have a breach do we have the
+right things in place do we have an
+instent response team do we do we have
+all the right things that that we're
+covering all our bases to understand
+what our data is what our systems are
+who our personnels are our contacts all
+that stuff in place people will say we
+can limit not only the scope of what an
+attacker can do but also the impact of
+what they can do all right so once again
+to stress kind of bring that point home
+and you think about the automobile
+industry how they were how they were
+faced with this problem they were trying
+to figure out not only do we have to re
+not only we have to reinvent I don't vot
+but come up new new ways to invent seat
+belts and airbags and all that we got to
+look at the entire thing and say what
+can we do with the with the car the
+automobile itself and collapse it in a
+way that maybe we can leverage that to
+protect what we care about and that's
+what they did and they're still focused
+on trying to prevent right I'm not
+counting that I'm not saying that
+they've given up on that effort that's a
+worthy effort it's a goal we should all
+try to reach is to say we won't have a
+breach or we won't have a car accident
+where people die that that would be a
+wonderful thing that' be a beautiful
+world but the reality is that we don't
+live there yet and we have to assume
+breach and we have to be able to prepare
+for
+that um so that being
+said I wanted to say thank you for
+there anybody have any questions
+any thoughts or
+questions the
+back
+assem so the question was if you don't
+have an assessment system you don't have
+an assessment system how do you put the
+solution yeah that's a very good
+question so it's a very good point right
+so I mean obviously all of us would love
+to have the open pocketbook where our
+our Executives or whoever say hey here's
+several million dollars go do whatever
+you're going to do to make this thing
+work and the reality is we don't live in
+that world right so how do we get to a
+point where we can get them to
+understand the situation and have
+assessments or have some something we
+can use to say you know what we need we
+need to be thinking differently we need
+to change the way we've done things
+that's a very tough question and I'm
+really honest with you I don't think I
+have an answer right so I'm looking back
+in the 1950s that's what I'm doing right
+now in the Auto industry oops sorry um
+find this over more to sure but um in
+the 1950s they had that same problem and
+some somebody in Mercedes-Benz had that
+foresight where they were able to say
+you know what we've got to start making
+a difference and here's the thing right
+look back is for them they were able to
+say you know what we've got the most
+safe car on the market look at this
+watch what we can do we can take this
+car
+we can drive it into a wall at 70 mph
+and we can show that this passenger or
+this driver is going to basically live
+through this Collision right that's an
+amazing thing for them to do so you may
+have to buy another car but the person's
+going to live so it's a very tough
+challenge to answer your question but
+what we have to do is find a way and I
+say we as the community need to find a
+way to figure out what it is that we
+care about what's the thing we're trying
+to protect and and then go step further
+of trying to understand if we do that if
+there's a way we can protect that
+[&nbsp;__&nbsp;]
+boring so let me try to recap what you
+said there so that I can U make sure
+it's it's out there everybody here it
+sounds like um basically that there
+there there are a lot of nontechnical
+people basically who corly yes that are
+trying to determine what support the
+company what not and
+point two there you go and then along
+with that they're they're they're trying
+to what was the last point you made
+there
+I doesn't matter doesn't matter doesn't
+[&nbsp;__&nbsp;] matter it's really [&nbsp;__&nbsp;]
+boring it's really [&nbsp;__&nbsp;] boring right
+so you non technical people doing a job
+they really don't care about but they
+find really [&nbsp;__&nbsp;] boring I think is
+what I understood from that commentary
+uh and how do we deal with is that the
+question how we deal with that you don't
+[&nbsp;__&nbsp;] care is
+that what
+what are you looking for there like how
+do we deal with that is that the
+question I
+guess I don't know I have an answer I
+think the important thing
+is
+commentary safe or
+not but now it now if you to buy a car
+now one of the big is safy now we're not
+most you know most of us cars we don't
+get an accent that's not a big deal I
+mean but that buying car is a big deal
+yeah so maybe able to that right and I
+think that's theck so maybe the answer
+is it's more based on the consumers and
+and maybe our customers than it is us
+maybe that's maybe that's the answer I
+don't know I'm going say right up I
+don't know but that might be the answer
+because if we look at the auto industry
+that's what it was right so for them it
+was the consumers think of it this way
+and
+1950s cars were just becoming more
+popular a family as in an entire family
+had a vehicle to share as a car and as
+time has gone on we all have cars I mean
+pretty much everybody in our family has
+a car so if you look at the number even
+if you go back the stats which I thought
+about including on the slides I did not
+if you look at the numbers in terms of
+how the car manufacturer in terms of the
+number of cars produced every year has
+increased it's it's phenomenal like if
+you look back in the 1950s to now it's
+exponential on how many cars have
+actually been are on the road that have
+been actually manufactured so when you
+look at it from their perspective the
+odds again the probability of having
+Collision increases dramatically every
+year every year the odds of you getting
+into a collision and attention to dying
+increases every year whether you realize
+that or not the same factor is true for
+us as information security guys more and
+more computers are on the internet every
+year it used to be a point where if you
+owned a computer you had to have a lot
+of money and most third world countries
+didn't have that kind of access to do
+anything and now guess what a lot of
+those old computers are still on on the
+internet they might be running Windows
+95 but they're still out there and they
+are actually attacking our systems and
+so we have this Gom of that not to
+mention the fact of nation states that
+might be actually acting against us as
+well and terrorists and whatnot that
+have even more money to throw at us to
+work against us so at some point what it
+comes down to is probably the customer
+probably those that are impacted by this
+right so some point I see one second man
+so as we get to the point where as we
+get to the point where it's like hey at
+some point people individuals including
+myself I don't know about you guys
+including me I get a little pissed off
+right it's like hey my credit card was
+compromised what the [&nbsp;__&nbsp;] what's going
+on with this [&nbsp;__&nbsp;] and I get a little mad
+about that and as more and more people
+get mad about that and maybe as things
+start to change where I'm just
+speculating here is you're speculating
+but at some point the insurance
+companies like know we can't keep eating
+this cost credit cards constantly
+getting PR I don't know about the rest
+of you heard today but PF chains was
+compromised today so if any of you have
+been eating a PF chains yeah there's a
+good chance your credit
+Cars May March and may oh
+that's small window there you go
+so you when you start thinking about
+that more and more people going to get
+pissed off and as as the consumer as us
+as we get mad and think about the 1950s
+as people have those cars you're like
+you know what my friends are dying in
+car accident I don't want to die in a
+car accident I want something to be done
+about this that's when the attitude
+starts to change and you start to think
+about it from an assume crash model to
+the assume breach model and that's what
+we're looking at and so I agree it's
+going to be a very difficult challenge
+it's not going to be something trivial
+it's going to be a matter of
+unfortunately our Executives being
+personally impacted before they realize
+that maybe this is actually something I
+care about Johnny are you
+suggesting no no I'm not suggesting
+hacker
+Executives I'm just suggesting
+that Adam you had a question or
+com we
+learn
+ay very good observation yes yeah in
+fact it's funny because aachi AGP is
+maybe not used as much anymore um
+however still out there so by the way
+has take away if you are happen if you
+do happen to be using Apache HP in your
+environment I encourage you to go out
+and check the applications that might
+actually be behind that and how they're
+running
+um what's that I can help
+ran
+[&nbsp;__&nbsp;] sorry first of all I want to you
+know Donnie great question
+woo I don't want to upset Johnny but the
+question was very to what I do right now
+so you need to get with your officers of
+the company because they have signed the
+contracts for the slas on what they're
+doing they are providing the service or
+they are they they have made the
+decisions they are they providing the
+information to say we're going to
+provide this level of security so you
+get with them and you say if we impact
+this crumble Zone it has an impact on
+you and they can determine what is
+acceptable and what is not that that's
+where you need to get with them meet
+with
+them you know drive it home on a daily
+basis that this will affect them on a
+personal level because they are signing
+off that this is what FS them so does
+that help kind does that kind of help
+answer I didn't see who who asked the
+question you're trying to try and ask
+where is it important it's important to
+them because they're going to lose their
+house they're going to lose their car
+they're going to lose their family this
+goes down it's kind of a 911 month if
+you will I know it's kind of like you
+know an alien's attack but you know when
+you know think outside the help them
+think outside the box and say we get
+through zone two if we get through
+trumple zone three if we get where that
+that gold level those brass balls if you
+will of our company is gone what how
+does that affect me how how much money
+are we going to have to pay to you know
+the insurance company what if the
+insurance company isn't going to accept
+that because we didn't do our due
+diligence so I did not want to take away
+from Donnie but it just happened to be
+was something I'm dealing with right now
+my
+company and trying to impact the
+officers in my company understand this
+is what we need do to make this company
+going all right that's
+all

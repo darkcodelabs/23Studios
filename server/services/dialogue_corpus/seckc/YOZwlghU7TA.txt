@@ -1,0 +1,1397 @@
+or proceed outside and send other people
+inside we're gonna have our second
+presenter who is a first time set Casey
+presenter and I am presenting them with
+a shot of just bbon because they have no
+nasty alcohol but thank you so much for
+coming up all the way from wiah going to
+be conventing on physical pen testing
+this is the techic of trash Panda thank
+you very much and if you don't shut the
+[&nbsp;__&nbsp;] up for this presentation I will
+have what the [&nbsp;__&nbsp;] what he said thank
+you very mucho oh sorry you got to do
+shot shot so you can have the sound of
+my voice crying to this alcohol is
+alcohol thank you so much for the
+[Applause]
+so I forgot your name what's your name
+oh my name is Angel quick intro Angel my
+handle be quiet my handle online isone
+you can find set KC
+Discord thank
+you so for the presentation I have
+included some slides available as a PDF
+the slides do not have video
+demonstration content because I don't
+[&nbsp;__&nbsp;] know how to put videos in the
+PDF so show the RFC for it and uh yeah I
+I'll gladly do that but for now I do
+have those slides with those videos
+redacted we'll still go through them you
+can get qu right there and have a copy
+on your phone follow along thank
+you quing quing ai ai Big Data thank you
+very much um I will leave this up for
+probably about the next 10 seconds and
+go count the shot is hitting a little
+too
+early perfect thank
+you I see
+you awesome welcome to tactics of the
+trash Panda TTP is another [&nbsp;__&nbsp;] ACC
+uh that you can
+memorize thank you uh well I haven't got
+through the presentation yet but I
+appreciate that uh disclaimer here the
+following presentation will deal with
+security and adjacent topics to security
+consequentially some content may be of
+adult nature this content is handled in
+a professional manner by the presenter
+me and I hope you can handle it with
+respect as an audience you all have been
+pretty respected so far so just keep
+doing that you're great additionally
+content is provided for educational use
+only I take no responsibility for any
+action taken by the audience as a result
+of this let's behave ourselves and have
+some fun
+never get out of here that's the
+P so let's talk about some of the
+problems that come up with physical pen
+testing with an increase of tradecraft
+you have an increase in cost to develop
+and a research that tradecraft uh and
+the materials go into that as well there
+are some notable names in the industry
+that provide this material such as your
+hack five your ear sparrows uh type of
+gear Etc and sometimes it's even if you
+want it and you get it approved Etc and
+it fits the scenario you're working you
+don't get it because oh manufactur
+something of that nature so we have this
+concept of Mo tradecraft Mo
+Problems so there's also other
+restrictions that create additional
+problems so you can see the lockpicking
+laws here you can talk to the two people
+in the back they would know a lot more
+about that than I do um you know there's
+also uh this this thing that is going on
+you flipper owners they're coming for
+you uh they're com and take your
+flipper
+C the Teslas the sdrs are taking
+our and also an additional problem of
+having your suspicion increased around
+you before you reach your objectives of
+entering a Target so the abstract for
+this presentation is essentially they're
+expensive tools and they're cool but
+they're often not needed for practical
+exploitation of issues having a name
+brand or single purpose device can
+reduce your pretext and your flexibility
+as to saying who you are and why you are
+doing X it's funny to have a huge return
+investment as well when your tools are
+made of everyday items I have had a
+client recently tell me oh but you're
+sophisticated attackers and you're able
+to do this I went back and did part of
+bottle they're coming for your plastic
+bottles at by ass dude okay so anyways
+sometimes you want to feel like Batman
+but in reality you should just be a
+[&nbsp;__&nbsp;] racuna uh you can go through the
+trash you can scavenge things and create
+your own tools out of everyday items and
+garbage so here's our agenda I'm just
+going to be talking about who I am how
+you present yourself who some adice for
+packing my own kit some trade craft and
+tooling primer and attempting to
+replicate those with our own variants
+and we have video demos along the way so
+who am I just quickly um I am an infos
+doer I never feel comfortable calling
+myself a professional I've been being
+paid to do this for the past six years
+so maybe it's that that point we should
+it but who knows I'm a senior hacker at
+a place I am a 3D printer Enthusiast I
+am trained in multiple disciplines
+ranging from net and ABC Physical vul
+research um I'm a PR member of DC 316
+and occasionally dropping by Aha and a
+bunch of other security groups like s
+that I'm now been introduced to so thank
+you all for the hospitality
+[Applause]
+[&nbsp;__&nbsp;] let's talk about physical
+evaluations so they great way to show
+the internal network is isn't too hard
+to reach a lot of times we put
+Protections in place on our email on our
+external networks and it can be kind of
+a a blind spot we induce on ourselves
+because we forget about the physical
+aspect of where these servers [&nbsp;__&nbsp;]
+sit uh there's lots of prep work before
+even scoping the place out in person and
+there's all the legality and paperwork
+if you do this on your own there are
+some documents online I believe Dave
+Kennedy from trusted SEC has published
+his uh papers that he puts out for his
+team um after the company that not shall
+not be named incident uh I don't know
+got whatever um and there's always going
+to be a time when you have to generate
+pretext out of th air you're not always
+going to have repeat scenarios where
+you're saying pretext works I'm sorry
+that's just how it goes shut the [&nbsp;__&nbsp;] up
+what the [&nbsp;__&nbsp;] who the [&nbsp;__&nbsp;] dissing
+as what does preparation for a gig tail
+so a shitload of paperwork dude so
+ignoring the paperwork Logistics and
+contracts and all that aside uh
+preparation so essentially I have M over
+here I'm not going to read it out loud
+but you can understand that there's
+probably a story behind that
+I'm you can't read that okay sorry yeah
+yeah okay so essentially you have
+sophisticated operation using critical
+issues and in the back fat here you have
+36 hours of reading getting growth by
+the TSA pulling Tre material from a
+O plastic
+bot so noting your objectives
+connections out of office trash
+schedules this is just going pointers of
+data you would collect this is no by no
+means a comprehensive list so definitely
+expand this on your own Do Your Own
+Thing there are different types of data
+to collect for different types of
+companies and inst um surveillance
+schedules Antics Behavior us company
+culture Etc having continuously planning
+luck and a lot more reading than you
+anticipate so what do you read PRI code
+yeah this is great it's like RFC but for
+for doors and building it's kind of cool
+um some people follow it some people
+don't uh so so just be prepared so if
+you don't want to read the actual
+document there is a great presentation
+online over an older revision of the
+standard uh that has examples for some
+of the important commercial uh building
+doors uh you can check there's also ADA
+compliance Which online you can find it
+it's free um you can take it home the
+government knows that I have 3,000 of
+these already but it's basically rfc's
+for buildings again but just added
+compliance measures and part of the
+whole under the door tool Spiel and
+shtick is this thing right here 34 to 48
+in no
+comment so let's talk about packing for
+pretext um improv class goes a long the
+way you don't always need some super
+like highly skilled red team operator
+course that you pay a crapload of money
+for right um sometimes just having the
+social aspect gets you into things I
+have a story once of how I know I am
+going to hell because I social
+woman we showed up to the client site
+right it's operating hours so we're
+going to the back we know the it closet
+in the back that's where they told us
+it's kind of like a covert for that
+location but like all the other people
+are in on it right uh they gave us hats
+with the company name on there so we
+walked in there I had my like full tack
+bag I didn't even try to hide anything
+dude and we went in there me and my
+buddy and we go in we say hey we're here
+with X company we're here to look at the
+it closet and they said oh it's locked
+okay I can show you it's right over here
+and I said oh okay we we probably have a
+key somewhere around here and I just
+like pointed my back and it's all jingle
+jangle right um we go to the back and
+and I start looking at the door and I'm
+like oh they're right behind me um and
+she cuts me off and she says oh do you
+need a
+key I was like yeah that would be that
+would be great I'm going to hell
+man I would love a key so she says okay
+yeah let me get it for you we have a
+spare over here I got to take a phone
+call I'll be right back so as she's
+doing that I have the opportunity to go
+ahead and try to shim this door and I
+have this tool in my sleeve and I'll
+show you pictures of of the tool here
+later and I pull it out and I shut the
+door I'm fumbling [&nbsp;__&nbsp;] around and I
+get a shift and I open it doors open
+cool we can wire into a backbone Network
+and take over an electrical grid that's
+awesome she comes back and she says oh
+did y'all get it open I said yeah you
+know Brian from the office I forgot to
+gave me this key and it was buried in my
+bag I'm so sorry and yeah we went about
+a day and we were hooked into background
+Wireless infrastru or uh electrical
+infrastructure somewhere
+thetion um so talking about pretext so
+essentially you have some basic classes
+of pretext these are the ones I commonly
+use uh there are Blends there are mixes
+these don't Define guidelines right uh
+you have the authoritative ones which
+are normally like your heal desk or your
+it person or some sea level that hates
+people I don't know uh you have your
+Mutual bonding pretext you can light
+somebody's cigarette you can say oh hey
+yeah I got that door open for you cuz I
+I should have here you go uh you can be
+the Inquisitor you can be an interviewee
+you can be a job candidate you can pull
+up on site and say I'm here to shake
+somebody's hand and get a job
+today or you can be an ignorant end user
+I legitimately did like a very old head
+uh voice impression this one time over
+the phone and I was just like oh no what
+am I supposed to open this this Google
+Chrome the beach
+ball you know so uh play your strengths
+right so some people will say oh because
+you're this you have better opportunity
+social engineer I don't think that way
+um it's a opportunity right capitalize
+on your strengths understand who you are
+understand what you can use to your
+advantage game is game if you get in
+that's it who cares who who you are I
+appreciate
+that so a little more on packing for
+pretext preparing for multiple pretext
+is kind of important uh maybe even
+having the capability of swapping your
+pretext on site your quick change your
+mission impossible type [&nbsp;__&nbsp;] uh there
+are treasure TRS of information online
+for employees and the drip they wear
+right don't impersonate in ways that
+will make you catch a f
+please even though there's paperwork
+it's not always with the right people uh
+clothing for archetype covers you can
+have your generic you know your heart
+hats your compliance gear run the [&nbsp;__&nbsp;]
+into the ground all right if you're a
+construction worker and you show up with
+a new bright and shiny vest who the [&nbsp;__&nbsp;]
+are
+you you know like it doesn't help so
+just understand have that in your hotel
+room have that in your deployment area
+so you can uh be ready to go what I like
+to do is I like to outline props and
+skits uh and think of it in like an
+acting class right so you can use your
+props to perform your skit with punch
+lines as your anchors your anchors can
+be your objectives so say in this
+scenario we have a tilt board with an
+RFID reader inside which is this thing
+over here these have a good amount of
+space you can put a nice uh low
+frequency reader in there that can read
+like 10 cm if you amp it up um and you
+say okay I have a coffee in my hand and
+a hanger Chief right that's your problem
+okay so I want to get a clone of this
+Birches and badge that's a skin I mix
+these up I'll edit that later and one of
+the things you can say is like oh dang
+could you hold this for me real quick I
+just got this Coffey all over my she was
+like here you go here you go sir and
+they're holding it against their chest
+and maybe it's a low frequency maybe
+it's a high frequency and it's just
+cracking there the whole time maybe you
+get a notification on your phone why
+however you want but have those
+objectives laid out and then think
+creatively of how you can achieve those
+objectives following those anchors that
+way it doesn't feel like mission
+impossible it feels like oh these little
+flags and I just have to go talk to
+silly little people and get them to do
+funny little thing um don't worry about
+your hotel room search uh normally this
+doesn't happen and certain scenarios it
+might if it does you probably know it's
+coming so prepare um yeah anyways I
+appreciate the
+advice uh practically practicality
+packing have just enough tooling right
+you don't want to roll on site in full
+tack gear if it's some type of cob
+operation if you have a point of contact
+and you're there to demonstrate physical
+vulnerabilities and it's all authorized
+and there there as well
+then you can bring a tack bag and your
+whole kit and whatever like that's fine
+but for cob entry you don't really want
+that uh different gos will have
+different loadouts raw material has a
+lot of use cases you want to take your
+wiring your stram your pants we'll get
+into details on the parameters for those
+here a second plan for failure if you're
+caught with xtool out what do you do at
+that point if you're caught by somebody
+of authority what do you do at that
+point um planting your implants leing a
+device some pretext I've use are oh I'm
+an IT person doing asset tracking and
+you know I'm sorry I just had to find
+this it didn't show up on our Network so
+we got an inventory yet thank you um
+uring Z devices are ready for an
+upcoming intercom meeting things of that
+nature work for that scenario uh
+practice your quick deployment right you
+don't want to be like fumbling around
+with your tools and having things
+spilling out and you've got all your
+birk tools outside and then the cops are
+right there and you're like oh I'm an IT
+guy yeah I'm
+sorry also uh definitely study up on
+what is legal and allowed on your person
+in case of EX event if you are somebody
+who per se concealed carries a weapon
+don't try to break into a building with
+a concealed carryer weapon at 3:00 a.m.
+okay like just leave it at home I have
+to understand that even if I do my job
+100% correctly if at 3:00 a.m. I am
+caught and I'm shot I'm I'm just going
+to say yeah that's that's fair let's you
+know like I scared you I
+understand so let's go over bit uh
+here's my approximate kit this is an
+older revision the other the door tool
+I've actually swapped out recently for
+some upgraded ones uh so I have the
+Dillan card which is drip um I have this
+m super mic shim it's not the actual
+like nrand stuff and we'll get into that
+here in a second you use a plastic jum
+uh I have the SE tape here I have a u
+flashlight I have a yellow highlighter I
+have some of the detective poity of
+magnets I forgot the name of that I
+would know
+it okay we I have your traveler pick U I
+have the shim tool so this is the one I
+had my sleeve when I was breaking to
+electri uh we have some double the door
+tool double door tools here and then
+another door tool klar string we have
+our little file here um and most of this
+will actually get your TSA no problem
+not the UDT they won't because it's a
+long one but uh the rest of the kit so
+far has been has been pretty fine uh
+lockpicks here a small crowbar a small
+magnet some bump keys with the bands
+gear ties are amazing so shout out Rob
+Moore for that uh bobby pins uh usually
+you keep those in Your Hair Etc if you
+can um so we go here's my continued so
+these are some sources for the uh the
+kits that I replicated so we have the
+mini J Tool and I'll have H uh the
+specifications for this later on in the
+video from The Humble firefighters so
+Shadow it's great debban Alum has some
+mods for the UDT so the one I've applied
+here is the uh heat shr wrap over this
+part for add of friction and then I've
+got the Noto civil engineer tools uh
+upgrades here so I've got the Kevlar key
+back for that uh deployment and I've cut
+the notch off top so it can also work
+for crash bars which is kind of
+important this horse tape I don't know
+what to call it whenever like horses do
+that ankle wrap or something I buy that
+in mold um that one is for round Bops so
+you can just tie that to the top of here
+and have added friction gaffer tape some
+people swear about this I think electric
+tapes better in my opinion but whatever
+teachs their own and spare super mic
+shim
+sheets so this is the more electronic
+side of my kit uh some of this won't
+pass through TSA I've lost two of these
+so far
+they're $120 what is
+that LE the leather like the one with
+the sh
+tools yeah yeah God they'll steal them
+yeah dude but you could buy them
+actually at your local uh your local
+government areas where they they do sell
+um at least when I was in Austin I would
+buy the ones that uh the TSA in Texas
+would reclaim and you could just buy Lea
+for like four bucks like it's it's crazy
+so anyways uh what I have ch here flash
+drive cables for all the gadgets
+ethernet star your tape your spare wire
+your 3mm wire Etc uh in the rest of this
+talk we'll cover physical entry device
+for wire chaps and wireless valuations
+so as you can see here a lot of these
+things you might know already some you
+may not know it um this is a prox smart
+3 I do uh have the the paid one the one
+I spent money for because it's cool for
+research uh Wireless car that supports
+packet injection and all that good stuff
+these tiny Arduino malos and we'll get
+into the details of all this later but
+this is our gadgets and Gizmo section
+so talking about under the door tool
+options normally your stock under the
+door tool from sa Sparrow is going to be
+42 in in length to meet that ADA
+compliance but there are some mods I do
+to it so first I infer this area and
+this is spring steel it's very important
+that if you're buying it under the door
+tool it should be spring steel otherwise
+just make your own out of other
+materials so you have your standard ones
+which are going to be spring steel high
+carbon at 1/4 38 in that's very good it
+cost you about $40 it's foldable it last
+long you have to do some mods but it's
+it's great it works you know out of the
+box uh Z rods at Minards only trust
+these once they're not great for folding
+they're not great for concealment but
+they'll work I tried to conceal one once
+and I was just walking around like this
+and you know it wasn't a good time uh so
+other metals try it and share I mean
+like who knows what else works better
+Etc I haven't tried this with titanium
+that might be something to try next your
+budget or low profile ones these come
+from directly from NATO civil engineer
+he has some great examples um I
+definitely suggest you check out his
+video series because it is very
+comprehensive on all the modifications
+for different door knobs and different
+scenarios uh but your budget one is
+going to be out of copper tubing quarter
+inch frame wire tape you get three for
+about $30 and these you can't really
+easily substitute the Kevlar for for the
+steel cable uh but that essentially
+makes this kind of uh nice low profile
+cheap under the door tool that I will
+unur awkwardly
+here yay w
+whoa
+who so this turn to the handle yeah so
+essentially if you have like a hook
+handle a lever type handle you can set
+this slide it under the door and then
+you're able to pull this
+side you're able to try to pull this
+side and close this so the handle gets
+pulled from the other side of the door
+it's kind of mindblowing TV that we have
+our whole like Society based on this but
+yeah it's kind of like a dog catcher you
+know dog catcher catch the dogs right
+there um so yeah that's something to do
+here's my uh here's my kind of not
+everyday carry but my standard overt
+compromise one that has a gear tie on it
+so this one this is spring steel so it
+holds its shape very well if I were to
+come up here and unfurl
+this un that [&nbsp;__&nbsp;]
+uning yeah look how all reted shapes
+so yeah so that's a great one um and
+being able to you know uh fold that back
+down and go about your days is great so
+just keep these things in mind you're
+not always going to have one tool for
+every job and yeah let's continue also
+these are I built the copper one like
+the night before last night went to
+Menards and like dude like this is crazy
+copper going out in price I used to
+scrap that a bunch and sell it but so
+here's kind of the mods I made a closeup
+of it I made that Notch that uh NATO
+civil engineer has made so essentially
+you want to have kind of a ble down here
+so you can catch behind the crash bar
+and then have the string apply uh
+tension and force onto the crash bar you
+only need about like what is it like
+five the 15 lbs of force around there
+unless it's a really shitty crash bar
+and R you into an abandoned place um
+here's picture that
+one let's talk about shims shims shim
+shim shims they're great they're good uh
+super mic shims they're suspicious they
+can be bought in bulk I recommend the
+about 10 to 15 mil range for these myar
+stencil sheets I actually have a goodie
+bag up here for people I don't know how
+to distribute these I definitely did not
+pack it enough for all of you so
+apologies but these goodie bags do have
+some scrap in here so you can make your
+own lying tools with these uh so yeah
+let's talk about these uh you should
+only attempt to supplement uh use these
+to supplement the length of shorter
+cards so Dylan's card for instance um
+it's not always going to be able to
+reach certain scenarios you may want the
+super mic shim f it up in your wallet
+for a good measure your dillan's card is
+free it saves you money in the long term
+and the [&nbsp;__&nbsp;] people going to accuse you
+of saving money you have a dillan's card
+like who cares the thickness of material
+is very flexible yet solid enough to go
+loing
+what here we have a Dyan here okay any
+any [&nbsp;__&nbsp;] Store card membership card
+uh somebody try it with a Costco card
+and let me know how it goes all right
+cool anyways uh you can use laminated
+paper and this T Works it's flimsy at
+time and it's depending
+uh on the area of the paper having
+construction paper helps supplement that
+thickness and this probably means you
+didn't so here's an example that I have
+um this shim this plate this anti- shim
+plate do you think it protects this door
+if the latch is improperly configured
+take off the yeah you could okay so so
+don't without destructing things on the
+building
+do you think it will
+work no it doesn't okay yeah perfect so
+essentially you can cut these shins to
+have different shapes the recommended
+shape is essentially this is facing the
+way you want to go into the door so you
+have this attach the bevel of that
+little little lock thing of that latch
+um you can have this for these hotel or
+bathroom style locks um there are other
+you know types of cuts you can make for
+different scenarios but yeah that's
+that's the gist of it uh I recommend 10
+to 16 mil thickness for best
+results I have this video oh okay okay
+so here's an example of me just going
+and
+shimming so you can see here I'm using
+Starbucks cards these are pretty good as
+well um this one has no notches in it so
+I'm just going in there and flexing it
+to push the plunger out and then once
+I've done that you can see that it's out
+yipp let's talk about strs and cordage
+steel cable tear [&nbsp;__&nbsp;] the [&nbsp;__&nbsp;] up dude
+if it's coated or shielded you have to
+expect to every use otherwise you will
+tear up a client door and it will be a
+painty ass to explain all right you will
+cause that damage to their property and
+it's not going to look good if you're a
+consultant um rigidity is increased and
+this increases uh the space it takes up
+so as far as folding it up it has to go
+in a type of foil you can't really fold
+it now putting shoelaces Etc you really
+just wouldn't feel right there um and
+it's difficult to cut without your B
+your tools or your pliers I recommend
+Kevlar rip it's more forgiving though
+it's easier to cut your small size has
+good strength so 1.1 mm diameter rated
+for 200 lb of force limit the downside
+is it's heat resistance uh to prevent
+fraying you have to use resin so you
+can't just burn the end of nylon rope
+like you normally would you have to use
+some type of epoxy or resin on that to
+make sure it doesn't pray on its own
+seam stress tape is great some people
+use 35 mm film canisters that's fine but
+this can be used in place of film over
+doors to get handles from the upside so
+kind of the opposite way of the under
+the door tool functioning um this has
+low friction despited surface area it's
+difficult to tie to objects that's the
+thing you have to know how to tie knots
+if you use it for an under door tool
+Stream So talking about more Portage we
+already talked about 35 mm roll there is
+a lockpicking lawyer demo where the all
+to uh go ahead and get that film to open
+up the door from the inside out so so
+this is kind of a casual object to have
+on yourself that's cool gear ties uh
+they're not a substitution more for
+breaching they're more so for collecting
+your your tools and having them all tidy
+um you could probably buy a long one but
+I why not just use wire at that point if
+you going to use it for 3 page so
+talking about wire for electrical your
+doino style dupon connectors are good I
+use these for Sero connections with my
+flipper to Pro myet before I go inside
+that way you don't have to boot up a hot
+spot or have an extra router so you can
+uh justs each can fix um have some pairs
+of alligator crimps just in case
+physical tooling 2 mm thick wire apply
+ping we dising spark wire real estate
+science your fence wire these will work
+great let's talk about pcks lock picks
+are not always accessible some states
+take them some countries will not allow
+them at all uh these come in many shapes
+and sizes your spring steel and high
+quality ones are good um generally I've
+purchased some from AliExpress that are
+like $7 kits that I've had for like the
+past 3 years and they haven't broken on
+me yet so I don't know depends on the
+lock I'm not good at lock picking so
+definitely just understand that uh it's
+a range skill you can also have bobby
+pins or windshield wipers there's
+sometimes not heat treating required I
+recommend Heat Treating the windshield
+wipers if you're using them as the
+tension wrenches uh but yeah generally
+you just need pliers to make sure
+they're in in good shape so what I mean
+by that is your bobby pin you'll
+sometimes have the ends have these
+little bolts which don't really help so
+you just cut those off when you cut
+those up try to file them down on the
+pavement or some type of light sandpaper
+so you don't cut yourself you're so
+skilled I I try but no it's not a
+lot um so when you're cutting these
+windshield wipers your tension ranches
+Etc um you know go to O'Reilly after a
+rainy day I I assume you all have
+O'Reilly here right yeah okay okay yeah
+let's give it up for
+oil um so yeah you want to prepare your
+pasta here um and then you want to get
+it ready and you want to have actually
+heat treat it you want to hit it with
+flow torch and then you want to quench
+it in either water or use motor coil my
+metal allergy is [&nbsp;__&nbsp;] but who cares it
+works right U then you can take a Dremel
+and just kind of file these down you can
+do this with a rat tail P but Dremel is
+faster so just keep that in mind um this
+is about 1 mm I think that's too thin 2
+mm seems to be kind of The Sweet Spot
+for that that little bridging area
+before you get to the pig
+part also there are very thickness on
+these so you may have to sand down the
+sides um there's also these wires that
+you can use uh I I don't use these but
+you know if that's a pre text you can
+use you want to use Try It Out Try It
+Out I guess yeah I hope I remember this
+uh the slides are available I'll I'll
+show that QR code at the end so you can
+get the PDF slides let's [&nbsp;__&nbsp;]
+goel talking about Keys a key duplicator
+is [&nbsp;__&nbsp;] nice cuz you can just go to
+eBay and like buy one of keys and then
+be the source of all your friends
+getting their default or common Keys
+these common Keys like your ch751
+do come on key rings and lock Pickers
+lock smiths will sell these online and
+say oh here's your common default key
+rings for office cabinets Etc um and you
+buy one of those and just duplicate the
+hell out of them so this requires a
+working key unless you have like a 5
+access CNC machine or an actual key
+cutting machine uh they are very easy to
+use though and you can uh have those pre
+manufactured keychains to ship To You O
+Oak City Lockport does have a a keychain
+of
+Doom
+video check the cable check the cable
+okay we good
+enough
+okay uh talking about Keys continued so
+common keys are good to have bump Keys
+bump keys are the set keys with h pins
+all at one certain position for the sole
+purpose of you slapping the Sho out of
+it with some type of hammer um the
+buffer ring is nice to have repeated
+attempts it's kind of like a physical
+form of buzzing if you do B research on
+the little stuff I use the goat banding
+times to castrate goats uh but for bump
+keys so you can just buy those packs and
+you don't have to buy any like hacker
+bumpy Rings or anything like that so
+instead of goat rope it's goat Rings
+yeah so a go see it's go
+R so your Hammer can be a variety of
+things stiffness is usually better
+energy transfer but at the add of cost
+mind and yeah so here's here's a little
+so here we have a lock here we have a
+key it opens right that's how lock what
+if you don't have the
+key right well we have this Bum Key with
+a little goat banding thing and it's the
+goat banding thing is unused by the way
+anymore
+I um so yeah this one's pretty torn up I
+have a bunch of Replacements here if you
+want to check that out so there is
+narration in the video but I'm silencing
+it cuz I hate the sound of my own voice
+but whatever so as you can see here
+we're going to go through and this B
+this uh little ring allows the key to
+actuate back every time you hit it in
+it's going to actuate back a little bit
+to try to get those pins into position
+so I'm going to hit it with a btom
+screwdriver and the out on here you hear
+like a think right like kind of a Lou
+thing it takes a few hits and then very
+light tension on it and it opens with
+that
+dkey yeah yeah I
+mean's a lot of other things you keep
+but let's see is this the second video
+what's what a
+video Let's see okay the second video
+demo so I don't know might get okay so
+in this video
+demo uh I think it was midnight and I
+had 3D printed a a fall device so was
+hot off the
+and uh this was the Free bottle all
+right I didn't want to pay like $2 for
+an STL okay so you want to go as goofy
+as possible with it so this one is
+printed out of Asa plastic it's very
+rigid so a couple bumps here and boom
+it's open they've done
+that very rigid I think that's it job
+yeah that's that's that's its job right
+but it's a lot better in my opinion than
+so FL you put that in cool bag I would
+anybody yeah I actually I actually ran
+into somebody from high school when I
+went to purchase that so uh but whatever
+so if anybody would like to try that and
+show me bumping open uh a lock I don't
+have the lock with me but bumping open I
+have bump Keys uh the lock with the
+silicone one then I would love to see
+that let me know that that would be
+issue one yeah so I really tried on this
+silicon one it was not the move for me
+at the time I think with more skill more
+practice I would become decent and and
+it would work supposed to use so
+normally I wouldn't experiment with like
+your polyurethan ones right now but like
+anything rigid you can even use your
+phone if you want to but the thing is
+what's the benefit about using a Fout
+device in the scenario because if I'm
+out here at 3: a.m. and I'm bumping the
+law on a door over here say and then an
+officer shines his light on me and I'm
+going oh ding ding ding ding I say oh
+hey officer I'm meeting bump shot okay
+like that's that's that's what's
+happening okay if I am pounding on a
+door with this and I start breaking down
+and crying and going I'm so
+sorry my boyfriend and I just broke up
+and we've been together for seven years
+it's disarming the situation in a way
+that it's disarming the situation in a
+way that won't get you killed or get you
+just instantly dismissed sometimes so
+you have the art of escalating things
+and de-escalating things but there's the
+art of perversion which sends this in a
+sidetracked manner that people are not
+prepared to deal with you can deal with
+people's psyche in that manner and
+something they don't have experience
+with all the time every day right
+because if you're a threat if you have a
+bump hammer or something of that nature
+to break in they know how to deal with
+you there should hopefully at least be a
+protocol to deal with this type of
+attack or an evader so they will execute
+that protocol you can also use vibrators
+or pumpkin carbers these are noisier
+they have power requirements they have a
+Time requirement to try to go ahead and
+pick that lock you pumpkin car yeah
+pumpkin carbers you're oscillating
+pumpkin carbers yeah yeah you just go
+there and you tap the a to it and you
+just have tension on it and it'll just
+go and it'll bump a thousand times yeah
+no you're good
+[Applause]
+about
+propan oh yeah I mean you could I mean
+at that point if you have a prop canv
+you know like wir to the door and like
+stand 300 ft back
+but so let's talk about crash car hooks
+or your kind of dou door tooling
+sparrows one is kind of bulky if you do
+buy The Sparrows one I actually have it
+here with me tonight I can show you all
+later Etc but uh cut the rubber on the
+on the front of it there's going to be a
+rubber tip you want to get that of and
+adds just extra need I say C to it and U
+it makes it hard to squeeze into tighter
+doors so um if you want to make your own
+I recommend titanium bars if you can get
+them from online Amazon has a bunch you
+can buy them through 20in bars uh your
+realtor signs have wire frames they're
+going to be like steel I don't think
+they're they're not spring steel they're
+like this like weird candy easy to B
+Steel
+that can be used your certain hangers uh
+will have enough metal to do this this
+was my feeble attempt at making a double
+started and here's what we end up with
+so we have Kevlar string reinforcing
+this this uh Gap right here I have some
+gapper tape on this side and this is all
+folded inward to try to get that for
+reference this double door tool will
+support 20 lbs until it starts vending
+uh this one will support like five so
+just just be aware of what you're
+working
+with talking about your double door tool
+J Tool and specifications this is from
+the um firefighter she has a bunch of
+great videos she also has a video going
+over her larger Tool uh this one
+specifically you can see the
+specifications here one in 5 in 6 in 8
+in cool uh 3mm titanium rods are great
+you can heat red bend it and then air
+cool it or sand crunch it uh it's very
+important that you sand quench or that
+you air dry uh air dry air cool them um
+just so they don't become very BR
+brittle 3 mm steel is great too you heat
+red bend it punch it in water use motor
+oil and then you're good to go now this
+example right here is something that is
+susceptible to a double door tool double
+door tool attack you can hit this little
+Pudo crash bar what I call it and you
+can just actuate it from the outside in
+but more importantly what's not pictured
+in the contest of this of this picture
+is you can walk 5T around shut the [&nbsp;__&nbsp;]
+up thank you thank you you can walk 5T
+around and there's an open door to the
+area this is protecting even though this
+is long so just you know check the easy
+ship first
+right figh uh so okay um I'm just going
+it the not going through to the people
+in back they have no idea about this
+joke so this is a titanium rod as you
+can see here I've got a blow torch
+wow so much heat
+we we just going until it's red we're
+bending it slowly with titanium keep in
+mind there is a spring back factor for
+that alloy so when you bend it it's
+going to spring back a little bit so you
+want to bend it a bit steeper than what
+you wanted that so if you want 90° you
+know do do a little
+morei
+yipp this is the point are you breaking
+the door I'm sorry oh no you're good uh
+this is yeah so this is this is the
+breaking into the door essentially you
+stick this through you'll stick this
+through uh this this little wedge or
+this little Gap area and you'll actuate
+that inside crash bar from the outside
+oh cuz the crash bar goes over the Gap
+yeah well the crash bar doesn't go it it
+is the latch right so the crash bar
+dictates oh if this is opening from the
+inside because of fire compliance you
+have to be able to like slap that [&nbsp;__&nbsp;]
+open and run outside right so yeah
+that's that's kind of how it
+works what
+did I didn't come up with it I I can
+just read
+dude
+um well yeah I mean just like asking
+asking a bunch of questions that's how
+you you find out right so talking about
+forensic tools finding keypad touches
+this is something that I've seen online
+a lot you can dust and react that with
+an ultraviolet light you can also pay
+1337 for this dust it doesn't even get
+you high wow you paid $13 like cool
+whatever um you can use suus based
+powder so Trad ially I use baking powder
+but it's very hard to spot in certain
+scenarios because the granules are
+actually pretty big compared to other
+Alternatives uh these stick to oil
+easily you can use honey dust which I
+actually had Budd bring this out to me
+today who's helping me with the
+presentation Etc so this is K Sutra
+they're not paying me for this but kamra
+brand honey dust if you want to come up
+here and like feel it after and see how
+fine of a powder that is then you can
+but essentially that will pick up oil
+that's on surfaces very easily uh corn
+starch baking powder P sugar while
+you're baking that's not really
+suspicious right like who cares what
+percent of your K is from a
+[Music]
+climbing is this your alternative
+career it's my main career I mean a sex
+shop oh I mean yeah I guess well no cuz
+there's a lot of Licensing involved in
+Kansas and Texas in Texas there's a [&nbsp;__&nbsp;]
+law that if you own six or more dildos
+that's it
+buddy you somebody need somebody needs
+to make a sticker that says come and
+take it and it's just like a bad Dragon
+printed dildo or
+something but as you can see here so you
+want to have a very light applicator you
+want to have like a blush applicator or
+a feather duster I'm using a sponge
+because it's what I had around I don't
+wear a lot of makeup it's not anymore
+and uh there's baking powder here that I
+got and this is our pseudo surface that
+we touched right so we're going to say
+okay I want to go in and just print on
+this to find out what was what was
+touched so this first uh this first
+touch is going to be very heavy so it's
+kind of like cheating right and this is
+brass this is very clean brass so these
+are like Optimal conditions it does get
+harder from here and you can already see
+the fingerprint right this is on record
+by the way now the whole internet has
+like my my finger for that finger like R
+um so you can see there we've got that
+set up and I'm going to go ahead and
+just throw this dust on it you can you
+know do the blow approach where you just
+whatever uh going to convince you to do
+something whatever um and you can see
+that the does kind of Aggregates around
+the areas after I after I dump it a
+little bit just going to dump it here
+this is baking
+powder so you can see here where these
+line up and you can see the fingerprints
+a little more clearly on where they're
+collecting so we have one here if I stop
+[&nbsp;__&nbsp;] moving it thanks oh okay uh but
+you can see where I'm pointing them out
+put put a little more dust on the areas
+that need more
+application and you can see those
+fingerprint outlines a bit more clear
+now granted you do want to get honey
+dust these are normally available at sex
+shops they are not available at the
+unfortunate so this attempt uses neon
+us
+yeah right so I have the ultra light
+there U you want to use a yellow
+highlighter and this is basically me
+prepping the surface right you're kind
+of rigging a trap it's different from
+the last one and you can see how it
+light and now essentially if I press
+these they're going to clearly
+appear and leave OD and you can see
+those outlines of where I pressed so
+keep this in mind with keypads you may
+have the time uh and energy to break
+things up for a more successful
+attempt thank
+you uh okay door alarms are are cool um
+I recommend K&amp;J magnetics this is
+recommended me by colleague um they're
+very cool door alarms function off of
+some re switches that you can bypass if
+you have their Roy tools so I will give
+a little disclaimer on this slide this
+uh this door alarm is very cheap and it
+actually does doesn't care what polarity
+you match up and it will just take a
+magnet on there so you essentially have
+the sensor you're checking out the
+polarities and you want to replicate
+that polarity um towards the alarm side
+right normally uh this is placed on your
+doors this is placed on your door frames
+you may see variations depending on
+battery power versus wired Etc so I'll
+turn the sound on for this one uh please
+very
+just so the concept in theory is to get
+a magnet between there and there you go
+you have it set
+up tape Etc and then you're good don't
+have to
+worry mind that have and then if we go
+ahead and remove it then you could turn
+this the right
+way get this far
+enough and it starts going off so that's
+another thing too is you'll encounter
+doors that have very slim gaps between
+these you can use an air wedge to go
+between those gaps and expand that gap
+for a small pry bar please don't carry
+actual like pry bars on the gig I have a
+small keychain one if that works cool if
+not use an air wedge don't use a [&nbsp;__&nbsp;]
+um oh gosh so talking about hi this is
+not my area of expertise I mean like
+none of this is area of expertise I just
+like am decent had some of it um so RFID
+locks um they come in a couple different
+shapes or a bunch of different shapes SI
+mainly you'll be looking at two
+different protocols or two different
+frequencies your 13.56 MHz Shields which
+these are your high frequency uh your
+125 khz Shield which are low frequency
+and replicating you know your clipp Z
+your pro Mark all that you can use Aro
+components and as long as the support is
+there for the hardware to be able to
+negotiate with the protocol on the the
+card then you're good um and you can do
+your dictionary based taxs Etc there's
+an Android app M keys that allows you to
+do dictionary based attacks on the my uh
+1K keys so like Hotel cards uh or a lot
+of common Hotel cards so this is subject
+I'm not very good at but cards are weird
+you can also buy little rigs on eBay for
+pretty cheap that are readers and have
+those uh go through wire those up to
+whatever rig you have a Raspberry Pi Etc
+these readers are nice to have you can
+come up to have longer range the antenna
+is already made um there are some videos
+on great Scott's Channel over making
+coils that perform better from these
+eBay ones check about disguises
+Goodwills drift uh some of your swag can
+be ordered so Walmart West Etc lanyards
+card holders have all those if you have
+a type of photo ID or lanyard and your
+pretex is aged you want to have that
+smudge to put a Sharpie or something of
+that nature so it looks like you've been
+there a lot uh I've been there for a
+while if you wear high vist run that
+[&nbsp;__&nbsp;] to the ground wear boots Etc um
+I've been recommended Z Inc printers
+instead of this because the rolls of ink
+or the rolls for this are about $70 and
+I picked this up on eBay for $70 so Z
+Inc is something that is is something
+I'm looking into acquiring for better
+pretex development and they
+smaller talk about your implants your
+usb hid implants you have your digispark
+$1 bad USBS which I have a bunch of
+these uh they're great if you just want
+hid attacks I don't feel bad about
+leaving these in the client's computer
+it's cool it's whatever I didn't drop a
+[&nbsp;__&nbsp;] $80 raspberry pie uh you also
+have the Malino Le there are some uh
+other devices that uh Luca has made from
+uh the weed injector series and you know
+weigh the weigh the scenario if you need
+um hid attacks Etc that's how you need
+to use it um kind of going up in the
+skill you have your Pai aloa which is
+kind of an older project at this point
+but this essentially was at the time
+like a huge advancement over the rubber
+ducky I mean like cool rubber duckies
+whatever uh this turned your raspberry
+pi0w into like a fully working ducky
+with the ability to bridge air gap
+networks so it it has some cool
+capabilities and of course the codee's
+online you can edit it you can
+contribute you can change it however you
+want the pi02 W is out Alternatives may
+work but you want to check the hardware
+support first
+um for instance I will buy the where are
+these I'm skipping a slide so these um
+orange my zeros Etc I will buy these and
+then wait for Army and support I'm not
+running their chinesium on client
+networks um so essentially you also have
+the Logitech dongles which this is
+something I stumbled on uh more recently
+and need to De for but essentially
+taking these Logitech dongles for your
+normal mice and keyboard connections you
+can just wire them into a USB cable and
+have a lower quality OMG cable type
+device so these are uh your Logitech
+dles aren't really offset friendly due
+to the pl text injection of that library
+that can't change without support from
+the community if you use a r piw can
+jooin all these into a USB port um it
+might be different on the pi02 W now but
+if you're using the pi0w the first one
+then yeah it's the same oh it's the same
+okay cools are the same okay yeah yeah
+so can join those if you if you want
+just the thing you can plug in with one
+USB port have it be powered and working
+Etc network monior network Taps I have
+your normal Pi 03s your orange pies um
+you want to Spook your mat to normally
+match vendors on the network or oi
+you've seen so Macs printers phones or
+vo whatever um you can add your GPO
+buttons as you see fit so you can have
+it so you can plug it in you say Okay I
+want to start capturing packets now um
+sometimes people use the passive
+monitoring Network Taps like these the
+only problem with these is they do
+downgrade the speed to 100 megabits per
+second so and that's because they're
+they're not powered so if you do want to
+have a type of listening tap you can
+just buy a manage switch that supports
+mirroring and make sure it's gigit and
+that should work so talking about xill
+method so this is my my spread my money
+spread right this is at certain point in
+time this is like $300 worth of sbcs but
+so with xill methods you know DNS
+tunneling now is kind of an older one
+but it still works on most networks um
+your lazy thread actors may use engro
+cloud FL tunnels or FR FRP you can
+purchase or wi in wireing an LTE tap to
+achieve your cellular network
+connectivity so I can text my implant um
+powerless Taps are errorr so of course
+that's that signal degradation that we
+talked about and also you you have no
+idea if you're going to fry something uh
+if you get like one of those Poe plus
+type of things I haven't tried that
+personally I've tried with Poe it works
+and nothing will fr but I can't tell you
+it's safe if you go higher in volage
+your ambage so normally you have your
+network tab here right which is your
+dualcom and oh my gosh $230 right that's
+a lot of beer uh but yeah or you just
+spend 26 bucks and have the
+same talking about Wireless uh stop
+using pineapples I say this cuz recently
+a pineapple failed me on an engagement
+and it was like Mission critical so I
+was just really pissed I was able to fix
+and recover uh but like just learn TCP
+dump and aircraft site and knowing like
+what the protocol does um yeah don't
+trust things that are only have a UI and
+they're like oh yeah you can pop a turn
+off you want so Linux plus better plus
+your 5 gz card with injection SN KS
+Pachi does a lot of this already poni
+just remember to turn off the Telemetry
+by default the Telemetry doesn't give
+off a lot of information but it's still
+you know just weird to have you yourself
+announced so yeah try the poni out it's
+a plug andplay thing you can image to ra
+High uh bik you if I recall correctly it
+does use all the network cards on the
+device so if you have your 5 gz card
+plugged in ETC it just adds that to
+better cap goes um so do your research
+on what cards you need and take full
+vcaps during your Wireless at
+toades to by Wireless here's a chimp
+antenna um here's an outline for yagi
+'ll specifications made from this book
+there are online calculators as well if
+you want to change parameters and uh
+frequencies so this is a big resource
+dump um there is the pH
+physical security Village from Devcon
+they have bypass games online so you can
+kind of get a pseudo visual
+representation of how to game a lot of
+these systems you can Loy on there I
+definitely recommend checking out these
+YouTube channels and playlists uh good
+amount of stuff there these this slide
+should be on the QR code as
+well so the takeaways from this are be
+resourceful uh you want to become
+ungovernable really um if a client tells
+you like hey only sophisticated for can
+do that we don't have any Lo I'm here
+besides you guys go and shim their [&nbsp;__&nbsp;]
+with a plastic bottle and watch their
+face um once You' learned a concept go
+back and do it with [&nbsp;__&nbsp;] your tools for
+fun make it harder [&nbsp;__&nbsp;] grow right uh
+repeat it until you can do with as
+minimal supplies as possible you can do
+uh what I want to do is have like a
+speedrun type leaderboard where it's
+like the sex shop challenge where we
+have ranks for every geographic location
+and have different uh you know like oh I
+was able to build these tools with
+supplies from these shops and have
+categories for that but uh stay out of
+trouble and you can also join the dc36
+server this is a local deathcon chapter
+not know which to uh we're kind of
+active online we're more active in
+person we have monthly meetups L FR
+every month uh check that out also check
+out ozc it's a security conference I
+help organize I run CTS I'm kind of a
+game master for that uh that happens
+once a year in which this year we're
+looking at doing a two-day conference so
+that's one day um supposedly with
+presentation and one day with work shops
+and hopefully if I get everything
+together we'll have a physical security
+Workshop where you can come and demo
+these
+things um and yeah that's that's the
+whole presentation and I've got I've got
+some goodie bags to hand out I don't
+know how we should distribute these
+um Can may I please have one yeah yeah
+okay yeah sure that works so here you go
+so that has a that has your windshield
+wiper blade and and plastic shims so uh
+yeah actually we come up and if you know
+if we run out like it's trash like are
+you mad that you didn't get trash like
+a ready ask the bartender for any empty
+2
+lers but yeah that's the talk thank you
+everybody for your hospitality and your
+time uh I really appreciate it youall
+have a great crowd a bunch to talk to so
+you

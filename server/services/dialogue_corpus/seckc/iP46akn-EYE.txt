@@ -1,0 +1,781 @@
+Uh, but this talk tonight to disappoint
+everyone is going to be G-rated. So,
+yeah, there's I tried to keep the
+content as clean as possible because I
+didn't want to [&nbsp;__&nbsp;] offend anyone.
+So, we're going
+uh, a little about me real quick. I work
+for Laware doing red team social
+engineering and pent testing and
+physical testing. I also, uh, own and
+operate Squirrels and Barrel. Uh we
+operate the so world championship of
+social engineering every year in Vegas
+and uh we'll get to that in a minute
+because tonight at KC we have a special
+announcement here for only KC first.
+What we're going to do this year is our
+fourth year of the world championship in
+social engineering in Las Vegas. Uh what
+we do is we provide the world's only
+legal largest social engineering sandbox
+for you to play in. We give you 48 hours
+in the entire realm of the Tuskanyany
+suites in Vegas. That is the playing
+field. You get to do whatever the hell
+you wanted to do within the legal limits
+of the rules, which are only there to
+keep your ass out of jail. That's the
+only reason why we have rules. Anything
+else you can actually do. So, we want
+you to actually do social engineering
+hands-on, physically experience it in a
+safe environment. For example, the rules
+that we add, we add in don't do dumpster
+diving because no one wants to [&nbsp;__&nbsp;]
+dumpster dive in Vegas. It is awful,
+even for work. So, we have a belt that's
+up for grabs. We have the guy that does
+all the belts for the WWF, MMA, and
+Nathan's Hot Dog Championship does our
+belt. It is pure 100% 24 karat goldish
+material, and it is in high demand. that
+uh all of our winners that have won have
+gone on to some really interesting jobs
+and opportunities. So, not only is it a
+fun game, it creates opportunities for
+people and the best part is it's free.
+So, this year we're returning back to
+Bites Las Vegas. We also do regionals
+throughout the regions. Um if any
+company wants us to come in, we do a
+social engineering capture flag or we go
+to local bides or other security
+conferences and provide them for free.
+Each of the regionals, uh the winner
+wins a golden squirrel trophy. We always
+have puzzle pieces in them that lead up
+to Vegas and give people a heads up in
+Vegas and leg up. So this year, against
+all better advice and thoughts and legal
+advice, we're crossing the streams and
+doing something that hasn't been done
+before. So we're combining and crossing
+streams with the pros versus Joe's
+capture the flag. So, not only will you
+be able to do social engineering, you'll
+be able to interact with the red team
+and blue team members and facilitate
+attacks on the targets that we have, we
+have live companies that you're going to
+attack and mess around with.
+Everything's screened off, safe, and
+legal for you. We have three lawyers on
+staff that have gone through everything.
+In addition to that, we have been doing
+the bides puzzles leading up there are
+six puzzles leading up to bides. Each
+puzzle uh we teamed up with 666
+Zenometown Records out of Topeka.
+They're providing us with music and
+artists and other things. Each of the
+puzzles is audio based
+only. When all the puzzles are assembled
+at the end, you will have a a complete
+album. In addition to that, you also get
+pieces that lead into the game. So, the
+puzzle game also leads into the capture
+the flag. So, we have three games
+simultaneously bleeding into the one in
+Vegas later on for all of you to enjoy.
+So, that's the big announcement and it's
+something that's never been done before
+and we're very, very excited to be doing
+free. So, back to the actual thing at
+hand here. I want to show you guys a
+little bit about fashion and how it
+plays into social engineering. A few
+weeks ago, uh, Paul.com or Paul Security
+Weekly, sorry, had a segment about the
+Dapper Hacker. They spoke a little bit
+about the appropriate tire on the client
+site. We're going to take a step further
+and actually explore the exploitable
+angle of what's at play. So, what's at
+play here is perception. And perception
+in the world around us is key. We always
+hear about different things about how
+people look, their appearances, and
+Sorry,
+threw me off. So, perception is key.
+Perception is so powerful in the world
+around us. It's stronger than gravity.
+And if you remember a few months ago,
+this made national news for some [&nbsp;__&nbsp;]
+reason. So, never ever ever lose sight
+that perception is the most powerful
+force in the universe. How we perceive
+things is so powerful and shifts and
+changes and we can take advantage of
+that. So how we do that with our
+appearance and fashion is keep in mind
+that 95% of your
+body is clothed. That's the largest
+portion of your body. Only 5% being your
+head and accessories and items are not
+that well noticeable and compose the
+rest of it. With that in mind, first
+impressions are made within the first 30
+seconds. And of that, the impression,
+initial impression is only made in under
+the first five seconds. And when you
+think about that, you look at someone
+from a distance when they're walking
+towards you, you've already made the
+judgment about them. And you're looking
+at them and you're looking at their
+clothes cuz that's the most visible,
+largest portion of their body. So, we're
+going to take advantage of that. When
+you go out on like pentest or social
+engineering engagements and you have to
+break in
+somewhere, how do you go about doing
+that? You can't just walk in with a
+[&nbsp;__&nbsp;] hoodie or a deathbound t-shirt.
+They're not going to let you in
+anywhere. So, we take advantage of their
+perception because you want to blend in.
+If you do not blend in, you stick out.
+You [&nbsp;__&nbsp;] the pen test. It's not pretty.
+It looks like this. So, if you do not do
+your research properly or your OST,
+you're going to end up looking like this
+in front of the client. Explain to the
+client, well, gee, I [&nbsp;__&nbsp;] up. I ran in
+with uh killed in a Defcon t-shirt and
+some vibrant five finger shoes. I don't
+know why they [&nbsp;__&nbsp;] caught
+me. So the first step in all this is
+Osent open source intelligence
+gathering. And how this gets specific to
+what our goal is is we want to gather
+information on our target. We want to
+pursue our targets culture and really
+integrate ourselves into both their
+vernacular and their image imagery and
+on what makes up the company. You want
+to inject yourself into the company as
+if you were an
+employee. So, it's important right now
+to remember that clothing and fashion
+accessories should only be an
+augmentation to your pretext. It should
+not become the pretext. An example of
+this is I can dress up as a security
+guard and just [&nbsp;__&nbsp;] walk right into a
+company because they see that I'm a
+security guard. However, with that
+uniform on, I have the obligations of a
+security guard to walk around and be
+places I should be rather than why the
+[&nbsp;__&nbsp;] is a security guard in the server
+room plugging plugging in a phone plug
+to the server room. So, by setting up
+myself as a security guard and walking
+in, yeah, I can get in, but I don't show
+value to the client because a security
+guard is not going to be running around
+where I want to go and do things. People
+will notice that. And again, I will
+stick out like the prior picture. Hey,
+Aaron. Yeah, this is Bill. Dude, I did
+drink actually. Well, you can you can
+give it to somebody else. But we have a
+tradition here at set
+KC. If you have a slide with PO Bayer on
+it, you get a shot. So, is there anyone
+that you would like to desert Jordan?
+Yeah.
+So, there is a funny story sometime if
+you guys are going to find me later. Uh,
+involving Pedto Bear at Defcon taking a
+cab ride with my
+dad. So, again, make sure that whatever
+you're doing does not become a gimmick.
+Make sure that your clothing and your
+uniform that you're preparing is going
+to help augment that pretext. So rather
+than being the security guard, it might
+be better to go, hey, let me look up and
+see what the common IT guys wear or the
+IT department. Let me dress like them
+and maybe tailgate in. That would be a
+better use.
+So, with the gathering of information,
+we want to really get into some
+specifics of like what are they wearing,
+how are they wearing it, do they have
+uniforms, where do they get uniforms,
+where would you find this stuff, what
+does everyone look like, things like
+that are what we're going to really zero
+in on to help develop this exploit. What
+I start out with as a methodology is I
+start looking in social media and file
+file and photo sharing sites. So, I go
+through those. I start looking for
+pictures of employees or company
+functions. And it's amazing what you can
+find out there. Company functions. If
+any of you and all of you should go back
+to your companies tomorrow morning and
+re-evaluate what kind of policy you have
+for photographs and actual functions
+because you'd be surprised at what kind
+of pictures are already out on the
+internet. Um, if that does not work or
+that that does not yield a whole lot, I
+go out and start searching for company
+dress codes. I also pick that up anyway
+so I can uh uh verify if through the
+pictures if there's anything that is
+valid such as the omni dress code states
+you can only wear suits or whatever. If
+I go out and look at the pictures I can
+validate that and see well yes their
+policies in place. They do obviously
+enforce it. I better dress with a suit.
+The other thing that's great is company
+newsletters. internal company
+newsletters and external are [&nbsp;__&nbsp;]
+awesome because it is just a diarrhea
+fountain of information, but people just
+do not realize what they're putting in
+there. You can see how people are, their
+normal day-to-day mannerisms. You can
+see the speech and the vernacular of the
+company, which is important if you're
+going to launch a fishing attack because
+you do not want to write a well-crafted
+fishing template that's well written and
+doesn't use the company's language.
+People will pick up on that and it'll
+stick out. Next thing I'd go look at is
+company branding or IDs, style guide
+sheets. Simply Google that phrase and
+you'll get a text or website that guides
+you through how you're supposed to use a
+company's logo, colors, text,
+everything. There's plenty of
+information in that to help you falsify
+and form a ID
+card. Also, go through and start mapping
+out the company functions, find or
+charts, see if they use any third
+parties or anything. Also, check out
+employee blogs and media sites. It's
+awesome what people and employees put
+out on websites. I'd say a large portion
+of the successful pentest and social
+engineering engagements I've had have
+been a direct result of an employee
+either posting an ID badge or a picture
+with an ID badge out there or something
+else they shouldn't
+have. So with information to help gather
+information and find stuff through
+OSENT, here are some tools that aren't
+commonly used or known about or talked
+about. Search diggity basically takes
+Google hacking to a whole another level
+and allows you to automate it. It's by
+Stoch and Lou and I think uh Bishop Fox
+picked it up now. You basically take all
+the Google hacking database uh
+expressions and several other odds and
+ends. You simply put in the domain name,
+click it, and it goes and goes and goes
+and goes and crawls the entire interface
+for you. Uh Spokio and People are great
+for looking up personal information on
+people.
+And as a result, it's great if you
+cannot find information on an individual
+or the last ditch hail me up Mary
+effort. I go to people or spokio. You'll
+find some really bizarre stuff.
+Spiderfoot is really great. If you do
+not know about that or use that for pen
+testing in your toolkit, it should be
+there. Now, it is really cool. Allows
+you to fast fingerprint the entire
+perimeter of a company or a target. And
+it's very nice for finding directories
+and other things that might be out there
+such as directories that might have
+employee pictures or other things or
+badge templates. Uh LinkedIn is really
+good. It's just amazing for finding
+information on people. No matter what
+you think, the security and the control
+mechanisms in LinkedIn are not
+functioning properly and do not work. So
+it's very nice and easy to go through
+and dig out people's information. There
+are two things that I don't see people
+talk about that you should look into is
+Yakyak. Yakyak is a social media app for
+your phones. It does anonymous posting
+of 140 character messages or less in a
+geographic area of 2 miles or less. So,
+you're only going to get people talking
+randomly or anonymously in a 2-m radius
+area, which is great because that zeros
+down into the area of your company and
+target and you can start monitoring
+their employees. When employees think
+that they are posting anonymously, they
+will say any [&nbsp;__&nbsp;] thing they want.
+They will post [&nbsp;__&nbsp;] We've even found
+[&nbsp;__&nbsp;] pin numbers for places posted
+because people were disgruntled and
+pissed off. The other thing that can
+help in that angle is look up glass
+door. Glass door you can get a
+temperature out of a place such as what
+the employees are saying, how the
+interview process is. Uh HR posts a lot
+of information out on the glass door
+that they shouldn't and it's really
+awesome. But you can also get a
+temperature of how people interact and
+what the culture is through black
+door. So to further prove a point, if
+you go through style guides or dress
+code searches out there, you'll find
+stuff of even people creating memes
+inside of these uh manuals and
+everything. And again, this illustrates
+a point. You don't want to stick out.
+They're pointing out to this lady who's
+not journalist business casual. And they
+even pointed out in their uh manual.
+Again, newsletters are awesome because
+you get a sense of how people dress
+day-to-day in the business and how they
+interact. You don't see the typical
+website public image that you get. You
+get to see day-to-day how they're doing.
+You also get to see all the cool
+information that obviously the legal
+department or the infosc department has
+not screened before they release it. And
+we have found everything from the
+controls and explanations on turn styles
+and security systems on companies that
+we've broken into just from the company
+newsletters. So that should be a very
+very big resource you hit first. And if
+you have one in your company, you should
+probably go in there tomorrow and go,
+hey, what's the process of vetting
+articles and content before we put it
+out into the world? So, in all this
+talking, we've talked about kind of how
+to frame ourselves and to do some
+research with OSENT on how to go in, how
+to kind of profile a company, see how
+people are dressed and everything. And
+granted, I only have 45 minutes here.
+This is usually something I do like a
+twoe or a multi-day uh workshop for. So,
+we're cramming it in right here, right
+now. So, how do I get some extra items
+and clothing or uniforms you may not be
+able to get a hold of? on the paul.com
+or Paul Security Weekly podcast, they
+mentioned uh Larry mentioned that it was
+impossible to get certain uniforms of
+certain companies and I'll show you
+tonight that's not the case. What I love
+doing is going to Goodwill. It is
+[&nbsp;__&nbsp;] incredible. Go to the Goodwill
+thrift store, thrift shop, Salvation
+Army, whatever the [&nbsp;__&nbsp;] it's called. Buy
+your Target and I guarantee you, you
+will find all sorts of amazing things.
+Uh, I know we have fed people in the
+house, so I won't mention some of the
+things I found, but they were recorded.
+It's a pretty amazing what can be found
+at thrift stores. So, what I like to do
+is go around and pick up items such as
+uh things that can help in situations. I
+had one uh job where I had to break into
+a data center. The data center had
+biometric reader, camera, one door in,
+one door out. The sock could view
+everyone coming in. The client basically
+set me up for failure. There was no
+[&nbsp;__&nbsp;] way I was going to get in. So
+went to a thrift store, went shopping,
+came
+back, got my handy dandy clipboard,
+which all of you should have cuz this is
+the most powerful tool in the universe.
+This gives you so much power. If you
+have this in your hands, if you're
+walking around the hallways at work, you
+look like you're busy or you're on a
+mission. So if you're breaking into
+places, this is a great thing. We I also
+like the ones that open
+up simply because the fact if you're
+going around to a copy room or your uh
+printer area or common area, you can
+grab documents, throw it in there, walk
+out the door, and no one knows the
+Yep. handy dandy uh clipboard and a
+So, it's a Dell certified technician
+t-shirt or shirt. So, it's a polo. So, I
+put that on, created a fourth work
+order, put it on the handy dandy
+clipboard, knocked on the door, said,
+"Hey, I'm here to look at the racks. I
+just need some serial numbers. I don't
+got to touch nothing. I just got to make
+sure these things are in the racks. Can
+you just let me back there and do it?"
+Sure enough, they looked at the word
+order. looked legit. I had a shirt on.
+Again, we're playing with their
+perception. They expect a technician to
+show up. So, we took advantage of that
+perception by augmenting it with the
+shirt and I dressed up like a
+technician. And to augment it with an
+accessory, I had a clipboard with a work
+order. The guy even signed the work
+order for me. It was pretty bad. I I
+felt like a total [&nbsp;__&nbsp;]
+So to show Larry Peshi
+wrong, he stated that it was nearly
+impossible to get a hold
+of shirts and uniforms from major
+delivery parcel services such as FedEx,
+[Applause]
+So, you can find a lot of things at a
+thrift store, but even better is you can
+find clothing that you normally would
+pick up like Docker slacks and a shirt.
+And the benefit to that is not only is
+it cheap, but it looks worn. And that's
+a key thing. Uh, back in the late 80s,
+early 90s, which is probably a date my
+age actually, the rave scene in Kansas
+City was pretty funny because the Kansas
+City undercover cops would show up to
+raves wearing a neatly pressed out of
+the package Pink Floyd shirt tucked into
+jeans and tactical boots at the Red Bar.
+They Yeah, exactly.
+and uh some other places in
+but uh G coffee. Yeah. So uh again you
+always want to pay attention to details
+but with but the clothing you can get
+stuff that's very worn and why that's
+important is you don't want to run in
+looking like hey I just pulled this off
+the rack. You want to look like you've
+been there. So worn clothes and well
+wororn items are good at Goodwill so you
+don't have to distress them. Again, I
+don't have time, but I actually go
+through and show you guys how to
+distress the material such as putting
+rock salt in a dryer to distress
+clothing and everything. So again, it
+all boils down to details. So do your
+homework. OSI composes everything and it
+makes or breaks an engagement. OSI
+should compose 85% of your actual
+engagement process because your actual
+exploit is only going to take seconds
+just like using metas and the rest of
+the time needs to be spent for
+documentation. So the majority of
+upfront work will make or break the
+engagement. Use company pictures to
+really look in and zero into the
+similarities so that way you can really
+profile of how to dress yourself and
+blend in. Another thing to note is how
+badges are worn. This will kill you.
+Some companies wear badges with the the
+lanyards. Others have them hanging.
+Others have clips. That will give you
+away because people see people every day
+at work and they're used to the image of
+how someone wears a badge or how it's
+expected. If you change that up, people
+will zero in on you immediately. Also,
+remember the small things add up. If
+you're going to a hospital impersonating
+someone at a hospital, you put scrubs
+on, those scrubs better match the color
+scheme that they have. But certain
+hospitals have different colors of
+scrubs for different roles and tasks.
+Also, if you're going into a hospital,
+pay attention to details like your
+shoes. If you're wearing scrubs, you
+don't want to wear boots. You want to
+wear very comfortable, well worn in
+shoes. You don't want to wear new
+sneakers. Those are little details you
+just need to start thinking about that
+give you away. And at the end of the
+day, keep it simple. Like again, this is
+all about using fashion to augment the
+pretext, not become the
+pretext. So, some other things to think
+about with details in the extreme
+angle. You always have to think about
+everything. And what someone does not
+tell you about red team testing or
+engagements is there is no calling
+timeout. So you might find yourself in a
+situation in which you're stuck above
+ceiling piles in a building for a really
+long time and you [&nbsp;__&nbsp;] up because you
+drank a lot of coffee the night before.
+So there are a lot of things out there
+that you have to consider detail wise
+because you cannot call time out in an
+engagement and that's just
+life. So the other thing I advocate is
+dressing in layers. What I love doing is
+getting a jacket. You can start out
+getting into a site with a jacket.
+Jacket has a lot of pockets. Looks
+benign. looks business casual, can be
+taken off. You can carry it. If you
+carry it, it can help you facilitating
+pickpocketing with badges and other
+things. Uh it can also be a prop, help
+you uh act clumsy, drop and fall over
+and pick up
+things. But at the end of the day,
+dressing in layers is nice because you
+can change your appearance immediately.
+like a hat. I can drastically change my
+appearance by adding or subtracting a
+hat, removing my glasses, adding
+glasses, removing a sport coat, removing
+a tie or dressing layers. So maybe you
+take the button-down shirt off all the
+way. Why this is important is maybe
+sometimes once you get in
+somewhere, you've kind of burned your
+entrance in and you need to facilitate a
+change and pivot around. And what I like
+to do is going into bathrooms and
+changing or just changing anywhere I can
+and running around inside the building
+as well. Avoid loud colors or logos. You
+want to avoid anything that can identify
+you when you
+change. So you want to avoid some very
+obvious things. Again, you should never
+ever impersonate any law enforcement
+official, officer, agent, etc. Not only
+is that stupid and illegal, it shows no
+value to the client at all. It's [&nbsp;__&nbsp;]
+stupid. All you do is you show that your
+employees are susceptible in following
+the law and susceptible to little
+gulability. That's all you're measuring.
+It shows no value in the client. Avoid
+big brands and logos so you can't be
+centered out. Avoid gimmicks. And what I
+depend. As you can see, I resemble all
+hacker tip art at this
+point. I have all my tactical equipment
+on that I need for the job. My face is
+concealed. I'm in all black. I stick out
+so bad. I stick out. There's no
+comparison. You never want to wear all
+black. Never want to undo gimmicks.
+Can't see you. Turn on the lights.
+Exactly. Because the the main point is
+you don't want to draw attention to
+yourself. If you're all dressed in black
+and you're digging through a dumpster at
+out. So, no gimmicks. Gimmicks will give
+you away. Avoid tactical clothing. Do
+not dress in any dark clothing at all.
+And why I say that is if you're digging
+through a dumpster
+uh and you're just wearing a pair of
+khakis, you're going to appear like you
+belong
+there
+and you can get out of things
+easier if you're wearing a pair of
+khakis and you look like you belong
+digging through the dumpster because you
+lost your retainer, your contacts or
+whatever. Fill in the gap. Streaking. I
+can tell you from firsthand experience,
+my good friend Bob used streaking to
+facilitate a distraction to a guard
+station to let his friends in. Uh it is
+very effective.
+It is illegal. In a lot of
+jurisdictions, it is actually a sex
+crime. You'll end up on a sex offender
+list if you're caught. So, while
+streaking is an effective tool, don't do
+it. Also, freshly purchased clothes give
+you away. Restrictive clothing. While
+skinny jeans might look good on you, if
+you're going to do running, climbing, or
+other things, you may not have kids if
+you do that. So, avoid things that are
+restrictive because also, if you have
+loose- fitting clothing, you can dress
+in layers, shed layers, hide stuff in
+pockets and pants and stuff. If you're
+wearing jeggings or whatever like Cory
+does
+it, it's not going to allow you to
+facilitate stuffing things in places.
+Also, the number one thing is don't
+violate the dress code. that's why you
+did the research in the first place. So
+that's all good. Let's apply it to some
+scenarios that you can actually take out
+and do. What what I do first is think
+about how do I get in and how I
+facilitate that is think about what
+support systems are in place. What I
+mean by that is what third parties are
+employed by that target company. So is
+there someone that comes in and sprays
+for bugs? Is there trash pickup? Is
+there janitorial service? Is there
+cents? Is there a uniform company? what
+infrastructure support through third
+parties they have. That's the easiest
+way to get in as well because it's very
+easy to again that same data center that
+I spoke about earlier. I had to go back
+and test
+it a second time which I thought, oh,
+I'm [&nbsp;__&nbsp;] I walked right straight to
+the front door and these people saw me.
+They signed my work order last year.
+They obviously are not going to let me
+in this place and they were really
+pissed off last year.
+So went to Walmart in the middle of the
+night cuz I was pissed off and trying to
+figure out how to get in here. I just
+picked up a simple pair of
+overalls. I then went over to the home
+and garden section and picked up a bug
+sprayer. I worked up a work order. On
+the work order, I mentioned that the bug
+spray content, the uh insecticide was
+very dangerous. It contained
+dihydrogenated oxygen.
+So, I filled it full of dihydrogen and
+they did
+oxygen, knocked on the front door again,
+had a hat, hadn't shaved in about 7
+days, had a cigarette hanging out my
+mouth and asked them, "Hey, I'm here to
+spray for
+bugs." And the guy just looked at me for
+a little bit and I showed him the work
+order and he said, "Okay." So, I went in
+and I sprayed the dihydrogenated oxygen
+in corners around the data center away
+from the equipment.
+picked up what I needed to have the guy
+sign the work order and left. Again, we
+took advantage of the perception and a
+simple bug sprayer picked up because of
+the third party services through
+building management. They had no idea of
+identifying who was who or what. I had a
+work order. I looked official. I took
+advantage of his perception. Had a
+uniform on. What's there to deny or how
+does he validate that? So, he let me
+in. So, change of clothes is very
+important. I stressed earlier, sometimes
+when you get in past security, you may
+be on camera and you're burned. So, you
+need to facilitate a change of clothes.
+You don't want to run around with a
+backpack or anything. As least possible
+amount of materials on your person as
+possible is what you need. Otherwise,
+you're going to stick out. You want to
+look like an employee. So, take a change
+of clothes with you. Get into the
+bathroom. In the bathroom, you can use
+the most successful social engineering
+accessory I'll show you today. And I'll
+show you how to make it. It's pretty
+pretty powerful. You use this mechanism.
+You put it in the bathroom. It gives you
+privacy. And then you change your
+clothes, stuff the clothes up in the
+ceiling or stash it somewhere and move
+about your
+day. How that works is you use the
+special device and you put it on the
+door of the stall. That gives you time
+to just sit in the stall and no one's
+going to bug you. As dumb as this
+sounds, make sure it's handwritten
+because if it's handwritten, it's easy
+to buy off and no one wants to [&nbsp;__&nbsp;] with
+the stall. that's broken. No one wants
+to look in there. No one wants to deal
+with it. We just assume it's bad
+handwritten note. And you can even stash
+your equipment there all day if you need
+to, too.
+Believe me, this is a powerful powerful
+tool. Very expensive, too. Hey, what's
+on the bottom right hand corner? What
+does that say? I actually don't
+remember.
+I was bored. I had to sit in the
+bathroom for three hours.
+So, now we're really serious. Again, I
+condense this down to about 45 minutes
+cuz I want you guys to get the really
+meat and potatoes of paid. You can use
+perception in your everyday of how you
+dress and use that, frame it as you
+would printing exploits and take
+advantage of that. So remember, clothing
+is going to augment things. It should
+not become the pretext. And visual input
+is very, very powerful. Perception is
+the most powerful force in this
+universe. You can take advantage of it.
+You can shape it. You can craft it. You
+can move it around. And always remember
+to research everything. Otherwise,
+you're going to end up looking like
+something in a pedar slide. Anyone have
+Fueler.
+So, Aaron, we got something special for
+you here, man. All right, Brian, let's
+All right, everybody. Uh, thank you for

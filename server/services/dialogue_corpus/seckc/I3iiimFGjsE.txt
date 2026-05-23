@@ -1,0 +1,321 @@
+kind of kind of trying to have to figure
+out well so let's say we blocked this
+what happened that we didn't want it or
+committed ready to lock it want to go
+trace back to say okay where's the
+origin of this file how this music get
+malware on their machine and oftentimes
+when we find is that office documents or
+the cause of these problems that
+malicious macros are going out holding
+down a executable binaries or they're
+just executing on machines the
+they'll go and establish regular French
+we keep their persistence stuff like
+that so this slide decks all the way out
+you know giving you a quick run through
+of how ops work and just sort of
+the format little history and then give
+you some tools to go to analyze those
+and also throw some javascript in there
+because it comes in handy a lot more
+than you think so there you go let's get
+started a little industry um let's just
+factor was actually been around for
+quite a while since around 1999 then
+they really start ramp up the first BB
+campaigns for malicious macros were yeah
+I love you butter is San Melissa these
+work we're just basically these were
+just uh they just go up rehear the email
+contact list and then go and email
+themselves out to all your friends and
+stuff now these things that become
+people owned a lot since
+almost 20 years since we got now we have
+things like dried accent locky so dried
+X is a banking throat in the Milwaukee
+is more ransomware that will actually go
+out once you execute it once your nipple
+macros and stuff macro will go out
+pulled out binary your old hard drive
+and ask you for money is if it's trying
+to you know do you a favor like
+encrypting your stuff and probably one
+of the biggest is maybe one of the most
+well-known uses of malicious macros is
+is a thing called black energy now this
+happened last December and actually took
+down the holding part of the Ukrainian
+power grid the real runt work was done
+by a compiled binary buy an EVO on
+Windows but the original dropper was xl5
+was an excellent essentially email so
+yeah office documents can really do a
+lot of damage not only to their users
+but also to your power grids in some
+cases oh sorry over a little bit of
+power for mankind works so basically
+we're going to typically focus on the
+2007 since format which is the office
+open xml format if you guys remember the
+sort of old format was like doc xls so
+microsoft changed that around 2007 they
+added an ex but they also actually
+change the back in around making the
+file name different they actually added
+a meximelt all this stuff to make it
+little easier to manage
+what I'm basically the only all these
+are now is the change from a binary to
+basically a zip file that contains some
+XML which is mostly your content a lot
+of your metadata and it also contain
+finance so it contains office max rose
+it can contain flash objects JavaScript
+which bar I think hardly ever seen I
+personally have only ever seen vba
+macros and that's kind of what we're
+going to focus on but I also want to
+talk about JavaScript because stuff like
+locky has switched from longest macros
+to Josh go oh and then one important
+point is that when you have an office
+macro generally you'll get almost full
+access to the Windows host API so you
+can do things like call on two domains
+you can rewrite file to create files
+really easily with these things so we to
+so two primary tool suites that I use or
+oily tools which is a great Python
+scripting tool set and it's created by
+some really well-known people though a
+little bit later but aleppo away your
+Pepsi employee oily oily well so the
+reason they also ver the holy is that
+the binaries in the office format or
+actually called with co le files they're
+just kind of compiling but obviously
+office macros or actually Foley macros
+if you see the Terms Academy chain
+interchangeably and then all this mal
+scanner I want to mention this but I
+personally don't have a lot of success
+because it works a lot better with the
+older formats if you see a dog or gone
+xls this is a great tool to use but the
+newer xmltype files don't work as well
+with this this is really great for
+finding shell code whereas the only
+tools a script finding back to the
+macros and doing some quick analysis and
+decoding streamers for JavaScript
+analysis will go over it's really good
+to have a command-line JavaScript
+interpreter sometimes it's not afraid to
+have on the extras crap that a web
+browser brings you and if you really
+really know your JavaScript and you know
+you can quickly read through a
+javascript file and go you know you know
+what you want to come out you know what
+if you know how you want to analyze the
+violin cover different gives you that
+freedom but also at jsd hogs rjs
+unpacking are some dynamic analysis
+tools you just upload the JavaScript
+that you want you upload a file it'll go
+ahead
+track things added all exclaim the
+JavaScript those are both really to
+really cool really great dynamic
+analysis tools in JavaScript and this is
+the big one rep notes and it's actually
+not the tool itself it's an operating
+system it's based on a boot to it
+contains a lot of the tools i'm going to
+talk about so my coworker brett i
+actually are really big fans of rednecks
+here I think he used it wouldnt i do but
+it's got a little it's great the same
+guy who's written some of these oily
+tools actually created the rednecks
+distribution yeah let's get started yeah
+all the tools ola tools like i said to
+toolset for analyzing and extracting
+oily objects or binaries from the office
+documents organize my personal favorite
+is this one called Lema or olev be a
+it's great for attracting vba macros a
+toefl wetly options and that's exactly
+what this picture is i'm not going to go
+through an existing site how to utilize
+it at all
+but it'll give you this stuff straight
+into it still just print it all out onto
+the screen that means really nice you
+can tell it to print out to a mile to so
+you can go and separate all the
+different macros that the sub document
+has go analyze each individually go
+deoxys gave the exit streams it's going
+to be hard to see but some of these
+variables are actually appreciated this
+they don't really make any sense our
+authors they don't really like computer
+code so what they like to do is they
+actually like to just randomly generate
+variables and it's kind of like what
+Scott was talking about earlier where
+when you refresh the page the URL
+strings would change and the offset
+would change and in the end you get the
+same result let's sync rapidly work in
+here the other big thing that I love
+OLED before is that it gives a really
+good analysis window so you get to see
+stuff like okay it's creating an object
+or all the other maybe it's creating the
+macro maybe
+enter a name of the file also trying to
+punish some shell commander maybe it was
+a shell commands go download binary this
+was like this is a really quick really
+easy really really easy method of
+triaging what're files going to do and
+if you see some sort of shelf man you
+know okay it's probably writing to a
+file somewhere system maybe I could use
+that for an indicator compromise later
+it's also this last one is a base64
+screen basics divorce is a way to op
+these kids screaming and if you see that
+a file you pretty much immediately know
+that it's not good because there's no
+legitimate purpose for basically boring
+something in an office document at least
+I can't think of any instability how
+it's going to poke a curious has amazing
+grip Shin right this is also the side
+JavaScript analysis again why I want to
+talk about JavaScript even though the
+title was about office documents is that
+this is kind of becoming a bigger and
+bigger thing especially with maki and
+dried x where they're moving from office
+documents from docx because a lot of
+people are kind of getting catching on
+to okay we have these emails coming in
+they have document attachments let's go
+analyze those antivirus engines are
+getting really really good at analyzing
+these things statically and dynamically
+so let's go to javascript so a little
+probably a little nun thing is that
+javascript is are just
+with I know is throwing around a lot and
+that is the primary use case board but
+windows can actually execute JavaScript
+files correctly which is really really
+really bad for users because again like
+Scott said users will click on anything
+so you really need to be careful about
+what as a sailor blue team person as a
+defensive person what are these users
+getting in their inbox so so we'll go
+over again the dynamic analysis is a
+little bit of static analysis and I just
+like to mention again all of these tools
+I want to talk about are inbred mouse
+specifically I did all my testing and
+all my images and hold all those from
+remnants so if you say see you find what
+if you see you like something in here
+it's probably in that you're four months
+four minutes okay I'll just go
+javascript we analyze different like I
+said before if you really know what
+you're talking about as far as
+JavaScript goes this is great you can go
+ahead and immediately go and start
+grating things out start analyzing the
+file that way then also like to point
+out jay's beautify it what it does is
+just in Auto indents and auto space is a
+file out so that you give it some like
+big walk JavaScript ring like that's
+like a favor look the jQuery gotten in
+like the minimized version that's just
+all the space is taken out well Jake jsm
+youtube I will go ahead and put those
+faces back in and makes the file a lot
+easier to read a lot of these are to
+analyze juice detox I realized this
+pictures are dizzy so basically all it
+is it's just a web album PS Vita
+JavaScript it goes analyzes gives you
+the results back really quick really
+easy and another great thing about
+it comes with a docker the slides a
+little high but it comes with a docker
+image thank you so much and are super
+easy you run one command download that
+installs it gives you a log of what
+you're doing it's great the other thing
+j/s fun pack it's a lot like jsd talks
+there's actually a website for it that
+you can just immediately blow stuff up
+for it specifically made for security
+researchers but it does look like it's
+from the 1990s like the website doesn't
+look that pretty maybe that's what you
+like you go for it I person per FAS
+detox it will give you a lot of same
+information and then a new one one click
+learn on anti virus evasion basically
+why we always need to keep statically
+analyzing files and dynamically
+analyzing files and not relying on AV so
+we have these two different things I
+know you want to rent
+which but the same file the only thing I
+knew was handle eyes a few of the
+variables but the file has should have
+different if you have eyelashes
+basically just a unique way to identify
+a bottle even though the file does the
+same thing to analyze his files checks
+for similarities so basically the file
+stayed the execution stay the same the
+owner to change where variable names a
+little bit and that's why you shouldn't
+rely on antivirus way should rely on
+just by lashes and then lastly these are
+my references REM ducks again I have the
+slides are at a link up here to a PM
+image lickies elephant video Stevens are
+huge names in this area go just look
+them up online they're everywhere they
+did here actually analyze black energy
+the thing that took down
+sansa kosek handlers blog great blog not
+just for analyzing my Microsoft macros
+but just for any sort of info SEC stuff
+sands is a great organization and I
+swear I'm not just just wrapping them so
+classic classic yeah i got all my
+examples from twice bald mal mal WR it's
+a good repository based on the same
+called to do if you're really interested
+in dynamic analysis go there sign up
+free you can download some files from
+there and then virustotal which again
+Scott mentioned last time but it's a
+industry giant and info sharing ego runs
+up through different in the engines see
+some certain static property and stuff
+like that it's great then please lock
+would get help under my name's infosec
+under my slide through you know you just
+go go download straight from there they
+all the links in there everything your

@@ -1,0 +1,1178 @@
+and then you know maybe some not so
+quality ones I'm not sure but we are
+presenting you an excellent opportunity
+to ask them questions burning questions
+I have some questions of my own right
+here there are ok questions okay you
+don't want me to ask those but I'm gonna
+sweeten the pod I have a prize right
+here for the person in the audience who
+asks the best question in the panelists
+vintage unborn Def Con 23 shirt right
+here whoever whoever and asks the best
+question from the audience gets this
+shirt unfortunately I only have one size
+so if you're extra large you're better
+off so let's get it started
+I'm Justin Ferguson most to many of you
+know me I run oh one from Kansas City I
+new deficit cop stuff yay I'm gonna ask
+each of our panelists to give me a two
+sentence bio of themselves tell us which
+team they're on and tell us what it
+means in one sentence to be on that team
+go for it I guess I get this story
+alright my name is Erin Scantlin you
+guys have seen me a lot tonight
+Caesarion on the Twitter's if you want
+to make me feel better about myself I
+would describe myself as a 60 year old
+man in a 30 year old sis Edmonds body
+and a pretty okay guy I work on the blue
+team I actually worked out at the
+University of Missouri Columbia campus
+and
+I don't want to hear that to describe
+blue team and one man just defending the
+network and I don't think you're gonna
+get many interesting definitions on blue
+team I bet red team will be the more
+[Music]
+[Applause]
+hi I'm tribal okay Lauren Johnson filler
+on Twitter it's gonna hit me of multiple
+identities it's a problem I'm a
+self-described cat lady slash incident
+responders / senior analyst / I talked
+to see / a lot of different things
+incorporated into a computer detective
+I love sick KC and I'm also not Julie /j
+v said that tonight Norman why Jeff ugh
+even though confuse our usernames all
+the time I am on blue team with can't
+guess and blue team to me is
+Preventionist nice detection is a must
+and in my opinion log analysis is sexier
+than popping a shell from some of
+I'm analog am Mike Yelland 20 years
+inexperienced of security working
+everything for playing trains
+automobiles boats currently security
+officer and research head of research
+for rape and I locally also an adviser
+to three other msps and I help run
+b-sides so a Eric Ian also known as
+Chioda on slack Twitter and everything
+to do pen testing for an internal
+company here in KC and then what it
+means to be a red teamer you know we
+like popping shells they like to give
+I'm Brian how hard twist I guess I'm
+technically Red Team the most part I do
+happen network assessments my goal is to
+help my clients do better job at
+securing their stuff not just you know
+rubbing their face in it so well I'm
+I'm on the best team the red are
+protected out today and red teaming is
+now I really can't say anything yeah I
+just I had stuff all righty well we got
+that out of the way so let's start it
+off
+I think awesome had it leads me into a
+great question over there
+why is red team best team and why is
+North Korea best Korea I'm not answering
+that second one okay I think red team is
+the best team probably is it's a lot
+easier than being on the blue team I
+will admit that because I just have to
+find one thing that they get wrong and
+they have to make sure everything's
+right all the time
+so how about a retort from the blue team
+why is blue team best team purple team
+is best team okay so I guess I should
+have said if you've got a question if
+you want to try and win this t-shirt
+just walk up here and ask wave at me
+because I can't say anything so you got
+the purple team is a combination of red
+teamers and blue teamers working
+together to reach a common goal so it's
+better if you're not just saying hey my
+job is to look at our site all day and
+protect my client or my business and
+thereby I am the greatest person in the
+world because I'm a glorified cop it's
+also not a great thing if you come in
+and say look I know how to own you guys
+because it's really easy to see if no
+firewall someplace he's not going to say
+that either but when you're working
+together you can get their perspective
+they can get our perspective and you can
+reach better goals quicker faster I
+agree okay well in order to drive even
+more questions I just had a impromptu
+swag delivery up here so I've got some
+raspberry PI's to give away to in the
+meantime let's start with did you have
+something to say yeah I was gonna say
+blue team's the best team because when I
+work for my company I don't get anyone
+I can sleep at night okay so ask that
+question do you you favorite list so
+let's start out with this one because
+this is always fun war stories what's
+your best story about an on-the-job
+interaction with the other team and we
+have got no [&nbsp;__&nbsp;] red team and
+education for you to meet I thought all
+the students were the red team we do
+have one red team I guess I should say
+he's a new hire but is it sort of it's
+sort of a new thing for us I don't know
+I mean it's a fair question and thing I
+guess the worst thing in recent history
+I mean quick show hands even though I
+really can't [&nbsp;__&nbsp;] see any of you how
+many of you guys and to match some of
+these Cisco IOS smart install
+vulnerabilities in your environment I'm
+going to assume at least one person has
+raised their hand I think that I see two
+hands okay so the rest of you better go
+Pat you have the rest of you have Cisco
+switches [&nbsp;__&nbsp;] get on that man
+assuming you have smart install running
+anyway I think that was we recently had
+a really good purple team engagement
+with that so we used some of the
+publicly available exploits that were
+out for those switches and we tested our
+switches I mean one what's a better way
+to figure out if you're vulnerable to
+something than to try and exploit that
+vulnerability and of course we didn't do
+any damage or anything but just again
+verifying whether or not that is there
+that that was a really
+I guess you asked for a war story so I I
+didn't answer this question well at all
+but but now you guys know how our Cisco
+patching went okay how about the red
+team all right so I think one of my
+favorites is actually pretty recent we
+did an assessment and we just tore the
+[&nbsp;__&nbsp;] out of this app and when we went to
+presented the team was so excited to
+learn about how we did it that they
+actually asked us to train them on how
+to do what we did and when the blue team
+asks hey we really want to be able to
+redo this and not only ever be able to
+anybody else I do a lot of industrial
+controls as well as things that with
+wheels and I can tell you the probably
+the best blue team red team purple
+experience probably has to do with the
+fact that we have non-typical industrial
+controls there blue team is actually
+engineers or mechanical engineers
+electrical engineers people that
+facilitate things in buildings and in
+cars and whatnot so to take a standard
+purple team I'll put it that way because
+they're their blue team with red team
+attributes and how we address things to
+be able to take that have similar
+responses of train us on how to look at
+our electrical systems differently train
+us on how to look at the data pathways
+that maybe a bus system that actually
+converts UDP and back over to tcp/ip and
+how that's a flaw within our system when
+you make a train stop at 35 miles an
+hour on a track unaltered so I would say
+greatest successes and war stories is
+actually having that that connection
+between what we consider typical
+engineers and then network engineers or
+security engineers there's a huge gap
+right now with IOT industrial controls
+on ICS because the two don't talk and
+there's an eight month engagement and
+well worth it we learned a lot about
+their systems and they learned a lot of
+all righty great answers so I got nobody
+stand up here to ask questions nobody's
+got questions okay yeah get up here he's
+gonna win if no one else comes up
+exactly I buy the ball
+I say bunch of questions now okay this
+is good ask away so I was playing the
+odds and now I have defenders anyway
+based on current state of play and your
+guys's war stories do you think that the
+Red Team Blue Team distinction should
+exist or should it all be purple team
+because based on red team war stories it
+seems like what you did as red team you
+should then follow up and let those
+people know how they could remediate
+those vulnerabilities and that kind of
+thing based on blue team's story it was
+kind of red teaming your own stuff so
+should there be this you know
+black/white distinction or should it all
+be purple team going forward I'm gonna
+take that I think there needs to be a
+distinction primarily because there's a
+lot of [&nbsp;__&nbsp;] to learn even just in blue
+team you're talking log analysis
+infrastructure power analysis there's so
+many different domains that if we keep
+it separate it'll be a lot easier for
+people to get really good at things but
+having a whole security program and I
+think that's what when I talk about
+purple team I'm talking about it a whole
+security program so you have a whole
+solution where people communicate not
+just separated and having that purple
+team mindset so blue team if you guys
+have built a lab at home I know I talk
+[&nbsp;__&nbsp;] on Metasploit but launch Metasploit
+look up at the wire shot
+Wireshark logs there we go look like
+similarly if your red team figure out
+how to patch something before you work
+your way around it
+and learn how to ship locks to ELQ you
+mentioned things like security program
+and when we I mean I'll refer to slack
+and miner debate those going on the
+other night just because of one but the
+route is where does blue team end is
+that really defined within a security
+program and is it just a security team
+that's working for a corporation or is
+that actually go all the way down to our
+common call centers
+you know that have attributed access to
+be able to change passwords and and
+update things so I guess the real
+question is is I mean yes should the
+very delineation but is blue team really
+scoped is broad is Red Team Red Team has
+every tool out there that they possibly
+can use from a corporate standpoint what
+are the tools that were limit to as a
+blue team is it because I'm a sysadmin
+isn't my firewall admin or is it because
+I can change passwords and where does
+that security team actually extend out
+to or is it the three guys that sitting
+next to the NOC that can go hey I've got
+uploaded and we're good you know so I
+would really look at not necessarily
+merging the two but enhancing probably
+the scope of what a blue team is because
+quite honest the other side of the table
+they got Google's right they can go look
+for anything that was a no day or
+whatever drop guests are and they're
+successful we have to counteract that
+and do we have the right people or the
+right departments in place to help us
+gather to tell I'd like to hear the Red
+Team rebuttal to that one well well so
+I'd like to add on to that I mean so I
+think for all blue team in a way right
+like our one job is to protect whatever
+we're trying to protect and the reason
+why we have a red team or pentesting
+team what-have-you is to find those
+flaws you still got to work together you
+still have to you know collaborate and
+figure out what went wrong but I mean
+roll we're all trying to do one thing
+that's to anything secure so but there
+needs to be a difference between a red
+and a blue there always needs to be a
+red tender always needs to be a blue
+I guess I mainly I agree with what
+Lauren said that we do need the
+distinction for the purpose of training
+and expertise but I also agree with what
+Eric said in that we the ultimate
+purpose of a renting is to help the blue
+team improve right and the the benefit
+you get from drawing that line is that
+we can say hey we're gonna test your
+system without giving you any
+information and find out if you're
+really defending against everything and
+if you are highly sophisticated if your
+blue team is highly sophisticated you
+will stop most of the threats right most
+of the attacks but where the purple come
+team comes in is when you have
+organizations that aren't as
+sophisticated that they want you to walk
+alongside them and help them understand
+hey what are you sending to my network
+what should I be looking for that kind
+of thing so to answer the question in
+the end we're all working to the same
+goal so in the end no it really doesn't
+matter but as far as the specialty goes
+and the level of training that's
+required to specialize in each of them
+is it's incredible I mean even the three
+of us who are red team we have vastly
+different specialties right so you can't
+expect one person to be a special
+specialize in all those different things
+so yeah good answers two seconds well
+I'd say I think it's easier for cleats
+for this this point of view is that red
+teams and blue teams isn't just an
+ongoing stance because the ongoing
+aspect of what we do for a living
+is to
+protect things on both sides of this
+table right but if you're in a
+situational or a exercise right well go
+back to you know military or blue team
+and DM Z's and red team's all came from
+is that the specific test that you're
+doing at the time does have a blue team
+and does have a red team right to claim
+that I'm a blue team where all the time
+yeah I'm more purple to claim a red
+teamers a red team are all the time and
+probably more purple you know the
+reality is is when you're in a
+simulation or in a point to counterpoint
+situation where you're testing your
+side's I think there still needs to be
+that delineation the report afterwards
+we can call it purple for the red team
+I'm just wondering if there's a lot of
+errors better if so I was just wondering
+if there's a vulnerability that when you
+come across it you just get as giddy as
+a schoolgirl I really like seeing Java
+deserialization bullets I see a lot of
+those and it's like instant shell into
+the system and I know I'm on the inside
+like right away and it's like really
+hard to patch I know
+and so it's like very rarely will they
+be patched especially if it's running an
+older version of Apache or some some
+kind of old Tomcat but those are just
+fantastic sometimes like I'll even start
+scans out just looking for invoker
+servlets across all their domains just
+that one service up and then it's like
+favorites but I guess my favorite is
+actually like directory traversal
+vulnerabilities just just because that
+you need to be able to figure out the
+layout of the server with liberating and
+everything and being able to view files
+within a system that you know aren't
+supposed to be there it really is like
+okay I can see a lot more than they
+really wanted me to and then can lead to
+other things that lead to really
+understanding what system you're trying
+to uh text boy yeah on that one like I
+like those two because they show up as
+like info or lowes and most scans even
+though when you actually have someone to
+look at them manually sometimes there's
+like SSH keys or passwords or config
+files like they actually need to turn
+out pretty cool hey yes so as the blue
+team have you ever had any issues with
+people on the red team on the red team
+have you had issues with people on the
+blue team what kind of issues just just
+in dealing with you know I'm the red
+team where you're like presenting the
+issues do you have people with on the
+blue team that then you know try and
+discredit that yes but your job as the
+attacker is to prove without a doubt
+that what you did was achievable right
+and you should understand the business
+that you're performing the test and and
+be able to explain the business impact
+so just like he was saying if you have a
+directory traversal and you have nothing
+in it yeah it's an info but if he finds
+SSH keys that's a critical rips great so
+yeah you're gonna have those push backs
+but your job is to be able to explain
+why the risk is the risk the only issues
+I've ever had with anybody is other blue
+team people or internal IT people who
+you know when red teams are presenting
+their report usually they give me clear
+evidence or
+don't usually like look I'm smart enough
+cookie to get this I can either go get
+the logs or you can show me what you did
+and usually the fight is with internal
+IT Yong why I say you need to turn off
+SMB version one right now and they don't
+believe me coming so my favorite I guess
+this probably comes up more than I think
+it should but and sometimes it's great
+because it's happened to me before we
+like we've scheduled a pin test and like
+their security teams well aware it's
+gonna happen and it's like a month out
+or something and two weeks later we
+start getting emails from them that
+there's a web server down and asking if
+we're testing it and it seems like
+anytime anyone finds out there's a pin
+test going on every network problem this
+place has ever had it starts to become
+these pen testers Falls well no I was
+going to ask have you ever had a sloppy
+or red teamer completely break your
+internet my one thing to that is that my
+Nessus scan shouldn't shut down your
+network there's like some other issues
+if my necess scan from one host shuts
+your network down yeah he's got safe
+and I do and it still breaks okay so I
+want to extend them that a little bit
+there is a rare phenomena that if you do
+rent team long enough that you get
+blamed for legitimate breaches that
+happen while you're doing an assessment
+okay and that can be a really big
+problem because you have to go back and
+prove that you didn't touch that box at
+that time and it was actually a
+legitimate attack that happened that
+caused that server to crash so you know
+that could be a problem to document
+everything when you're testing yeah I
+think the only other thing we really see
+that is there can be the red team's
+fault is like if they're running a scan
+on something that is vulnerable like
+real bad to like sequel injection we can
+just like load up databases with junk
+that's why we try to usually get them to
+snapshot the database or make a copy or
+that's why we try to test in dev
+environments is because sometimes the
+tool is just while they're attempting
+things we're going to just fill these
+databases up with just a bunch of junk
+data but more than a personal question
+would any of you change which team you
+support and why and do any of you
+believe in what the other team stands
+for
+yes I was a blue Timur for a long time
+and I actually joined the red team to
+become a better blue Timur so eventually
+my goal is to go back to blue team and
+help build a really badass security team
+so yeah I think the grass is always
+going to be greener on the other side I
+think that if I were to you know
+tomorrow get offered a job on a red team
+I would really enjoy it for a while and
+then I think I would slowly find you
+know the things that annoy me or
+whatever just like I do here I I guess I
+don't know that I would ever really
+switch but I guess I would I will always
+want my knowledge with you I guess I
+hate to go back to this but purple team
+stuff you know making sure you you can't
+know how to defend against stuff if you
+don't know how the attackers are using
+it so there's definitely value and
+always obtaining knowledge of either red
+or blue team stuff I don't know I think
+I like blue more though to expand on
+that now because it is super saturated
+right now every kid and their
+grandmother who went to Community
+College or a four-year college or is
+coming out of high school wants to go in
+red team because they saw mr. robot and
+also because I don't like a company
+defining what my research standards are
+so today on blue team I'm probably
+strong purple I do a lot advisory for
+other blue team's truth be told red team
+to me is diagnostics and data input
+knowing how my systems can maximize and
+what their thresholds and what can
+handle and what it can't handle versus
+patches versus execution so to me they
+play hand-in-hand would I change sides
+no I'm about building things and
+operational red team it's a one time
+instance to validate what I've already
+built so I'll probably always be a blue
+team or purple by heart but red team
+gives me the information that I probably
+don't typically look at or an abstract
+view of what I felt was designed or
+architected
+we're red team is more than glamorous
+and exciting side of cybersecurity
+you know mr. robot and all that jazz and
+blue team is more than like the
+political defended monetary side when it
+comes to you like your superiors and
+getting them to take your
+recommendations for faces
+which side do you feel like is more
+influential when attempting to get
+systems actually fixed blue team is
+glamorous only powder blue tri teams but
+okay so let me ask you this how many of
+you have ever played with passive DMS
+programs just raise your hands okay so
+you're missing out some really cool [&nbsp;__&nbsp;]
+that's not portrayed as glamorous
+passive DNS is awesome it is and in the
+problem is is that you cannot encompass
+it in a fifteen minute movie montage or
+YouTube clip because it takes a lot of
+work I've got the original blue team is
+glamorous Oh getting buy-in from
+superiors I would argue that it's easy
+on both sides but it depends on who the
+person is presenting you always have to
+give evidence and and also like red team
+is often portrayed as glamorous is
+definitely
+like just reading all the manuals from
+the install logs and things like that
+that we hope the blue teams didn't
+actually read all the way through
+because they're so poor you and it's
+definitely just hours and hours of just
+banging your head against your keyboard
+getting nowhere anything for it I hope
+you really like writing reports I mean
+you guys just don't sit around with your
+hoodies with your thumb holes the
+package [&nbsp;__&nbsp;] up all day okay
+serious response to that question though
+I think it depends on the individual
+organization and the make up I guess how
+security is treated at that organization
+so speaking from higher education you
+know again generally speaking we don't
+have a red team we are we all hide it
+self identify us blue teamers so look my
+boss has to listen to me complain about
+all the [&nbsp;__&nbsp;] that's wrong in my
+environment every single [&nbsp;__&nbsp;] day if
+I can get someone external to my company
+to come in and tell how bad our [&nbsp;__&nbsp;] is
+and if they'll listen awesome often
+times you know they're they're seen as
+extra professional opinion and they put
+more infant impossibly that's because of
+how glamorous it is portray you know
+they possibly because they just see us
+day in and day I don't know I mean it's
+like what any like sport like offense is
+always like more glamorous than the
+defenders because they just don't get
+the big plays and like no one's writing
+blog posts about how their firewall
+blocked this one attack
+it was like a long attack chain that
+sounds all awesome just because like
+they don't the winds like a totally
+different things so I think that's just
+it's really hard to portrays exciting
+Aria so for this is primarily for
+boomers I think I know the answer from
+that previous one what is your favorite
+source of data if you could pick one I
+know in the end to use all but what's
+your favorite DNS underutilized
+underutilized by blue team over utilized
+by a red team and there's a lot of
+serious threats out there especially if
+you're not implementing DMS over TLS
+overlooked protocol in my opinion I
+really like open file shares inside
+networks it's amazing what people throw
+on those if I had to pick one
+information source I would say network
+tap of my network on the edge because
+then if nothing else I can at least see
+everything that's going on whether or
+not I can actually do anything about it
+yeah or or translate that information
+again I don't know it is hypothetical
+do I don't we not get Google anymore you
+know if I had to pick one thing it would
+be that the 100% visibility at the edge
+and ideally on the inside too but I'll
+it's kind of an extension on what Ryan
+said but printers printers are the one
+thing that are never locked down
+ever and you find a lots of interesting
+stuff on them
+now with the tap in the full packet you
+can turn on check out my a-v you can
+take out my log so you can take out all
+the things that I bought and put in and
+strapped onto my network to say I'm
+secure you can't change the packet and
+if I identify what you're doing with the
+packet source destination and your
+payload I will counter-attack all right
+so red team or blue team you both have
+to interact with people that you both
+have to you know get them to engage with
+you what's the what's the best way that
+you found to have people pay attention
+to what your your talent purple team you
+know what you're talking about
+and don't be s because people can spot
+it from a mile away you say one thing
+that's stupid wrong and they stop
+listening forever in addition to that I
+have a philosophy I call it the D bad
+philosophy D bad stands for don't be a
+dick it turns out if you're not
+addictive people they tend to respect
+you more this is an excellent piece of
+advice in dealing with anyone red blue
+and I think like recently William trying
+this too is like face-to-face
+communication I think a lot of times
+there is some like just because you guys
+talk to each other over the phone like
+the red team and the blue team talk we
+like scope something out like they're
+more likely to just like escalate things
+that normally wouldn't if you had just
+met them and talked with them like
+normal people in a room and I really
+think thanks to face helps out a lot
+situations I have to agree with that
+core communications makes it a lot
+easier if you try doing text messages
+emails or flat reports you're gonna get
+to you're getting a Red Team Blue team
+which is not what you want in that
+meeting reality is is the other parts of
+your red teamer I don't care how you pop
+shells if anything that's going to turn
+you off you come to with a bunch of FUD
+it's going to turn me off I want to hear
+how we're gonna solve this together you
+providing a report and my team being
+able to counter or be able to show where
+we think you're wrong or maybe we have a
+second avenue of remediation
+this shouldn't be adversarial if you're
+being a consultant here during red team
+on the same side and if your blue team
+on have an open mind guess what your
+[&nbsp;__&nbsp;] ain't that perfect right you know I
+mean somebody's found a crack have an
+open mind yeah I would agree I want to
+say also that I mean offer advice right
+like you want to like help them and
+actually have a discussion like rather
+than you presenting and being the one
+person speaking the whole time like let
+it be an open dialogue let it actually
+be a discussion as to what can we do to
+fix this and the one thing gonna add is
+we really try to avoid using
+inflammatory language when you're trying
+to describe something so don't say you
+your team [&nbsp;__&nbsp;] this up you know and
+that's why we were able to get in or
+they're a bunch of idiots or something
+like that you know they just explain
+what the problem is
+and explain that you're trying to help
+improve things rather than trying to put
+the blame on anybody good answers so we
+got four people in line I'm going to cut
+it off after those four people so that
+we're not just running forever let's get
+some more questions it's probably one
+team team than red team but what is your
+favorite story of where you brought some
+evidence to managers and told them this
+was going to happen they blew it off and
+have a lot of examples I'm trying to
+think of one that won't get me fired for
+sharing
+yeah this is the problem with that
+question well well so for my de red team
+perspective right I mean like let's say
+something gets released on Friday and
+it's some crazy CVS that's ten score and
+you try to presented to the business
+like hey you know this is pretty bad we
+should fix this and I kinda well
+something exploded yet you mean we might
+have some intelligence that is being
+exploited in the wild or whatever in the
+new weeks go by view before getting all
+set to pop Equifax let me tell you a
+little story about a small company
+called
+Boeing I have some very contrary there's
+some very controversial opinions on what
+happened with Boeing primarily because
+I've seen it happen in many of my
+clients with repeat pentest
+over the last year and a half obviously
+machine but here's the deal the patch
+has been out for a year plus now it may
+be VC world so there's no excuse because
+you can get that on your phone attach
+everything you can and honestly
+defense-in-depth is an old concept at
+this point if you're not defending your
+networks at the perimeter or segmenting
+your networks you need to do that and
+obviously Boeing wasn't as bad as it
+could be it didn't hit their corporate
+network it just hit their manufacturing
+network but the same kind of thing has
+happened with several my clients with
+repeat pen tests over the years we say
+patch eternal blue okay I patched my VIP
+databases we're good
+oh wait Jim from sales just got back
+from Beijing for eight months guess who
+didn't get a patch because of the Great
+Firewall of China guess who just got
+access to your corporate network and
+guess who has no av install because you
+know he was in
+so small words of advice based on your
+experience as a crew red team and blue
+team and all of these different entities
+I should work that what are the things
+that should be that you see as a common
+problem at the organization's if you've
+worked at I should that whether your
+blue team look at log analysis malware
+or pen testing when you're looking at
+bulbar these that those that work in a
+song environment or work in for me3
+management cetera should look at proving
+to make any more secure my biggest thing
+that I see just like from the attackers
+perspective is these companies go out
+and spend like crazy amounts of money on
+products like a ton of money and they've
+got two people that work on their
+security team but one of those products
+could hired like four guys for multiple
+years at least and they'd be a lot
+better off than having these poorly
+barely implemented million dollar
+products that they bought so just a lack
+of like understanding that you need
+people to even look at any of these
+things you bought and then to be able to
+implement them I'd like to see people
+well I guess I'm gonna be good because
+you'd have more people working and yeah
+I would say along those same lines
+communication is probably the biggest
+thing that that could be worked on
+depending on how large your organization
+is a lot of the components that in a
+smaller company a security team might be
+in charge of those duties might be more
+distributed so I get a lot of funny
+looks from vendors whenever I tell them
+that our networking team is the one who
+is in charge of the firewall I know
+[Music]
+but if if you can communicate with those
+other groups that because let's be real
+I mean there's there's security aspects
+to every job if if you're dealing with
+computers period whether you want to
+admit it or well none of you guys
+probably wouldn't admit it but whether
+your system admins want to admit it or
+not security is something they should be
+considering as well so the larger the
+organization the more teams need to work
+on communication with one another and
+and I guess a Korell area that would be
+documentation as well because you don't
+have to talk to my ass if you'll just
+write it down and I can read it that's
+fine to draw me a picture that'd be
+great I agree actually that both
+probably when I get pulled in to consult
+it's one of those two things one either
+we have a ton of shelfware
+and we spent $300,000 on the swamp
+deployment for our one man guy that is
+Active Directory deployment the network
+admin and the help desk and he's gonna
+collect all the logs and make sure that
+we're not getting protected or getting
+attacked and then the other side of it
+is is the it always frustrates me when I
+come into an organization and we've got
+Network team server team app devs help
+desk call center DBAs and they're all in
+these silos and security is this like
+weird thing is still over here of
+elitist alright and and we look down on
+them or we're not included in the
+conversations reality is I think we've
+reached maturity or lose out hope our
+industry's reaching maturity the
+security is a foundation of everything
+we do if I deploy it to a server
+I probably add it in the most secure way
+if I deploy a switch I do it the days of
+slinging boxes and going the vendor said
+I was good and have a nice day I think
+I also just want to say I've never heard
+the term shelfware before it's [&nbsp;__&nbsp;]
+awesome I'm gonna use that I have three
+points really quick I'll make it super
+fast
+number one is internal IT fighting
+against security or vice versa that's
+got to stop
+I had one client who said that their
+internal IT refused to put a span on so
+that we could monitor their network at
+it definitely wasn't that though and
+guess what they got breached 14 days
+later no record of anything his logs
+weren't aggregating number two is blue
+team burnout this is a topic I'm very
+passionate about and I don't have an
+answer to solve it but number three kind
+of goes into scope and duty creep we
+have a lot of people doing a lot more
+than they should be
+for whatever reason for a lot less pay a
+lot less time off and a lot less clarity
+so if you're in management one of the
+best things you can do especially for
+blue team people I don't know about red
+team
+cuz I don't do that is defined clearly
+what your analysts are doing and limit
+what projects they're getting pulled in
+on because I've been on HIPAA meetings I
+have nothing to do with HIPAA and that's
+six hours of my life the last month that
+I lost so as a strong believer in
+weaponizing your users didn't even
+training as well as bug bounties and
+some bug hunters saying they're earning
+more money doing but of bounties and
+actually being on a team or going you
+know white hat do you feel these bug
+bounties which can be great for a
+company threatened ready team from
+actually being needed no the thing is
+we're the bug bounties the people who
+make all right
+so the people who make all the money off
+the ponies are the people who go on
+showdown and search for the same [&nbsp;__&nbsp;]
+vulnerability and they go and pop them
+and they report them and they're looking
+for scraps right when you hire an expert
+Red Team they're using their creativity
+primarily right we use a lot of the same
+tools and yeah we'll use that
+information make sure that you don't
+have anything the lowest hanging fruit
+out on showed in it right but in the end
+that is not what you're paying for
+you're paying for somebody to use their
+brain look at manually look at all of
+your servers trying to figure out if
+there's a vulnerability there that
+nobody ever thought about right so in a
+lot of the cases we're doing custom
+exploits he's talking about
+serialization vulnerabilities you know
+in those cases where it's a it's a
+custom path that you had to figure out
+the protocol then even explain it
+right so no I don't think bug brownies
+are yeah and also we haven't even talked
+about the inside yet either right I mean
+bug bounties are just external they're
+just whatever is on the internet but I
+mean you still need a red team or a pen
+testing team to start doing the internal
+[Applause]
+I'd like to comment and that is not the
+anger and I feel like I've been unjustly
+sorry I feel cheated
+should I feel like Cory wouldn't stand
+for this really quick on kind of what
+Archer said even though I'm blue team
+this kind of goes in line with the red
+cell emulation I don't know how many of
+you saw miters new Caldera tool Grimm's
+crossbow tool which is like a month
+month long pen test that's automated and
+you can add modules and yeah no one's
+gonna know and hack your network like a
+person is going to and no one's going to
+be able to roll with the punches like
+person is a program is a program and
+nothing will ever get rid of that bug
+bounty Society anything like that yeah I
+guess I feel a little bit different
+right
+I do think like bug bounties somewhat
+worried me and that they can like
+crowdsource a pin test essentially and
+like I get one week to do that and the
+company has to pay me X amount but with
+bug bounties they can ask a hundred
+people to do it and they only pay them
+for results so like to me I get that how
+it can be a little bit scary like oh man
+am I out of a job anymore but then you
+think about all the companies that are
+not going to be willing to just let
+anyone off the street into their
+networks a lot of bug bounties are
+unauthenticated type testing and so a
+lot of companies also want to know what
+authenticated type testing is and the
+bug bounties have very specific scopes
+for a reason it's because they don't
+want just random people coming across
+the wrong stuff or at least inviting
+them there and so I think like the whole
+red team and pin testing is going to be
+around just for all those companies that
+are not going to be willing to let
+anybody do it I mean obviously any
+company at all times is letting anyone
+hack them or they're trying to prevent
+that
+yeah I guess I see that the privacy side
+so well I'm gonna throw something in
+here because I know I'm supposed to be
+an impartial third party or not but if
+something else that I just ran into with
+a client of mine was bug bounties are no
+replacement for a pen test saw secure
+software security assessment where they
+have access to code they have access to
+internal infrastructure things like that
+I had a client that was incredibly proud
+of themselves for implementing a bug
+bounty program but they stopped doing it
+in or they stopped doing internal pin
+tests in favor of bug bounties and
+there's no comparison between the two so
+I think bug bounties have created and
+it's our origin I think I had a purpose
+but reality is now as an excuse to have
+crap code right if I have crap code
+because we don't hear about no days and
+privatised buttbounce until it's the CIA
+it's in the news and we attack China
+with it right what we hear about it the
+fodder that's out there to say yeah I've
+got crap code in my application I'll pay
+10 grand to fix my code right and great
+you can crowdsource it too you know our
+standard or our acceptance for products
+to be delivered in a fashion that's
+acceptable insecure has lowered and bug
+bounties was a countermeasure for that
+are there security parts in there that
+we can address yeah but the majority of
+the fodder that's being released just
+comes down to crap code and it was
+easier to pay off a bug bounty than it
+was to hey suck it pay someone to
+[Applause]
+all right I got it I got one last
+question yeah yeah you shouldn't you
+guys should definitely take the shot
+will still never forget being at Def Con
+and watching kids go down the elevator
+yelling shot shot shot-shot-shot it's
+melted scope I know it is there's always
+shots alright so my question if I cannot
+trigger the speaker you almost have to
+be onstage is about the the compensating
+controls so one of the effects after a
+red team and blue team exercises
+generally that the company the the group
+that you have orchestrated that I
+measure with hopefully they have the
+blue team on on their side and you red
+team them or it was a whole coordinated
+education effort well they've realized
+they have failures they realize they
+have issues that need fixing sometimes
+you can't fix it dontoh also means a lot
+of times so what are your current
+concepts from red team and blue team
+about compensating controls how we live
+and breathe by them how we leave them in
+place and maybe forget about them so
+I'll sweep from a blue team standpoint
+there's plenty of ICS right now that
+medical devices of utilities doesn't
+matter we'll to say IOT that still runs
+on XP and we can't patch the [&nbsp;__&nbsp;] and we
+can't fix it but you can do a risk
+assessment and it's identify the threats
+that address it so if you have to have
+an XP system that you can't patch you
+can't fix and it holds the keys to the
+kingdom
+you can still drop it in a zone take it
+off the internet minimize exposure limit
+who can log into what can follow general
+best practices as to user access and
+ability to vlog and respond to anything
+that touches that ungodly XP system
+sitting in the corner control
+all eastern seaboard utilities right but
+the point is is you can take controls
+you don't still throw your arms up right
+and just because you have to have a
+legacy system doesn't mean you stop
+there either and unfortunately I see a
+lot of that there like it's ice cream
+you can do another there's a lot of
+we see those boxes and we find da's
+logged into it and it's just like what
+where there was no need for that why did
+you do that and it's just yeah I mean
+there's like there's so many different
+like you don't have to fix that specific
+home but you can segment it you can take
+it off the domain even and have an or
+set up a separate domain that doesn't
+have the trust going back up to your
+root forest and I just think there's
+always a compensating control and it's
+better to like at least identify where
+those risks are so you know what you
+need to be looking at you can set up
+better logging and at least know where
+your assets are that are potentially bad
+and you can't fix and do something about
+them besides fixing them at least get
+them off your normal networks one of the
+aspects about this question is is
+truthfully how do you track it so you
+know be a meses or koalas that you have
+the vulnerability but how do you
+actually age that that system that
+eventually hopefully you get rid of and
+how do you make sure that management is
+all right the answer thank you thank you
+kill Jim higher education is a lot of
+compromising for better for worse so in
+other words it's the Access database
+essentially when I ignore that
+essentially if somebody high in a high
+up enough on the food chain complains
+loud enough policy is going to be
+circumvented for that individual now
+that being said and this might be an
+unpopular opinion as well I don't think
+that there are many situations where
+even when an exception has to be made
+that you necessarily have to have an
+insecure solution maybe less than ideal
+certainly but there's I mean there's no
+one way to skin a cat
+there's at least a dozen ways to do
+almost anything in our field right now
+really part of implementing compensating
+controls is figuring out what the end
+user needs to do and how they can do it
+and in working with them on that I don't
+know what compensating controls means to
+be honest it's it's an exception but I
+will say the asset asset management is
+your best friend
+before you go put carbon black on every
+single endpoint you have in your
+environment because they do have an XP
+agent wink-wink nudge-nudge
+purchasers make sure you know what the
+[&nbsp;__&nbsp;] is on your network if you don't
+know what you have what the it's an
+unknown unknown you're screwed the more
+visibility you have the better you work
+with internal IT the better you're gonna
+be okay I'm gonna go ahead and cut this
+off because I mean these have been great
+answer and we're gonna we're running
+late on time so I
+one more question that I want to want a
+quick answer from each of you on so
+taking it is not the question you're
+thinking of are sorry taking the common
+answers of persistence and curiosity off
+the table for a moment what one trained
+skill or nugget of information do you
+view is the most important for a future
+red or blue team member read windows
+sysinternals before you do anything hike
+creativity and if I only get to choose
+determination don't ya try murder we've
+said persistence into two other ways so
+I'm gonna say self-respect and the
+reason I'm gonna say that is so you
+brought out the burn out a little bit
+earlier burn out it is super real
+I know particularly on the blue side
+maybe on the red team as well I would
+imagine it habits but burnout burnout is
+really serious make sure that you aren't
+bending over backwards for your employer
+every day of the week you should know
+you should be taking breaks you need to
+be sleeping each night yes I sleep take
+take care of yourself okay if you don't
+take care of yourself you're gonna
+you're gonna [&nbsp;__&nbsp;] up with everything you
+do job or not fungi find out
+that's a great place to leave this
+conversation you take care of yourself
+Brian Eric Jim my oh fail Lauren and

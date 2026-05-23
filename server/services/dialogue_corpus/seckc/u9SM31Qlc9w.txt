@@ -1,0 +1,405 @@
+welcome with debt security
+can you hear me all right hi Jake hello
+so I'm a partner slash principal
+consultant at uh depth security we do
+excellent work regarding penetration
+tests vulnerability tests and web
+occupation security assessments as well
+as a few select products that we know
+work because we use them ourselves
+um you're not using this you probably
+should talk to us Shameless plug in
+today I want to talk about a tool that
+probably anyone that does pen test or
+even Network vulnerability assessments
+should be using if not using uh some
+similar tool there's a lot of tools that
+do DNS reconnaissance so show hands who
+uses Calia just curious one two three
+seriously
+how many of you would consider
+yourselves one who does penetration
+assessments or vulnerability assessments
+on the either Network or web app side a
+few you okay cool so um there's a lot of
+uh a lot of DNS reconnaissance tools but
+it literally is one of the first places
+you start when you're given a Target
+sometimes you get a range of network
+addresses and they provide that to you
+sometimes it's zero knowledge right and
+they say you know the company name
+that's it go find us right so one of the
+first things you're going to want to do
+is go go okay I know your company
+name.com that's obvious so let's go find
+out what networks are under your control
+uh whether in-house or in the cloud or
+host a third party or whatever right
+um Cali comes with a bunch of them DNS
+map DNS Recon there's meta split modules
+that'll do it and uh what I'm going to
+talk about today is a tool called Fierce
+it's written by a guy named arsenake
+arsenic kind of got pseudo-famous riding
+the xss cheat sheet which you can use to
+evade filters for injecting script and
+HTML into web applications
+uh Fierce is is cool because it does
+something the others I don't believe do
+back in the day when people hosted their
+own DNS zones most of the time and uh
+thought they knew how to configure them
+you could pretty much bet that zone
+transfer would be enabled On Any Given
+domain which meant that you could
+literally go into NS look up or use dig
+and then just dump the zone and it gives
+you everything from WWW which you could
+guess to mail 07946 right you you're
+going to get everything and those are
+useful then
+uh to go along with your further Port
+scans when we're building scans Etc
+nowadays you see that a lot less I still
+see Zone transfer enabled probably one
+to five percent of the time
+but you're kind of left with a couple
+techniques you can do reverse lookup
+which means I want to know what names
+are registered for this IP but that's
+pretty rare too A lot of people don't
+post reverse zones for their Network
+space and probably for good reason right
+the less information you can put out
+there public the better the other main
+method is dictionary attack right so
+I've got list of common
+host names www mail setup Def One Dev 99
+whatever right
+um and a lot of these tools will take a
+dictionary and run it against a given
+Zone and show you which one's matched
+and what their IP addresses were
+um Fierce does that as well as every
+time it defines one uh so it finds www
+it takes that IP address goes up a
+certain number of ips and down certain
+number of ips doing reverse lookups
+which is cool because in the odd case
+that they do have reverse zones
+configured you you might get another
+several names so it's kind of cool
+so this was like a last minute five
+minute talk so I don't know how long
+it'll go but that's basically what I was
+going to talk about
+um has a lot of options that's showing
+up pretty good there yeah all right cool
+um so I'm gonna go over everyone but so
+connect is actually when you find a host
+name go out there and connect on on 80
+and 443 pull back the web server headers
+find out if it's ingenix or iis50 or
+Apache to whatever that's kind of useful
+but it's slow and you probably do better
+served using an M map script for that to
+default in that scripts will do that
+delay will give you a given amount of
+delays between lookups we're talking
+about running a dictionary attack and a
+dictionary attack means mass volume
+right the default dictionary with Fierce
+has about 2 000 entries in it and
+depending on how many threads you give
+it that's pretty it can be pretty brutal
+so there's a delay you know you can
+insert between lookups that's going to
+slow you down
+uh Dash DNS is literally the domain name
+you want to look up company name.com
+DNS file you can provide a list of DNS
+servers sometimes when you're internal
+may not be you know parent what DNS
+server is hosting a domain or you may
+want to just force an override on what
+it would normally figure out what the
+operative DNS server is for a given
+domain def DNS server is a way to
+specify domain servers that are
+authoritative for a given Zone
+um
+full output will dump everything it
+connects uh to a web server with every
+header not just the useful ones
+um
+threads uh obvious right you get one
+thread is single threaded under threads
+is 100 threaded so
+word list by default it'll use its own
+you can give give it a custom word
+that's so
+um does anyone have a domain they want
+me to run this on because I'm just
+does anyone have uh domain with more
+healthcare.com
+so I probably shouldn't asked that
+question.com
+so it has to match the dictionary this
+will tempt a Zone transfer and then
+it'll attempt to dictionary attack and
+then every single match on the
+dictionary attack it'll go up five and
+down five IPS looking for a reverse
+match
+so we're gonna we're gonna trap
+2280 is the dictionary length
+www's obvious
+ly
+localhost we see that a lot you know
+that's not going to help me but
+so that's everything there was that it
+is
+I assume maybe potentially interested
+missing yeah those are pretty good
+that's pretty good though right I mean
+it's a tool I didn't even give it a
+custom dictionary just idiot proof right
+so that's why I like it
+um it uh
+pulls down hosts that I put in a host
+file and I do some more in-depth but
+still pretty cursory assessment on like
+Nick too right
+um a lot of people think
+what if I care about names right once I
+go peeing
+www.companyame.com I get their slash 24
+on the internet and I stop there and I
+go attack that slash 24. well uh what
+about you know web servers and listen to
+host headers so you have uh you know one
+web server listening on one IP but it's
+got seven names it's listening to it if
+you hit it with its IP you may get
+anything from a forbidden response to a
+404 to some other app and if you're
+doing pen testing you realize the day of
+the buffer overflow exploitable service
+is just sitting there are less and less
+the way we get mileage in pen tests is
+web apps and that's anything from a
+custom web app a SQL injection that has
+uh XP command shell enabled on Microsoft
+SQL Server that I compromise or pivot to
+a vulnerable JBoss instance that the
+actual management server for the app for
+JBoss is World War Tomcat or cold fusion
+right tons of Bones and all these things
+from default cred
+misconfigured default configurations to
+just flat out explicit configuration
+errors right web apps are where we find
+posts to Pivot from and attack internal
+Networks it just is the way it is
+um so those names matter I don't you
+know I worry about IPS but I want to
+know names because when it's in the case
+of host headers you're going to miss the
+whole world potentially exploitable code
+just because you stopped the IP address
+right
+um
+I don't know I got like 10 more minutes
+or how much time do I have because I
+could just keep going let's let the grab
+keep going
+all right let's do google.com let's do
+barleys
+no nothing
+so we got admin apps alerts ads
+academic what academic code
+admin and AP calendar catalog D
+developers xur directory DNS docs code
+domains downloads Earth Enterprise
+Europe feeds games et cetera et cetera
+Etc
+right on the wireless network and um
+I'll tell you maybe we have uh a biased
+sample on clients but I've not had
+anyone call me and say you're just
+killing our DNS servers so it's a it's a
+I don't know why I mean it's a huge
+indicator of attack when you have one IP
+performing a literal dictionary
+alphabetic
+attemption
+your most local DNS surveys
+yeah whatever whatever my DNS server is
+I don't think it goes out I'll look at
+the Pearl code but I think it actually
+uses the stats DNS server matching on my
+first DNS though because you said it
+goes up five and down to five yeah so
+it'll okay let's say it finds um
+www.wansack.com
+1.1.1.1 several several responses back
+to that id address yeah
+for each IP then it goes reverse reverse
+reverse reverse reverse reverse okay and
+if it you know if it finds something
+then good I don't know how it doesn't
+really specify when it's a reverse or
+when it's a forward so is that a
+configurable option not that I know of
+them that'd be cool though
+um but yeah so
+barleys.com I'm guessing is that even a
+valid emergency
+yeah you might want to check that out
+houses
+the other thing this is great at is uh
+company says here's my slash 22.
+um go ahead and attack it and uh I say
+is that all the IP addresses you have
+yeah well they don't know about the
+Squarespace web app and the uh the
+WordPress instance that's their blog
+side on Rackspace that maybe they don't
+think it matters if I compromise it but
+I do compromise it I dump the hashes
+crack them and then I reuse them on
+Citrix or owa or you know whatever sslvp
+that stuff matters
+sorry
+Gene
+comparison
+so if you run this internally I guess an
+internal DNS server you have a different
+approach I'll tell you normally we find
+Zone transfer enabled a hell of a lot
+more internally right because in some
+versions of Windows it was enabled by
+default and it's literally a check box
+people can check and people get busy
+troubleshooting some connectivity
+problem they check it in random pair you
+know trial and error and it stays on
+past that
+it's still useful internally even if it
+is disabled and it's the same technique
+but I will say yeah Zone transfer you
+just dump with the metaspoid module use
+that in your database and you can
+connect to those things with a port
+yes
+here
+it was just a standard Zone template
+because we're at that semantic thing man
+where's the jurists can we do this
+anyway
+mpb's not listening 80 and 443 are right
+so uh just like you said someone said
+it's a standard uh posted setup system
+where it's throw some names out there
+and whether or not you run FTP it's your
+business
+um
+yeah oh top Force so I've got lots of
+the in-map top Force project anyone
+familiar with that yeah so what Theodore
+is that how you pronounce that guy's
+name uh the end map genius he uh he set
+up a whole internet scan to rescanned uh
+all 32 bits of ipv4 space which is a lot
+of four billion addresses and he looked
+for uh reports and he categorized in a
+database which were the most common
+right and obviously top ports so uh what
+there's some some awesome stats though
+some staggering statistics where if you
+give it 100 top ports you're actually
+getting 92 or something like that 92
+percent of the entire Internet it's
+either a hundred or a thousand yeah now
+if you if you if you're normally
+scanning you want thorough coverage
+you're doing Dash p
+1-65535 right all 16 bits of four space
+uh you know what that's one thing I've
+been searching for if anyone knows that
+I'm sure there are the guy wants them
+I'm sure he wants the info out there but
+I'd like to use that in other tools
+obviously you can scan can you scan scan
+me that and that's over with top sports
+and return all the way yeah or I could
+fire up like anyone use egress Buster uh
+once you once you've bust into uh
+something with a limited shell you want
+to find out what comes out yeah and it's
+just a generic python uh client server
+you can fire it yeah you could do that
+and hit it and find out
+um so uh you know while I'm on the uh
+the subject of things that aren't fears
+um another cool initial step to doing
+the pen test when you when you have a
+bunch of address space and you just want
+results because you're on time limit or
+whatever or because you're impatient you
+want instant gratification like I do you
+uh anyone use nicktube yeah all right so
+nick2 is a real simple web application
+they call it a scanner it's really not
+parsing the web app for uh forms and
+pages and parameters and fuzzing each
+one like a true web scanner is it's got
+a list of a few thousand URLs and it
+checks that it knows it defines this
+slash manager that's you know Tomcat or
+slash cf- IDE that's cool Fusion right
+and it's just a real quick way of
+finding out is there some low paying
+Improvement on this server and it is
+going to get you anywhere if you feed it
+one IP but if you feed it a thousand
+live addresses with web services
+listening one of those is going to be
+problematic right and it's just a great
+way of weeding out a lot of hosts and
+services and finding that one thing you
+want to pick at right and get your pivot
+post uh so it takes in that graphical
+output which is really handy so I can
+literally uh what are we 10 182 192 here
+10 182 182 24. so we'll do uh
+look for 80 only list
+oops
+2.192 192.00
+T5 timing is five that's the fastest
+time you can get all the teams
+um only open ports
+Dash OG's output grabbable
+so this looks like this will scan all
+250 four host addresses for Port 80 only
+list the open ones and feed it over to
+Nicktoons uh nick2 will then go do its
+thing on each one and it's slow but I
+just let it run so nick2 here we go
+right host ip80 here's the server httpd
+dot one is obviously our Gateway
+um
+all that's going
+I get impatient
+that'll be the register and it's a link
+says
+I think it's happening I've been blank
+okay
+you guys are picky
+two D's 1B whatever it takes yeah
+all right
+yes
+all right next up is uh Nate from uh
+depth I'm not sure the talk that's him
+coming

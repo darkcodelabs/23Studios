@@ -1,0 +1,484 @@
+awesome so please give a warm
+[Applause]
+welcome is this working yes hi my name
+is Emily brino really excited to be here
+in front of you guys tonight very
+passionate about information security
+very passionate about getting women
+involved within information security
+yeah I am not a public speaker but I'm
+excited I actually am an account manager
+with tech systems I work in our
+information security practice who is
+familiar with tech systems here oh a lot
+of you okay I love it so for those of
+you who are not familiar with tech
+systems we have been in the Kansas City
+area for 25 years we are in Professional
+Services IT services company
+specializing in talent management
+Professional Services and
+Staffing so the demand for Information
+Security Professionals has increased
+everyone here knows this in some way
+you're involved with with security we've
+adapted with the market at Tech Systems
+I represent our information security
+practice we have a nationwide reach I
+focus here in the Kansas City
+area majority of my time I'm talking to
+Information Security Consultants
+managers and sea level Executives some
+of you in this room I've blown up your
+phones I've blown up your LinkedIn try
+to get a hold of you and that's what the
+majority of my day really is our
+discussion is surround ing the state of
+security Nationwide and in Kansas
+City a lot of our clients they're
+looking for the top talent managers here
+I'm sure you can attest to this you're
+not looking for the first available
+consultant you're looking for the best
+available consultant it's very difficult
+to find in a market like this I don't
+know if you know but 80% of jobs go
+unfilled 80% of information security
+jobs go unfilled that's a staggering
+statistic and it should be terrifying to
+everyone in this room whether or not
+you're a consumer or if you are involved
+in the hiring process I'm sure some of
+you managers don't want to be a part of
+an organization where 80% of your jobs
+are going unfilled that's very
+scary um so a lot of people would like
+to know what the market is looking like
+I'm getting questions from Consultants
+who want to break in to the information
+security Market people who are already
+in there how do they make their jobs or
+careers or managers a huge question I'm
+getting is how do you attract and retain
+the top talent the answer to those
+questions really lie when you take a
+deep dive into what the market is
+looking
+like so over the last 5 years the demand
+for these professionals has increased
+three and a half times faster than any
+job in it that's huge it's increased 12
+times more than any other job so this is
+good news for those of you who are in
+the market right now if you're looking
+for aob job there's absolutely
+opportunity it's not really good news
+for managers and directors because you
+want to retain the people that you have
+on staff I'm going to address retention
+later but right now I want to focus on
+what the mark Market is looking like for
+employees and for
+employers so on a national landscape
+we're looking at 177,000
+professionals that's including those of
+you in this room the 177,000
+professionals number it in comp is
+people who are working people who are
+looking for jobs if you can believe it
+there's actually
+223,000 job openings that is insane that
+is a huge gap in Talent there's a huge
+void right there so some companies are
+making steps to fix it but we're we're
+not doing enough so for employers this
+increase in demand also leads to the
+retention issues as well in Kansas City
+the market that we're living in those
+statistics mirror what we're looking at
+on a national landscape so we did just a
+quick search on Career Builder for a
+security analysts so keep in mind that
+these numbers are for security analyst
+titles only this isn't for security
+Engineers this isn't for risk and
+compliance professionals this is only
+for security analysts there's 1,300 job
+openings there is only 160 active
+candidates on Career Builder so we know
+from our research that only 16% of
+security people use job boards to get
+their next role but these numbers
+absolutely mirror the national
+landscape a lot of these Consultants
+they're living in Kansas City and
+Overland Park we did some research on
+where the hot bed of talent is and those
+are the two cities that hold the most
+people you're seeing the least amount of
+consultants in the lewood area Raymore
+Blue Springs my hometown Oly Summit not
+really representing very strong in the
+information security
+professionals a lot of you who are
+hiring are looking for people with 2 to
+3 years of experience or 6 to 10 years
+of experience there's only 7% of
+available Consultants that have 2 to 3
+years of experience and these turn the
+microphone off these people actually
+take an average of nine months to find
+so it's a pretty difficult find if
+you're looking for someone who has this
+2 to three years of experience and from
+my personal experience I think that this
+mirrors what we're seeing a lot of
+consultant a lot of clients rather are
+asking for people with more experience
+because they're building out their
+environments so in a few years I think
+we're going to see the trend move
+towards looking for people with less
+experience as these environments get
+stood up and get more
+mature a lot of people in Kansas City
+that are active professionals have that
+6 to 10 years of
+experience something that I found
+interesting was when we were looking at
+the percentage of people who wanted to
+relocate only 9% of people in Kansas
+City are willing to relocate to other
+markets I'd be interested to know the
+why behind that I think sometimes that
+it's because of barbeq and the Royals
+but that's just because I'm very biased
+towards those two
+things so I want to touch on a couple of
+Statistics regarding ladies in
+information
+security
+yes ear I mentioned that there's only
+17,000 active Professionals of that
+177,000 people only 10 to 15% are women
+it's crazy so you're making a very small
+Market 177,000 of all the jobs that are
+out there and you're making it even
+smaller which is women in
+security if you're an employer here a
+good takeaway from this discussion would
+be what are you doing to get more women
+involved in your
+organization I know for tech systems we
+have a women's ERG very involved in the
+community we get involved in other
+women's ergs as well and we're another
+thing you can do to encourage women to
+get involved in security is exactly what
+you're doing right now which is
+attending groups like this ladies night
+I'm sure Britney from AMC is going to
+mention this but we do have women in
+security Kansas City which is kicking
+that so there's a huge push to get women
+involved but as old always we could
+always be doing
+more so I just wanted to give you a
+little bit of snapshot of what the
+landscape is looking like nationally and
+then on the Kansas City level because
+that's what's most important to the
+majority of us sitting in this room but
+I do want to address those of you who
+are looking to break into the security
+field it's difficult a lot of people
+that I talk to are graduating with
+degrees and they want to know what can I
+do to get hired what can I do to get
+hired and I feel your pain so we pulled
+some data from Gartner some statistics
+from them and what they're looking to
+happen in the next 3 years is that
+there's going to be a huge push for
+people who have a well-rounded computer
+science background and I'm not saying
+you don't want to specialize in a field
+of security I think that's very
+important to be a subject matter expert
+and own what you do but I think in the
+beginning you need to have a strong
+background we're looking for those topic
+Specialists but in the next 3 years the
+demand is going to grow for people who
+are technically saby very well-rounded
+it will really increase your
+marketability is anyone familiar with
+John Stewart over at Cisco do anyone
+know that is he is the at John Stewart
+at
+Cisco yes no so he had a couple of
+things to say about the Gap in talent
+that this is not going to be filled
+overnight it absolutely won't it might
+not even be filled in years but we need
+to take steps towards filling that Gap
+yeah and it's only going to be filled oh
+I think I know what this is yeah so
+Casey we have a tradition that if this
+is your first time talking you to T shot
+and your friend Trent has given you a
+shot
+gave
+it
+wow jeez thank you Trent and thank you
+for the death
+conure if you want to see me at Defcon
+him I'm just
+kidding um so I think I was talking
+about the Gap in Talent it's going to
+get interesting after
+that
+um but we do need to dedicate ourselves
+as professionals to getting people who
+are currently working up to speed and
+those who are just entering the job
+market getting them those necessary
+skills even if universities were pumping
+out graduates that were interested in a
+career in
+infosec we and they're not doing that
+but even if they were we still wouldn't
+be able to have the amount that we need
+to fill the the job
+void a lot of people are graduating with
+just book knowledge which is wonderful
+please don't get me wrong here some
+people might get this might be a
+debatable point I think that book
+knowledge is very very important but I
+do think
+experience is even more important than
+that we're seing a lot of graduates who
+have degrees who have all the book
+knowledge but by the times those books
+are published that information is out of
+date the information the new information
+is just turning over at such a quick
+rate I suggest for people who are
+graduating with no experience be a
+student of learning consume information
+your goal should be to know as much
+about information security as possible I
+am huge on podcasts I love the
+healthcare information security podcast
+exploring information security it's easy
+to listen to when you're getting ready
+when you're driving to work for someone
+who is not necessarily technical like me
+they really dumb it down for you I love
+that Twitter is great um blog post
+someone in this room introduced me to
+the hacker quarterly which is a great I
+don't know if you guys use that
+2600 yes that is a great resource I've
+gotten a lot of information from that so
+there are resources out there if you
+want to get experience and really just
+stay up to date staying up to date
+really is crucial to your
+marketability another one is kind of
+interesting I call this the hallway
+track so what you guys are doing tonight
+is fantastic you're at a user group
+you're sitting you guys better be taking
+notes because this is valuable
+information
+but the best way to learn is to take the
+hallway track so it sounds kind of funky
+but what that means is you can go out
+and talk to the speaker in the hallway
+and you can learn more from your
+conversation with the speaker getting
+involved than you can just sitting and
+taking notes and I think you can employ
+that in the workplace as well you don't
+want to be a Wallflower you don't want
+to just come in do your work clock in
+and leave that's not what you want to do
+you want to connect with people in your
+office who are influential who are
+passionate about information security
+and make your intentions known maybe
+you're someone who's working on the
+desktop and you don't quite know how to
+break into security be vocal I cannot
+stress that enough ask for what you want
+whether it's in your career or whether
+it's in your personal life you don't get
+what you want if you don't ask for
+it another huge point is relationships
+relationships are key you need to
+connect yourself with a subject matter
+expert someone who knows the market who
+knows who's hiring ing knows who's
+firing hopefully it's not with your
+company someone who knows what the next
+Trends are someone who can give you that
+information that you don't already have
+it's huge they are going to be integral
+in the advancement of your
+career so so far I've detailed the
+security landscape within Kansas City on
+a national scale and what that means for
+Consultants or people trying to break
+into the role now I want to speak
+directly to managers C Level
+Executives and I want of talk about
+retention so I know I mentioned earlier
+that 80% of information security jobs go
+unfilled because there's so much
+opportunity a lot of people are trying
+to jump they're trying to leave so with
+tech systems we have best practices
+regarding retention how to attract
+people how to retain them we have a
+whole process and I would be more than
+happy to speak with you about this after
+the talk but I'm going to SP some
+Secrets right now so get ready for that
+um only 22% of people are truly leaving
+because of pay for financial reasons
+when I first heard that statistic I'm
+not making this up this is from Gardner
+this is true information only 22% of
+people leave due to financial reasons
+now financial reasons a lot of things
+factor into pay it's years of experience
+it's what type of certifications you
+have and by the way cissp holders how
+many of you are in here yes so you guys
+are very difficult to find takes an
+average of 9 months to find a cissp
+holder and they demand on average
+177,000 more than the average consultant
+so a lot of things factor into pay it's
+difficult industry financial Healthcare
+it's all across the board but what we're
+truly finding why people are leaving is
+because they don't feel challenged so
+managers challenge your people find them
+training that is
+huge some PUSH Pack that I hear from
+people is that they don't want to to
+provide training because they're worried
+if they train their employees they're
+just prepping them for the next guy to
+poach that might be true by advancing
+your people's careers it increases their
+marketability they might want to leave
+you but they're going to leave anyway if
+they don't feel valued now on the flip
+side Consultants you need to ask for
+training you have to have those poignant
+conversations saying hey I don't feel
+like I'm getting what I need out of you
+how can we collaborate to advance my
+career it might be awkward but in the
+so I know I threw a lot of information
+at you guys a lot of statistics about
+the market and how you want to keep your
+job make it your career but the biggest
+advice and the biggest takeaway I can
+give you guys is connect yourself to
+professionals who are just as passionate
+about information security as you are
+relationships are key knowledge is key
+and if you remember that throughout your
+career you'll be fine and my information
+is up there I love to talk I really do
+sometimes not always in a public setting
+like this but this has been great it's
+very good for me um very passionate
+about security I would love to have a
+discussion if you have any questions
+I've got a lot of information more
+detailed about salary averages breaking
+it down by position love to be able to
+provide that for you I'm going to be in
+the back over there after this talk but
+I would like to open it up to questions
+if anyone has anything for
+me and I did talk about participation so
+are you
+yes you set up a GoFundMe page for
+that I think you need to say that a
+little bit louder repeat the question um
+any questions about my talk right now
+have you set up a GoFundMe page for
+death I haven't done that yet but that
+talk anything else surrounding the
+market yes so say I just graduated from
+college and I've got a degree in it and
+I'm ready to get a job how how long
+would it take on average to be able to
+find a job in this area so that's
+something I'm going to have to look back
+on is how long it would take a new
+graduate to take a job I know I
+mentioned earlier someone with two to
+three years of experience takes
+around 9 months longer than anyone else
+uh I don't think I mentioned this but a
+lot of the clients that we've been
+working with are just building out their
+security practices so a lot of the
+attention is dedicated to building out
+these policies and procedures two to
+three CEOs this year are going to lose
+their job due to data breaches I don't
+know if that's what the case is with
+Wendy's but you don't want to be the
+next Wendy's you don't want to be the
+next Target so a lot of the attention
+right now is focused more so on building
+out environments and then in the next
+few years they're going to be able to
+bring in those people who are just
+graduating with degrees but to your
+question I would advise you to get an
+internship and learn as much as you can
+about the environment that's a good
+question what salary ranges are
+currently available for like
+a cyber analyst 1 2 3 senior that's a
+good question as well so we're seeing
+for security analysts that average
+salary is 84,000 but that is actually
+10,000 lower than the national average
+but cost of living in Kansas city is
+coast yes um what are you doing I guess
+what is Tech Systems doing uh in order
+to Spur interest among young people and
+women and women that's good so I had
+touched on the women's ergs that we're
+doing very involved with our Tech
+Systems ERG and interface is anyone
+going to interface
+actually yes all right so we will be
+there all day at interface and then I
+should have mentioned this earlier we
+actually host a cissp study group at our
+office every other Monday if you have
+any questions about that you can ask me
+or Mark W but everyone is open to that
+so young people those who are more
+advanced in their career it's something
+about any more
+questions if you have more questions
+feel free to write down my email address
+phone number I have my LinkedIn our
+Twitter please come and talk to me I
+appreciate your time and thanks again
+thank you Trent for that shot and the
+wonderful all right thank you Emily
+question and that was an awesome

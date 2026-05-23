@@ -1,0 +1,558 @@
+I spend a lot of time doing stuff wrong
+right I want to help you learn from my
+mistakes thanks for that learn from my
+mistakes they trust me it's it's way
+better to do things the right way so how
+do you communicate when they executive
+why aren't they listening to you and
+pick it up on your message you
+understand something that clearly needs
+to happen at your organization but
+they're not buying it why not just a
+disclaimer your mileage may vary my
+experience is going to be different
+experience from company to company and
+executive to executive that's always
+going to be different so we're gone as
+you listen to this this look for the
+principles I'll push you on the
+principles and I'll give some specific
+examples of how to solve an issue
+communication issue but you're gonna
+have to draw from the principles and
+reframe things for your own environment
+I do have a couple Easter eggs you may
+or may not give it so keep an eye on all
+right I'm gonna shout out to David
+Letterman who I used to watch too much
+growing up as a kid I don't have cards
+to throw out the little city window but
+I'm gonna start with a top ten and these
+are I'd say these are touching on real
+things right so real issues that bug you
+and real issues that bug executives I've
+shown this list to a bunch of business
+people and they chocolate some of them
+and they're like yep that's what they
+always do that's why I don't listen so I
+know I'm on track here we go number 10
+you only drew us up when you want to
+spend our money it's true how come you
+always wear a t-shirt every other day
+except when you got something to say to
+an executive networker t-works why do I
+need to spend money I think we can all
+identify with this one no love for IT if
+it works what do we pay for everything
+number eight you use more than 3 colors
+and 6 slides in your presentation
+overload they cannot handle that much
+stuff you've got to translate the tech
+you can't just throw a bunch of bar
+charts at them
+that doesn't work that way keep it
+simple
+bring it back to business number seven
+I'd rather spend money business money on
+something that generates income that's a
+good point and you're gonna have to be
+able to answer that in order for them to
+listen to number six your presentation
+was just an excuse to show off there's a
+lot of truth behind this one and it
+takes some introspection to to really
+realize that it's not a it's not an
+opportunity to show off and they see
+that and it makes you look really
+immature number five as an executive I
+never know what's going on with IT until
+there's an emergency are you keeping
+them informed if not why would they
+listen everything's always an emergency
+this guy's following these guys falling
+right number four security doesn't make
+us any money now I've got some issues
+with this one but this is a thought that
+they've got when you go into a meeting
+so especially to present the purchase of
+a new product or service they have this
+thought in their heads already so you
+have to be able to answer that before
+they ask it or before it comes back up
+in their heads because they're not gonna
+listen as soon as this line of thought
+hits their hits their mind they're
+tuning out and you're wasting
+everybody's time number three you call
+my nephew an idiot it's true he sits two
+cubes over for me from you or he was a
+customer from yesterday that you were on
+a phone call with you don't know it you
+don't know how connected they are who's
+connected to who you've done something
+that offended them maybe you keep making
+me change my favorite password I can't
+fight that one really number one reason
+executives don't listen to you at
+presentations you still looked at my
+wife PC you got to do favors with the
+executives I there's no getting around
+it really okay but seriously guys
+now let's get down to the principles
+what are the what is the foundation of
+effective communication and I'll give
+you a shortcut it is not it's not social
+engineering right
+you can social engineer on the short
+term but it's all about relationship
+building even a long con social
+engineering involves relationship
+building so why bother building a false
+relationship when you can just do it the
+right way the first time okay but for
+real seriously it is all about business
+alignment okay sometimes I got to talk
+with two hands so forgive me here okay
+business and IT business is not IT
+business has to happen and IT needs to
+find a way to merge into that process so
+you need to understand business to be
+able to bring IT to fit if you can't do
+that you're on a separate track and
+there's a disconnect and that is where
+the communication breakdown is oh sorry
+to succeed you need to proactively
+answer questions that they have there
+are things that keep them up at night
+they're not telling you about it but
+they're concerned about backups disaster
+recovery those sorts of things some of
+them are thinking about this stuff some
+of them are not but there are many
+unspoken concerns that they have that
+you need to speak to in your
+presentation so I'm gonna go through it
+some examples of things that they can
+identify with and if you understand
+their thinking you can present to answer
+those questions or concerns with regard
+to business continuity one thing they
+might say I'm afraid we won't you know
+all our bad data back in case of a
+catastrophic loss they go to social
+gatherings with other executives they
+hear other people talking about oh we
+got this new backup product or we can
+get our business back up in five minutes
+after a disaster and they're left
+wondering can I and then they go home
+and think about that answer that
+question for them make them comfortable
+the answer to that question it worries
+me someone could crack or guess a
+password and access our data this is a
+very valid concern if you've listened to
+any of Ryan Preston's talks you know the
+spring 2018 is gonna get into somebody's
+account by now right
+so what can you do to answer this
+concern you can't just you can't just
+get rid of it or downplay it it's a
+valid concern how do you answer that
+two-factor authentication probably would
+help
+alright so sometimes you're gonna solve
+a business problem you've got your own
+agenda but you need to solve business
+problems and once you start getting
+heard in these presentations actually
+helping the business then some of the
+stuff that you realize that you know
+needs to get done that they don't
+understand you'll have a little bit more
+relationship built up to make make a
+point in that direction these are things
+that they think our IT guys are not
+interested in our opinions so good ideas
+get ignored I've heard so many stupid
+ideas from executives but you know what
+I don't turn around and roll my eyes to
+the person right behind me because that
+comes back they see it they feel it they
+know it I can tell when you're not
+engaged so you know it's a stupid idea
+listen to it and try to understand why
+they're thinking what is the business
+issue at hand that makes them have this
+[&nbsp;__&nbsp;] idea there's probably something
+there that you can help solve talk about
+it explore their idea make them feel
+validated in their thoughts it
+frustrates me that IT the our IT guys
+guys are more interested in technology
+than business this is very common
+technology is not business technical
+business is business even if you're in a
+technology business technology is not
+business right technology for
+technology's sake is what's in your
+basement or your hobby den or something
+like that technology enables business to
+succeed so take an interest in the
+business and how to use technology to
+align with business purposes our
+whatever whatever it is our server room
+is a mess
+wah so why should we entrust yet another
+thing to the IT department you need to
+show some good faith here go do some
+stuff get stuff in order or show them
+that it will benefit that so just think
+about all these concerns that they have
+and try to answer those questions
+our people are doing too much manually
+surely IT automation can help yeah
+maybe start with your own department
+show how you have benefited your own
+department how the time pay off is there
+there's a return on investment with
+employee productivity they want these
+problems solved and a lot of times it's
+not just some expensive software right
+it's practice and training and getting
+interact with the users and showing that
+you can really make a change for the
+business they think people say I can
+save money with IT but I have no idea
+where to start so how can you show them
+to start saving money I know you want to
+present something that's gonna cost
+money most of the time but you may have
+to start with some presentations on hey
+you know what we can save money if we do
+this I can give this up or we can train
+people to use this and consolidate two
+or three software's or purposes they're
+worried about software offs audit
+software license audits they don't know
+what the results gonna be can you
+comfort that concern some of them aren't
+thinking about that but these are some
+of the things that they think so can you
+answer that build their confidence in
+you I don't get enough information on
+how well IT systems are currently
+running and this goes back to the top 10
+list everything's always an emergency
+why do I always have to spend money in
+there virgin see spending goes up there
+problems always feel like surprises and
+I don't see why and when I show this
+list to executives they go yeah dad dad
+why why don't I know about stuff that's
+coming up you need to be able to look
+forward and communicate that stuff to
+them so that they are confident in your
+ability to support the business it
+worries me we don't know how technology
+will technology change will affect our
+business can you get in front of that
+learning
+and help train your executives keep them
+up to speed with what's changing in the
+industry are you doing things to stay
+involved and informed I mean you're here
+so that's a good step we lack a clear
+strategic objective with IT projects
+they drag on forever costs too much and
+sometimes fail or often fail this is
+really common especially in small
+businesses and I know I've been there
+we're overloaded there's way too much
+going on drinking from a fire fire hose
+or using a fire hose to put on all sorts
+of little fires and projects always get
+put off right that's a concern they have
+how do we answer that you need to
+reframe your presentation again
+technology's purpose is to enable
+business to succeed if you need to use
+it to solve business problems so how do
+you do that here's a couple examples we
+all understand these sorts of statements
+when you need more better logging or
+logging analysis etc whatever the
+technical requirements we need this so
+we need to buy such-and-such
+right well how do we communicate that to
+an executive the bar the pie chart at
+the bottom doesn't do anything if you
+don't understand what it means or what a
+day in the life of IT department is you
+can reframe that statement by saying
+something like this to meet compliance
+requirements and to avoid fines hey we
+need this product is that worth looking
+at to you because the fines can cost ABC
+XYZ whatever how much they cost or for
+IT to focus on project to keep execution
+we need this software to automate log
+analysis so we can free up some time to
+actually focus on project delivery now
+you're talking to concerns like that
+right there that one on the right so
+speak to those concerns when you reframe
+the technical requirements we need a
+bigger battery backup so that the
+whatever it is the database server in
+this example doesn't experience a power
+cut that makes total sense to me
+why is that so important you can't just
+say that to any executive now I will say
+for an executive that does listen to
+simple statements like this like the
+Tecna
+statement that we're making here and
+accepts your your idea and wants to run
+with it they're either a stellar
+executive and their tech savvy and they
+understand the business implications or
+they're stupid and tired of dealing with
+you and they finally sign off on
+something or the or you trick them into
+doing it how often do we do that we try
+to trick with different different
+metrics that really don't relate the ROI
+is based on stuff that we're not really
+doing yet or we're never gonna do it
+right so the solution to this one is
+something like this we're currently at
+risk of database corruption with a
+potential downtime of X number of hours
+six hours and a loss of between 12 and
+34 K and transaction processing and
+we're headed into storm sea electrical
+storm season with inadequate backup
+power there's construction across the
+street all sorts of things are against
+us right now and we need more time on
+backup power in order to get stuff to
+successfully shut down in a case of
+emergency right we can prevent many
+thousands of loss with a few thousand
+investment reframing we need this for
+example outrageously expensive module
+four as a temperature monitor so I can
+get notified when the AC doesn't work in
+the server room say it this way we have
+$65,000 worth of temperature sensitive
+heat generating equipment in a little
+closet for about 350 bucks we can ensure
+that investment right make it make
+business sense here's a good one we need
+a pizza party once a mom how do you
+convince them of this that's right no no
+on business time on the business time
+how do we get in some to pizza parties
+once free right said Casey's underrated
+the other one I didn't do this I would
+like to challenge our team to grow and
+learn from one another you can't be
+disingenuous here we can build culture
+share tribal knowledge and improve
+customer efficiency within the
+department and the business I'd like to
+host them
+lunch-and-learn much nicer way to say it
+okay so you reframe your presentation
+that kind of comes as a result of
+reframing your thinking maybe I should
+have swapped the order of those two
+sorry I T exists in order to serve and
+enable others if you didn't realize it
+yet you are a servant if you're working
+in IT security I developer I don't care
+what position you are you enable other
+people to make money doing what they do
+that was a big revelation for me
+users are your customers if you can take
+if you can internalize this mindset that
+the users are your customers and you
+need to work on high customer
+satisfaction that will affect your daily
+thinking and actions and those changes
+will be noticed you want to connect with
+executives show that you care here's a
+protip I burned some bridges a couple of
+times they are well-connected with one
+another I don't know how their networks
+work I'm working on getting that that's
+where I want to be right they're all
+buddies they're connected in some way so
+when do you do something stupid and you
+burn a bridge they've got this
+relationship that transcends you right
+it's well above and beyond whatever you
+can say or do you're not going to
+separate these relationships there's
+family ties they're long-standing
+friendships and business partnerships
+they've been there for each other in the
+past you're not going to break into that
+with some presentation about they're
+doing this the wrong way this is there
+an idiot we should get rid of them that
+is not going to do anybody any good
+it's going to make you look like an
+idiot and they're gonna be fixing things
+overcome they're gonna be having coffee
+talking about what an idiot you are you
+can't drive a wedge between some of
+these relationships so friends and
+family aren't everywhere just a couple
+of weeks ago at a new job I found that
+the guy with a different last name is
+cousins of the boss Oh glad I didn't say
+anything down right just watch you'll
+find they're all connected
+have you ever tried walking a mile in
+their shoes
+mentally why are they who they are where
+they are doing what they do it could be
+that their passion was this or they had
+a grand idea to be who they are so if
+you can identify what their human suck
+and serve whatever their purpose
+passions and dreams are that will be
+where you can communicate effectively
+with him so figure out who they are
+their house a lot of times especially in
+smaller businesses their houses and cars
+or what's on the line to make sure you
+get a paycheck realize that be thankful
+for that and work to solve business
+problems I'm not going to spend a lot of
+time here but really your focus is on
+the top two tiers of Maslow's hierarchy
+right you want to enable the executives
+to feel self-esteem so acknowledge their
+their ideas and discuss and they want
+self-actualization that means they want
+to achieve their highest potential help
+equip them to do that again they're all
+connected if you can make a friendship
+with an executive you were one of the
+people that's now inseparable somebody
+can't stand in and take over your job or
+or cause of problems between you and
+that person nearly as easily if you're
+doing favors and solving these needs
+these core human needs and my strongest
+recommendation is to reframe your
+purpose I spend hours building a
+personal mission statement I'll share a
+link to it at the end of the
+presentation but I'm gonna I'm gonna
+bring some evidence SERPs here what I
+have committed to do is to be a trusted
+adviser to all stakeholders that's
+internal external executives users peers
+via trusted stakeholder that means
+holding certain things in confidence not
+rolling your eyes when you turn around
+or or saying certain things about other
+people right utilize tact and discretion
+at all times it's be frankly and
+tactfully with the best interest of who
+I'm serving in mind I'm serving them
+business and sometimes in a
+business-to-business environment you
+have
+play customer advocate as well show
+integrity always allow third parties to
+say face Madison was tough for me
+because I came from working for the
+state of Kansas and the the political
+the intra-office group political
+backstabbing was outrageous
+everything was cya right everything was
+in written form I'm not gonna say
+something to somebody unless it's in an
+email so I could prove it I'm gonna try
+to elicit responses from them that prove
+later on that they were wrong every once
+while you BCC a supervisor right I had
+to get away from that mind of thinking
+that mode of thinking allow them to save
+face
+don't burn those bridges that that
+enable business to continue operating
+and today to that to that point tree
+business relationships like valued of
+friends or employees because a lot of
+businesses have partnerships with other
+businesses because executive to know
+each other you don't want to get in the
+way of that so treat them that way
+communicate concerns in person or over
+the phone
+avoid written means this is goes back to
+the days working up at Kansas Department
+of Corrections avoid written means of
+communication for the expression of
+misinterpret able if it can be
+misinterpreted don't write it down do a
+phone call you need to build a
+reputation of organizational mission and
+purpose speak positively I know you guys
+find a lot of problems it within your
+own department within business
+operations avoid stating problems from a
+complaint perspective find a solution
+and present them as opportunities to
+excel or to fix things not as just stuff
+sucks
+understand that there are three levels
+to business operations strategic stuff
+is you know between three and five ten
+years however long it's big-picture
+stuff guess who lives there the
+executives their thinking on this line
+so if you're down in the operational
+like my day-to-day tasks suck and we
+could probably fix it by throwing up a
+load of money at it how much does that
+matter in five years we need to speak to
+that five ten year plan where is your
+thinking on a day-to-day basis because
+if you can't elevate your thinking from
+those task level operations you're not
+going to be able to communicate
+effectively with the executives to some
+of them answer the unspoken questions
+think about what concerns them use
+technology to solve business problems
+understand that mighty exist to serve
+act from purpose so build your own
+personal mrs. mission statement and act
+from them I have mine printed and hung
+up on the wall right next to me you have
+no idea how many emails I have not sent
+because I looked at that before I
+clicked it and then I picked up the
+phone and made a phone call and I
+promise it came out way better okay
+thanks guys
+[Applause]
+if you would we're trying to do rating
+system no self-promotion but uh if you
+wouldn't mind we're gonna try we're
+gonna pilot this tonight go rate the top
+we want to see if we can start get this
+going on a regular basis for all the set
+Casey talks we can make sure the talks
+are relevant to you and a lot of times
+speakers would like feedback because
+they want to give a talk in another
+conference or something like that they
+want to work on self personal

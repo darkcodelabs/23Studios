@@ -1,0 +1,166 @@
+oh no the microphone's working this
+i mean what am i supposed to do now i'm
+on stage i don't know what i'm supposed
+all right hi welcome to set kc
+i'm here i'm doing something welcome
+back in person
+we're finally back took us too long
+but kovit was rude about it so nothing
+we could do
+welcome to record bar i'm sure that you
+guys found your way was it pretty
+difficult
+all right good i tried to make the
+directions as could as good as i could
+but
+it is what it is well here we are at
+kc the biggest
+the bestest the awesomest infosec meetup
+every month
+in the world we always try to put
+something on
+for those of you who haven't been here
+in person for the last 16 months that's
+good because we haven't had anything in
+person
+and i'd be scared if you were we've been
+doing zoom lately
+um august is probably going to be the
+same
+might be on discord we'll give the deets
+the meetings they're unrated just so you
+know
+i make no promises that you won't hear
+any f-bombs
+well actually i make a guarantee that
+you will hear one thanks to aaron with
+that news
+um otherwise i mean it's people say what
+they want um you will hear f-bombs just
+keep your ears
+tuned for that hide your kids hide your
+wife because they ain't gonna like this
+audio
+set casey code of conduct i know that we
+have someone in the building at least
+aaron we have anyone else on code of
+conduct here
+raise your hands all right it looks like
+we just got aaron right now
+look for the yellow badge that he will
+have our current code of conduct staff
+are
+tree wolf archwiss jurist j fugg
+hevenson aaron and alex if you have
+anything going on that makes you
+uncomfortable at all or if someone's
+trying to set the building on fire
+find them please we really don't want to
+set this venue on fire because these
+people were kind enough to host us
+can we go ahead and get a round of
+applause for that
+coupling that in um we have always never
+mfa
+who decided that she was going to
+volunteer and put her time in to find us
+this awesome venue
+i don't know if she's here this evening
+but let's get a round of applause for
+her
+and better yet let's get a round of
+applause for bin kc
+who has coordinated all the monthly
+baller status sir baller
+thank you for everything that you do and
+thank you to all of our volunteers
+who put in hours of work every month
+such as joel
+aaron myself ben goda i mean we have
+i believe it's 50 now volunteers who
+make this happen so thank you to
+everyone
+if you see them with a white badge or a
+yellow badge just give them pat on the
+back
+socially distant of course or buy him a
+soda i mean thank you for all that you
+do
+moving right along everyone here belongs
+at kc we always have newcomers we always
+have veterans
+some of us have been coming here for
+almost 10 years now
+uh some of us have only been coming here
+for a month and this is our first month
+so welcome to everyone here can we get a
+quick show of hands anyone knew
+one two three four i can't even count
+because everyone here is new
+everyone here is awesome and that's what
+assume everyone here is technical we all
+have backgrounds regardless of what they
+are
+we all have them we all have the same
+information we might not know it we
+might not be able to
+describe it the same but we all have
+those fundamentals so assume that
+everyone has them
+if they need clarification they'll ask
+you for it
+meet someone new we have a bunch of new
+people we just saw their hands
+walk up to them say hi buy him a pizza
+well actually it's free even better
+there's no excuse to not meet someone
+new just walk up say hi
+ask them what their name is ask them
+what they do it's a great way to network
+and that's why we're here also to hear
+aaron play beats
+oh i somehow skipped that uh be the
+change that you want to see at setkc
+like i said
+we have 50 volunteers on staff they all
+come here because they want to add their
+personal touch to set kc and want to
+make it that much better
+if you have something that you think
+that we could do better or something
+that we could change
+go to setkc.org you can get on our
+discord you can get on our slack we have
+a suggestion box
+you can type in there say what you want
+to say see if we add it see if we don't
+see if you can help us volunteer and
+become one of our 50 staff
+at sec ac on twitter at casey under or
+yeah at sec underscore kc on twitter as
+well
+either one of them work hashtag setkc
+all the things
+and here's tonight's agenda right now we
+are in 101
+i'm sorry that you have to put up with
+me they just forced me on stage i didn't
+know what to do
+but hey i'm sorry
+no here at 6 15 we have aaron with news
+he's going to be dropping a lot of
+f-bombs so oh
+clicker come back he's going to be
+dropping a lot of f-bombs so keep your
+ears tuned for those
+um at 650 we have infosec io
+with real estate tools using or for
+ocean
+um that we have home lab set up with
+peak ward uh security chromebooks
+and then at 10 o'clock you guys get to
+come home and miss it or go home i'm
+sorry
+but that is set casey welcome back to
+the physical
+ups

@@ -1,0 +1,192 @@
+hey guys and gals my name is Matt um I'm
+G to be telling you about a little
+project I've been working on called
+graybox
+my coming for me um my my Demo's broken
+so but I recorded it so you can see what
+what I'm talking about um so what is
+blackbox testing um this is the testing
+you all are probably familiar with but
+you probably don't even know it um this
+is things like uh penetration testing um
+this is where you throw attacks at that
+system and see what comes out so um I I
+like to use the analogy of of trying to
+figure out how a digestive system works
+based on what's coming out of it um so
+so it's bad because there's no
+indication of why a test is failed um
+you can you can be close to a
+vulnerability but not even know you
+might be a semicolon or mark off and you
+wouldn't have any idea
+um compare that with white box testing
+this is things like code review or uh
+design review um this is good because it
+gives the consultant all the information
+about the system but it's bad because it
+can kind of overwhelm the consultant
+with information and it's hard to
+hypothe hypothesize how things will work
+on the network layer or platform layer
+or the application layer um I I use the
+analogy of trying to figure out how
+digestive system works based on looking
+at a picture so you can look at a
+diagram but it's not going to tell you
+if there's a vulnerability or if the
+system broken
+some um so wouldn't it be cool I had the
+idea when I was thinking of submitting a
+talk um if there's a way of testing that
+showed the inner workings of code um so
+you could kind of see data as it
+transformed and moved through the system
+you could process real input like
+blackbox testing um but you could see
+how it worked in in the actual system
+like white box testing this would allow
+you uh this a really really huge benefit
+for penetration testers um so I I I set
+out to develop something similar to this
+and I I kind of came close um so the
+recipe we came up with I started with
+the lamp stack um I chose something I
+chose something called uh bit namami um
+they have kind of cookie cutter pre
+pre-made lamp Stacks it was good because
+it saved me a lot of time setting
+everything up it was bad because it's
+not working right now um also also it
+had uh kind of settings and stuff tucked
+away in weird places um so it kind of
+took me some getting used to um then I
+used X debug um specifically because I
+wanted to Target WordPress in
+PHP um and you put those all together
+Ownage um so here's the part where I
+I did Windows updates right before I
+came
+so but hey you guys actually this my
+Talk's kind of boring but this was the
+most boring part so you guys got off
+really easy what it's going to show is
+me digging through some Trace files
+luckily I have a backup plan I took some
+videos of of the attack um so this is me
+starting the virtual machine
+here um and I I have it kind of in fast
+motion because with with xdebug working
+it it slows everything way down and then
+on the bottom left here I'm going to
+putty into
+it
+uh yeah okay so I'm logging in um on the
+right is my WordPress uh website super
+secure WordPress website on the left I'm
+showing the trace files as they grow um
+you can see how much data it's saving
+it's logging every function call in
+every variable so it's already 64 Megs
+of pure text so that's that's huge if
+you've ever looked at 64 Megs of text um
+when it stops growing that means the the
+page is that that function is done so I
+save that um I'm going to the vulnerable
+uh what I suspect to be a
+vulnerable uh plugin it's called the
+testimonial plugin and that's growing
+growing growing um I I kind of I started
+at the most popular t uh plugins and
+kind of worked my way to the bottom and
+I got pretty far down before I found
+something so this is really low hanging
+fruit I'm not going to give you a lot of
+information about the plugin
+itself um because I I haven't talked to
+the author
+um it's it's I I looked at it's a
+commercial plugin there's only been 50
+downloads so it's
+nothing um I don't want to like be it up
+here I'm throwing a SQL injection attack
+at it um and I'm hoping this will work
+if that works it's going to replace this
+defa category with the admin
+password um and it right there it just
+dered out and we have no idea
+why um this is the part in the talk
+where I dig through a trace file and
+show you tracing it through why um why
+it out it turns out that it doesn't like
+um quotation marks
+um and I I wouldn't have known that
+without looking looking through some
+Trace Trace logs um
+so this is the working this is me
+throwing an attack at it without any
+quotation marks so it's pretty much the
+same attack but instead of using the
+word admin with quotation marks around
+it I'm using uh something called the the
+the care function or the the Char
+function and I use the the asy value
+admin um
+so let's
+see so I'm using Union select user login
+and a
+password and instead of using quotation
+marks I'm using the asky for ADM i n and
+if it works we will have a password boom
+right
+there it's actually a password hash so
+it's like blown H password um but I mean
+with password hash you can do stuff like
+rainbow tables or bruit for it or
+whatever um so that was kind of lame
+sorry um so what did I learn um the good
+takeaways is uh X debug you can turn up
+the logging way super high so you can
+log every function and variable um so
+there's really good coverage um it has
+an API which could potentially plug in
+to other uh tools and it worked um that
+vulnerability I might have missed um
+because it was just a quotation mark I
+could have uh thrown you know two dozen
+attacks at it or 2,000 attacks at it and
+missed it um I was able to find an un
+undiscovered vulnerability in a plugin
+in a commercial plugin for
+WordPress
+boom um so what's the bad takeaways um
+because it can be configured to log
+every function and variable um it it has
+lots of data so the signal to noise
+ratio is really low this made for huge
+Trace files um one I I logged in the the
+VM one time and it was a gigabyte of
+Trace file so and that's just text so a
+gigabyte of text and it slows the
+application way down it took me about 15
+minutes just to do those three little
+functions and XD buug kind of sucks and
+it's buggy the documentation for the API
+is sparse and weird um so what's future
+possibilities um if you all are familiar
+with burp Suite um I hope to maybe plug
+in an API call from that to uh XD bugs
+API I think it'd be really cool to throw
+attack directly from there and watch it
+Trace through um maybe some sort of
+automatic flagging that sees if input
+changes so when they do uh remove
+quotation marks or add slashes or
+whatever um it'll flag that and it
+doesn't have to be limited to xdb
+there's lots of tracing options out
+there um for different
+languages um so I can make the VMware I
+can fix the VMware and make it available
+to anyone if you're interested so hit me
+much

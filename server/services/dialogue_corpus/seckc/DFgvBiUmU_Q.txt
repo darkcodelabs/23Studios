@@ -1,0 +1,178 @@
+all right so prop dot is a tool that i'm
+going to share with you today um my name
+is dusty i'm a security analyst at
+touchdown information systems and i'm a
+huge homolog fan uh one or two so if
+there's any other homologans here
+whatever i say has no reflection on my
+employer i'm not a lawyer but i love
+crack drama so any of my order fans also
+was released by austrian cert i guess
+it's a couple years old but still in
+beta
+it works on windows or linux
+but you're looking at like religious
+processes or interesting processes or
+binaries
+that are unique to windows
+because you're going to use windows
+system terminals
+process monitor and
+to use it you need graphics and either
+window for windows or tcp dump for linux
+and what it's going to do is it's going
+to take your process monitor log
+in a csv format and a pcap from
+wireshark or window or whatever tool you
+want to use and create a single timeline
+and graph it out for you using graphics
+so it doesn't show you anything you
+can't see using other tools it's not
+going to
+find the malware that's hidden in your
+network or the intruder that's been
+stealing your data for two years that
+you don't know about it's not going to
+give you a you can't pack what you can't
+see kind of
+you know advantage
+it's basically just going to make your
+life a little bit easier so if you do
+any kind of software white listing
+and you approve software that gets added
+to the whiteness
+or you uh
+if you do any kind of behavioral malware
+analysis
+then this hopefully will save you quite
+a bit of time if anyone's ever looked
+through a process monitor
+log file that's you know you generate a
+few thousand
+for those of you that are new here and
+maybe due to the hacking community
+generally a lot of places that you go
+has a little tradition where this is
+your first time speaking in a certain
+venue that you're forced to drink it's
+kind of loosening you up a little bit
+right right
+so no no no usually i haven't partaken
+this if you've ever been in defcon you
+know it's actually funny major mal three
+data it's major malfunctions from
+definitely people have met major before
+so i'm on this goon list we're
+discussing things and we're talking
+about different shirts and
+believe it or not there is bureaucratic
+nonsense going on about what colored
+shirts all the guns you're going to wear
+this year one of the things the major
+pointed out is if you see a speaker go
+and you go up and ask the question he's
+likely to either help you or make you
+drink hard alcohol
+i ask them why not both but hey once
+again everywhere again so i'm making
+this gentleman drink heart alcohol right
+now
+thank you for speaking
+first
+cheers
+all right
+okay
+so
+you use windows system journals if you
+use that for anything else great if you
+haven't used that and you do anything
+with microsoft
+you should go check the tools out
+there's a lot of really cool stuff that
+you can do
+um you can do what it says i think
+everyone can read the most important
+thing when you download product is to
+use the readme there's some
+configuration you need to do in procmod
+to make it work correctly
+so
+that's that's my slide so far i'm going
+to show you a little bit of
+what it actually does or i'll show you
+so this is a
+powerlet's trojan it's something that
+kind of started making its way around
+that summer and the fall a little more
+press
+it is a trojan that writes itself into
+the registry and calls itself from the
+registry
+through powershell and starts making
+calls to a cnc server
+it's kind of a pain in the ass to find
+and figure out what's going on because
+it injects itself into other services
+and so i thought it'd be fun to throw it
+into proctop and see what it looked like
+so
+what prompt has done is it's taken i'm
+not sure if you can see my mouse here
+it's taking my csv from brockpon and a
+pcap when i executed this on a windows
+virtual machine
+and it has a little drop down here that
+lets you choose which process you want
+to start uh your graph hack which where
+you want to
+go so i had a dropper file that i found
+on some forum that
+i probably didn't want to run on my
+regular machine
+and you hit refresh and you get this
+nice pretty graph
+which is
+not really easy to read on its own
+but you can kind of follow
+the line of you know what happens
+as it moves through your system and
+kind of digs itself in
+writing to registries and so forth
+what
+i wrote dot does
+is it will create either node or an a uh
+i think it's a match
+we'll verify but these lines all mean
+something based on the color and their
+boldness and some of these so the color
+code if it's red it was deleted during
+execution
+and there's a whole key to what
+everything means in the manual
+but the really nice thing that proctor
+does is if you hit this little button in
+the bottom you can actually
+watch and in real time kind of timeline
+on
+what's happening as it moves around and
+you can slow it down or speed it up
+you can step through it and it makes the
+process of looking through that process
+so
+if you do look at the manual you'll see
+kind of what these edges and notes
+represent you have a chance to check out
+that's pretty cool is it does it work
+with other kind of timeline value or
+kind of stuff like the timeline
+things or anything like that or
+there so
+good stuff well thank you very much now
+and don't forget
+everybody that speaks gets to reach into
+forty's magic bag to blow up some treats
+corey can't be here tonight
+so trent is the bearer of corey's magic
+bag
+so reach out in there get something good
+that's a shirt it's a t-shirt we all

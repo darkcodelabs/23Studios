@@ -1,0 +1,478 @@
+all right so as he said we are college
+students and now we work we give this
+that this is a research project for one
+of our graduate level courses yeah it's
+graduate level information security
+courses the idea behind this was thought
+of not out of malice or sexual deviant
+but just out of pure curiosity so all
+we're gonna start this off with a couple
+of questions and we want you to think
+about this throughout a talk so the
+concept for this came from these
+stemming questions came compromising
+these devices lead to sexual assault if
+security controls are not implemented is
+the vendor liable for non securing their
+applications due to the loss of data and
+can the information that is stored be
+considered protected health information
+we asked multiple professionals and none
+of them gave us any answers so it's
+whatever you think lawyers just like to
+say it depends so it depends but you'll
+see these types of articles in the paper
+about these IOT devices or these smart
+dildos whatever you want to call them
+snooping on customers and losing data
+and allowing people to control them
+remotely so the summary of what we'll
+cover throughout this talk is listed out
+here okay - we'll explain a little bit
+yeah so basically our inspiration
+actually came from something that
+chainsaw at Def Con
+he saw that mmm dogs there it's a I
+guess research project that's for
+Internet connected buildings
+find and secure those the next thing is
+we did look into two different types of
+devices one was the vibes and the vendor
+actually ended up fixing it right before
+like I don't know two or three months
+right before we started looking into it
+which is great that's great reception
+and then after that we're going to talk
+about our analysis of the eye ball
+device and then suggested mitigations
+and problems caused by the bones that we
+found and then it down another speaker
+so yes so the influence of the project
+came from the Internet of Don's project
+which was sponsored by pornhub and their
+goal is to enhance the privacy security
+and safety by educating IOT
+manufacturers on risks and devices that
+are available in the market they also
+created the Don vulnerability exposure
+the DB DV e which is synonymous with CVE
+but special and then if you have a
+beautiful area so you can go check out
+their website they have lots of stuff
+I also disclaimer when we were doing our
+research project you're unable to get a
+hold of the vendor so all of the things
+we found are still in the wild don't use
+I didn't tell you and this didn't happen
+so responsible disability or something
+something all right
+so here we just have you guys may know
+about this there are common problems
+with cinema IOT devices just in general
+some of those being imports for access
+control they're always connected to the
+Internet for the most part and easy to
+access and then the other one is a lot
+of the times we see common application
+applause so for example our ApS will not
+have authentication enabled or different
+encryption mechanisms are non
+[Music]
+okay and so what we found here is like
+many other IOT devices or device that we
+analyze both devices were using
+yeah so our devices and this is pretty
+easy to spit so we just purchased this
+adafruit's and it was and went from
+there
+oh no he has the mic now okay so some of
+the improvements we found with the
+devices we looked at first in a paper
+that was published back in December of
+2017 where that the following things
+occurred so they had a chat patient as a
+part of the entire application for the
+program for the device and there is no
+inker there's no encryption of momentum
+so when you're chatting with your
+significant other or random on the
+internet some other random person on the
+internet could intercept that and then
+and then also send a vibration codes
+over the internet now so you might not
+think that that's necessarily bad or who
+would get off on that but as we found
+earlier this weekend in a reddit posting
+that I think Aaron goes to the SEC case
+he slacks and people get off on using
+TeamViewer to write to use your computer
+and click on stuff so I guess this
+counts too they're also Bluetooth
+Bluetooth Low Energy security mechanisms
+such as mac-address randomization that
+had not one demented implemented that
+could help prevent someone from finding
+these devices out in the wild and just
+connecting to them and having a good
+time
+so our review of the device is that they
+did implement security for the XMPP
+encryption for encryption and use SSL
+pinning to remember in the middle which
+we tried to do
+and the device was still discoverable
+and connectable via ble however ble
+session had encryption so it was harder
+to see what was going on yeah
+surprisingly they implemented that and
+like two months which is pretty great
+and so this is just a p-type here you
+guys can read through I guess but just
+confirming that they didn't implement
+encryption for their chat sessions ok
+and so now we'll go into the I of all
+the good app so basically the eyeball
+eyeball application I mean the eyeball
+consists of an actual device here and
+this connects to a phone here via
+bluetooth of course and you just an
+application that consists with air
+assists with the connection through your
+app store or whatever and so it's
+interesting because if you actually go
+to the website for the eyeball they do
+advertise but it's a it's a device where
+you can get medical assistance
+it's a kegel exercise ER and so we found
+we find in both questionable that the
+doctor was a doctor of psychology at a
+some random University in China and also
+odd because the app is will show you
+here in a second I don't know how I can
+qualify the medical advice if it's just
+me so the first thing we looked at was
+the permissions of the app one thing
+while going through this project is that
+a lot of these we won't say awful
+applications but a lot of applications
+have expansive permissions and that's
+not always a bad thing and that's
+something you have to keep in mind is
+that sometimes when developers write
+these applications they use older
+versions of the Android API which
+requires these well awful settings so it
+needs access to all these things just to
+function as a device so like waiting
+lock and vibrate well obviously vibrate
+but
+I don't know how you can make that ones
+make sense to me wait lock is because
+you don't want your thing turning off in
+the middle of a session right I mean
+kind of defeats the purpose to us if
+you're said it's like ten seconds right
+settings that's just a basic permission
+for writing to a log file I don't know
+why you'd want a log file but that's
+okay
+bluetooth and bluetooth admin bluetooth
+admin is needed to connect to the
+devices will show you here that the
+application will connect the device for
+you or anyone else can as well change
+Wi-Fi state and the rest of these are
+just basic things that you would just
+see in our most regular apps have Wi-Fi
+stuff also if they are linking your data
+to the Russian government we'll see that
+too
+okay so this is just an overview
+basically of what we found so it's
+possible to do a man militant session
+hijacking the US and then there are also
+privacy concerns that we think are
+pretty significant basically a lot of
+these do apply to ble and the
+application will show you I don't know
+you can read them I suppose but the
+privacy concerns that we did realize or
+that we did find because I think this is
+interesting work that the application
+does connect or dislike some information
+like your age your child birth date
+method of childbirth exercise progress
+data and then in photos so in some cases
+that's a decent amount of information to
+and so this is somewhat related to our
+demo basically the eyeball so with most
+ble devices they're always advertising
+you can find them anywhere this was us
+just finding the eyeball broadcasting
+here so we can see if I were if someone
+we're using this eyeball and you were
+nearby you could find this too just a
+blue to that and then so what we did was
+while the eyeball was connected to a
+phone we went ahead and just take a pee
+cap of it and that allowed us to find
+one of the vibration codes and so you
+so when we use the the sniffer the in a
+the NRF sniffer to find this we won't be
+doing that the part of the demo because
+it's a pain in the ass so the only
+advertises on three separate channels
+the crappy device we got only listens to
+one at a time and that's random so your
+best chances of getting it right or one
+out of three your my chance one out of a
+hundred because I only got it once so I
+don't know how the math adds up there
+but didn't work so so it took quite a
+few trial and error to even get this but
+I guess if you're not cheap students
+like us or worth then it would be quite
+easy to just capture these all the
+signals and replay them back to the
+device so so some of mitigations that
+could have been implemented are shown
+here so there are different security
+modes of ble that a developer can pick
+when designing their products and
+level-one the the basic one does not
+enforce any security at all not
+whatsoever
+just do what you want man-in-the-middle
+have fun and then the security motive
+one nothing digital signings non-forest
+higher modes provide the ability to
+support exciting and then there is no
+macro MAC address randomization and
+advertisement we're just out sank who
+they were so like he has to like
+ask Julie yeah that's Julie and about
+her hacker okay and so to use this app
+and actually store your data you can use
+it without an account but if you want to
+store your data you're gonna sign up and
+make an account and so what we found we
+took a peek app and found that when a
+user signs in their credentials were
+sent in the clear but you know of course
+their password was encrypted with an md5
+hash so I guess that's enough here as
+you can see we use a simple password and
+we were able to find that turn it on not
+yet I know you do
+I do too that's why I did this so the
+there's the pcap of the log and it just
+is the same thing that we just went over
+so there also an API which is fantastic
+because they use none of it like three
+of the month three of the methods in
+here is all they use everything else all
+the other endpoints were stolen from
+another app which we'll get to here in a
+second they did implement this so
+what it does when you log in is it'll
+send a get request to this endpoint here
+with your password and md5 hash and the
+username just in the plain and then at
+the language so that's cool and that's
+how you obtain your session token the
+best part about the session tokens is
+that they don't expire and you can ever
+use them have as long as long as you
+want
+I had one when I logged into this when
+we did this presentation six months ago
+it still worked and then I was even on a
+different device to that's the best part
+what is security so it gave your session
+token and then you're able to visit the
+this web page just hit it with a get
+request and then that session token in
+the in the header and then you can get
+right here we have a profile picture
+from the account this is my friend's cat
+great it's your cat she's having she
+doesn't have a cat so some mitigations
+that this that could have been done were
+simple simple things one why would you
+ever put your password in the arguments
+for a get or post request I do not know
+the password probably should be salted
+and then hashed and then assaulted and
+then authentication and traineeships
+should be transmitted with TLS probably
+definitely 1.2 and the API should
+require authentication for all protected
+endpoints some of them did not and then
+also the traffic between the device so
+next we're going to go into a
+demonstration hopefully it works I don't
+know we'll see what happens just do it
+live
+$5.00 [&nbsp;__&nbsp;] $5.00 that's about how much
+this entire does anyone have a device
+we'll take some questions okay so here
+we have a VM with Android because I
+wasn't doing this on my phone because a
+government will find out so a couple of
+[Music]
+so a couple of things is we have this
+device here it's kind of fantastic we
+brought it with us it's not it doesn't
+it doesn't look like a dong so that
+should be okay
+why would it work all right there guys
+so it's on and blinking if anyone wants
+to take a look but we'll look for you so
+this is Julie's profile here she sent
+them is okay accident that I just told
+her I was doing that's fine it's not
+why would she spell their name I gotta
+turn the Bluetooth off first oh here we
+go so the device broadcasts it's a name
+because it's very proud of itself so if
+you ever see high ball anywhere you know
+that your neighbor you probably
+shouldn't go knocking on the door
+they're doing extra sizes this is a
+medical device you don't want to
+interrupt their training regimen if
+someone's messing with it that's not
+cool
+I didn't bring my Faraday bag I was a
+bummer probably bad idea
+[Music]
+right edge
+Julie whatever check to me okay so you
+cannot do this feel the tightness
+regimen which is a good one I suggested
+highly so there's like horses if you
+wanna the the the doctor of sexology and
+that china suggests these I do not so we
+can write here just do the tender
+massage there it is well it's gonna
+follow the table I should turn it off
+okay now just let it fall off so with
+that with that quick demonstration we do
+know that it works and the app does
+control it so the best part is that I
+want to control it so I'm going to
+disconnect from it I disconnect it
+that's gone it's not there I'll turn off
+Bluetooth to prove it and then what I'm
+gonna do is I can go on my phone and
+that covered that we found earlier I'll
+go ahead and connect to this device from
+not the app and then I will play a
+vibration
+it's not as strong because I didn't pick
+the right one but it didn't work
+it's only half the fun though
+see if you want we can turn on the
+Wireshark we can take a look at those
+packets I don't want to save those bad
+stuff in there so go to the app you can
+log in that not Julie's profile because
+we all know Julia would pick definitely
+pick a dick but so we want to go into
+her account
+jave okay so we want to change our age I
+know let's change it to 22 right 23 okay
+and then the date cannot be I don't know
+what that translates to it doesn't make
+sense to me so we're gonna say yes oh a
+childbirth ok vaginal our c-section so
+this is so so this is where the medical
+information comes into effect as in this
+could probably could be considered
+medical information and if you are I
+don't see how it helps with your private
+lessons of the courses I didn't seem to
+the the assessments that I had didn't
+well so the best part is there's also
+games - I guess I should Terry there's
+games if you want to fish you can fish
+because it also it also helps if you
+squeeze it and also sends signals back
+so I'm not dissing signals from the
+device it also tell you how strong your
+I don't know it's a long story so I
+think I think I got enough here though
+here you go sent user information birth
+away okay nickname J [&nbsp;__&nbsp;] right here
+here's your token age 23 how it's not
+let's open it up see how there it is so
+so it just sends it right in the in the
+header it's but not even in the header
+just right in the URL just hanging out
+there so even with encryption this
+wouldn't wouldn't really do anything so
+if you uh if you see high ball I don't
+here's my token if anyone wants that you
+can go change at Julie's profile she'll
+appreciate it cuz it's all false I can
+tell you the password too but I think
+you can just figure that out yourself
+it's probably in there talking somewhere
+so that was the demonstration maybe not
+so basically what we went over is the
+lack of encryption the lack of access
+control and the ability to take over a
+device and send whatever you want to it
+so say the person just wants to play the
+fishing game without it vibrating but
+you can have in my brain while they're
+playing the fishing game maybe I would
+all like that so so the questions yeah
+so back to our initial questions what we
+ask is can compromising these devices
+lead to sexual assault if security
+controls are not implemented and is the
+vendor liable for data loss because they
+didn't secure the applications properly
+and lastly can this information that
+stored be considered health information
+in some ways and so we want to know what
+you think Julie so Julie says yes to all
+three I I agree - I agree I don't know
+if the law does and that's the assess is
+that part because I think if you show
+this to any of the Senators at least in
+the same they would just throw up in
+their mouth I don't know maybe Adam
+maybe they're into this some of them it
+ask these questions - they are all like
+it depends so so there's that so the
+future more devices so the Internet of
+dongs has a list of device Daleks with
+you if you wouldn't believe it that they
+need to be looked at and if anyone has
+time to take a look at a dog
+I suggest hitting hitting their webpage
+I think it's Internet of do dot do and
+GS so if you are interested developers
+should probably be taking this more
+seriously because we did try to reach
+out and I don't know crickets or maybe
+they're busy building another one I
+don't know or stealing one I guess I
+guess they were trying to so I found
+several other devices like this and
+applications that almost exactly the
+same but with better resolution
+so I'd assume that they were stolen I
+don't know I'm not a lawyer
+I wasn't I didn't create it so who knows
+what they were doing and then probably a
+Morris focus on security
+I guess but on a serious note these
+things are where we're headed because
+they're pretty common and so brings up
+some big questions deep questions about
+what can be too much violation all right
+and so that's our talk
+[Applause]

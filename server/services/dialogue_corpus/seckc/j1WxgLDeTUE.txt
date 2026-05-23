@@ -1,0 +1,834 @@
+thank
+you all right uh as I get started click
+already
+failing click all right as I get start I
+want to say a a show of hands who
+already has some set Casey
+coin wow that's pretty amazing uh let's
+see a show hands who's never even heard
+of SEK
+coin that's pretty good I I actually
+I'll I'll take the way that that worked
+all right there we go all right cool
+well so what I want to do tonight um is
+I want to talk about what setc coin is
+how it works how you get it um all those
+kind of things I am going to end with a
+question period And I really do expect
+some questions right so as I was putting
+together these slides I I realized that
+it's a very difficult topic and there's
+a lot of things and a lot of complexity
+um that that goes into something like
+this um and any questions that you may
+have about getting started those kind of
+things uh free the free form here I want
+to give a little bit of back background
+so when uh right before Bitcoin became
+huge um us and at work we weren't
+working one day instead we were you know
+trying to use all the work computers to
+mine
+Bitcoin and uh and so we uh I I know one
+guy who would go to Micro Center and and
+buy a computer mine a Bitcoin and then
+take it back right um and so I I really
+got into cryptocurrency and and was was
+really interested in it I started to
+understand a lot about the alternate
+Point those kind of things well 3 years
+go by and Cory Kennedy Cory are you in
+the house no he's then Cory you are
+banned let's hear it Cory 1 2 3 Cory's
+banned 1 2 3 Cory's banned all right
+there we go well about 6 months ago Cory
+was going to give a talk at se KC coin
+about ransomware and as part of this
+talking he's he said well um I'm going
+to start our own cryptocurrency I'm
+going to start set KC coin
+um and what's and what Cory did was he
+he forked Litecoin so Litecoin is
+similar to bitcoin um and he forked that
+repo and changed it to make Set casc
+coin uh the the logo uh he he came up
+with the logo it's actually um uh
+Unicode 23 E3 yes there is a 23 in the
+Set casc coin logo that's not very
+important to us um but he forked the
+light Litecoin uh and created setk C
+coin really as as a way for our audience
+to really start to understand what is
+cryptocurrency how does it work what is
+a blockchain how does it work um how do
+I transfer a coin to you and and how
+does that work how does all this work
+without having to put in any real money
+into it okay so so set KC coin was born
+as a way for if you're interested in bit
+in uh elect elic currency or
+cryptocurrency or what the blockchain is
+or how peering works or how mining works
+if you're interested in any of those
+topics Set casc coin you can get in for
+nothing right so you don't have to buy
+um and quite honestly um and even though
+we made some jokes here earlier you can
+mine Set casc coin and we'll get into
+that a little
+bit uh currently um there is a value for
+setc coin um so right now 100 SKC
+so I'll start referring to it as
+SKC 100 SKC is equivalent to about $1
+us which is kind of amazing because I
+mean we just kind of made this coin up
+um it's it's already U it it it has a
+market if you have a cash of Set casc
+coin and you want to sell it to somebody
+go for it if you have some material or
+some some product that you want to sell
+for Set casc coin
+do it Caleb where you at here Caleb's
+right here Caleb brought some uh
+customade Network patch cables tonight
+that he's selling for set Casey coin how
+long are
+they Max 2 in just the
+tip what I don't get it what fun um but
+regardless of what he's selling it's
+really important that we have somebody
+that is selling material for Set casc
+coin they have value so really what what
+set cas coin is is really used for is
+you can only buy set KC swag with set KC
+coin all right in the slack Channel um
+some amazing programmer wrote a a setc
+coin bot where you can tip money to
+anybody else in in the in the slack
+channel for something cool that they did
+if somebody said something funny give
+them 5 Set casc coin right if if
+somebody helps you out give them 100
+whatever you know give them a buck
+well so what that's what that's done is
+that's really started to bring our
+community together right so so now we
+have a way to reward users of of the
+slack Channel anybody that that
+contributes or works at set KC so we we
+had um you know Michael do 101 we've got
+our DJs in the back there's a lot of
+people that put a lot of effort in set
+KC every month um and before what we
+were giving them we gave them high fives
+now we give them th000 set casc coins
+just for open
+out so let's talk about how how do you
+start to get into Set casc coin well the
+interesting thing is if you're already
+in slack you already have a wallet
+address and all you have to do is ask
+the bot hey bot um so the bot's name is
+tip tip SKC um I call it
+tipy
+tipy right if you were to say Tipsy help
+uh the the bot will come back and tell
+you everything here's how you get
+started um we do have a Wiki uh that
+that shows you how uh that will go
+through a lot of the things I'm going to
+talk about tonight but it also has
+commands so if you were to say uh tipy
+uh give me my uh deposit address it'll
+show you your Bitcoin or I'm sorry your
+SKC address and it looks just like that
+right so it looks exactly like a Bitcoin
+address um so as you can say see from
+the command I I gave the bot a deposit
+it came back and it said that this is my
+address if anybody in this crowd were to
+either copy down that address or take a
+picture of that that QR code you can
+send me SKC from any client whether it
+be your your your client at home which
+we'll get into here in a second or
+through the bot or I can deposit money
+to that I can also withdraw money from
+that
+address so so who here has never done
+anything with cryptocurrency before it's
+okay show show your hands woo Okay cool
+so I just uh I threw this slide in here
+real quick um we we uh we do have our
+own paper wallet generator um it is
+official it's out on wallet
+generator.net with with all the other
+coins out there Bitcoin likecoin all all
+of those other coins but what's really
+important um especially in this crowd
+considering that um that people are here
+to uh to Shenanigans are encouraged uh
+is is to understand that you have two
+address
+okay so it uses you know something very
+similar to public key cryptography right
+so you have your public address earlier
+when I showed you my address uh that's
+my public address anybody can have it I
+could print it on a billboard and it's
+essentially so so this man I
+like very well
+done so so the the the public address
+is uh you can share that with anybody
+that is like saying this is how you were
+to give money to
+me okay your private address your secret
+which was the picture that was just
+being taken is a private address this is
+how you access that money you should
+never share this private key ever to
+anyone um and you should always back it
+up right so if you had um if if I were
+to give you a a paper wallet which
+you're looking at right here um you you
+would never want anybody to take a
+picture or copy down or have any access
+uh to that secret key but the private
+key you could share uh
+publicly so I do want to talk a little
+bit about the bot so um whoever This
+Magnificent brilliant absolutely
+brilliant programmer was that wrote this
+bot they they built in a vulnerability
+into the bot and it's very important
+that you understand what this
+vulnerability is so first of all the bot
+maintains one
+wallet okay and if I were to send you
+500
+coins the what I'm actually doing is I'm
+sending the bot 500 coins and the bot
+keeps track of the user ID that received
+those 500 coins so if somebody were to
+find a vulnerability that could
+leverage they could steal every SKC that
+exists on the bot every single one
+they'd steal it from me they'd steal it
+from you they they'd steal it from
+everybody they'd steal it from every
+single one of these addresses so the way
+the bot works is as I as I send you some
+coin the bot says hey this guy right
+here does he you know is he supposed to
+have any coins yes he has 500 coins and
+he wants to send it to her so it has an
+internal database where it just
+transfers the money over to this address
+and it keeps track of that does
+everybody
+understand so we don't want to keep our
+SKC on the bot right that's a
+vulnerability if somebody were this bot
+lives in a slack Channel 24/7 with a 200
+hackers this is not a good thing to keep
+the good news is is that you can create
+your own wallet right so on uh on coin.
+secc.org we have a Wiki with
+instructions that shows you how to
+compile your own wallet and what's
+really important about this and the
+reason why I'm talking so much about
+this is you need to take these same
+considerations if you're working with
+real coin like Bitcoin or Litecoin or
+anything you never want to store your
+Bitcoin in somebody else's wallet don't
+say don't save your Bitcoin in some
+bot's Wallet create your own wallet and
+save it there so uh the the the wallet
+right now currently exists for Windows
+Mac and Linux um I will tell you if if
+compiling your own code is something
+that that seems very difficult um the
+windows client is is uh wine friendly so
+if you're running a Linux box or or a
+Macintosh box you can just download the
+windows client and use wine to run it
+and it works it it works absolutely
+perfect there aren't any downsides of
+doing that other than generally speaking
+you probably want to compile it for your
+for your native client and on coin.
+kc.org there there is instructions that
+will walk you through
+compiling um compiling the client for
+Debian I think right yeah mainly cuz
+that's what I run I wonder who wrote
+those
+some keynote speaker I
+think so the best part about
+SKC or any other cryptocurrency is you
+don't have to buy it you can mine it
+yourself um and right now as uh for
+those that that do understand
+cryptocurrency and really want to hear
+about it Set casc coin uh has zero
+pre-mined coins um and the reason why
+that's important is
+uh when we start well there's there's
+the Genesis block which is block zero
+which was pre-mined but block one
+started with mining okay and the way
+mining works and I'm going to
+oversimplify this and if anybody really
+wants to come up and describe it in much
+more technical um you know description
+feel free but the way mining works is
+this is the network as a whole takes a
+takes a look and it says how many people
+do I have contributing CPU power into my
+network and then it decides how hard of
+a problem to to issue back to to the
+group and so every block that's
+generated is a is a cryptographic
+challenge and it's pretty neat the way
+it works it sends out a random string of
+text and it says I need a I need you to
+Hash this with script uh script is the
+hashing algorithm so that it starts with
+one Z or four zeros right and if you
+know anything about hashing that's a
+very difficult problem it it basically
+your computer has to brute force uh you
+know over and over and over try hashing
+it with this try hashing it with that
+and then if it if it solves the problem
+if it if it generates a hash that starts
+with the two zeros or whatever it sends
+that back out to the network and the
+network then validates that and then you
+get some
+coin so as we are you know as we were
+going through and taking a look at how
+do we want mining to work um we we came
+up with some you know with some fairly
+interesting things if you if your
+computer solves the problem you are
+rewarded with one.
+337 SKC coins right um we also
+controlled how many coins were released
+per day um based upon um how many blocks
+were released and uh you know if you're
+if you drink enough and you're not
+really good at math it comes out to
+about
+1,337 coins are generated per day
+right yeah or here or there right um but
+the great thing so so earlier when we
+were talking about about the client and
+that you'd have to compile it yourself
+or do it and download it or whatever
+that's the hard part once you have the
+client running and if you're running on
+Windows you can just download the client
+right off of coin. secc.org and it'll
+just run um or if you're going to use
+wine same same thing but if you want to
+mine the only thing you have to do any
+any Litecoin m Min so I just threw a few
+examples up here but but any Litecoin
+Miner will will immediately run and and
+work you don't have to do any
+configuration to the minor you don't
+have to recompile it uh you don't have
+to make any changes any Litecoin Miner
+will work
+miners so who here knows what an Asic
+Miner
+is I I see a few very very happy Souls
+around the audience who know what Asic
+miners
+were well let me tell you something a
+little story about mining
+so so as I mentioned the the the
+problems that we that we issuing to
+these computers are very very difficult
+and when Bitcoin when Bitcoin created
+their uh their algorithm they went with
+uh with shot
+256 and um the the interesting thing
+about shot 256 is when that paper was
+written
+that was a pretty secure
+hash but um what happened as Bitcoin
+became more more popular and became more
+valuable some very enterprising people
+and and even some here in Kansas City um
+that actually debuted their thing at
+setc who remembers butterfly Labs do we
+have any did anybody attend the
+butterfly Labs talk at setc
+I those are your old schoolers right
+there
+folks so what they did is they made
+custom chips that specifically ran Shaw
+256 and what that enables is so as bit
+the reason why Bitcoin works the way it
+works and why you want that that um the
+the challenge to uh the difficulty to to
+uh to meet how many computers are there
+is you actually want it to be just just
+the difficulty to be just about where it
+takes for it gets too expensive to mine
+right so the amount of power that it
+takes to mine so if you if you were to
+you know run a video card and the fans
+are spinning and you got to have it
+cooled you know it can take it can take
+700 watts to mine a coin right so you
+want to raise that difficulty where it's
+it's actually not that profitable for
+everyone to mine all of a sudden Asic
+miners come out and they make dedicated
+chips that that run that hash and now
+what used to take 700 WTS on a video
+card now only takes 2 or three watts in
+a
+minor so that's when Litecoin came out
+and they introduced a uh it's a memory
+hard uh hashing algorithm called Script
+um script uh essentially if if anybody
+here is interested in cryptography or
+hashing um it's a memory hard problem
+meaning that you have to you have to
+keep a table and say you hash this then
+you move over five down back you know
+just if you're interested I can talk
+about it later um and the reason why
+script was chosen because um it would be
+very difficult for Asic miners to be
+created guess what happened Asic miners
+are created and and now um you can you
+can once again purchase Asic miners uh
+for you know 20 to 100 bucks or whatever
+um and you can and you can mine you know
+a crap ton of SKC which I believe we're
+going to they won't they won't tell me
+exactly what they're doing over here but
+number so I mentioned that in order to
+mine uh there's no configuration
+necessary as that's actually a little
+bit of a lie so as we were compiling the
+clients um we also recognize that that
+we're we're sending some software out to
+out to a bunch of group of hackers and
+so by default the uh the configure we we
+we Harden the configuration of the minor
+so if you were to go to coin. sec.org
+and download the the the default config
+we've gone through and made it much more
+s we've secured the client um what you
+would need to do is you would need to
+edit your setc comp file and open up RPC
+RPC connections all of that's really
+well documented online I'm not going to
+I'm not going to show you how that works
+but but just know if you were to
+download the client um and run it you're
+not you're not opening yourself up to to
+any types of attacks or anything like
+that um and and even if you were to open
+up the RPC it it does limit um the
+access to the Local Host now you can if
+you if you really and I put some
+comments in the in the configuration
+file as well but but you can open up
+those connections to the world and I
+would really s highly highly suggest you
+don't do that if you but if you do tell
+me and I'll show you why you shouldn't
+have
+um last but not Le not last but not
+least um Rick did did rickon show up is
+he
+here so um last but not least a guy SE
+member stood up setc coin um this is a
+block Explorer um for the setc coin SKC
+I know it's really kind of hard to see
+here but what this is showing is it
+shows every
+transaction um it shows um it tries to
+track it downloads the blockchain and
+tries to track uh where money is
+transferred who's uh not who but between
+add addresses uh is transferring money
+uh which address has the most money um
+those kind of things and and if you
+haven't ever done anything with
+cryptocurrency it's I would would really
+suggest you visit setk coin and take a
+look so um I'm this is my last second to
+last slide so I'll just add a little
+commentary here
+but even though the addresses are
+Anonymous and and and so my wallet my
+personal wallet probably has maybe
+50,000 addresses in it right so I can I
+can on the Fly create a new address so
+if I want you to send me money I can
+create a new address that's never been
+seen before you send me the money and
+then poof I disappear right so while it
+is anonymous everything is tracked in
+the blockchain that's that's actually
+the the purpose of the blockchain is not
+only is everything tracked but every
+transaction is cryptographically signed
+and proven by the network so if I were
+to send you money the network itself
+goes back the miners itself go goes back
+and cryptographically proves that this
+money my money went over to you and you
+can take a look at at the blockchain and
+prove that out so um from there I am
+going to I'm going to open up to any
+questions I know I just threw a ton of
+stuff at at at you guys um and and for
+those of you that that don't have any um
+experience with with set or with any
+kind of
+cryptocurrency I just I want to leave
+this with you Now's the Time right now
+is the time with Set casc coin because
+it cost you nothing to get involved you
+can um if if you know even if you don't
+want to try Mining and you want to and
+you want to get started hit me up on
+slack I'll send you a couple coins or
+just get on ask some of the members
+around here we can you know we'll give
+out give you a few coins for you to
+start with um but but now's the time uh
+so oh earlier in in the story I
+mentioned that I I got really interested
+in Bitcoin and all those kind of things
+and I and I let it sit for a couple
+hours what's this heard your
+story this what story it's the first
+time you talk I think we have a
+tradition here
+water if you've spoken several times
+here before you have to take a shot of
+water
+apparently that was either water or
+really good vodka um but but anyway what
+I was going to say is I had completely
+forgotten everything there was about
+about cryptocurrency and when Cory
+Kennedy came up to me or or I'm sorry
+didn't come up to me but but released
+SKC I had to start all over and I got to
+tell you I right now I completely
+understand how how cryptocurrency works
+it has really been one of the one of the
+most beneficial things that that I
+personally feel have come to setc so
+with that I'm going to open up for
+questions I think I I just had a
+question so on you said the blockchain
+is is as a crypto signature on that
+stuff how difficult is it for someone to
+analyze and actually reveal who the
+transfers made to like if you were to
+have your 50,000 wallets and St with
+that and you transferred 10 times is it
+any more difficult does it get more
+difficult with the the the levels of
+severity there so that's a really good
+question and the answer is if if somehow
+I can um so let's just say that I have
+50,000 addresses and you have one okay
+and you were to send me that money that
+transaction is is is shown to the world
+and and they can walk that address back
+to you right well then then they see
+that transaction they come and look at
+me well what am I going to do with it
+right so let's just say I move it to
+another one of my addresses so you know
+um that transaction once again
+cryptographically signed um no matter
+where I send those coins it's going to
+be cry cryptographically signed so if
+you if you were to take a look at uh
+let's let's move into like the the
+Bitcoin environment where maybe I'm
+going to be buying drugs or or or
+something maybe I'm going to be buying
+and let's not use drugs perhaps I'm
+going to be paying for
+Netflix I'm really sorry he was just in
+Vegas yeah I was just in Vegas
+um so so a lot of times what what people
+will do is they they uh they will they
+will Splinter coins so the cool thing is
+we're talking about math so if I were to
+send you one I can send you one or I can
+send you a 100 point away away right and
+uh and and so what a lot of people will
+do is they they will they will fracture
+or they'll Splinter and and there
+Services called tumblers and and so if
+you if you haven't heard of Tumblr way a
+Tumblr would work is if if the three of
+us had 100 coins and Benson wants to buy
+Netflix all right um I send 100 in Trent
+sends 100 in and Benson sends 100 in the
+the network there splinters everything
+uh they they Splinter into
+.1 and they jumble them all up they move
+them all interact and then and then 100
+come out to the adets that that Bon you
+know to
+Netflix the the network doesn't know who
+those original 100 coins came from cuz
+they came from the three of us so does
+it
+anonymize so I don't know any FBI
+audience want to answer that question um
+so the answer is kind of okay um so if
+you wanted to be totally Anonymous right
+the way that you would do that is you
+would create a paper wallet and you
+would buy coin in cash and then that
+that paper wallet has no has no history
+tied to you I don't know why I just told
+you how to secretly buy Netflix hey Bill
+so slack sounds kind of cool what the
+hell is it and how do you join slack
+that's an excellent question so um how
+many people on here are not on the set
+casc slack 1 4 12 200 okay how do we get
+on this
+slack info you can email info.org or you
+can uh just come talk to one of us we
+can add to you manually or or or you can
+add add to the Google add request
+addition to the Google group when you
+send you like invite to I can do it a
+yeah soon soon uh so right now email
+info.org and soon we will have slack.
+secc.org that will allow you to get in
+post it on the slack Channel yeah you
+post it on the slack Channel request
+access to slack go to parties and then
+request that's
+funny
+questions all right I well I'll ask you
+a question bill is the 50,000 Bitcoin
+addresses or 50,000 pcoin addresses just
+because just for fun is there actually a
+reason to have yeah okay that's a really
+good question so so when you're mining
+um Let me let me go back here and and
+look at the the client um so this is the
+this is the setc client and if if I were
+to enable I'm sorry the SKC client if I
+were to enable mining into this client I
+have a couple options all right so let's
+just say that my computer is mining
+1.337 coins what about once a month now
+um I can I can either send it to my my
+public
+address right so you can see this this
+public address or I can have my minor
+every time one is minted to put it to
+create a new address and put that 1.337
+into that new address um and and really
+the only reason why you would do do that
+over just sending it to your your bank
+account is for obsc I mean that that's
+really the only only reason it doesn't
+really matter so much in SKC but in
+Bitcoin if I were to then want to buy
+Netflix that might be the better way
+maybe would you save on transaction Fe
+by keeping them separate uh you wouldn't
+save on it from keeping them separate
+you would save on it if you send it to a
+Consolidated address because so the
+question the question was oh I didn't
+even mention transaction fees I I
+completely skipped over that um so the
+question was would you save on
+transaction fees if if you were to do
+any one of those mining strategies
+affect transaction fees and one thing I
+didn't even talk about was transaction
+fees so back to your question uh earlier
+when when uh when we talk about the
+network um goes back and
+cryptographically signs every
+transaction right what's actually
+happening is that's part of the
+challenge that's being sent back out um
+to the network right so this hash I need
+you to uh I need you to prove that this
+exists and um and what as a function of
+that that's how new coins get mined we
+pay miners to to U validate those
+transactions that's occurred in the past
+that's called a transaction fee so if I
+were to send you 10
+SKC it may cost me um you know
+well thanks for asking a really
+complicated question it may it may cost
+me
+0.01 SKC just to send coin and what that
+has to do is that has to do with the
+complexity of the transaction so if I
+had if I had mined all those coins into
+one address I didn't have to do any kind
+of consolidation I could just send this
+one address to that one address and then
+0.1 now if I were to have M to multiple
+addresses what my client would need to
+do is consolidate those and then send
+those over to her and then each one of
+those would have a transaction fee
+associated with a
+0.01 um and it and then I would go to
+the network and then each one of those
+would have to be um verified before the
+money went over man that was really
+complicated I'm sorry never had to
+listen that I
+apologize yeah is a transaction fee flat
+or is it percentage
+so so the question is is the transaction
+fee flat and and the answer is it's math
+so the transaction fee is determined by
+how complex so the base transaction fee
+is
+0.01 um the transaction fee that that
+occurs is it dependent on how complex
+the transfer is I I know I wouldn't want
+that answer either um and it's very hard
+to comp very hard to compute so actually
+what happens uh and so in the whoever
+that brilliant programmer really needs
+to get on that on the bot um and figure
+that out but essentially what happens is
+it has to take a look at how complex
+that transaction is am I pulling from
+one wallet with five and one from one
+and one from Seven add those up um how
+big is the packet is it is it over the
+block size is it going to take more than
+one block right so it takes all of those
+into consideration before and that
+that's how the transaction fee is
+computed whatever
+bank right hey Bill do you have any
+plans to merge in all the latest Patches
+from Life Point or we still going to be
+like hatch on this by hand every time so
+um Richard do you want to raise your
+hand and take
+that no I do
+not so so the question was do we plan on
+um so so the fork from Litecoin uh is is
+a few commits behind and he's asking if
+I plan to to merge that back and and I
+guess the the the answer is is um I
+don't I I don't plan to do anything if
+anybody would like to take on the
+challenge um yeah do it it's not really
+overly that complicated but um I'm kind
+of you know it's kind of out up to the
+community to do
+that how many are available how many are
+out in the wild right now dude awesome
+question
+um so if we go look at at um so this is
+SKC SKC coin do do well there you go so
+right here is the network hashing rate
+this is how many people are mining right
+now so let me just put this in
+perspective okay so a an average MacBook
+Pro um with eight cores with ton of
+memory the fastest the you know the
+fastest of the fast can probably
+generate around 30 kashes so 30
+KH okay it's not bad an average uh $500
+video card Can Can on average mine about
+what
+900 kiles 900
+KH all right right now the N I took this
+right before I mean literally I was
+building the slides in the car on the
+way over um while driving while
+driving and drinking and and watching
+Netflix that's old
+right now we are currently at 17 Giga
+hases so Giga that's that's over so
+kilah has
+megahash gigahash I believe that we're
+going to understand how that happened
+here
+shortly oh but that didn't even answer
+your question sir um the the next the
+next tab is the current difficulty and
+then the next is the coin Supply right
+now there is
+115,200
+64 SKC in circulation with uh
+1.337 being mined every 80
+Seconds you can run the map what's that
+who's doing that I don't know but
+transac you know the transactions are
+just screaming right
+through any other
+questions is anybody plan on on that
+doesn't currently have Set casc coin
+plan on going and and getting involved
+running a client not these guys they're
+involved so so I I would really really
+encourage you if if you've heard of
+Bitcoin or if you've heard of Litecoin
+and you're interested in understanding
+this is the opportunity get involved
+right now um if you do have any
+questions I I just especially I know
+that there was a lot of new people here
+hey Bill yeah I got a question okay okay
+somebody that's ran a pool uh before
+that many miners would go ahead and
+contribute to and you'd all go ahead and
+resource yours back to the the the main
+coin uh I know how much it costs to go
+ahead and try and run some of that
+infrastructure I'm curious how much it
+actually can I ask how much does it cost
+to go ahead and run the the collective
+uh Set casc coin uh logging system the
+The
+Source oh that's a really good question
+so right now so let me make sure jny
+father I got the question right the
+question is is um not the mining
+equipment but how much does the setc
+coin infrastructure costing us right now
+the setc
+uh Set casc coin infrastructure is
+running on the
+lowest um the
+lowest uh digital ocean droplet I think
+that's five bucks a month and a
+Raspberry Pi 3 in my
+basement yeah please if you're going to
+attack one please attack the digital
+ocean
+one um now that and that cost that cost
+nothing right the mining is very
+different right so um yeah it's it's

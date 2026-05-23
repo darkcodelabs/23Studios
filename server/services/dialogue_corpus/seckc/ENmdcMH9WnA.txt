@@ -1,0 +1,299 @@
+that we can do with our Raspberry Pi for
+good and evil or just evil all good look
+at this guy look at this guy
+bluesaver let's give a round of applause
+thank you thank you all right so I think
+everybody and their brother has a
+Raspberry Pi laying around their house
+and I mean even the oldest one will do
+the trick
+in this case so I sat down one day and I
+was trying to figure out okay what's a
+good project that I can really kind of
+stretch my wings on and I said well
+let's make a wireless sensor and this
+isn't the first time I'm tried to kind
+of tackle this in case my name is Joker
+Stern a kind of blue team er a little
+bit of everything geek and this is kind
+of my motto which is it's not the in
+destination that is a goal it's the
+journey of myself and really it's all
+the stuff you learn when you're trying
+to accomplish a goal that's that's
+all right so we have our cards against
+humanity' theme here we've got what is
+the and we have a couple different
+options here which one do you think it
+is oh come on
+okay well I'll choose for you because I
+think for 33 you know white pie is the
+best option there so we'll do that
+alright and so what is it the 433 white
+pie is a raspberry pie and then it also
+has the ability to go out and it runs
+kismet Wireless so it's giving you an
+idea of what kind of Wi-Fi you have in
+the area and then it also has a rtl-sdr
+a software-defined radio and
+software-defined radios are really cool
+because they have this really big span
+of the bandwidth that they can look at
+and then you can pull that in digitally
+into the you know operating system and
+pull out interesting stuff so you know
+this is a very annoying okay
+so I wanted to kind of combine these two
+things and I wanted to do so in a very
+small form factor and so this is the
+device right here essentially what this
+is you have a RTL SDR which this one I
+got off of rtl-sdr dot-com I believe and
+they sell them for about 25 bucks now
+you can get these all over the place I
+mean they're super cheap you know there
+are anywhere between 10 to you know 25
+to 35 dollars depending on where you go
+rtl-sdr comm has one for about 25 but
+it's temperature stable and has a really
+okay well while they're working on that
+one
+another thing is that because it's a
+Raspberry Pi it's very energy efficient
+so most the time in the past whenever
+you've done wardriving you'd had to go
+out with a laptop
+well laptops are very bulky you have to
+you know keep it open you got all the
+power saving features you got a fight
+and it's not very good that it's a
+laptop typically isn't very good
+headless so a Raspberry Pi is low power
+you can hook in just about anything that
+supported them the Linux into the USB
+ports and because it is running Linux in
+the background you can pull that
+information in and pull it into the
+logging mechanisms and really make good
+use out of it so what kind of stuff that
+we got it do we have to pack in here to
+get this all to work as much as I'd be
+so one of the key things is that you can
+pull down data but there's a couple key
+things that you'll be missing with that
+data one that a raspberry pi is missing
+something very important does not have a
+real time battery backed up timer so so
+when you're logging when you turn off
+the PI and turn it back on it doesn't
+know what time it is so the only thing
+it has to go off of is that it
+whenever I shuts down it will record
+what the code the time was at the time
+and then it'll add something random to
+that and then when it boots out that's
+what the time is thank you is this
+better yeah all right thank you so
+that's what's one thing that you have to
+take into account when you start using a
+Raspberry Pi to do anything is that
+you're you have the time as you so
+there's a couple ways we can get around
+this one of them is with a GPS and so
+GPS doesn't hold it so the GPS is cool
+because it gives you a whole bunch of
+awesome stuff in real time so it tells
+you where you're at tells you your
+altitude but it also tells you in the
+current time and it's very accurate so
+the benefit of using in a GPS on any
+type of sensor is that you're gonna get
+really good time in addition to having
+it geo-located the other thing is is
+that you still want to have a real-time
+clock with that something battery backed
+up and so because when the Raspberry Pi
+turns on for the first time it's gonna
+default to that old bad time and so your
+logs are going to be all over the place
+so those two key things that's kind of
+my takeaway from all of this you also
+need the rtl-sdr now the one off of
+rtl-sdr tom has
+hook on a third party antenna which is
+very important and then you can go
+through and set up just about any type
+of lining supported Wi-Fi device but the
+trick is is at 802 11 G and the 2.4
+gigahertz spectrum is well represented
+but it's really hard to find something
+that 10 is 5 gigahertz so good luck with
+that
+and then we talk about accessories
+things that makes us even cooler so we
+talked about the real-time clock another
+thing that's really cool is CPU heat
+sinks because when you overheat a pie it
+starts getting weird
+you start getting memory errors and that
+kind of stuff and so it's very important
+to kind of keep your sensor cool so in
+short the software needed is that I'm
+using raspbian Linux and the other thing
+that you need is the RTL for 33 project
+and that's found on github and then your
+standard install of kismet so the art
+tale for 33 the cool thing about that is
+it hooks directly into the
+software-defined radio and then it - is
+it it tells it to go to the right
+frequency listens to for 33 megahertz
+which is where a lot of Internet of
+Things devices hang out and then it is
+able to decode those and then it'll take
+what is decoded and turn that into a
+JSON string and then what I'm doing with
+that information is I'm pulling that in
+the syslog now kismet also it's it's
+going on there and it's pulling in all
+the information about all the wireless
+access points in the area but it's also
+doping to syslog because there's a
+syslog plugin so syslog is important
+because just about everything supports
+it and so if you're turning this into a
+tool for the blue team you need to get
+this information and you need to have a
+live stream of information from this
+sensor that's telling you okay what's
+going on in this area and you're sending
+a baseline using that information plus
+you have your GPS onboard and I created
+a Python script that pulls in the GPS
+logs form those two sensors and then
+emits
+with the current stream of GPS data so
+it's gon coded so you have this this
+syslog stream that has GPS coordinates
+in addition to the log information that
+you're gathering so and something cool
+that you can do with this is that the
+one of the sensors that hangs out on for
+33 megahertz is tire pressure monitors
+and those monitors that they have a
+unique serial number to them so you can
+potentially set this up and listen to
+all the people listen to all the cars
+going through a certain point and
+picking up the unique serial numbers on
+their tire pressure monitors and so you
+can figure out who's coming in and out
+not my call okay yeah that that was very
+uncomfortable I don't want to do that
+again
+I couldn't have to do that again all
+okay how to build a one so rather than
+go through all the really boring details
+of how to splice this thing together I
+put all my code and all the instructions
+on how to make this happen on my github
+page so please by all means visit here
+and if you find a better way to do
+something please let me know so we can
+update that page any let's see here now
+with this data you can do some very
+interesting things so we have here our
+options do we want to learn about
+anchoring but I would like to know more
+about that for 33 megahertz frequency
+range so one of the things you'll see a
+lot of is these automated automatic
+temperature gauges so if you go into
+Walmart or anyplace you have this kind
+of wall dedicated to midlifecrisis is
+that all it really does is it gives you
+a sensor where you can read the current
+weather and you don't have to leave your
+house and they cost hundreds and
+hundreds of dollars well rather than
+spend hundreds of dollars would it be
+cooler just to use everybody else's
+sensor and have a compared statistically
+correct version that you can you know
+reference so that's that's one of the
+things so in this case I'm using grade
+log to pull in information in JSON
+format and also because it's geo-located
+that can kind of potentially triangulate
+where those stations are let's see here
+another one I will figure out what
+mmm life choices I don't think I have
+any slides on my poor life choices but
+I'm gonna go with kismet kismet is it's
+it's one of the original wardriving
+tools and the cool thing about it is
+it's a passive sensor so it's listening
+it's not actually sitting there
+beaconing out its present so it's
+actually just listening to seem kind of
+traffic yes and it really makes kind of
+I think it's really one of the only
+wireless intrusion detection systems out
+there now it's not really intended for
+this and that it's just kind of a user
+and goo GUI tool that displays kind of a
+scrolling list of access points as you
+find them but it also hooks them to the
+GPS system and then it's actually it's
+geo-locating all that information as it
+gets it so you can go through and get
+the logs and there's a tool also on
+github and it's called let's see here so
+this tool is called GIS kismet and so
+you take the kismet logs that are
+generated that have GPS information and
+then you can make a kml map and put that
+on google maps or in this case i have
+qgis and so i just build my own maps
+based off of that information and so you
+can plot out all the access points on
+so other things you can use this for
+because you have access to a GPS sensor
+one of the cool things you can do is
+that you can you essentially have a GPS
+disciplined time source which that's
+really important on the network because
+if you have 15 different servers each of
+them you know anywhere between 30
+seconds to you know five minutes off
+that causes a lot of problems when
+you're trying to figure out what's going
+on inside the network so that's one of
+the other things I've one of the things
+I've taken away from this is kind of the
+cool things about GPS and kind of other
+uses for it
+the 433 software it isn't limited to
+four hundred three or three megahertz
+you can sit there and have a jump all
+over to keep key places all over the
+spectrum and so not all tire pressure
+monitors hang out at 4:33 megahertz
+somewhere like 312 megahertz I mean
+they're all over the place so you can
+set it up so that will scan through
+those frequency ranges and tell you all
+and I think I learned that if an out of
+this project I learned Python you just
+get out of the first time which is kind
+of amazing I had never gotten around to
+it and that's kind of really the things
+I got after this this anybody have any
+questions what's going twice
+so the same way to this is that you have
+this data source but you have to do
+something with it and so johnny-five
+is a zen master of working with ELQ
+stack and so I think for our next talk
+here he is going to tell us now that we
+have a data source what we can do with
