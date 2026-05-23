@@ -1179,10 +1179,44 @@ async function runSfxBaseline({ sdkRoot, sdk, claudeCtx, storyBible, intake,
 
 async function runMusicAssign({ sdkRoot, sdk, claudeCtx, storyBible, intake,
                                 bibleVars, emit: ev }) {
-  const sourceDir = process.env.MUSIC_SOURCE_DIR
+  let sourceDir = process.env.MUSIC_SOURCE_DIR
     || '/home/hakcer/projects/personal/hakcd/tools/keygenmusic_scraper/downloads/keygenmusic';
+
+  // Phase 4.7.2 Patch C — auto-fetch keygen tracks via the vendored
+  // scraper when MUSIC_SOURCE_DIR is missing or empty. Falls through to
+  // the existing library matcher; the scraper writes IMA-ADPCM-converted
+  // .wav files into <scratchDir>, which seedLocalLibrary then indexes.
+  const hasTracks = fs.existsSync(sourceDir) &&
+    fs.readdirSync(sourceDir).some((f) => /\.(wav|mp3|mod|s3m|xm|it)$/i.test(f));
+  if (!hasTracks && process.env.STUDIO_NO_KEYGEN_MUSIC !== '1') {
+    try {
+      const kg = require('./music_keygen');
+      const tools = kg.toolsAvailable();
+      if (!tools.scraper || !tools.python || !tools.openmpt123 || !tools.ffmpeg) {
+        ev('log', { text: 'music: keygen tools incomplete (' +
+          JSON.stringify(tools) + ') — skipping' });
+        return;
+      }
+      const scratch = path.join('/tmp', 'keygen_work_' + Date.now());
+      const destForFetch = path.join(scratch, 'converted');
+      ev('log', { text: 'music: fetching keygen tracks → ' + destForFetch });
+      const results = await kg.fetchAndConvert({
+        destDir: destForFetch,
+        scratchDir: scratch,
+        limit: Math.max((sdk.scenes || []).length + 5, 8)
+      });
+      const ok = results.filter((r) => r.output);
+      ev('log', { text: `music: keygen fetched ${ok.length}/${results.length} (errors=${results.length - ok.length})` });
+      // Build a manifest in the seedLocalLibrary-expected shape: a flat dir
+      // of .wav files. Point sourceDir at destForFetch.
+      sourceDir = destForFetch;
+    } catch (e) {
+      ev('log', { text: 'music: keygen fetch failed — ' + (e.message || '').slice(0, 200) });
+      return;
+    }
+  }
   if (!fs.existsSync(sourceDir)) {
-    ev('log', { text: 'music: source dir missing; skipping' });
+    ev('log', { text: 'music: source dir still missing after fetch attempt; skipping' });
     return;
   }
   const destDir = path.join(sdkRoot, 'scene_music');
