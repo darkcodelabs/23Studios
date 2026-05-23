@@ -198,6 +198,28 @@ async function runBatch(projectId, sdkRoot, kind, batch, opts = {}) {
 
   await ensureBatchDirs(sdkRoot);
 
+  // localPath is one level above sdk_data; we write a post-mortem JSONL there
+  // so a failed batch leaves an audit trail the operator can grep without
+  // tail-following SSE. See instrumentation block below.
+  const localPath = path.dirname(sdkRoot);
+  const writeErrLog = path.join(localPath, 'asset_write_errors.jsonl');
+  async function recordWriteFailure(assetId, destPath, bytes, err) {
+    const rec = {
+      ts: Date.now(),
+      stage: kind === 'portrait' ? 'portrait_bursts' : 'scene_bursts',
+      kind,
+      assetId,
+      path: destPath,
+      bytes,
+      error: err && err.message,
+      code: err && err.code,
+      stack: err && err.stack
+    };
+    try {
+      await fsp.appendFile(writeErrLog, JSON.stringify(rec) + '\n');
+    } catch (_e) { /* secondary log failure — let the primary throw bubble */ }
+  }
+
   // Output dirs for the generated PNGs (existing autopilot convention)
   const kindOutputDir = {
     scene: path.join(sdkRoot, 'scenes'),
@@ -256,7 +278,20 @@ async function runBatch(projectId, sdkRoot, kind, batch, opts = {}) {
 
       if (!r || !r.pngBuffer) throw new Error('no png returned');
 
-      await fsp.writeFile(destPng, r.pngBuffer);
+      // CRITICAL: wrap the destPng write so a failure produces a structured
+      // error event + JSONL post-mortem instead of a silent retry. The
+      // ev('asset', ...) call MUST fire AFTER this resolves, so the asset
+      // event becomes proof of disk persistence (not just of an LLM response).
+      try {
+        await fsp.writeFile(destPng, r.pngBuffer);
+        ev('log', { text: `asset_write_ok ${kind}:${item.id} bytes=${r.pngBuffer.length} path=${destPng}` });
+      } catch (writeErr) {
+        ev('log', { text: `asset_write_FAILED ${kind}:${item.id} bytes=${r.pngBuffer.length} code=${writeErr.code} msg=${writeErr.message}` });
+        ev('error', { kind: 'asset_write', stage: kind === 'portrait' ? 'portrait_bursts' : 'scene_bursts',
+                      assetId: item.id, path: destPng, message: writeErr.message, code: writeErr.code });
+        await recordWriteFailure(item.id, destPng, r.pngBuffer.length, writeErr);
+        throw writeErr;  // re-throw — halt the stage instead of silently continuing
+      }
       bytesTotal += r.pngBuffer.length;
       generatedIds.push(item.id);
 
@@ -283,12 +318,24 @@ async function runBatch(projectId, sdkRoot, kind, batch, opts = {}) {
 
       // Mirror source (pre-dither) under art_source/<kind>/
       if (r.sourceBuffer) {
-        await fsp.writeFile(path.join(artSourceDir, item.id + '.png'), r.sourceBuffer);
+        try {
+          await fsp.writeFile(path.join(artSourceDir, item.id + '.png'), r.sourceBuffer);
+        } catch (srcErr) {
+          // Source mirror is best-effort; main asset already on disk.
+          ev('log', { text: `[batch ${batch.batch_id}] ${kind} ${item.id} art_source write failed: ${srcErr.message}` });
+          await recordWriteFailure(item.id + ':art_source', path.join(artSourceDir, item.id + '.png'),
+                                   r.sourceBuffer.length, srcErr);
+        }
       }
 
       // Copy to batch scratch dir for contact sheet compositing
-      await fsp.copyFile(destPng, path.join(batchScratchDir, item.id + '.png'));
+      try {
+        await fsp.copyFile(destPng, path.join(batchScratchDir, item.id + '.png'));
+      } catch (copyErr) {
+        ev('log', { text: `[batch ${batch.batch_id}] ${kind} ${item.id} scratch copy failed: ${copyErr.message}` });
+      }
 
+      // Asset event AFTER disk write confirmed — proof of persistence.
       ev('asset', { kind, id: item.id, bytes: r.pngBuffer.length, batch_id: batch.batch_id });
     } catch (e) {
       ev('log', { text: `[batch ${batch.batch_id}] ${kind} ${item.id} failed: ${e.message}` });
@@ -315,7 +362,15 @@ async function runBatch(projectId, sdkRoot, kind, batch, opts = {}) {
     batchesDir(sdkRoot),
     `${kind}_${batch.batch_id}_manifest.json`
   );
-  await fsp.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+  try {
+    await fsp.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+  } catch (mfErr) {
+    ev('log', { text: `manifest_write_FAILED ${kind} ${batch.batch_id} code=${mfErr.code} msg=${mfErr.message}` });
+    ev('error', { kind: 'manifest_write', stage: 'batch', batch_id: batch.batch_id,
+                  path: manifestPath, message: mfErr.message, code: mfErr.code });
+    await recordWriteFailure('manifest:' + batch.batch_id, manifestPath, 0, mfErr);
+    throw mfErr;
+  }
 
   ev('batch_done', { batch_id: batch.batch_id, kind, items: generatedIds, contact_sheet_path: csPath });
 

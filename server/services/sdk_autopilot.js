@@ -48,6 +48,43 @@ function emit(onEvent, evt, data) {
   }
 }
 
+// Instrumented asset write. Wraps fsp.writeFile so a permission/space/path
+// failure produces:
+//   1. an SSE log line ('asset_write_FAILED ...')
+//   2. an SSE 'error' event with kind='asset_write'
+//   3. a JSONL post-mortem at <localPath>/asset_write_errors.jsonl
+//   4. a re-thrown error — the stage halts instead of silently continuing
+//
+// The post-write 'asset' event MUST be emitted by callers AFTER this resolves,
+// so 'asset' on the wire becomes proof of disk persistence (not just of LLM
+// response). Returns true on success, throws on failure.
+async function writeAssetBuffer(destPath, buffer, ev, ctx = {}) {
+  const { stage, kind, assetId, sdkRoot } = ctx;
+  const localPath = sdkRoot ? path.dirname(sdkRoot) : null;
+  try {
+    await fsp.writeFile(destPath, buffer);
+    ev('log', { text: `asset_write_ok ${kind || ''}:${assetId || ''} bytes=${buffer.length} path=${destPath}` });
+    return true;
+  } catch (err) {
+    ev('log', { text: `asset_write_FAILED ${kind || ''}:${assetId || ''} bytes=${buffer.length} code=${err.code} msg=${err.message}` });
+    ev('error', { kind: 'asset_write', stage, assetKind: kind, assetId,
+                  path: destPath, message: err.message, code: err.code });
+    if (localPath) {
+      try {
+        await fsp.appendFile(
+          path.join(localPath, 'asset_write_errors.jsonl'),
+          JSON.stringify({
+            ts: Date.now(), stage, kind, assetId,
+            path: destPath, bytes: buffer.length,
+            error: err.message, code: err.code, stack: err.stack
+          }) + '\n'
+        );
+      } catch (_e) { /* secondary log failure — let the primary throw bubble */ }
+    }
+    throw err;
+  }
+}
+
 // Fire-and-forget review board sync after each stage. Never fails the stage.
 function syncReviewBoard(projectId, sdkRoot) {
   sdkReviewBoard.sync(projectId, sdkRoot).catch((_e) => { /* non-fatal */ });
@@ -437,7 +474,8 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
           projectId, sceneId: s.id, stage: 'scene_bursts'
         });
         if (!r.pngBuffer) throw new Error('no png returned');
-        await fsp.writeFile(destPng, r.pngBuffer);
+        await writeAssetBuffer(destPng, r.pngBuffer, ev,
+          { stage: 'scene_bursts', kind: 'scene', assetId: s.id, sdkRoot });
         // Sidecar for Phase 4.5 gallery. Best-effort — never block autopilot.
         try {
           await fsp.writeFile(
@@ -456,13 +494,17 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
         if (r.sourceBuffer) {
           const srcDir = path.join(sdkRoot, 'art_source', 'scenes');
           await fsp.mkdir(srcDir, { recursive: true });
-          await fsp.writeFile(path.join(srcDir, s.id + '.png'), r.sourceBuffer);
+          try {
+            await writeAssetBuffer(path.join(srcDir, s.id + '.png'), r.sourceBuffer, ev,
+              { stage: 'scene_bursts', kind: 'scene_source', assetId: s.id, sdkRoot });
+          } catch (_srcErr) { /* primary already on disk; instrumentation captured details */ }
         }
+        // Asset event AFTER disk write confirmed — proof of persistence.
         ev('asset', { kind: 'scene', id: s.id, bytes: r.pngBuffer.length });
       } catch (e) {
         ev('log', { text: `scene ${s.id} failed: ${e.message}` });
         if (s.style_reference) {
-          await tryReferenceFallback(s, destPng, ev);
+          await tryReferenceFallback(s, destPng, ev, sdkRoot);
         }
       }
     }
@@ -535,7 +577,7 @@ async function runSceneBursts({ projectId, sdkRoot, sdk, ctx, emit: ev, job,
 
 const REFERENCE_DIR = '/home/hakcer/projects/personal/hakcd/hakcd_pixel_collection';
 
-async function tryReferenceFallback(scene, destPng, ev) {
+async function tryReferenceFallback(scene, destPng, ev, sdkRoot) {
   try {
     const sharp = require('sharp');
     const refName = scene.style_reference;
@@ -557,7 +599,9 @@ async function tryReferenceFallback(scene, destPng, ev) {
       .toColourspace('b-w')
       .png()
       .toBuffer();
-    await fsp.writeFile(destPng, buf);
+    await writeAssetBuffer(destPng, buf, ev,
+      { stage: 'scene_bursts_fallback', kind: 'scene_ref_fallback', assetId: scene.id, sdkRoot });
+    // Asset event AFTER disk write confirmed.
     ev('asset', { kind: 'scene_ref_fallback', id: scene.id, ref: refName, bytes: buf.length });
   } catch (e) {
     ev('log', { text: `reference fallback failed for ${scene.id}: ${e.message}` });
@@ -589,7 +633,8 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
           projectId, sceneId: c.id, stage: 'portrait_bursts'
         });
         if (!r.pngBuffer) throw new Error('no png returned');
-        await fsp.writeFile(destPng, r.pngBuffer);
+        await writeAssetBuffer(destPng, r.pngBuffer, ev,
+          { stage: 'portrait_bursts', kind: 'portrait', assetId: c.id, sdkRoot });
         // Sidecar for Phase 4.5 gallery. Best-effort — never block autopilot.
         try {
           await fsp.writeFile(
@@ -608,8 +653,12 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
         if (r.sourceBuffer) {
           const srcDir = path.join(sdkRoot, 'art_source', 'characters');
           await fsp.mkdir(srcDir, { recursive: true });
-          await fsp.writeFile(path.join(srcDir, c.id + '.png'), r.sourceBuffer);
+          try {
+            await writeAssetBuffer(path.join(srcDir, c.id + '.png'), r.sourceBuffer, ev,
+              { stage: 'portrait_bursts', kind: 'portrait_source', assetId: c.id, sdkRoot });
+          } catch (_srcErr) { /* primary already on disk; instrumentation captured details */ }
         }
+        // Asset event AFTER disk write confirmed — proof of persistence.
         ev('asset', { kind: 'portrait', id: c.id, bytes: r.pngBuffer.length });
       } catch (e) {
         ev('log', { text: `portrait ${c.id} failed: ${e.message}` });
@@ -1185,7 +1234,8 @@ async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, int
         projectId, sceneId: t.name, stage: 'launcher'
       });
       if (!r.pngBuffer) throw new Error('no png returned');
-      await fsp.writeFile(out, r.pngBuffer);
+      await writeAssetBuffer(out, r.pngBuffer, ev,
+        { stage: 'launcher', kind: 'launcher', assetId: t.name, sdkRoot });
       // Sidecar for Phase 4.5 gallery. Best-effort — never block autopilot.
       // Launcher path has no `kind` var in scope; stage is always 'launcher'.
       try {
@@ -1205,8 +1255,12 @@ async function runLauncher({ projectId, sdkRoot, sdk, claudeCtx, storyBible, int
       if (r.sourceBuffer) {
         const srcDir = path.join(sdkRoot, 'art_source', 'launcher');
         await fsp.mkdir(srcDir, { recursive: true });
-        await fsp.writeFile(path.join(srcDir, t.name), r.sourceBuffer);
+        try {
+          await writeAssetBuffer(path.join(srcDir, t.name), r.sourceBuffer, ev,
+            { stage: 'launcher', kind: 'launcher_source', assetId: t.name, sdkRoot });
+        } catch (_srcErr) { /* primary already on disk; instrumentation captured details */ }
       }
+      // Asset event AFTER disk write confirmed — proof of persistence.
       ev('asset', { kind: 'launcher', id: t.name, bytes: r.pngBuffer.length });
     } catch (e) {
       ev('log', { text: `launcher ${t.name} failed: ${e.message}` });
