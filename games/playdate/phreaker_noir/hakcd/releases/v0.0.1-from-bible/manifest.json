@@ -1,0 +1,21 @@
+{
+  "game": "hakcd",
+  "platform": "playdate",
+  "genre": "phreaker_noir",
+  "tag": "v0.0.1-from-bible",
+  "built_at": "2026-05-23T16:06:10.804Z",
+  "pdx_zip": "hakcd-v0.0.1-from-bible.pdx.zip",
+  "bytes": 63950979,
+  "sha256": "cc3217bf3aee13d4ff402caaca7b0f9c7725b7f6f751e896a3e079b0036649c2",
+  "pipeline": "23 Studios bible-driven autopilot",
+  "pipeline_commit": "3bd6ac3e24f759aefebd68a69a3be5b4a61ffcda",
+  "assets": {
+    "scenes": 27,
+    "portraits": 16,
+    "dialogue_json": 88,
+    "sfx_pda": 6,
+    "music_pda": 25,
+    "launcher_pdi": 3
+  },
+  "total_files_in_pdx": 101
+}
