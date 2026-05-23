@@ -134,6 +134,108 @@
  */
 
 // ============================================================================
+// 4b. MechanicState — typed per-mechanic state machines
+// ============================================================================
+//
+// Added in v3 per coordinator review. Every gameplay mechanic with a
+// progression-bearing state machine declares its states + legal transitions
+// here. progression.lua reads / writes via the typed wrappers below.
+//
+// Two state machines ship in Wave A/B as Day-1 regression tests:
+//   PWNGLOVE (multi-tool, see phase5_pwnglove_multitool_addendum.md)
+//   Coin (24-coin grid, see phase5_pwnglove_coins_priority.md)
+
+/**
+ * @typedef {Object} PwngloveState
+ *
+ * Top-level equip state:
+ * @property {'holstered'|'equipped'} equip_state
+ *   holstered: in inventory, no input read, no HUD
+ *   equipped:  HUD active, crank read, layer inputs live
+ *
+ * Per-layer unlock + activity (each layer state advances independently;
+ * Tyson master unlock cascade-flips them all):
+ * @property {Object} layers
+ *   @property {Object} layers.konami
+ *     @property {boolean} unlocked     true when equip_state='equipped' (always)
+ *     @property {'idle'|'buffering'|'konami_armed'|'konami_consumed'} state
+ *     @property {number} bonus_attempts   0 unless konami_armed; cleared on consume
+ *   @property {Object} layers.flipper
+ *     @property {Object<string,boolean>} tools_unlocked   { rfid_clone, subghz_replay, ir_learn, ibutton_emulate, blue_box, bad_usb }
+ *     @property {string=} active_tool          null or a key from tools_unlocked
+ *     @property {Object<string,number>} charge   per-tool charge meter (0..100)
+ *   @property {Object} layers.portal
+ *     @property {boolean} unlocked
+ *     @property {number} portal_energy         0..100, live during charge
+ *     @property {number} uses_remaining_this_act   refills on act transition
+ *   @property {Object} layers.gravity
+ *     @property {boolean} unlocked
+ *     @property {string=} attached_object_id   null when not holding
+ *     @property {number} heat                  0..100 (sustained 200+ RPM accumulates)
+ *     @property {number} cooldown_until_ms     0 if cool
+ *
+ * Master unlock:
+ * @property {boolean} tyson_unlock              persisted; cascade-flips all layer.unlocked=true
+ */
+
+/**
+ * @typedef {'holstered'|'equipped'} PwngloveEquipState
+ * @typedef {'idle'|'buffering'|'konami_armed'|'konami_consumed'} KonamiState
+ * @typedef {'idle'|'charging'|'ready'|'cooling'} FlipperToolState
+ * @typedef {'idle'|'charging'|'warping'|'cooldown'|'collapsed'} PortalState
+ * @typedef {'idle'|'attaching'|'attached'|'placing'|'throwing'|'overheated'} GravityState
+ */
+
+// Legal transitions enforced by progression.lua:
+//
+//   konami:
+//     idle        → buffering   (any d-pad input while equipped, no layer claimed input)
+//     buffering   → idle        (mismatch OR timeout > buffer_timeout_ms)
+//     buffering   → konami_armed (full sequence matched)
+//     konami_armed → konami_consumed (next minigame consumes bonus)
+//     konami_consumed → idle
+//
+//   flipper.<tool>:
+//     unlocked=false → unlocked=true (on the matching scene_complete event)
+//     idle → charging    (player holds A on a tool target hotspot)
+//     charging → ready   (charge meter hits 100 OR per-tool threshold)
+//     ready → cooling    (tool emits; sets cooldown timer)
+//     cooling → idle     (cooldown elapsed)
+//
+//   portal:
+//     idle → charging       (player holds B + cranks)
+//     charging → warping    (player releases B with portal_energy >= 25)
+//     charging → collapsed  (player releases B with portal_energy < 25; use consumed)
+//     warping → cooldown    (scene_manager.replace fires, uses_remaining-- )
+//     cooldown → idle       (next act transition refills uses_remaining)
+//
+//   gravity:
+//     idle → attaching      (A on movable_object, RPM check passes)
+//     attaching → attached  (object cursor-follows)
+//     attached → placing    (A press; object stays at cursor)
+//     attached → throwing   (B press; force = current RPM)
+//     attached → overheated (heat >= 100; force-drop, NeoPixels red)
+//     placing/throwing/overheated → idle (3s cooldown if overheated)
+
+/**
+ * @typedef {Object} CoinState
+ *
+ * Per-coin state machine (one instance per coin 0..23):
+ * @property {number} id                  0..23
+ * @property {'locked'|'available'|'minting'|'minted'} state
+ * @property {boolean} phrase_known       true once scene reveals the phrase
+ * @property {boolean} puzzle_complete    true when ENTIRE coin solved
+ * @property {string[]} hints_seen        ids of hints the player has triggered
+ */
+
+// Legal CoinState transitions:
+//   locked → available   (phrase_known=true OR previous-coin puzzle_complete=true per canonical rule)
+//   available → minting  (A-press in coin_grid on this coin's cell)
+//   minting → available  (B-press abandons puzzle)
+//   minting → minted     (puzzle_complete=true)
+//   minted → minted      (terminal)
+
+// ============================================================================
 // 5. SaveState flag namespace — progression → save_state
 // ============================================================================
 //
@@ -154,7 +256,31 @@
  *   @property {string[]} flags.unlocked_tools  ["wardialer", "red_box", "blue_box", "beige_box", "killswitch"]
  *   @property {Object} flags.scene_state   Per-scene persisted state (e.g. computer:'powered_on')
  *   @property {Object} flags.scripted_event_timers   {event_name: next_fire_ts}
+ *   @property {PwngloveState} flags.pwnglove    typed PWNGLOVE state machine (see MechanicState section)
+ *   @property {Object<string,CoinState>} flags.coins   typed CoinState[] keyed by coin id "0".."23"
+ *   @property {boolean} flags.pwnglove_mode_complete   playground all-8-stations visited
+ * @property {Object<string,Object>} checkpoints  Named deep-copies of flags for system-menu PWNGLOVE MODE
+ *                                                push/has/restore exposed via progression.lua
  */
+
+// ============================================================================
+// 5b. Checkpoint API — progression.lua, gates Team Wiring
+// ============================================================================
+//
+// Required for PWNGLOVE MODE playground (system menu entry/exit). Player
+// hits menu → "pwnglove mode" → push_checkpoint("pre_pwnglove_mode") →
+// scene_manager.transition_to("pwnglove_playground"). Player hits menu →
+// "back to story" → restore_checkpoint("pre_pwnglove_mode") restores all
+// flags, replays scene stack.
+//
+// Lua-side API:
+//   progression.push_checkpoint(label: string) -- deep-copy flags + scene stack
+//   progression.has_checkpoint(label: string) -> bool
+//   progression.restore_checkpoint(label: string) -- restore + drop
+//
+// Implementation note: deep-copy must include scene_state, inventory, coins,
+// pwnglove subtree. Audio prefs (music_enabled etc.) are NOT checkpointed —
+// they should persist across mode switches.
 
 // ============================================================================
 // 6. EventBus event — event_bus → scenes / progression / audio_manager
@@ -318,16 +444,26 @@
 // ============================================================================
 
 module.exports = {
-  // Bible field enums — Bible team validates against these
+  // Bible field enums — Bible team validates against these.
+  //
+  // v3 changes (2026-05-23 batch absorb):
+  //   - REPLACED 'pwnglove_konami_unlock' with 'pwnglove_multitool'
+  //     (Konami is now Layer 1 of the multi-tool umbrella, not a top-level kit)
+  //   - REMOVED 'lockpick_crank' — scope mitigation per multi-tool addendum:
+  //     real lockpicks route through PWNGLOVE Flipper.blue_box at Bell pedestal,
+  //     crank-controlled via the unified pwnglove_hud.crank_rpm channel.
   MECHANIC_KIT_VALUES: [
     // TOP PRIORITY — real-world-grounded mechanics from
     // NoDataFound/TriKC0x01 + NoDataFound/23Coins. See
-    // docs/phase5_pwnglove_coins_priority.md. These two go through the
-    // emitter FIRST as the regression test for recipe inlining.
-    'pwnglove_konami_unlock',
+    // docs/phase5_pwnglove_coins_priority.md +
+    // docs/phase5_pwnglove_multitool_addendum.md +
+    // docs/phase5_pwnglove_crank_power_channel.md +
+    // docs/phase5_pwnglove_mode_playground.md.
+    // These two go through the emitter FIRST as the regression test for
+    // recipe inlining.
+    'pwnglove_multitool',
     'coin_grid_minter',
 
-    'lockpick_crank',
     'dialog_branch',
     'inventory_grid',
     'platformer_run',
@@ -342,6 +478,64 @@ module.exports = {
     null   // explicit null = shell scene, no mechanic
   ],
 
+  // PWNGLOVE power layer ids — bible parser validates against these.
+  PWNGLOVE_POWER_LAYERS: [
+    'konami',          // Layer 1 — equip-unlocked, +30 attempts buffer
+    'flipper',         // Layer 2 — six tools, progressively unlocked
+    'portal',          // Layer 3 — scene fast-travel, Act 3 unlock
+    'gravity',         // Layer 4 — object manipulation, Act 4 unlock
+    'tyson'            // Master — 007-373-5963 cascade-unlocks all of above
+  ],
+
+  // PWNGLOVE Flipper tool ids — bible parser validates against these.
+  PWNGLOVE_FLIPPER_TOOLS: [
+    'rfid_clone', 'subghz_replay', 'ir_learn',
+    'ibutton_emulate', 'blue_box', 'bad_usb'
+  ],
+
+  // Tyson master unlock code — referenced by pwnglove_tyson.lua runtime
+  // module + recipe_loader's code matcher. Mike Tyson's Punch-Out!! (NES, 1987).
+  TYSON_MASTER_CODE: '007-373-5963',
+
+  // Crank-as-power-channel canonical formulas. Team Runtime implements these
+  // exactly. Changes require coordinator approval — these are part of the
+  // game feel contract, not the API contract.
+  CRANK_POWER_CURVES: {
+    konami_buffer: {
+      // attempts = 30 + log(1 + crank_revs_post_konami) * 25
+      base: 30, log_coef: 25, asymptote: 100
+    },
+    flipper: {
+      rfid_clone:      { mode: 'accumulate', rate_per_rpm: 1.0, decay_per_sec: 5,  threshold: 50 },
+      subghz_replay:   { mode: 'live',       formula: 'clamp(rpm/10, 0, 30)',       capture_min: 15 },
+      ir_learn:        { mode: 'live',       formula: 'rpm * 0.5',                  range_div: 10 },
+      blue_box:        { mode: 'cumulative_during_hold', sec_per_rev: 0.2 },
+      ibutton_emulate: { mode: 'live',       formula: 'rpm * 100',                  lock_window_hz: 5, target_hz: 6000 },
+      bad_usb:         { mode: 'live',       formula: 'clamp(rpm/2, 1, 60)' }
+    },
+    portal: {
+      energy_per_rev: 1.0,
+      thresholds: { same_act: 25, prev_acts: 60, seckc_hive: 100 },
+      collapse_below: 25
+    },
+    gravity: {
+      // Object mass -> required RPM to lift
+      required_rpm: { post_it: 5, floppy: 20, modem: 60, server_rack: 200, refrigerator: 300 },
+      heat_per_sec_above_200: 1,
+      heat_decay_per_sec: 10,
+      overheat_at: 100,
+      cooldown_ms: 3000,
+      throw_force_div: 1   // force = rpm at release / div
+    },
+    tyson: {
+      digit_count: 11,                  // 9 digits + 2 auto-inserted dashes
+      digit_advance_input: 'a',
+      digit_commit_input: 'reverse_crank_flick',
+      flick_min_reverse_rpm: 60,
+      flick_window_ms: 250
+    }
+  },
+
   HOTSPOT_INTERACT_KINDS: [
     'dialog', 'minigame', 'pickup', 'transition', 'scripted'
   ],
@@ -355,12 +549,16 @@ module.exports = {
 
   RESERVED_SAVE_STATE_FLAGS: [
     'handle', 'current_act', 'completed_scenes', 'inventory',
-    'unlocked_tools', 'scene_state', 'scripted_event_timers'
+    'unlocked_tools', 'scene_state', 'scripted_event_timers',
+    // v3 additions
+    'pwnglove', 'coins', 'pwnglove_mode_complete', 'tyson_unlock'
   ],
 
   TOOL_IDS: [
     'wardialer', 'red_box', 'blue_box', 'beige_box',
-    'password_cracker', 'killswitch'
+    'password_cracker', 'killswitch',
+    // v3 — PWNGLOVE itself is an inventory item
+    'pwnglove'
   ],
 
   // Sidecar path conventions — wireSourceTree contract
@@ -373,5 +571,37 @@ module.exports = {
     sprite_dst:    'source/images/sprites'
   },
 
-  CONTRACT_VERSION: '5.0.0-day1+pwnglove'
+  // PWNGLOVE MODE playground — system menu integration contract.
+  // Coordinator hand-authors source/scenes/pwnglove_playground.lua against
+  // these constants. Team Wiring exposes the system menu hook in main.lua.
+  PWNGLOVE_PLAYGROUND_SCENE_ID: 'pwnglove_playground',
+  PWNGLOVE_PLAYGROUND_CHECKPOINT_LABEL: 'pre_pwnglove_mode',
+  SYSTEM_MENU_ITEMS: [
+    {
+      label: 'pwnglove mode',
+      action: 'enter_pwnglove_mode',
+      always_available: true
+    },
+    {
+      label: 'back to story',
+      action: 'exit_pwnglove_mode',
+      available_when: 'has_checkpoint(pre_pwnglove_mode)'
+    }
+  ],
+
+  // 8 playground hotspots — Team Emitter recipe ids must exist for each
+  // station. Coordinator's hand-authored playground scene wires hotspots
+  // to these recipe ids 1:1.
+  PWNGLOVE_PLAYGROUND_STATIONS: [
+    { id: 'lockpick_station', recipe: 'pwnglove_lockpick_station', tier: 1, ui_ref: 'bible_media/art/pwnglove_lockpick_ui_ref.png' },
+    { id: 'rfid_pedestal',    recipe: 'pwnglove_flipper_suite',    tier: 2, ui_ref: 'bible_media/art/pwnglove_rfid_ui_ref.png' },
+    { id: 'payphone',         recipe: 'pwnglove_flipper_suite',    tier: 2 },
+    { id: 'ir_wall',          recipe: 'pwnglove_flipper_suite',    tier: 3 },
+    { id: 'gravity_arena',    recipe: 'pwnglove_gravity_gun',      tier: 3 },
+    { id: 'subghz_tuner',     recipe: 'pwnglove_flipper_suite',    tier: 3 },
+    { id: 'portal_pedestal',  recipe: 'pwnglove_portal_gun',       tier: 3 },
+    { id: 'tyson_cabinet',    recipe: 'pwnglove_tyson_master_unlock', tier: 1 }
+  ],
+
+  CONTRACT_VERSION: '5.0.0-day1+pwnglove+crank+playground+v3'
 };

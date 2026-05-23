@@ -11,15 +11,19 @@ These were pulled from the cloned `NoDataFound/23Coins` repo and placed under `b
 
 These can serve as primary refs for the coin grid recipe's art passes until the user supplies higher-fidelity assets.
 
-## Still missing — user must drop
+## MagPi Issue 33 scans — DELIVERED 2026-05-23
 
-Three MagPi Issue 33 (May 2015) scans referenced by the bible PWNGLOVE section. Required filenames at `/home/hakcer/projects/personal/hakcd/bible_media/art/`:
+User dropped three slideshare screenshots from Cory Kennedy's own MagPi 33 upload (`slideshare.net/slideshow/magpi33powergl…`). Copied with canonical names to `/home/hakcer/projects/personal/hakcd/bible_media/art/`:
 
-| Required filename | Source content |
-|---|---|
-| `pwnglove_real_magpi_hero.jpg` | Cover / hero shot — full PWNGLOVE buildup + Cory headshot |
-| `pwnglove_real_magpi_disassembly.jpg` | Build-process page — disassembled glove + parts on a table |
-| `pwnglove_real_magpi_feature.jpg` | Feature spread — "Quick Facts" sidebar + build details |
+| Filename | Source screenshot | Content |
+|---|---|---|
+| `pwnglove_real_magpi_hero.jpg` | `Screenshot_2026-05-23-15-11-26-66…` | PWNGLOVE title spread — hero shot of full buildup glowing + Cory Kennedy headshot + opening paragraph |
+| `pwnglove_real_magpi_disassembly.jpg` | `Screenshot_2026-05-23-15-11-31-47…` | Build-process page — disassembled Power Glove with parts on a table + assembled NeoPixel-lit final + "START PLAYING WITH POWER" STEP-01/02/03 callout |
+| `pwnglove_real_magpi_feature.jpg` | `Screenshot_2026-05-23-15-11-40-78…` | Slideshare landing page — "MagPi33_PowerGlove" by Cory Kennedy + AI-enhanced description text + hero thumbnail |
+
+Bible `art:` block in `personal/hakcd/sdk_data/story_bible.md` already references these filenames; the **MISSING** annotations on the PWNGLOVE section are now stale and should be removed in a follow-up bible pass.
+
+## Still optional
 
 Optional but recommended:
 

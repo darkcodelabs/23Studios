@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "description": "11 mechanic kits the autopilot can drop into a scene slot. lua_template is a full per-scene module; the autopilot substitutes {SCENE_ID}, {SCENE_NAME}, {SCENE_TITLE} tokens then writes to scenes/{SCENE_ID}.lua.  --  v2: PWNGLOVE + 23 C0iNS prepended as TOP-priority recipes; see docs/phase5_pwnglove_coins_priority.md",
+  "version": 3,
+  "description": "11 mechanic kits the autopilot can drop into a scene slot. lua_template is a full per-scene module; the autopilot substitutes {SCENE_ID}, {SCENE_NAME}, {SCENE_TITLE} tokens then writes to scenes/{SCENE_ID}.lua.  --  v2: PWNGLOVE + 23 C0iNS prepended as TOP-priority recipes; see docs/phase5_pwnglove_coins_priority.md  --  v3: PWNGLOVE multi-tool stack absorbed (flipper/portal/gravity/tyson + playground lockpick_station), crank_power_channel=true on all PWNGLOVE recipes, dropped crank_lockpick (replaced by Flipper.blue_box at Bell pedestal). See docs/phase5_pwnglove_*.md",
   "recipes": [
     {
       "id": "pwnglove_konami_unlock",
@@ -59,7 +59,365 @@
         "sfx_unlock": "sounds/sfx/konami_unlock",
         "neopixel_pattern": "rainbow_sweep"
       },
-      "lua_template": "-- scenes/{SCENE_ID}.lua\n-- {SCENE_NAME} - pwnglove_konami_unlock recipe (TOP priority).\n-- Real-world ref: NoDataFound/TriKC0x01/PwnGlove.ino + MagPi Issue 33.\nimport \"CoreLibs/timer\"\n\nlocal gfx <const> = playdate.graphics\nlocal Scene = {}\nlocal state = {}\n\nlocal EXPECTED = { 'up','up','down','down','left','right','left','right','b','a','start' }\n\nlocal function reset_buffer()\n  state.buffer = {}\n  state.last_input_ms = playdate.getCurrentTimeMilliseconds()\nend\n\nfunction Scene.enter()\n  state.equipped = progression and progression.has_item and progression.has_item('pwnglove') or false\n  state.armed = false\n  state.bonus_attempts = 0\n  state.bend = { t=0, i=0, m=0, r=0 }\n  state.neopixel_phase = 0\n  state.flash = 0\n  reset_buffer()\n  state.sfx_step = playdate.sound.sampleplayer.new('sounds/sfx/konami_step')\n  state.sfx_unlock = playdate.sound.sampleplayer.new('sounds/sfx/konami_unlock')\nend\n\nfunction Scene.exit()\n  if state.sfx_step then state.sfx_step:stop() end\n  if state.sfx_unlock then state.sfx_unlock:stop() end\nend\n\nlocal function feed(input)\n  if not state.equipped or state.armed then return end\n  local now = playdate.getCurrentTimeMilliseconds()\n  if now - (state.last_input_ms or 0) > {{buffer_timeout_ms}} then reset_buffer() end\n  state.last_input_ms = now\n  local expected_step = EXPECTED[#state.buffer + 1]\n  if input == expected_step then\n    table.insert(state.buffer, input)\n    if state.sfx_step then state.sfx_step:play(1) end\n    if #state.buffer == #EXPECTED then\n      state.armed = true\n      state.bonus_attempts = {{bonus_attempts}}\n      state.flash = 30\n      if state.sfx_unlock then state.sfx_unlock:play(1) end\n      if event_bus and event_bus.publish then\n        event_bus.publish({ type='recipe.win', scope='global', payload={ recipe='pwnglove_konami_unlock', konami_armed=true, bonus_attempts={{bonus_attempts}} } })\n      end\n      if progression and progression.set_pwnglove_state then\n        progression.set_pwnglove_state('konami_armed')\n      end\n    end\n  else\n    reset_buffer()\n  end\nend\n\nfunction Scene:input(evt)\n  feed(evt)\nend\n\nfunction Scene.update()\n  playdate.timer.updateTimers()\n  state.neopixel_phase = (state.neopixel_phase + 1) % 256\n  if state.flash > 0 then state.flash = state.flash - 1 end\nend\n\nfunction Scene.draw()\n  gfx.clear(gfx.kColorWhite)\n  if state.flash > 0 then\n    gfx.setDitherPattern(state.flash / 30, gfx.image.kDitherTypeAtkinson)\n    gfx.fillRect(0, 0, 400, 240)\n    gfx.setDitherPattern(0)\n  end\n  gfx.drawText('PWNGLOVE', 12, 12)\n  if not state.equipped then\n    gfx.drawText('NOT EQUIPPED - holster slot', 12, 40)\n    return\n  end\n  -- bottom-strip HUD: 4 finger LEDs left, konami buffer right\n  gfx.fillRect(0, 218, 400, 22)\n  gfx.setImageDrawMode(gfx.kDrawModeFillWhite)\n  for i = 1, 4 do\n    local bend = ({ state.bend.t, state.bend.i, state.bend.m, state.bend.r })[i]\n    local x = 8 + (i - 1) * 16\n    if bend > 128 then gfx.fillCircleAtPoint(x + 6, 229, 5) else gfx.drawCircleAtPoint(x + 6, 229, 5) end\n  end\n  for i = 1, #EXPECTED do\n    local x = 96 + (i - 1) * 24\n    local g = EXPECTED[i]:sub(1, 1):upper()\n    if i <= #state.buffer then gfx.fillRect(x, 222, 18, 14); gfx.setImageDrawMode(gfx.kDrawModeFillBlack); gfx.drawText(g, x + 4, 223); gfx.setImageDrawMode(gfx.kDrawModeFillWhite)\n    else gfx.drawRect(x, 222, 18, 14); gfx.drawText(g, x + 4, 223) end\n  end\n  if state.armed then gfx.drawText('+30 ATTEMPTS ARMED', 96, 200) end\n  gfx.setImageDrawMode(gfx.kDrawModeCopy)\nend\n\n_G['{SCENE_ID}'] = Scene\n_G['Scene_{SCENE_ID}'] = Scene\nreturn Scene\n"
+      "lua_template": "-- scenes/{SCENE_ID}.lua\n-- {SCENE_NAME} - pwnglove_konami_unlock recipe (TOP priority).\n-- Real-world ref: NoDataFound/TriKC0x01/PwnGlove.ino + MagPi Issue 33.\nimport \"CoreLibs/timer\"\n\nlocal gfx <const> = playdate.graphics\nlocal Scene = {}\nlocal state = {}\n\nlocal EXPECTED = { 'up','up','down','down','left','right','left','right','b','a','start' }\n\nlocal function reset_buffer()\n  state.buffer = {}\n  state.last_input_ms = playdate.getCurrentTimeMilliseconds()\nend\n\nfunction Scene.enter()\n  state.equipped = progression and progression.has_item and progression.has_item('pwnglove') or false\n  state.armed = false\n  state.bonus_attempts = 0\n  state.bend = { t=0, i=0, m=0, r=0 }\n  state.neopixel_phase = 0\n  state.flash = 0\n  reset_buffer()\n  state.sfx_step = playdate.sound.sampleplayer.new('sounds/sfx/konami_step')\n  state.sfx_unlock = playdate.sound.sampleplayer.new('sounds/sfx/konami_unlock')\nend\n\nfunction Scene.exit()\n  if state.sfx_step then state.sfx_step:stop() end\n  if state.sfx_unlock then state.sfx_unlock:stop() end\nend\n\nlocal function feed(input)\n  if not state.equipped or state.armed then return end\n  local now = playdate.getCurrentTimeMilliseconds()\n  if now - (state.last_input_ms or 0) > {{buffer_timeout_ms}} then reset_buffer() end\n  state.last_input_ms = now\n  local expected_step = EXPECTED[#state.buffer + 1]\n  if input == expected_step then\n    table.insert(state.buffer, input)\n    if state.sfx_step then state.sfx_step:play(1) end\n    if #state.buffer == #EXPECTED then\n      state.armed = true\n      state.bonus_attempts = {{bonus_attempts}}\n      state.flash = 30\n      if state.sfx_unlock then state.sfx_unlock:play(1) end\n      if event_bus and event_bus.publish then\n        event_bus.publish({ type='recipe.win', scope='global', payload={ recipe='pwnglove_konami_unlock', konami_armed=true, bonus_attempts={{bonus_attempts}} } })\n      end\n      if progression and progression.set_pwnglove_state then\n        progression.set_pwnglove_state('konami_armed')\n      end\n    end\n  else\n    reset_buffer()\n  end\nend\n\nfunction Scene:input(evt)\n  feed(evt)\nend\n\nfunction Scene.update()\n  playdate.timer.updateTimers()\n  state.neopixel_phase = (state.neopixel_phase + 1) % 256\n  if state.flash > 0 then state.flash = state.flash - 1 end\nend\n\nfunction Scene.draw()\n  gfx.clear(gfx.kColorWhite)\n  if state.flash > 0 then\n    gfx.setDitherPattern(state.flash / 30, gfx.image.kDitherTypeAtkinson)\n    gfx.fillRect(0, 0, 400, 240)\n    gfx.setDitherPattern(0)\n  end\n  gfx.drawText('PWNGLOVE', 12, 12)\n  if not state.equipped then\n    gfx.drawText('NOT EQUIPPED - holster slot', 12, 40)\n    return\n  end\n  -- bottom-strip HUD: 4 finger LEDs left, konami buffer right\n  gfx.fillRect(0, 218, 400, 22)\n  gfx.setImageDrawMode(gfx.kDrawModeFillWhite)\n  for i = 1, 4 do\n    local bend = ({ state.bend.t, state.bend.i, state.bend.m, state.bend.r })[i]\n    local x = 8 + (i - 1) * 16\n    if bend > 128 then gfx.fillCircleAtPoint(x + 6, 229, 5) else gfx.drawCircleAtPoint(x + 6, 229, 5) end\n  end\n  for i = 1, #EXPECTED do\n    local x = 96 + (i - 1) * 24\n    local g = EXPECTED[i]:sub(1, 1):upper()\n    if i <= #state.buffer then gfx.fillRect(x, 222, 18, 14); gfx.setImageDrawMode(gfx.kDrawModeFillBlack); gfx.drawText(g, x + 4, 223); gfx.setImageDrawMode(gfx.kDrawModeFillWhite)\n    else gfx.drawRect(x, 222, 18, 14); gfx.drawText(g, x + 4, 223) end\n  end\n  if state.armed then gfx.drawText('+30 ATTEMPTS ARMED', 96, 200) end\n  gfx.setImageDrawMode(gfx.kDrawModeCopy)\nend\n\n_G['{SCENE_ID}'] = Scene\n_G['Scene_{SCENE_ID}'] = Scene\nreturn Scene\n",
+      "crank_power_channel": true,
+      "power_layer": "konami",
+      "mechanic_kit": "pwnglove_multitool",
+      "scope_note": "Layer 1 of pwnglove_multitool umbrella. See docs/phase5_pwnglove_multitool_addendum.md"
+    },
+    {
+      "id": "pwnglove_flipper_suite",
+      "name": "PWNGLOVE Flipper Zero capability suite",
+      "priority": "top",
+      "power_layer": "flipper",
+      "mechanic_kit": "pwnglove_multitool",
+      "crank_power_channel": true,
+      "grounded_in": {
+        "repo": "NoDataFound/TriKC0x01",
+        "real_inspiration": "Flipper Zero (FlipperDevices), period-translated to 1998 phreaker kit"
+      },
+      "premise": "Six-tool mode-cycle interface. D-pad up/down cycles active tool (RFID/SubGHz/IR/iButton/BlueBox/BadUSB). A activates current tool. Each tool's input behavior derives from pwnglove_hud.crank_rpm per the CRANK_POWER_CURVES.flipper contract.",
+      "features_used": [
+        "button_pressed_edge",
+        "button_just_pressed",
+        "crank_change",
+        "sound_sampleplayer",
+        "gfx_clear",
+        "gfx_draw_text",
+        "gfx_fill_rect",
+        "gfx_set_dither_pattern"
+      ],
+      "tools": [
+        "rfid_clone",
+        "subghz_replay",
+        "ir_learn",
+        "ibutton_emulate",
+        "blue_box",
+        "bad_usb"
+      ],
+      "tool_unlock_events": {
+        "rfid_clone": "sc_parking_garage_complete",
+        "subghz_replay": "sc_mrs_kowalski_garage_complete",
+        "ir_learn": "sc_corporate_bbs_complete",
+        "ibutton_emulate": "sc_office_breakin_complete",
+        "blue_box": "sc_bell_pedestal_complete",
+        "bad_usb": "sc_aegis_datacenter_complete"
+      },
+      "controls": {
+        "dpad_up_down": "cycle active tool (unlocked only)",
+        "a": "activate current tool at hotspot",
+        "crank": "power channel (per-tool curve via CRANK_POWER_CURVES.flipper)",
+        "b": "back / cancel"
+      },
+      "required_imports": [
+        "runtime/concepts/pwnglove_hud",
+        "runtime/concepts/pwnglove_flipper",
+        "runtime/concepts/progression",
+        "runtime/concepts/event_bus"
+      ],
+      "required_inventory": [
+        "pwnglove"
+      ],
+      "default_opts": {
+        "start_tool": null,
+        "show_hud_at_bottom": true
+      },
+      "visual_brief": "Tool-name pill top-center (current mode). 6 tiny tool icons in a row above it (lit=unlocked, dim=locked). Per-tool action UI takes screen center per recipe. Flat 1-bit, Atkinson dither for any gradients. Bottom HUD strip continuous (pwnglove_hud).",
+      "win_condition": {
+        "event": "recipe_win",
+        "payload": {
+          "recipe": "pwnglove_flipper_suite",
+          "tool": "<active_tool>"
+        }
+      },
+      "fail_condition": {
+        "event": "recipe_fail",
+        "payload": {
+          "recipe": "pwnglove_flipper_suite",
+          "reason": "<reason>"
+        }
+      },
+      "lua_template": "-- stub - Team Emitter splices per-tool sub-templates from pwnglove_flipper.lua at emit time. Reference: pwnglove_lockpick_ui_ref.png for UI density bar (Lucas Pope tier).\n"
+    },
+    {
+      "id": "pwnglove_portal_gun",
+      "name": "PWNGLOVE portal gun (scene fast-travel)",
+      "priority": "top",
+      "power_layer": "portal",
+      "mechanic_kit": "pwnglove_multitool",
+      "crank_power_channel": true,
+      "premise": "Hold B + crank to charge portal_energy 0..100. Energy thresholds gate destinations (0-25 current-act, 25-60 prev-acts, 60-100 incl SecKC hive). Release B with energy >= 25 to warp; release < 25 collapses portal + consumes use. Cooldown: 1 use per act, refills on act transition.",
+      "features_used": [
+        "button_pressed_edge",
+        "button_pressed_state",
+        "crank_change",
+        "sound_sampleplayer",
+        "gfx_clear",
+        "gfx_draw_text",
+        "gfx_draw_rect"
+      ],
+      "controls": {
+        "b_hold": "charge portal",
+        "crank": "accumulate portal_energy per CRANK_POWER_CURVES.portal",
+        "dpad": "scroll destination list",
+        "a": "select destination",
+        "b_release": "warp (if energy>=25) or collapse"
+      },
+      "required_imports": [
+        "runtime/concepts/pwnglove_hud",
+        "runtime/concepts/pwnglove_portal",
+        "runtime/concepts/scene_manager",
+        "runtime/concepts/progression"
+      ],
+      "required_inventory": [
+        "pwnglove"
+      ],
+      "required_layer": "portal",
+      "locked_destinations": [
+        "sc_aegis_datacenter",
+        "sc_seckc_hive"
+      ],
+      "default_opts": {
+        "uses_per_act": 1,
+        "energy_per_rev": 1.0
+      },
+      "visual_brief": "Three holographic scene previews floating above pedestal. Available scenes pulse (Bayer4x4 dither), locked scenes greyed + padlock glyph. Energy meter as vertical bar right. Cooldown countdown bottom-left when on cooldown.",
+      "win_condition": {
+        "event": "recipe_win",
+        "payload": {
+          "recipe": "pwnglove_portal_gun",
+          "destination": "<scene_id>"
+        }
+      },
+      "fail_condition": {
+        "event": "recipe_fail",
+        "payload": {
+          "recipe": "pwnglove_portal_gun",
+          "reason": "portal_collapse"
+        }
+      },
+      "lua_template": "-- stub - Team Emitter splices from runtime/concepts/pwnglove_portal.lua\n"
+    },
+    {
+      "id": "pwnglove_gravity_gun",
+      "name": "PWNGLOVE gravity gun (EMF object manipulator)",
+      "priority": "top",
+      "power_layer": "gravity",
+      "mechanic_kit": "pwnglove_multitool",
+      "crank_power_channel": true,
+      "premise": "A on movable_object attaches if crank_rpm meets mass threshold (post_it=5, floppy=20, modem=60, server_rack=200+, refrigerator=300+ sustained). D-pad moves attached object. A places. B throws with force = current rpm. Sustained 200+ RPM heats coil; heat=100 forces drop + 3s cooldown.",
+      "features_used": [
+        "button_pressed_edge",
+        "crank_change",
+        "sound_sampleplayer",
+        "gfx_clear",
+        "gfx_draw_text",
+        "gfx_draw_rect",
+        "gfx_fill_circle"
+      ],
+      "controls": {
+        "a_on_movable": "attach (if rpm sufficient)",
+        "dpad": "reposition attached",
+        "a": "place",
+        "b": "throw (force = current rpm)",
+        "reverse_crank": "pull-toward from distance"
+      },
+      "required_imports": [
+        "runtime/concepts/pwnglove_hud",
+        "runtime/concepts/pwnglove_gravity",
+        "runtime/concepts/object_manipulator",
+        "runtime/concepts/progression"
+      ],
+      "required_inventory": [
+        "pwnglove"
+      ],
+      "required_layer": "gravity",
+      "scene_metadata_required": "movable_objects: [{id, sprite, mass, init_pos}]",
+      "default_opts": {
+        "range_pixels": 80,
+        "heat_per_sec_above_200": 1,
+        "cooldown_ms": 3000
+      },
+      "visual_brief": "Attached object outlined with EMF field rings (3 concentric, dithered). NeoPixel HUD goes red when heat > 75. Drop on overheat shows brief sputter + cooldown timer.",
+      "win_condition": {
+        "event": "recipe_win",
+        "payload": {
+          "recipe": "pwnglove_gravity_gun",
+          "object_id": "<id>",
+          "placed_at": "<x,y>"
+        }
+      },
+      "fail_condition": {
+        "event": "recipe_fail",
+        "payload": {
+          "recipe": "pwnglove_gravity_gun",
+          "reason": "overheat"
+        }
+      },
+      "lua_template": "-- stub - Team Emitter splices from runtime/concepts/pwnglove_gravity.lua\n"
+    },
+    {
+      "id": "pwnglove_tyson_master_unlock",
+      "name": "PWNGLOVE Tyson master unlock",
+      "priority": "top",
+      "power_layer": "tyson",
+      "mechanic_kit": "pwnglove_multitool",
+      "crank_power_channel": true,
+      "grounded_in": {
+        "reference": "Mike Tyson's Punch-Out!! (NES, 1987) password 007-373-5963",
+        "cultural_canon": true
+      },
+      "premise": "Hold B + crank => digit-entry UI overlays. Crank rotates 0-9, A advances cursor, reverse-crank flick (>=60 RPM reverse within 250ms window) commits the digit. Enter 007-373-5963 (dashes auto-inserted at positions 4 and 7). On match: cascade-unlock ALL pwnglove power_layers, save_state.flags.tyson_unlock=true, NeoPixel rainbow sweep + 'TYSON MODE' overlay 3000ms.",
+      "features_used": [
+        "button_pressed_state",
+        "crank_change",
+        "sound_sampleplayer",
+        "gfx_clear",
+        "gfx_draw_text",
+        "gfx_fill_rect",
+        "gfx_set_dither_pattern"
+      ],
+      "code_sequence": "007-373-5963",
+      "controls": {
+        "b_hold": "enter digit-entry mode",
+        "crank": "scroll 0-9",
+        "a": "advance cursor",
+        "reverse_crank_flick": "commit digit"
+      },
+      "required_imports": [
+        "runtime/concepts/pwnglove_hud",
+        "runtime/concepts/pwnglove_tyson",
+        "runtime/concepts/progression",
+        "runtime/concepts/save_state"
+      ],
+      "required_inventory": [
+        "pwnglove"
+      ],
+      "default_opts": {
+        "code": "007-373-5963",
+        "flick_min_reverse_rpm": 60,
+        "flick_window_ms": 250,
+        "overlay_duration_ms": 3000
+      },
+      "does_not_skip": [
+        "story_gated_scenes",
+        "narrative_progression"
+      ],
+      "visual_brief": "11 digit slots (9 digits + 2 dashes) center screen. Current digit highlighted, scrolling digits 0-9 cycle above + below current via crank. On success: full-screen Atkinson rainbow-dither sweep + 'TYSON MODE' in inverted text. Cabinet variant (playground): full arcade marquee art with classic NES Punch-Out tribute glyphs.",
+      "win_condition": {
+        "event": "recipe_win",
+        "payload": {
+          "recipe": "pwnglove_tyson_master_unlock",
+          "cascade_unlocks": [
+            "flipper",
+            "portal",
+            "gravity"
+          ],
+          "save_state_set": "tyson_unlock=true"
+        }
+      },
+      "fail_condition": {
+        "event": "recipe_fail",
+        "payload": {
+          "recipe": "pwnglove_tyson_master_unlock",
+          "reason": "code_mismatch"
+        }
+      },
+      "lua_template": "-- stub - Team Emitter splices from runtime/concepts/pwnglove_tyson.lua\n"
+    },
+    {
+      "id": "pwnglove_lockpick_station",
+      "name": "PWNGLOVE lockpick station (playground Tier 1)",
+      "priority": "top",
+      "power_layer": "flipper",
+      "mechanic_kit": "pwnglove_multitool",
+      "crank_power_channel": true,
+      "ui_reference": "bible_media/art/pwnglove_lockpick_ui_ref.png",
+      "premise": "5-pin standard deadbolt. UI replicates pwnglove_lockpick_ui_ref.png EXACTLY - Lucas Pope tier UI density. Crank rotates AIM compass; stop within binding zone (90-45 deg) per pin; A locks pin; tension meter rises (STOP/CARE/SAFE zones); 5 pins in unlock zone within 60s = open. 3 attempts. Over-tension or wrong angle = pin reset.",
+      "features_used": [
+        "button_pressed_edge",
+        "crank_change",
+        "sound_sampleplayer",
+        "system_get_time_ms",
+        "gfx_clear",
+        "gfx_draw_text",
+        "gfx_draw_rect",
+        "gfx_fill_rect",
+        "gfx_set_dither_pattern"
+      ],
+      "controls": {
+        "crank": "AIM rotate (compass)",
+        "a": "lock pin at current angle",
+        "b": "abandon attempt"
+      },
+      "ui_density_requirements": [
+        "Top bar: PUZZLE: 5-PIN STANDARD | ATTEMPT N/3 | <pts> POINTS | hourglass M:SS | PUZZLE IN PROGRESS",
+        "Center: 5 vertical pin tumblers numbered 1-5, UNLOCK ZONE label spanning all 5",
+        "Above pins: BINDING ZONE indicator 90-45 deg + compass N/E/S/W + rotation triangle",
+        "Right: TENSION meter vertical, STOP/CARE/SAFE zones, current marker arrow",
+        "Bottom controls: [CRANK] AIM | [A] LOCK PIN | [B] ABANDON",
+        "Dialog bar bottom with newb portrait reacting"
+      ],
+      "required_imports": [
+        "runtime/concepts/pwnglove_hud",
+        "runtime/concepts/pwnglove_lockpick",
+        "runtime/concepts/dialog_pop"
+      ],
+      "required_inventory": [
+        "pwnglove"
+      ],
+      "default_opts": {
+        "pin_count": 5,
+        "attempts": 3,
+        "time_limit_sec": 60,
+        "binding_zone_deg": [
+          45,
+          90
+        ]
+      },
+      "audio_cues": [
+        "lockpick_crank_turn",
+        "lockpick_pin_click",
+        "lockpick_tension_warn",
+        "lockpick_open",
+        "lockpick_fail"
+      ],
+      "dialog_lines": [
+        {
+          "trigger": "pin_1_set",
+          "text": "Easy. Standard pin."
+        },
+        {
+          "trigger": "pin_3_set",
+          "text": "Pin three. Steady on the crank. Almost there."
+        },
+        {
+          "trigger": "tension_high",
+          "text": "Easy. Easy. Don't snap it."
+        },
+        {
+          "trigger": "lock_open",
+          "text": "Clean. Knuckleheads style."
+        },
+        {
+          "trigger": "all_failed",
+          "text": "Snapped the tension wrench. Try again."
+        }
+      ],
+      "win_condition": {
+        "event": "recipe_win",
+        "payload": {
+          "recipe": "pwnglove_lockpick_station"
+        }
+      },
+      "fail_condition": {
+        "event": "recipe_fail",
+        "payload": {
+          "recipe": "pwnglove_lockpick_station",
+          "reason": "out_of_attempts_or_timer"
+        }
+      },
+      "lua_template": "-- stub - Coordinator hand-authors source/scenes/pwnglove_playground.lua lockpick handler matching pwnglove_lockpick_ui_ref.png. NO autopilot generation.\n"
     },
     {
       "id": "coin_grid_minter",
@@ -123,29 +481,6 @@
         "sfx_navigate": "sounds/sfx/coin_navigate"
       },
       "lua_template": "-- scenes/{SCENE_ID}.lua\n-- {SCENE_NAME} - coin_grid_minter recipe (TOP priority).\n-- Real-world ref: NoDataFound/23Coins (canonical rule preserved).\nimport \"CoreLibs/timer\"\n\nlocal gfx <const> = playdate.graphics\nlocal Scene = {}\nlocal state = {}\n\nlocal TOTAL = {{total_coins}}\nlocal COLS, ROWS = 6, 4\n\nlocal function rebuild_from_progression()\n  state.coins = {}\n  for i = 0, TOTAL - 1 do\n    local status = 'locked'\n    if progression and progression.coin_status then\n      status = progression.coin_status(i) or 'locked'\n    elseif i == 0 then status = 'available' end\n    state.coins[i] = { status = status }\n    if status == 'minted' then state.minted_count = state.minted_count + 1 end\n  end\nend\n\nfunction Scene.enter()\n  state.cursor_x = 0\n  state.cursor_y = 0\n  state.minted_count = 0\n  rebuild_from_progression()\n  state.sfx_mint = playdate.sound.sampleplayer.new('sounds/sfx/coin_mint')\n  state.sfx_nav = playdate.sound.sampleplayer.new('sounds/sfx/coin_navigate')\nend\n\nfunction Scene.exit()\n  if state.sfx_mint then state.sfx_mint:stop() end\nend\n\nlocal function selected_coin_id()\n  return state.cursor_y * COLS + state.cursor_x\nend\n\nfunction Scene:input(evt)\n  if evt == 'up' and state.cursor_y > 0 then state.cursor_y = state.cursor_y - 1; if state.sfx_nav then state.sfx_nav:play(1) end end\n  if evt == 'down' and state.cursor_y < ROWS - 1 then state.cursor_y = state.cursor_y + 1; if state.sfx_nav then state.sfx_nav:play(1) end end\n  if evt == 'left' and state.cursor_x > 0 then state.cursor_x = state.cursor_x - 1; if state.sfx_nav then state.sfx_nav:play(1) end end\n  if evt == 'right' and state.cursor_x < COLS - 1 then state.cursor_x = state.cursor_x + 1; if state.sfx_nav then state.sfx_nav:play(1) end end\n  if evt == 'a' then\n    local id = selected_coin_id()\n    local coin = state.coins[id]\n    if coin and coin.status == 'available' then\n      if event_bus and event_bus.publish then\n        event_bus.publish({ type='recipe.coin_mint_request', scope='global', payload={ coin_id=id } })\n      end\n      if state.sfx_mint then state.sfx_mint:play(1) end\n    end\n  end\n  if evt == 'b' then\n    if scene_manager and scene_manager.pop then scene_manager.pop() end\n  end\nend\n\nfunction Scene.update() playdate.timer.updateTimers() end\n\nfunction Scene.draw()\n  gfx.clear(gfx.kColorWhite)\n  -- grid: 6x4 left side\n  for i = 0, TOTAL - 1 do\n    local col = i % COLS\n    local row = math.floor(i / COLS)\n    local x = 16 + col * 44\n    local y = 16 + row * 52\n    local coin = state.coins[i]\n    if coin.status == 'minted' then\n      gfx.fillCircleAtPoint(x + 18, y + 18, 18)\n      gfx.setImageDrawMode(gfx.kDrawModeFillWhite)\n      gfx.drawText(tostring(i), x + 12, y + 12)\n      gfx.setImageDrawMode(gfx.kDrawModeCopy)\n    elseif coin.status == 'available' then\n      gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)\n      gfx.fillCircleAtPoint(x + 18, y + 18, 18)\n      gfx.setDitherPattern(0)\n      gfx.drawCircleAtPoint(x + 18, y + 18, 18)\n      gfx.drawText(tostring(i), x + 12, y + 12)\n    else\n      gfx.drawCircleAtPoint(x + 18, y + 18, 18)\n      gfx.drawText('?', x + 14, y + 12)\n    end\n    if col == state.cursor_x and row == state.cursor_y then\n      gfx.drawRect(x - 3, y - 3, 42, 42)\n    end\n  end\n  -- side panel\n  gfx.drawLine(280, 8, 280, 232)\n  gfx.drawText(string.format('MINTED: %d/%d', state.minted_count, TOTAL), 290, 16)\n  local sid = selected_coin_id()\n  gfx.drawText(string.format('COIN %d', sid), 290, 40)\n  local coin = state.coins[sid]\n  if coin.status == 'minted' then gfx.drawText('STATUS: MINTED', 290, 60)\n  elseif coin.status == 'available' then gfx.drawText('STATUS: AVAILABLE', 290, 60)\n  else gfx.drawText('STATUS: LOCKED', 290, 60) end\n  gfx.drawText('[ 23 C0iNS ]', 290, 218)\nend\n\n_G['{SCENE_ID}'] = Scene\n_G['Scene_{SCENE_ID}'] = Scene\nreturn Scene\n"
-    },
-    {
-      "id": "crank_lockpick",
-      "name": "Crank lockpick",
-      "premise": "Pin-tumbler lockpick scene. Crank rotates a tension wrench; A drives the current pin. Each pin has a hidden sweet-spot angle window. Overshoot resets the pin. Series of pins to clear in order.",
-      "features_used": [
-        "crank_change",
-        "crank_callback",
-        "button_pressed_edge",
-        "sound_sampleplayer",
-        "system_get_time_ms",
-        "gfx_clear",
-        "gfx_draw_text",
-        "system_gameWillTerminate"
-      ],
-      "controls": {
-        "crank": "rotate tension wrench (set angle)",
-        "a": "set current pin when in sweet spot",
-        "b": "abandon and return"
-      },
-      "state_template": "state.pins = { {angle=80,window=12,set=false}, {angle=150,window=10,set=false}, {angle=220,window=8,set=false} }\nstate.current = 1\nstate.tension = 0\nstate.failure_flash = 0",
-      "visual_brief": "Side cutaway of a 5-pin tumbler in 1-bit. Atkinson-dithered brass body, pure-black pins, sweet-spot indicator as a faint Bayer 8x8 wedge. Tension wrench rotates as a hairline. Bottom strip: [CRANK] tension  [A] set pin  [B] abandon.",
-      "lua_template": "-- scenes/{SCENE_ID}.lua\n-- {SCENE_NAME} \u2014 crank_lockpick recipe.\nimport \"CoreLibs/crank\"\nimport \"CoreLibs/timer\"\n\nlocal gfx <const> = playdate.graphics\nlocal Scene = {}\nlocal state = {}\n\nfunction Scene.enter()\n    state.pins    = { {angle=80,window=12,set=false}, {angle=150,window=10,set=false}, {angle=220,window=8,set=false} }\n    state.current = 1\n    state.tension = 0\n    state.failure_flash = 0\n    state.cleared = false\n    state.sfx_click = playdate.sound.sampleplayer.new(\"sfx/{SCENE_ID}_click\")\n    state.sfx_set   = playdate.sound.sampleplayer.new(\"sfx/{SCENE_ID}_set\")\n    state.sfx_fail  = playdate.sound.sampleplayer.new(\"sfx/{SCENE_ID}_fail\")\nend\n\nfunction Scene.exit()\n    if state.sfx_click then state.sfx_click:stop() end\nend\n\nfunction playdate.cranked(change, _accel)\n    state.tension = (state.tension + change) % 360\n    if math.abs(change) > 4 and state.sfx_click then state.sfx_click:play(1) end\nend\n\nfunction Scene.update(_dt)\n    if state.cleared then return end\n    playdate.timer.updateTimers()\n    if playdate.buttonJustPressed(playdate.kButtonA) then\n        local pin = state.pins[state.current]\n        local delta = math.abs(state.tension - pin.angle)\n        if delta <= pin.window then\n            pin.set = true\n            state.current = state.current + 1\n            if state.sfx_set then state.sfx_set:play(1) end\n            if state.current > #state.pins then state.cleared = true end\n        else\n            for _, p in ipairs(state.pins) do p.set = false end\n            state.current = 1\n            state.failure_flash = 18\n            if state.sfx_fail then state.sfx_fail:play(1) end\n        end\n    end\n    if state.failure_flash > 0 then state.failure_flash = state.failure_flash - 1 end\nend\n\nfunction Scene.draw()\n    gfx.clear(gfx.kColorWhite)\n    gfx.drawText(\"{SCENE_NAME}\", 12, 12)\n    gfx.drawText(string.format(\"tension %d deg\", math.floor(state.tension)), 12, 32)\n    gfx.drawText(string.format(\"pin %d/%d\", state.current, #state.pins), 12, 52)\n    if state.cleared then\n        gfx.drawText(\"** LOCK OPEN **\", 140, 110)\n    elseif state.failure_flash > 0 then\n        gfx.fillRect(0, 0, 400, 240)\n    end\n    gfx.drawText(\"[CRANK] tension  [A] set pin  [B] abandon\", 8, 220)\nend\n\nfunction Scene.input(evt)\n    if evt == \"b\" then scene_manager.pop() end\nend\n\nreturn Scene\n"
     },
     {
       "id": "tilt_maze",
