@@ -777,10 +777,27 @@ async function resolveAssetDither(envVar, projectId, configKey) {
  */
 async function ditherTo1bit(buf, w, h, mode) {
   // Step 1: greyscale + extract raw 8-bit single-channel pixels.
-  const greyRaw = await sharp(buf)
-    .greyscale()
-    .raw()
-    .toBuffer();
+  //
+  // Phase 4.7.2 Patch A — pre-dither contrast stomp. Crushes AI grayscale
+  // output to near-binary BEFORE any dither algorithm runs. Eliminates the
+  // "dithered photo" failure mode: error-diffusion / ordered dither over a
+  // photo-toned input smears every gradient into noise. By S-curving the
+  // luma + hard-thresholding before the dither algo touches the buffer,
+  // we hand the algorithm an already-binary image, so dithered regions
+  // stay confined to whatever the model already drew as a mid-tone shape,
+  // and flat black/white stays flat black/white.
+  //
+  // Skip the stomp when the requested mode is 'threshold' — that path
+  // does the same hard cutoff inside dither.js, so stomping first is a
+  // pure waste of cycles.
+  const pre = sharp(buf).greyscale();
+  if (mode !== 'threshold') {
+    pre
+      .modulate({ brightness: 1.0 })
+      .linear(2.2, -130)   // aggressive contrast curve: y = 2.2x - 130 → S-curve crush
+      .threshold(128, { greyscale: true });  // hard binary BEFORE dither algo
+  }
+  const greyRaw = await pre.raw().toBuffer();
 
   // Step 2: run the chosen dither algorithm over the raw luma buffer.
   let dithered;
