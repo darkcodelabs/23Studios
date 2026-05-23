@@ -366,7 +366,14 @@ async function pickReferences(projectId, assetClass, tags, maxCount) {
   } else if (assetClass === 'portrait') {
     const p = (manifest.portrait_references && typeof manifest.portrait_references === 'object')
       ? manifest.portrait_references : {};
-    if (Array.isArray(p.default)) for (const n of p.default) push(n);
+    // Phase 4.7.4: per-character portrait_references (keyed by character id
+    // passed in via `tags`) take precedence over .default. Lets cory_k get
+    // his real-face photo refs while the rest fall through to default.
+    for (const tag of tags || []) {
+      const perChar = p[tag];
+      if (Array.isArray(perChar)) for (const n of perChar) push(n);
+    }
+    if (pool.length === 0 && Array.isArray(p.default)) for (const n of p.default) push(n);
     if (pool.length === 0 && Array.isArray(manifest.default_set)) {
       for (const n of manifest.default_set) push(n);
     }

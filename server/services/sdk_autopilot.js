@@ -625,12 +625,31 @@ async function runPortraitBursts({ projectId, sdkRoot, characters, emit: ev, job
       }
       try {
         const anchor = c.visual_anchor || `${c.role || 'character'} anchor`;
-        const promptText = (c.portrait_prompt && c.portrait_prompt.includes(anchor))
+        let promptText = (c.portrait_prompt && c.portrait_prompt.includes(anchor))
           ? c.portrait_prompt
           : `${anchor}. ${c.portrait_prompt || (c.name + ' - ' + c.role)}`;
+
+        // Phase 4.7.4: per-character portrait overrides for real-person anchors.
+        // cory_k is the project owner (real human, SecKC organizer) — the
+        // generic generator keeps producing wrong faces. Override prepends
+        // a specific-person prompt + signals pulp_ai to attach the cory_k
+        // photo references at max weight via the manifest's per-character
+        // entry (sdk_data/asset_library/references_manifest.json
+        // portrait_references.cory_k).
+        const PORTRAIT_OVERRIDES = {
+          cory_k: {
+            prepend: 'CRITICAL: Subject is a STYLIZED PORTRAIT of a specific stocky broad-shouldered white man 35-45. THE DEFINING FEATURE IS A FULL THICK BUSHY MUSTACHE that curves down past the corners of the mouth — never a goatee, never a thin moustache, never clean-shaven. Black flat-brim ball cap (Hurley-style) pulled low. Light beard scruff on chin and jaw only. Strong serious brow, direct intense gaze. Render in 1-bit Playdate aesthetic like a Mars After Midnight character card. The mustache is non-negotiable and must be the dominant facial feature.'
+          }
+        };
+        const override = PORTRAIT_OVERRIDES[c.id];
+        if (override) {
+          promptText = override.prepend + '\n\n' + promptText;
+        }
+
         const r = await pulpAi.generatePortrait({
           prompt: promptText, dim: 64,
-          projectId, sceneId: c.id, stage: 'portrait_bursts'
+          projectId, sceneId: c.id, stage: 'portrait_bursts',
+          tags: [c.id]   // hint pulp_ai to look up portrait_references[c.id] before falling back to .default
         });
         if (!r.pngBuffer) throw new Error('no png returned');
         await writeAssetBuffer(destPng, r.pngBuffer, ev,
