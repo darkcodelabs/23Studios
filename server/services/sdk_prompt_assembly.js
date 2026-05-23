@@ -51,30 +51,30 @@ DO NOT:
 
 VISUAL STYLE (mandatory for every image generation request):
 
-POSITIVE STYLE:
-- Bold black-and-white line art illustration with confident ink-pen line weight
-- Heavy contour outlines and strong silhouettes; every object reads at a glance
-- Pure black ink on pure white paper — newspaper-strip / comic-book / woodcut feel
-- Crosshatching, parallel hatching, and stippling for interior shading
-- Flat shapes filled solid black for deep shadows; no tonal gradient anywhere
-- Line-art clarity above all: a reader should be able to trace every outline
-- Inspired by Edward Gorey, Mike Mignola (Hellboy), Frank Miller (Sin City),
-  Charles Burns (Black Hole), Eric Drooker, and the Mars After Midnight /
-  Whitewater Wipeout Playdate aesthetic
-- Isometric or top-down perspective for scenes; tight 3/4 framing for portraits
-- Dither, when present, is CONTAINED within explicit shape boundaries — never
-  a photographic mist across the whole frame
+1-bit Playdate art. The image is MOSTLY SOLID BLACK and SOLID WHITE.
+Dithering exists ONLY in deliberate texture zones (shadows, fabric, dirt,
+water, foliage, surface materials). Foreground subjects, character bodies,
+UI elements, and architecture stay as flat shapes with crisp black
+outlines on flat backgrounds.
 
-NEGATIVE STYLE (do NOT produce):
-- Photographic, photo-realistic, photo-derived, "dithered photograph" look
-- Grayscale, anti-aliased edges, soft focus, blur, depth-of-field
-- Smooth gradients, soft lighting, ambient occlusion, painted rendering
-- Color of any kind, sepia, duotone, halftone-on-color
-- 3D-rendered, CGI, ray-traced, voxel, ASCII-art
-- Noise, film grain, JPEG artifacts, scanner moire
-- Low contrast, washed out, faded, pastel
-- Dither used as a substitute for line work; dither should accent line art,
-  never replace it`;
+Think Blippo+, Mars After Midnight, Casual Birder, Crankin's Time Travel
+Adventure — flat shapes, crisp edges, dither used like a designer uses
+hatch shading: deliberate, contained, never covering the whole frame.
+
+REQUIRED:
+- 60-80% of pixels are pure black or pure white
+- Maximum 20-40% of pixels carry dither
+- Outlines are 1-2px crisp black, no fuzz, no gradient
+- Subject silhouette readable at thumbnail size
+- White or near-white backgrounds for most scenes (cream tone OK)
+
+FORBIDDEN:
+- Full-frame dither texture
+- Dithered backgrounds when foreground is also dithered
+- Gradient transitions between black and white
+- Mid-tone gray fills (only dither pattern OR solid)
+- Photo-style shading, soft edges, anti-aliasing
+- "Noise" or "grain" effects covering the image`;
 
 // --- Sections 4-12 — Per-stage augments ----------------------------------
 //
