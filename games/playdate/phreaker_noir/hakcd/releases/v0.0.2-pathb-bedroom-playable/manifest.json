@@ -1,0 +1,13 @@
+{
+  "game": "hakcd",
+  "platform": "playdate",
+  "tag": "v0.0.2-pathb-bedroom-playable",
+  "built_at": "2026-05-23T19:55:02Z",
+  "pdx_zip": "hakcd-v0.0.2-pathb-bedroom-playable.pdx.zip",
+  "bytes": 63955261,
+  "sha256": "b3c92c76fb95151bb12ef1e1578786e582570dfc321c8dc2caf4780ba809bd30",
+  "supersedes": "v0.0.1-sideload-fixed",
+  "experiment": "Path B prototype: sc01_bedroom hand-authored as playable hub",
+  "playable_scenes": ["sc01_bedroom_recurring_hub"],
+  "shell_scenes": 26
+}
