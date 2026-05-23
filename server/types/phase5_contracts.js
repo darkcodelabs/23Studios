@@ -575,33 +575,72 @@ module.exports = {
   // Coordinator hand-authors source/scenes/pwnglove_playground.lua against
   // these constants. Team Wiring exposes the system menu hook in main.lua.
   PWNGLOVE_PLAYGROUND_SCENE_ID: 'pwnglove_playground',
+  PWNGLOVE_MODE_INTRO_SCENE_ID: 'pwnglove_mode_intro',   // 1.5s glove splash before playground
   PWNGLOVE_PLAYGROUND_CHECKPOINT_LABEL: 'pre_pwnglove_mode',
+  COIN_VAULT_VIEWER_SCENE_ID: 'coin_vault_viewer',
+  TITLE_SCENE_ID: 'title',
+
   SYSTEM_MENU_ITEMS: [
     {
       label: 'pwnglove mode',
       action: 'enter_pwnglove_mode',
+      // Sequence: push_checkpoint -> intro splash 1.5s -> playground
+      sequence: ['push_checkpoint:pre_pwnglove_mode', 'transition_to:pwnglove_mode_intro'],
       always_available: true
     },
     {
       label: 'back to story',
       action: 'exit_pwnglove_mode',
+      sequence: ['restore_checkpoint:pre_pwnglove_mode'],
       available_when: 'has_checkpoint(pre_pwnglove_mode)'
     }
   ],
 
-  // 8 playground hotspots — Team Emitter recipe ids must exist for each
+  // 9 playground hotspots (added coin_vault between portal and tyson per
+  // canonical-pins addendum). Team Emitter recipe ids must exist for each
   // station. Coordinator's hand-authored playground scene wires hotspots
   // to these recipe ids 1:1.
   PWNGLOVE_PLAYGROUND_STATIONS: [
-    { id: 'lockpick_station', recipe: 'pwnglove_lockpick_station', tier: 1, ui_ref: 'bible_media/art/pwnglove_lockpick_ui_ref.png' },
-    { id: 'rfid_pedestal',    recipe: 'pwnglove_flipper_suite',    tier: 2, ui_ref: 'bible_media/art/pwnglove_rfid_ui_ref.png' },
+    { id: 'lockpick_station', recipe: 'pwnglove_lockpick_station', tier: 1, ui_ref: 'docs/lockpickmini.png' },
+    { id: 'rfid_pedestal',    recipe: 'pwnglove_flipper_suite',    tier: 2, ui_ref: 'docs/pwnglove_remotehack.png' },
     { id: 'payphone',         recipe: 'pwnglove_flipper_suite',    tier: 2 },
     { id: 'ir_wall',          recipe: 'pwnglove_flipper_suite',    tier: 3 },
     { id: 'gravity_arena',    recipe: 'pwnglove_gravity_gun',      tier: 3 },
     { id: 'subghz_tuner',     recipe: 'pwnglove_flipper_suite',    tier: 3 },
     { id: 'portal_pedestal',  recipe: 'pwnglove_portal_gun',       tier: 3 },
+    { id: 'coin_vault',       recipe: 'coin_vault_viewer',         tier: 1, ui_ref: 'docs/coingame.png' },
     { id: 'tyson_cabinet',    recipe: 'pwnglove_tyson_master_unlock', tier: 1 }
   ],
 
-  CONTRACT_VERSION: '5.0.0-day1+pwnglove+crank+playground+v3'
+  // Canonical pinned assets — sdk_main_emitter MUST hard-copy these
+  // and NEVER call the image pipeline for them. Pipeline-regenerating any
+  // of these weakens the whole product. Lineage matters: title + coins
+  // come from the real 23-codes/23Coins project; gamepwnglovev2.png is
+  // the already-rendered game asset (no "let me try a variant").
+  //
+  // Paths are relative to repo root (server/services/sdk_main_emitter.js
+  // resolves them with path.resolve(__dirname, '../../', value)).
+  CANONICAL_PINS: {
+    title:         'docs/hakcd_title.png',
+    pwnglove_icon: 'docs/gamepwnglovev2.png',
+    coin_0:        'docs/coin0.png',
+    coin_1:        'docs/coin1.jpg',
+    coin_2:        'docs/coin2.jpg',
+    coin_3:        'docs/coingame.png'   // placeholder for Yoda hash coin; user to drop final
+  },
+
+  // Coin Vault viewer config — 24-coin grid, 4 real coins, 20 locked.
+  // source/data/coins.json carries the per-coin dialog payload.
+  COIN_VAULT_CONFIG: {
+    total_coins: 24,
+    grid_cols: 4,
+    grid_rows: 6,
+    real_coins: [0, 1, 2, 3],
+    locked_card_asset: 'images/coins/coin_locked.png',
+    ui_ref: 'docs/coingame.png',
+    side_panel_canonical_text: 'Solving the entire coin earns you the next coin regardless of solve status.',
+    footer_glyph: '[ 23 C0iNS ]'
+  },
+
+  CONTRACT_VERSION: '5.0.0-day1+pwnglove+crank+playground+canonical_pins+coin_vault+v4'
 };

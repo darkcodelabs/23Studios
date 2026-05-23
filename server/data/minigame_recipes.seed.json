@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "description": "11 mechanic kits the autopilot can drop into a scene slot. lua_template is a full per-scene module; the autopilot substitutes {SCENE_ID}, {SCENE_NAME}, {SCENE_TITLE} tokens then writes to scenes/{SCENE_ID}.lua.  --  v2: PWNGLOVE + 23 C0iNS prepended as TOP-priority recipes; see docs/phase5_pwnglove_coins_priority.md  --  v3: PWNGLOVE multi-tool stack absorbed (flipper/portal/gravity/tyson + playground lockpick_station), crank_power_channel=true on all PWNGLOVE recipes, dropped crank_lockpick (replaced by Flipper.blue_box at Bell pedestal). See docs/phase5_pwnglove_*.md",
+  "version": 4,
+  "description": "11 mechanic kits the autopilot can drop into a scene slot. lua_template is a full per-scene module; the autopilot substitutes {SCENE_ID}, {SCENE_NAME}, {SCENE_TITLE} tokens then writes to scenes/{SCENE_ID}.lua.  --  v2: PWNGLOVE + 23 C0iNS prepended as TOP-priority recipes; see docs/phase5_pwnglove_coins_priority.md  --  v3: PWNGLOVE multi-tool stack absorbed (flipper/portal/gravity/tyson + playground lockpick_station), crank_power_channel=true on all PWNGLOVE recipes, dropped crank_lockpick (replaced by Flipper.blue_box at Bell pedestal). See docs/phase5_pwnglove_*.md  --  v4: coin_vault_viewer added (display-only modal for playground Coin Vault pedestal; canonical pins per docs/phase5_canonical_pins_and_coin_vault.md)",
   "recipes": [
     {
       "id": "pwnglove_konami_unlock",
@@ -418,6 +418,66 @@
         }
       },
       "lua_template": "-- stub - Coordinator hand-authors source/scenes/pwnglove_playground.lua lockpick handler matching pwnglove_lockpick_ui_ref.png. NO autopilot generation.\n"
+    },
+    {
+      "id": "coin_vault_viewer",
+      "name": "23 C0iNS Coin Vault viewer (playground Tier 1 / display-only)",
+      "priority": "top",
+      "mechanic_kit": "coin_grid_minter",
+      "display_only": true,
+      "ui_reference": "docs/coingame.png",
+      "premise": "Display-only modal viewer for the 24-coin grid. NO minigame. Player walks up to vault pedestal in pwnglove_playground, A opens viewer, D-pad navigates the 6x4 grid, A zooms a coin to closeup with sidebar detail, B returns. Newb portrait + dialog bar at bottom carries per-coin commentary. In playground, ALL 24 coins are unlocked for browsing.",
+      "features_used": [
+        "button_pressed_edge",
+        "sound_sampleplayer",
+        "gfx_clear",
+        "gfx_draw_text",
+        "gfx_draw_rect",
+        "gfx_fill_rect",
+        "gfx_set_dither_pattern"
+      ],
+      "controls": {
+        "dpad": "navigate grid (wraps)",
+        "a": "zoom to closeup",
+        "b": "back to grid OR exit viewer"
+      },
+      "ui_density_requirements": [
+        "Top bar: HAKCD > 23 C0iNS (with indicator arrow)",
+        "Main grid: 4 cols x 6 rows = 24 cells; each cell shows coin id + status pip (MINTED/AVAILABLE/LOCKED)",
+        "Right sidebar: MINTED: N/24, STATUS: <name>, large closeup, canonical rule text, footer skull-bracket [ 23 C0iNS ]",
+        "Bottom dialog bar: newb portrait + commentary, auto-advance ~3s or on A"
+      ],
+      "required_imports": [
+        "runtime/concepts/dialog_pop"
+      ],
+      "required_inventory": [],
+      "default_opts": {
+        "total_coins": 24,
+        "real_coins": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "auto_advance_dialog_ms": 3000
+      },
+      "audio_cues": [
+        "vault_hum",
+        "vault_door_open",
+        "vault_door_close",
+        "coin_navigate_tick",
+        "coin_zoom_whoosh"
+      ],
+      "win_condition": {
+        "event": "recipe_win",
+        "payload": {
+          "recipe": "coin_vault_viewer",
+          "viewed_coin_ids": "<array>"
+        }
+      },
+      "fail_condition": null,
+      "data_source": "source/data/coins.json",
+      "lua_template": "-- stub - Coordinator hand-authors source/scenes/coin_vault_viewer.lua matching docs/coingame.png reference UI exactly. Data from source/data/coins.json.\n"
     },
     {
       "id": "coin_grid_minter",
