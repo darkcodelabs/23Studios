@@ -123,7 +123,7 @@ function M.play_sfx(name)
     if not sp then
         -- Search both common SFX dirs; HAKCD uses sounds/, our exporter
         -- emits to sounds/ as well, with sfx_baseline/ as the procedural set.
-        sp = playdate.sound.sampleplayer.new("sounds/" .. name)
+        sp = playdate.sound.sampleplayer.new("sounds/sfx/" .. name)
         if not sp then
             sp = playdate.sound.sampleplayer.new("sfx_baseline/" .. name)
         end
