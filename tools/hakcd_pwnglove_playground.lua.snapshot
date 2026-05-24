@@ -279,7 +279,10 @@ function Scene:draw()
     end
 
     -- PWNGLOVE HUD bottom strip (only when not in a modal that draws full-screen)
-    if not self.modal and _G.pwnglove_hud then _G.pwnglove_hud.draw_strip(226) end
+    if not self.modal and _G.pwnglove_hud then
+        _G.pwnglove_hud.draw_strip(226)
+        _G.pwnglove_hud.draw_bend_row(4, 32)
+    end
 
     -- Modal overlays
     if self.modal == 'lockpick' and self.lockpick then

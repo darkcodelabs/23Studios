@@ -1,0 +1,220 @@
+-- runtime/concepts/pwnglove_hud.lua
+-- Shared PWNGLOVE HUD + crank-as-power-channel global state.
+-- Every PWNGLOVE layer (lockpick, flipper, portal, gravity, tyson, konami)
+-- reads pwnglove_hud.crank_rpm live. NeoPixel array brightness derives.
+--
+-- Public API:
+--   pwnglove_hud.update(crank_change)   call from playdate.cranked()
+--   pwnglove_hud.crank_rpm              live (0..~400)
+--   pwnglove_hud.crank_revs_total       monotonic, since session start
+--   pwnglove_hud.crank_revs_since(t)    delta since timestamp ms
+--   pwnglove_hud.active_layer           string or nil
+--   pwnglove_hud.set_active_layer(s)
+--   pwnglove_hud.heat                   0..100
+--   pwnglove_hud.cooldown_until_ms      0 if cool
+--   pwnglove_hud.draw_strip(y)          render 20-LED bottom strip at y
+
+local M = {}
+
+local gfx = playdate.graphics
+
+M.crank_rpm           = 0
+M.crank_revs_total    = 0
+M.active_layer        = nil
+M.heat                = 0
+M.cooldown_until_ms   = 0
+
+local last_update_ms  = nil
+local _crank_history  = {}  -- ring buffer [{t_ms, revs_delta}] for crank_revs_since
+
+local MAX_RPM = 360   -- physical crank rotation rate ceiling for HUD scaling
+
+function M.update(crank_change)
+    -- crank_change is degrees since last frame. Convert to instantaneous RPM.
+    -- 30 fps Playdate => one frame = ~33ms => 360 deg/frame = 360 / (1/30) /6 = 1800 RPM theoretical
+    -- More realistic: clamp at MAX_RPM
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt_ms = (last_update_ms and (now - last_update_ms)) or 33
+    last_update_ms = now
+    if dt_ms <= 0 then dt_ms = 33 end
+
+    local abs_change = math.abs(crank_change or 0)
+    local revs_delta = abs_change / 360.0
+    M.crank_revs_total = M.crank_revs_total + revs_delta
+    table.insert(_crank_history, { t = now, revs = revs_delta })
+    -- prune history older than 5s
+    while _crank_history[1] and (now - _crank_history[1].t) > 5000 do
+        table.remove(_crank_history, 1)
+    end
+
+    -- RPM = deg/dt_ms scaled to per-minute. 360 deg in 60_000 ms = 1 RPM.
+    local rpm_inst = (abs_change / dt_ms) * (60000 / 360)
+    -- low-pass filter so the bar isn't jittery
+    M.crank_rpm = (M.crank_rpm * 0.6) + (rpm_inst * 0.4)
+    if M.crank_rpm > MAX_RPM then M.crank_rpm = MAX_RPM end
+    if M.crank_rpm < 0.5 then M.crank_rpm = 0 end
+
+    -- heat accumulator (gravity-gun overheat path)
+    local dt_s = dt_ms / 1000.0
+    if M.crank_rpm > 200 then
+        M.heat = math.min(100, M.heat + (1 * dt_s * 30))   -- accelerated x30 so visible in seconds
+    else
+        M.heat = math.max(0, M.heat - (10 * dt_s))
+    end
+    if M.heat >= 100 and M.cooldown_until_ms == 0 then
+        M.cooldown_until_ms = now + 3000
+    end
+    if now >= M.cooldown_until_ms then M.cooldown_until_ms = 0 end
+end
+
+function M.crank_revs_since(t_ms)
+    local total = 0
+    for _, e in ipairs(_crank_history) do
+        if e.t >= t_ms then total = total + e.revs end
+    end
+    return total
+end
+
+function M.set_active_layer(s) M.active_layer = s end
+
+-- Per-finger bend levels (0..255 each). Updated synthetically based on
+-- current crank_rpm + active_layer. Real PWNGLOVE firmware reads four
+-- analog bend sensors via mux; in-game we synthesize the equivalent.
+M.bend = { t = 0, i = 0, m = 0, r = 0 }   -- thumb, index, middle, ring
+
+local function update_bend()
+    local rpm = M.crank_rpm
+    local base = math.min(255, math.floor(rpm / MAX_RPM * 255))
+    local layer = M.active_layer or ''
+    -- per-layer animation patterns (sub-tier of v0.1.0 spec)
+    if layer:find('rfid') then
+        -- sweep across fingers
+        local now = playdate.getCurrentTimeMilliseconds()
+        local phase = (now % 800) / 800
+        local finger = math.floor(phase * 4) + 1
+        for k, _ in pairs({ t=0, i=0, m=0, r=0 }) do M.bend[k] = base / 2 end
+        local k = ({ 't', 'i', 'm', 'r' })[finger]
+        M.bend[k] = math.min(255, base + 80)
+    elseif layer:find('ir') then
+        -- blink all
+        local now = playdate.getCurrentTimeMilliseconds()
+        local on = ((now / 300) % 2) < 1
+        local v = on and base or math.floor(base / 3)
+        M.bend.t, M.bend.i, M.bend.m, M.bend.r = v, v, v, v
+    elseif layer:find('portal') then
+        -- progress-bar across fingers based on rpm
+        local fill = math.min(4, math.floor(M.crank_rpm / 90))
+        M.bend.t = (fill >= 1) and 220 or 40
+        M.bend.i = (fill >= 2) and 220 or 40
+        M.bend.m = (fill >= 3) and 220 or 40
+        M.bend.r = (fill >= 4) and 220 or 40
+    elseif layer == 'gravity' then
+        -- ring: outer-in (t and r bright, i and m dim) when attached
+        M.bend.t = math.min(255, base + 50)
+        M.bend.r = math.min(255, base + 50)
+        M.bend.i = math.max(0, base - 50)
+        M.bend.m = math.max(0, base - 50)
+    elseif layer == 'tyson' then
+        -- rainbow simulated: each finger phases independently
+        local now = playdate.getCurrentTimeMilliseconds()
+        M.bend.t = math.floor(127 + 127 * math.sin(now / 200))
+        M.bend.i = math.floor(127 + 127 * math.sin(now / 200 + 1.5))
+        M.bend.m = math.floor(127 + 127 * math.sin(now / 200 + 3.0))
+        M.bend.r = math.floor(127 + 127 * math.sin(now / 200 + 4.5))
+    elseif layer == 'konami' then
+        -- pulse all-on
+        local now = playdate.getCurrentTimeMilliseconds()
+        local pulse = math.floor(127 + 127 * math.sin(now / 300))
+        M.bend.t, M.bend.i, M.bend.m, M.bend.r = pulse, pulse, pulse, pulse
+    else
+        -- default: fingers tilt with rpm uniformly
+        M.bend.t, M.bend.i, M.bend.m, M.bend.r = base, base, base, base
+    end
+end
+
+function M.draw_strip(y)
+    update_bend()
+
+    -- 20 LED dots across screen bottom, brightness = crank_rpm fraction
+    y = y or 226
+    local n = 20
+    local strip_x = 8
+    local cell_w = 18
+    local lit_fraction = math.min(1.0, M.crank_rpm / MAX_RPM)
+    local lit_count = math.floor(lit_fraction * n + 0.5)
+
+    -- background
+    gfx.fillRect(0, y - 2, 400, 14)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    for i = 1, n do
+        local x = strip_x + (i - 1) * cell_w
+        if i <= lit_count then
+            -- heat overlay: red checker when heat > 75 (rendered as filled)
+            if M.heat > 75 and (i % 2 == 0) then
+                -- skip even cells = checker effect at overheat warning
+            else
+                gfx.fillCircleAtPoint(x + 6, y + 5, 4)
+            end
+        else
+            gfx.drawCircleAtPoint(x + 6, y + 5, 4)
+        end
+    end
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- active-layer label top-left
+    if M.active_layer then
+        gfx.fillRect(0, y - 16, 100, 14)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawText('PWN:' .. M.active_layer, 4, y - 14)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+    -- heat warning right
+    if M.heat > 75 then
+        gfx.fillRect(340, y - 16, 60, 14)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawText('HEAT ' .. math.floor(M.heat), 344, y - 14)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+end
+
+-- Bend-sensor row visualization. 4 fingers x 5 LEDs each = 20 LEDs in a
+-- compact horizontal strip. Each finger's LED count lit = bend / 51 (0-5).
+-- Pinned to a screen edge (top-left by default). Per-layer pattern via
+-- update_bend() above.
+function M.draw_bend_row(x, y)
+    x = x or 4
+    y = y or 32
+    update_bend()
+    local FINGER_LABELS = { 'T', 'I', 'M', 'R' }
+    local KEYS = { 't', 'i', 'm', 'r' }
+    local LEDS_PER_FINGER = 5
+    local LED_R = 2
+    local LED_GAP = 5
+    local FINGER_GAP = 14
+
+    -- frame
+    local w = #KEYS * (LEDS_PER_FINGER * LED_GAP + FINGER_GAP) + 4
+    local h = 18
+    gfx.fillRect(x - 2, y - 2, w, h + 4)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    for fi = 1, #KEYS do
+        local lab = FINGER_LABELS[fi]
+        local bend = M.bend[KEYS[fi]] or 0
+        local lit = math.floor(bend / 51)   -- 0..5
+        gfx.drawText(lab, x + (fi - 1) * (LEDS_PER_FINGER * LED_GAP + FINGER_GAP), y - 2)
+        for li = 1, LEDS_PER_FINGER do
+            local lx = x + (fi - 1) * (LEDS_PER_FINGER * LED_GAP + FINGER_GAP)
+                       + (li - 1) * LED_GAP + 8
+            local ly = y + 8
+            if li <= lit then
+                gfx.fillCircleAtPoint(lx, ly, LED_R)
+            else
+                gfx.drawCircleAtPoint(lx, ly, LED_R)
+            end
+        end
+    end
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+end
+
+_G.pwnglove_hud = M
+return M
