@@ -1,0 +1,309 @@
+-- scenes/pwnglove_playground.lua
+-- PWNGLOVE MODE playground — system-menu-accessible showcase room.
+-- 9 hotspots: lockpick / RFID / payphone / IR / gravity / SubGHz / portal /
+-- coin vault / Tyson cabinet. Player walks newb between them, A interacts.
+-- Tier 1 implements: lockpick + Tyson + coin vault. Others are stub-dialog
+-- for Day 2.
+
+local gfx <const> = playdate.graphics
+local pd  <const> = playdate
+
+local Scene = {}
+
+local SCREEN_W, SCREEN_H = 400, 240
+local BOUNDS = { x1 = 8, y1 = 14, x2 = 392, y2 = 200 }
+local SPEED = 3
+
+-- 9 hotspots laid out in a 4x2 + 1 arrangement.
+-- Coordinates are scene pixels.
+local HOTSPOTS = {
+    { id = 'lockpick_station', x = 30,  y = 40,  w = 70, h = 40, label = 'LOCKPICK',     tier = 1 },
+    { id = 'rfid_pedestal',    x = 130, y = 40,  w = 70, h = 40, label = 'RFID',         tier = 2 },
+    { id = 'payphone',         x = 230, y = 40,  w = 70, h = 40, label = 'PAYPHONE',     tier = 2 },
+    { id = 'ir_wall',          x = 330, y = 40,  w = 65, h = 40, label = 'IR WALL',      tier = 3 },
+    { id = 'gravity_arena',    x = 30,  y = 100, w = 70, h = 40, label = 'GRAVITY',      tier = 3 },
+    { id = 'subghz_tuner',     x = 130, y = 100, w = 70, h = 40, label = 'SUBGHZ',       tier = 3 },
+    { id = 'portal_pedestal',  x = 230, y = 100, w = 70, h = 40, label = 'PORTAL',       tier = 3 },
+    { id = 'coin_vault',       x = 330, y = 100, w = 65, h = 40, label = 'COIN VAULT',   tier = 1 },
+    { id = 'tyson_cabinet',    x = 180, y = 150, w = 100,h = 26, label = 'TYSON',        tier = 1 },
+}
+
+local function bbox_overlap(a, b)
+    return not (a.x + a.w < b.x or b.x + b.w < a.x
+             or a.y + a.h < b.y or b.y + b.h < a.y)
+end
+
+local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
+
+function Scene:init() end
+
+function Scene:enter()
+    self.bg = gfx.image.new("images/scenes/pwnglove_playground")
+    self.player = { x = 200, y = 178, w = 24, h = 24 }
+    self.player_img = gfx.image.new('images/sprites/newb_32')
+    self.active_hotspot = nil
+    self.modal = nil           -- one of: 'lockpick' | 'tyson' | nil (vault uses scene transition)
+    self.lockpick = nil
+    self.tyson = nil
+    self.stub_dialog = nil
+    self.neon_flicker_ms = 0
+    self.neon_on = true
+    -- visited tracker per addendum: all-8-stations master_hakcer
+    self.visited = self.visited or {}
+
+    -- Ensure all PWNGLOVE layers are unlocked in playground regardless of story progress
+    if _G.progression then
+        local s = _G.progression.pwnglove_state()
+        s.equip_state = 'equipped'
+        s.layers.portal.unlocked = true
+        s.layers.gravity.unlocked = true
+        s.layers.flipper.tools_unlocked = {
+            rfid_clone=true, subghz_replay=true, ir_learn=true,
+            ibutton_emulate=true, blue_box=true, bad_usb=true
+        }
+        if _G.save_state then _G.save_state.set('pwnglove', s) end
+    end
+
+    if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer(nil) end
+end
+
+function Scene:exit()
+    self.modal = nil
+    self.lockpick = nil
+    self.tyson = nil
+end
+
+function Scene:update()
+    -- Neon sign flicker (every 1.5s)
+    local now = playdate.getCurrentTimeMilliseconds()
+    if now - self.neon_flicker_ms > 1500 then
+        self.neon_on = not self.neon_on
+        self.neon_flicker_ms = now
+    end
+
+    -- Modal updates (block player movement)
+    if self.modal == 'lockpick' then
+        if self.lockpick then
+            local change = playdate.getCrankChange() or 0
+            self.lockpick:update(nil, change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.lockpick:is_done() then
+                if self.lockpick:result() == 'open' then
+                    self.visited['lockpick_station'] = true
+                end
+                -- linger ~1s after done then dismiss
+                self._modal_dismiss_ms = self._modal_dismiss_ms or (playdate.getCurrentTimeMilliseconds() + 1200)
+                if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
+                    self.modal = nil; self.lockpick = nil; self._modal_dismiss_ms = nil
+                end
+            end
+        end
+        return
+    elseif self.modal == 'tyson' then
+        if self.tyson then
+            local change = playdate.getCrankChange() or 0
+            self.tyson:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.tyson:is_done() then
+                self.visited['tyson_cabinet'] = true
+                self._modal_dismiss_ms = self._modal_dismiss_ms or (playdate.getCurrentTimeMilliseconds() + 2200)
+                if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
+                    self.modal = nil; self.tyson = nil; self._modal_dismiss_ms = nil
+                end
+            end
+        end
+        return
+    elseif self.modal == 'rfid' then
+        if self.rfid then
+            local change = playdate.getCrankChange() or 0
+            self.rfid:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.rfid:is_done() then
+                if self.rfid:result() == 'emitted' or self.rfid:result() == 'door_open' then
+                    self.visited['rfid_pedestal'] = true
+                end
+                self.modal = nil; self.rfid = nil
+            end
+        end
+        return
+    elseif self.modal == 'stub' then
+        -- stub modal auto-dismiss after 1500ms
+        if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
+            self.modal = nil; self.stub_dialog = nil; self._modal_dismiss_ms = nil
+        end
+        return
+    end
+
+    -- Player walk
+    if pd.buttonIsPressed(pd.kButtonLeft)  then self.player.x = self.player.x - SPEED end
+    if pd.buttonIsPressed(pd.kButtonRight) then self.player.x = self.player.x + SPEED end
+    if pd.buttonIsPressed(pd.kButtonUp)    then self.player.y = self.player.y - SPEED end
+    if pd.buttonIsPressed(pd.kButtonDown)  then self.player.y = self.player.y + SPEED end
+    self.player.x = clamp(self.player.x, BOUNDS.x1, BOUNDS.x2 - self.player.w)
+    self.player.y = clamp(self.player.y, BOUNDS.y1, BOUNDS.y2 - self.player.h)
+
+    -- Hotspot overlap detect
+    self.active_hotspot = nil
+    for _, hs in ipairs(HOTSPOTS) do
+        if bbox_overlap(self.player, hs) then self.active_hotspot = hs; break end
+    end
+
+    -- All-9 visited check
+    if not self.visited.master_hakcer then
+        local all = true
+        for _, hs in ipairs(HOTSPOTS) do
+            if not self.visited[hs.id] then all = false; break end
+        end
+        if all then
+            self.visited.master_hakcer = true
+            if _G.save_state then _G.save_state.set('pwnglove_mode_complete', true) end
+        end
+    end
+end
+
+function Scene:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Background (placeholder outlines)
+    if self.bg then self.bg:draw(0, 30) end
+
+    -- Neon sign
+    if self.neon_on then
+        gfx.fillRect(50, 4, 300, 18)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("PWNGLOVE MODE", 200, 6, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    else
+        gfx.drawRect(50, 4, 300, 18)
+        gfx.drawTextAligned("PWN", 100, 6, kTextAlignment.center)
+        gfx.drawTextAligned("GLOVE", 300, 6, kTextAlignment.center)
+    end
+
+    -- Hotspot labels (overlay on top of bg outlines)
+    gfx.setColor(gfx.kColorBlack)
+    for _, hs in ipairs(HOTSPOTS) do
+        gfx.drawTextAligned(hs.label, hs.x + hs.w / 2, hs.y + hs.h / 2 - 6, kTextAlignment.center)
+        if self.visited[hs.id] then
+            gfx.drawText('v', hs.x + hs.w - 8, hs.y + 2)
+        end
+    end
+
+    -- Player
+    if self.player_img then
+        self.player_img:draw(self.player.x, self.player.y - 4)
+    else
+        gfx.fillRect(self.player.x, self.player.y, self.player.w, self.player.h)
+    end
+
+    -- Active-hotspot prompt bottom of screen
+    if self.active_hotspot and not self.modal then
+        gfx.fillRect(0, 220, 400, 20)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawText('[A] ' .. self.active_hotspot.label, 8, 224)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- Master HAKCER overlay if all visited
+    if self.visited.master_hakcer then
+        gfx.fillRect(140, 28, 120, 14)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned('MASTER HAKCER', 200, 30, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- PWNGLOVE HUD bottom strip (only when not in a modal that draws full-screen)
+    if not self.modal and _G.pwnglove_hud then _G.pwnglove_hud.draw_strip(226) end
+
+    -- Modal overlays
+    if self.modal == 'lockpick' and self.lockpick then
+        self.lockpick:draw()
+    elseif self.modal == 'tyson' and self.tyson then
+        self.tyson:draw()
+    elseif self.modal == 'rfid' and self.rfid then
+        self.rfid:draw()
+    elseif self.modal == 'stub' and self.stub_dialog then
+        gfx.fillRect(40, 80, 320, 80)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawRect(40, 80, 320, 80)
+        gfx.drawText(self.stub_dialog, 50, 90)
+        gfx.drawText('B to dismiss', 50, 140)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+end
+
+function Scene:open_modal(kind)
+    self.modal = kind
+    self._modal_dismiss_ms = nil
+    if kind == 'lockpick' then
+        if _G.pwnglove_lockpick then
+            self.lockpick = _G.pwnglove_lockpick.new({
+                pin_count = 5, attempts = 3, time_limit_sec = 60,
+                binding_zone_deg = { 45, 90 }
+            })
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('lockpick') end
+        end
+    elseif kind == 'tyson' then
+        if _G.pwnglove_tyson then
+            self.tyson = _G.pwnglove_tyson.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('tyson') end
+        end
+    elseif kind == 'rfid' then
+        if _G.pwnglove_rfid then
+            self.rfid = _G.pwnglove_rfid.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.rfid') end
+        end
+    end
+end
+
+function Scene:open_stub(text)
+    self.modal = 'stub'
+    self.stub_dialog = text
+    self._modal_dismiss_ms = playdate.getCurrentTimeMilliseconds() + 2500
+end
+
+function Scene:input(evt)
+    -- Modal-routed input
+    if self.modal == 'lockpick' and self.lockpick then
+        self.lockpick:input(evt)
+        return
+    elseif self.modal == 'tyson' and self.tyson then
+        self.tyson:input(evt)
+        return
+    elseif self.modal == 'stub' then
+        if evt == 'b' then self.modal = nil; self.stub_dialog = nil end
+        return
+    end
+
+    if evt == 'a' and self.active_hotspot then
+        local id = self.active_hotspot.id
+        self.visited[id] = true
+        if id == 'lockpick_station' then
+            self:open_modal('lockpick')
+        elseif id == 'tyson_cabinet' then
+            self:open_modal('tyson')
+        elseif id == 'coin_vault' then
+            local vault = _G["Scene_coin_vault_viewer"] or _G["coin_vault_viewer"]
+            if vault and scene_manager and scene_manager.replace then
+                scene_manager.replace(vault, { return_label = 'pwnglove_playground' })
+            end
+        elseif id == 'rfid_pedestal' then
+            self:open_stub("RFID pedestal: 'Cloned. Now I'm someone else for ninety seconds. Knuckleheads taught me well.'  [Tier 2 - shipping Day 2]")
+        elseif id == 'payphone' then
+            self:open_stub("Payphone: blue box 2600Hz lock + trunk seize.  [Tier 2]")
+        elseif id == 'ir_wall' then
+            self:open_stub("IR wall: TV-B-Gone + IR-locked door.  [Tier 3]")
+        elseif id == 'gravity_arena' then
+            self:open_stub("Gravity arena: crank to lift the server rack.  [Tier 3]")
+        elseif id == 'subghz_tuner' then
+            self:open_stub("SubGHz tuner: capture garage opener + cordless phone.  [Tier 3]")
+        elseif id == 'portal_pedestal' then
+            self:open_stub("Portal pedestal: hold B + crank to warp to visited scenes.  [Tier 3]")
+        end
+    elseif evt == 'b' then
+        -- B in the playground = nothing; system menu "back to story" handles exit
+    end
+end
+
+_G["pwnglove_playground"] = Scene
+_G["Scene_pwnglove_playground"] = Scene
+return Scene

@@ -1,0 +1,209 @@
+-- runtime/concepts/pwnglove_rfid.lua
+-- RFID Clone tool (PWNGLOVE Flipper layer). Matches docs/pwnglove_remotehack.png.
+-- Crank charges read coil. Hold A on badge to capture (50 charge units).
+-- Press A on reader to emit cloned signal. Door buzzes open.
+--
+-- Public API:
+--   pwnglove_rfid.new(opts) -> instance
+--   instance:update(crank_change_deg)
+--   instance:input(evt)
+--   instance:draw()
+--   instance:is_done()
+--   instance:result() -> 'captured_only' | 'emitted' | 'cancelled' | 'in_progress'
+
+local M = {}
+local gfx = playdate.graphics
+
+local SCREEN_W, SCREEN_H = 400, 240
+local DIALOG_Y, DIALOG_H = 178, 62
+local PORTRAIT_X, PORTRAIT_W = 348, 48
+
+-- States: 'idle' | 'capturing' | 'captured' | 'emitting' | 'door_open' | 'done'
+function M.new(opts)
+    opts = opts or {}
+    local self = setmetatable({}, { __index = M })
+    self.target_charge = opts.target_charge or 50
+    self.charge = 0
+    self.state = 'idle'
+    self.charge_decay_per_sec = opts.decay or 5
+    self.last_update_ms = playdate.getCurrentTimeMilliseconds()
+    self.dialog = "Some chump left it here. Easy capture."
+    self.dialog_ms = playdate.getCurrentTimeMilliseconds()
+    self.focus = 'badge'  -- 'badge' | 'reader'
+    self.captured_id = '0xA8F2'
+    self.cursor_swap_ms = 0
+    self.emit_ms = 0
+    return self
+end
+
+function M:set_dialog(text)
+    self.dialog = text
+    self.dialog_ms = playdate.getCurrentTimeMilliseconds()
+end
+
+function M:update(crank_change_deg)
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt = (now - self.last_update_ms) / 1000.0
+    self.last_update_ms = now
+
+    local abs_change = math.abs(crank_change_deg or 0)
+
+    if self.state == 'capturing' then
+        -- crank accumulates charge
+        if abs_change > 0 then
+            self.charge = math.min(self.target_charge, self.charge + abs_change * 0.6 * dt * 30)
+        else
+            self.charge = math.max(0, self.charge - self.charge_decay_per_sec * dt)
+        end
+        if self.charge >= self.target_charge then
+            self.state = 'captured'
+            self:set_dialog("Got it. Badge ID " .. self.captured_id .. ". Auth signature clean.")
+            self.focus = 'reader'
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("rfid_capture_chirp") end
+        end
+    elseif self.state == 'emitting' then
+        self.emit_ms = self.emit_ms + dt * 1000
+        if self.emit_ms > 600 then
+            self.state = 'door_open'
+            self:set_dialog("Cloned. Now I'm someone else for ninety seconds. Knuckleheads taught me well.")
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("vault_door_open") end
+            self.emit_ms = 0
+        end
+    elseif self.state == 'door_open' then
+        self.emit_ms = self.emit_ms + dt * 1000
+        if self.emit_ms > 2200 then
+            self.state = 'done'
+        end
+    end
+end
+
+function M:input(evt)
+    if self.state == 'idle' then
+        if evt == 'a' then
+            self.state = 'capturing'
+            self:set_dialog("Cranking the read coil. Hold steady.")
+        elseif evt == 'b' then
+            self.state = 'done'
+        end
+    elseif self.state == 'capturing' then
+        if evt == 'b' then self.state = 'done' end
+    elseif self.state == 'captured' then
+        if evt == 'a' then
+            self.state = 'emitting'
+            self:set_dialog("Emitting clone burst on the reader...")
+            self.emit_ms = 0
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("rfid_emit_burst") end
+        elseif evt == 'b' then self.state = 'done' end
+    end
+end
+
+function M:is_done() return self.state == 'done' end
+function M:result() return self.state end
+
+----------------------------------------------------------------------------
+
+function M:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Parking-garage backdrop (primitive: P2 LEVEL B sign + camera + door)
+    -- garage floor diagonal lines (perspective hint)
+    for i = 0, 8 do
+        gfx.drawLine(0, 60 + i * 15, SCREEN_W, 80 + i * 12)
+    end
+
+    -- "P2 LEVEL B" wall sign top-left
+    gfx.fillRect(10, 16, 50, 36)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawTextAligned("P2", 35, 18, kTextAlignment.center)
+    gfx.drawTextAligned("LEVEL", 35, 32, kTextAlignment.center)
+    gfx.drawTextAligned("B", 35, 42, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- security camera top-center
+    gfx.drawRect(190, 14, 28, 14)
+    gfx.fillRect(218, 18, 6, 6)
+
+    -- AUTHORIZED PERSONNEL door right side
+    gfx.drawRect(290, 30, 100, 110)
+    gfx.fillRect(292, 32, 96, 18)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawTextAligned("AUTHORIZED", 340, 34, kTextAlignment.center)
+    gfx.drawTextAligned("PERSONNEL ONLY", 340, 44, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    -- door handle
+    gfx.fillRect(296, 100, 6, 12)
+    -- reader on doorframe
+    gfx.drawRect(370, 60, 18, 28)
+    if self.state == 'door_open' then
+        -- door swings open: draw it offset
+        gfx.fillRect(290, 30, 30, 110)
+    end
+
+    -- PWNGLOVE arm extended from left (simplified silhouette)
+    gfx.fillRect(110, 110, 80, 18)        -- forearm
+    gfx.fillRect(180, 100, 30, 38)        -- glove housing
+    -- finger LEDs (4 dots)
+    for i = 0, 3 do
+        gfx.fillCircleAtPoint(186 + i * 7, 96, 2)
+    end
+
+    -- "Badge on pedestal" left-center if focus=badge
+    if self.state == 'idle' or self.state == 'capturing' then
+        gfx.drawRect(50, 130, 40, 30)
+        gfx.fillRect(55, 135, 30, 20)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("BADGE", 70, 143, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- RFID emission arcs from glove when capturing/emitting
+    if self.state == 'capturing' or self.state == 'emitting' then
+        local emit_x = 210
+        local emit_y = 119
+        local now = playdate.getCurrentTimeMilliseconds()
+        local pulse = (now % 600) / 600
+        for ring = 1, 3 do
+            local r = 8 + ring * 8 + math.floor(pulse * 8)
+            gfx.drawCircleAtPoint(emit_x, emit_y, r)
+        end
+        -- ID float text
+        gfx.drawText(self.captured_id, emit_x + 30, emit_y - 30)
+        gfx.drawText("AUTH", emit_x + 30, emit_y - 20)
+        gfx.drawText(self.state == 'capturing' and "..." or "OK", emit_x + 30, emit_y - 10)
+    end
+
+    -- Charge meter (wrist screen on glove)
+    if self.state == 'capturing' or self.state == 'captured' then
+        local mx, my, mw, mh = 130, 116, 50, 8
+        gfx.drawRect(mx, my, mw, mh)
+        local fill_w = math.floor((self.charge / self.target_charge) * (mw - 2))
+        gfx.fillRect(mx + 1, my + 1, fill_w, mh - 2)
+        gfx.drawText(string.format("%d/%d", math.floor(self.charge), self.target_charge), mx, my + 12)
+    end
+
+    -- Bottom dialog bar (newb portrait + line)
+    gfx.drawRect(0, DIALOG_Y, SCREEN_W, DIALOG_H)
+    gfx.drawRect(1, DIALOG_Y + 1, SCREEN_W - 2, DIALOG_H - 2)
+    gfx.fillRect(2, DIALOG_Y + 2, 60, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawText("newb", 6, DIALOG_Y + 2)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawLine(2, DIALOG_Y + 16, SCREEN_W - 2, DIALOG_Y + 16)
+    gfx.drawTextInRect(self.dialog, 6, DIALOG_Y + 20, PORTRAIT_X - 12, DIALOG_H - 22)
+    gfx.drawRect(PORTRAIT_X, DIALOG_Y + 2, PORTRAIT_W, DIALOG_H - 4)
+    local portrait = gfx.image.new("images/portraits/newb")
+    if portrait then portrait:draw(PORTRAIT_X, DIALOG_Y + 4) end
+
+    -- Top-right status pill
+    local pill = "RFID CLONE"
+    if self.state == 'captured' then pill = "CAPTURED - press A to emit" end
+    if self.state == 'emitting' then pill = "EMITTING..." end
+    if self.state == 'door_open' then pill = "DOOR OPEN" end
+    gfx.fillRect(260, 0, 140, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawTextAligned(pill, 330, 0, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+end
+
+_G.pwnglove_rfid = M
+return M

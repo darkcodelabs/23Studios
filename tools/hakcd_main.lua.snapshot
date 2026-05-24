@@ -1,0 +1,150 @@
+import "CoreLibs/object"
+import "CoreLibs/graphics"
+import "CoreLibs/sprites"
+import "CoreLibs/timer"
+import "CoreLibs/crank"
+import "CoreLibs/animation"
+
+-- 23studios autopilot-emitted main.lua
+-- Regenerated each scene_lua run. Do not hand-edit.
+
+-- Runtime: self-binds every module to _G via load-once pattern.
+-- Order matters: scene_manager must load before any scene that calls it.
+import "runtime/save_state"
+import "runtime/audio_manager"
+import "runtime/animation"
+import "runtime/input"
+import "runtime/sprite_base"
+import "runtime/scene_manager"
+import "runtime/scene_transition"
+
+-- Concepts: load every module that scenes might reference.
+import "runtime/concepts/inventory"
+import "runtime/concepts/collision"
+import "runtime/concepts/interaction"
+import "runtime/concepts/debug_overlay"
+-- Phase 5 Tier-1 hand-author additions (PWNGLOVE MODE)
+import "runtime/concepts/progression"
+import "runtime/concepts/pwnglove_hud"
+import "runtime/concepts/pwnglove_lockpick"
+import "runtime/concepts/pwnglove_tyson"
+import "runtime/concepts/pwnglove_rfid"
+
+-- Scenes: each module self-binds Scene_<id> to _G.
+import "scenes/title"
+-- Phase 5 PWNGLOVE MODE scenes (hand-authored, system-menu accessible)
+import "scenes/pwnglove_mode_intro"
+import "scenes/pwnglove_playground"
+import "scenes/coin_vault_viewer"
+import "scenes/sc01_bedroom_recurring_hub"
+import "scenes/sc02_deadline_bbs"
+import "scenes/sc03_war_dialer_interface"
+import "scenes/sc04_corporate_bbs_phoenixdown"
+import "scenes/sc05_the_phone_bill"
+import "scenes/sc06_aol_signup_cutscene"
+import "scenes/sc07_aol_buddy_list"
+import "scenes/sc08_warezlobby"
+import "scenes/sc09_cyberlounge"
+import "scenes/sc10_phreakkingdom"
+import "scenes/sc11_hpvac"
+import "scenes/sc12_privatechan7"
+import "scenes/sc13_icq_window_overlay"
+import "scenes/sc14_bedroom_return"
+import "scenes/sc15_greyhound_station_payphone"
+import "scenes/sc16_k0nsole_conversation"
+import "scenes/sc17_bell_pedestal_in"
+import "scenes/sc18_telco_switching_office"
+import "scenes/sc19_aegis_network_reconnaissance"
+import "scenes/sc20_aegis_tech_support"
+import "scenes/sc21_inside_the_aegis"
+import "scenes/sc22_redhooks_chatroom"
+import "scenes/sc23_release_decision_scene"
+import "scenes/sc24_exfiltration"
+import "scenes/sc25_2002_older_protagonists"
+import "scenes/sc26_seckc_at_knuckleheads"
+
+local gfx <const> = playdate.graphics
+local pd  <const> = playdate
+
+-- Boot the startup scene through scene_manager.
+-- Every frame looks the scene up via scene_manager.current() instead of
+-- caching a local. transition_to(...) inside a scene calls scene_manager.replace()
+-- which updates the stack the dispatcher reads from.
+local startup_scene = _G["Scene_title"]
+if not startup_scene then
+  error("startup scene Scene_title not loaded -- check imports above")
+end
+
+-- Path B prototype: runtime systems need explicit init. Autopilot main.lua
+-- never called these. AWKWARDNESS #5 — emitter must add these.
+if save_state and save_state.init then save_state.init() end
+if audio_manager and audio_manager.init then audio_manager.init() end
+if progression and progression.init then progression.init() end
+
+-- Phase 5 PWNGLOVE MODE system-menu hook. Selecting "pwnglove mode" freezes
+-- story state (checkpoint), runs the 1.5s glove splash, lands player in
+-- the playground. "back to story" restores the checkpoint.
+local menu = pd.getSystemMenu()
+menu:addMenuItem("pwnglove mode", function()
+  if save_state and save_state.push_checkpoint then
+    save_state.push_checkpoint("pre_pwnglove_mode")
+  end
+  local intro = _G["Scene_pwnglove_mode_intro"] or _G["pwnglove_mode_intro"]
+  if intro and scene_manager and scene_manager.replace then
+    scene_manager.replace(intro, {})
+  end
+end)
+menu:addMenuItem("back to story", function()
+  if save_state and save_state.has_checkpoint
+      and save_state.has_checkpoint("pre_pwnglove_mode") then
+    save_state.restore_checkpoint("pre_pwnglove_mode")
+    -- Pop back to title since we don't know which scene the user was in
+    local t = _G["Scene_title"] or _G["title"]
+    if t and scene_manager and scene_manager.replace then
+      scene_manager.replace(t, {})
+    end
+  end
+end)
+
+scene_manager.push(startup_scene)
+
+function pd.update()
+  gfx.clear()
+  local s = scene_manager.current()
+  if s and s.update then s:update() end
+  if s and s.draw   then s:draw()   end
+  pd.timer.updateTimers()
+  gfx.sprite.update()
+end
+
+-- Input translation layer. The scene emitter (sdk_prompt_assembly.js)
+-- currently emits switch-style `function Scene_<id>:input(evt)` handlers
+-- taking strings like "a", "b", "up". Future emitter revisions may emit
+-- named methods (s:AButtonDown). Dispatcher prefers named, falls back to
+-- :input(evt).
+local INPUT_MAP = {
+  AButtonDown = "a",  AButtonUp = "a_up",
+  BButtonDown = "b",  BButtonUp = "b_up",
+  upButtonDown = "up", downButtonDown = "down",
+  leftButtonDown = "left", rightButtonDown = "right",
+}
+
+local function dispatch(name, ...)
+  local s = scene_manager.current()
+  if not s then return end
+  -- Prefer named method (s:AButtonDown) if scene provides it.
+  if s[name] then s[name](s, ...); return end
+  -- Fallback: legacy switch-style :input(evt) the existing emitter produces.
+  local evt = INPUT_MAP[name]
+  if evt and s.input then s:input(evt, ...) end
+end
+
+function pd.AButtonDown()     dispatch("AButtonDown")     end
+function pd.AButtonUp()       dispatch("AButtonUp")       end
+function pd.BButtonDown()     dispatch("BButtonDown")     end
+function pd.BButtonUp()       dispatch("BButtonUp")       end
+function pd.upButtonDown()    dispatch("upButtonDown")    end
+function pd.downButtonDown()  dispatch("downButtonDown")  end
+function pd.leftButtonDown()  dispatch("leftButtonDown")  end
+function pd.rightButtonDown() dispatch("rightButtonDown") end
+function pd.cranked(change, accel) dispatch("cranked", change, accel) end
