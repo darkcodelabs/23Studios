@@ -180,6 +180,19 @@ function Scene:update()
             end
         end
         return
+    elseif self.modal == 'portal' then
+        if self.portal then
+            local change = playdate.getCrankChange() or 0
+            self.portal:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.portal:is_done() then
+                if self.portal:result() == 'warped' then
+                    self.visited['portal_pedestal'] = true
+                end
+                self.modal = nil; self.portal = nil
+            end
+        end
+        return
     elseif self.modal == 'stub' then
         -- stub modal auto-dismiss after 1500ms
         if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
@@ -283,6 +296,8 @@ function Scene:draw()
         self.gravity:draw()
     elseif self.modal == 'subghz' and self.subghz then
         self.subghz:draw()
+    elseif self.modal == 'portal' and self.portal then
+        self.portal:draw()
     elseif self.modal == 'stub' and self.stub_dialog then
         gfx.fillRect(40, 80, 320, 80)
         gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
@@ -334,6 +349,11 @@ function Scene:open_modal(kind)
             self.subghz = _G.pwnglove_subghz.new({})
             if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.subghz') end
         end
+    elseif kind == 'portal' then
+        if _G.pwnglove_portal then
+            self.portal = _G.pwnglove_portal.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('portal') end
+        end
     end
 end
 
@@ -379,7 +399,7 @@ function Scene:input(evt)
         elseif id == 'subghz_tuner' then
             self:open_modal('subghz')
         elseif id == 'portal_pedestal' then
-            self:open_stub("Portal pedestal: hold B + crank to warp to visited scenes.  [Tier 3]")
+            self:open_modal('portal')
         end
     elseif evt == 'b' then
         -- B in the playground = nothing; system menu "back to story" handles exit

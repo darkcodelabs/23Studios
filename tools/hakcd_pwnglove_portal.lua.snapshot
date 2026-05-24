@@ -1,0 +1,224 @@
+-- runtime/concepts/pwnglove_portal.lua
+-- Portal gun (Layer 3 PWNGLOVE power). Hold B + crank to charge
+-- portal_energy 0..100. Threshold-gated destinations: 0-25 = current
+-- act only, 25-60 = same OR previous act, 60-100 = any incl SecKC.
+-- Release B with energy >= 25 to warp; < 25 collapses + consumes use.
+-- Aegis datacenter = story-locked, shows LOCKED.
+--
+-- In playground mode: all destinations browsable, no cooldown enforced.
+
+local M = {}
+local gfx = playdate.graphics
+
+local SCREEN_W, SCREEN_H = 400, 240
+local DIALOG_Y, DIALOG_H = 178, 62
+local PORTRAIT_X, PORTRAIT_W = 348, 48
+
+-- Destination registry (per addendum)
+local DESTINATIONS = {
+    { id = 'sc01_bedroom', label = 'BEDROOM',      act = 1, threshold = 0 },
+    { id = 'sc02_bbs',     label = 'DEADLINE BBS', act = 1, threshold = 0 },
+    { id = 'sc07_aol',     label = 'AOL LOBBY',    act = 2, threshold = 25 },
+    { id = 'sc10_phreak',  label = 'PHREAKKINGDOM',act = 2, threshold = 25 },
+    { id = 'sc17_bell',    label = 'BELL PEDESTAL',act = 3, threshold = 60 },
+    { id = 'sc26_seckc',   label = 'SECKC HIVE',   act = 4, threshold = 60 },
+    { id = 'sc21_aegis',   label = 'AEGIS DATACENTER', act = 4, threshold = 999, locked = true },
+}
+
+function M.new(opts)
+    opts = opts or {}
+    local self = setmetatable({}, { __index = M })
+    self.energy = 0
+    self.b_held = false
+    self.cursor = 1
+    self.warped_to = nil
+    self.state = 'idle'   -- 'idle' | 'charging' | 'warping' | 'collapsed' | 'done'
+    self.dialog = "Cached handshakes. The glove remembers every BBS I've cracked."
+    self.last_ms = playdate.getCurrentTimeMilliseconds()
+    self.collapse_until_ms = 0
+    return self
+end
+
+function M:set_dialog(t) self.dialog = t end
+
+function M:available(dest)
+    if dest.locked then return false end
+    return self.energy >= dest.threshold
+end
+
+function M:update(crank_change_deg)
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt = now - self.last_ms
+    self.last_ms = now
+
+    local pd = playdate
+    local b_now = pd.buttonIsPressed(pd.kButtonB)
+    if b_now and not self.b_held then
+        -- B held start
+        self.b_held = true
+        self.state = 'charging'
+        self.energy = 0
+        self:set_dialog("Spinning up the dialer.")
+    elseif not b_now and self.b_held then
+        -- B released
+        self.b_held = false
+        if self.energy >= 25 and self.state == 'charging' then
+            self.state = 'warping'
+            self:set_dialog("Re-dialing.")
+        else
+            self.state = 'collapsed'
+            self.collapse_until_ms = now + 1500
+            self:set_dialog("Portal collapsed. Energy too low. Use consumed.")
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("lockpick_fail") end
+        end
+    end
+
+    if self.state == 'charging' and self.b_held then
+        local abs_change = math.abs(crank_change_deg or 0)
+        self.energy = math.min(100, self.energy + abs_change * 0.5)
+    elseif self.state == 'warping' then
+        -- pause then commit "warp"
+        if now - self.last_ms > 800 then
+            self.warped_to = DESTINATIONS[self.cursor].id
+            self.state = 'done'
+        end
+    elseif self.state == 'collapsed' then
+        if now >= self.collapse_until_ms then
+            self.state = 'idle'
+            self.energy = 0
+        end
+    end
+end
+
+function M:input(evt)
+    if evt == 'up' then
+        if self.cursor > 1 then self.cursor = self.cursor - 1
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("coin_navigate_tick") end
+        end
+    elseif evt == 'down' then
+        if self.cursor < #DESTINATIONS then self.cursor = self.cursor + 1
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("coin_navigate_tick") end
+        end
+    elseif evt == 'a' then
+        -- shortcut: A in charging without release just nudges energy by 5
+        if self.state == 'charging' then self.energy = math.min(100, self.energy + 5) end
+    end
+    -- B handled via held state in update()
+    -- second B-press after warp/collapse exits
+    if evt == 'b' and (self.state == 'done' or self.state == 'idle') and not self.b_held then
+        -- only count "tap" exit if not currently mid-charge
+        if self.state == 'done' or (self.state == 'idle' and self.warped_to == nil and self.energy == 0) then
+            self.state = 'done'
+        end
+    end
+end
+
+function M:is_done() return self.state == 'done' end
+function M:result()
+    if self.warped_to then return 'warped' end
+    return 'cancelled'
+end
+
+----------------------------------------------------------------------------
+
+function M:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Pedestal (glowing plinth)
+    local px, py, pw, ph = 30, 130, 100, 40
+    gfx.drawRect(px, py, pw, ph)
+    gfx.fillRect(px + 4, py + 4, pw - 8, 8)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawTextAligned("PORTAL", px + pw / 2, py + 4, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Three small holographic previews floating above (dithered)
+    for i = 0, 2 do
+        local hx = px + 16 + i * 24
+        gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)
+        gfx.fillRect(hx, py - 32, 16, 20)
+        gfx.setDitherPattern(0)
+        gfx.drawRect(hx, py - 32, 16, 20)
+    end
+
+    -- Destination list (right side)
+    local lx, ly = 200, 14
+    gfx.drawText("DESTINATIONS", lx, ly)
+    for i, d in ipairs(DESTINATIONS) do
+        local y = ly + 14 + (i - 1) * 18
+        local avail = self:available(d)
+        if i == self.cursor then
+            gfx.fillRect(lx - 4, y - 2, 196, 16)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        end
+        local label = d.label
+        local rhs = d.locked and "[LOCKED-STORY]"
+                   or (avail and string.format("ACT %d", d.act)
+                              or string.format(">= %d dB", d.threshold))
+        gfx.drawText(label, lx, y)
+        gfx.drawText(rhs, lx + 110, y)
+        if i == self.cursor then gfx.setImageDrawMode(gfx.kDrawModeCopy) end
+    end
+
+    -- Energy meter (bottom-left, only when charging)
+    if self.state == 'charging' or self.state == 'warping' then
+        local mx, my, mw, mh = 8, 14, 180, 12
+        gfx.drawRect(mx, my, mw, mh)
+        gfx.fillRect(mx + 1, my + 1, math.floor((self.energy / 100) * (mw - 2)), mh - 2)
+        -- thresholds
+        local t25 = math.floor((25 / 100) * (mw - 2))
+        local t60 = math.floor((60 / 100) * (mw - 2))
+        gfx.drawLine(mx + t25, my - 4, mx + t25, my)
+        gfx.drawLine(mx + t60, my - 4, mx + t60, my)
+        gfx.drawText("25", mx + t25 - 6, my - 12)
+        gfx.drawText("60", mx + t60 - 6, my - 12)
+        gfx.drawText(string.format("ENERGY %d / 100", math.floor(self.energy)), mx, my + 14)
+    end
+
+    -- Hold-B prompt
+    if self.state == 'idle' then
+        gfx.drawText("Hold [B] + crank to charge portal", 8, 14)
+    elseif self.state == 'collapsed' then
+        gfx.fillRect(80, 70, 240, 30)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("PORTAL COLLAPSED", 200, 78, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    elseif self.state == 'warping' then
+        gfx.fillRect(80, 70, 240, 30)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("WARPING TO " .. (DESTINATIONS[self.cursor].label or "?"),
+                            200, 78, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- Locked-flash if user tries to select Aegis
+    if DESTINATIONS[self.cursor] and DESTINATIONS[self.cursor].locked
+       and self.state == 'charging' then
+        gfx.drawText("STORY GATE: REQUIRES ACT 3", 8, 44)
+    end
+
+    -- Top-right status pill
+    gfx.fillRect(260, 0, 140, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    local pill = "PORTAL GUN"
+    if self.state == 'charging' then pill = "CHARGING - hold B + crank" end
+    if self.state == 'warping' then pill = "WARPING..." end
+    gfx.drawTextAligned(pill, 330, 0, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Bottom dialog bar
+    gfx.drawRect(0, DIALOG_Y, SCREEN_W, DIALOG_H)
+    gfx.drawRect(1, DIALOG_Y + 1, SCREEN_W - 2, DIALOG_H - 2)
+    gfx.fillRect(2, DIALOG_Y + 2, 60, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawText("newb", 6, DIALOG_Y + 2)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawLine(2, DIALOG_Y + 16, SCREEN_W - 2, DIALOG_Y + 16)
+    gfx.drawTextInRect(self.dialog, 6, DIALOG_Y + 20, PORTRAIT_X - 12, DIALOG_H - 22)
+    gfx.drawRect(PORTRAIT_X, DIALOG_Y + 2, PORTRAIT_W, DIALOG_H - 4)
+    local portrait = gfx.image.new("images/portraits/newb")
+    if portrait then portrait:draw(PORTRAIT_X, DIALOG_Y + 4) end
+end
+
+_G.pwnglove_portal = M
+return M
