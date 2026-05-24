@@ -126,6 +126,19 @@ function Scene:update()
             end
         end
         return
+    elseif self.modal == 'payphone' then
+        if self.payphone then
+            local change = playdate.getCrankChange() or 0
+            self.payphone:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.payphone:is_done() then
+                if self.payphone:result() == 'seized' then
+                    self.visited['payphone'] = true
+                end
+                self.modal = nil; self.payphone = nil
+            end
+        end
+        return
     elseif self.modal == 'stub' then
         -- stub modal auto-dismiss after 1500ms
         if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
@@ -221,6 +234,8 @@ function Scene:draw()
         self.tyson:draw()
     elseif self.modal == 'rfid' and self.rfid then
         self.rfid:draw()
+    elseif self.modal == 'payphone' and self.payphone then
+        self.payphone:draw()
     elseif self.modal == 'stub' and self.stub_dialog then
         gfx.fillRect(40, 80, 320, 80)
         gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
@@ -251,6 +266,11 @@ function Scene:open_modal(kind)
         if _G.pwnglove_rfid then
             self.rfid = _G.pwnglove_rfid.new({})
             if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.rfid') end
+        end
+    elseif kind == 'payphone' then
+        if _G.pwnglove_payphone then
+            self.payphone = _G.pwnglove_payphone.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.blue_box') end
         end
     end
 end
@@ -289,7 +309,7 @@ function Scene:input(evt)
         elseif id == 'rfid_pedestal' then
             self:open_stub("RFID pedestal: 'Cloned. Now I'm someone else for ninety seconds. Knuckleheads taught me well.'  [Tier 2 - shipping Day 2]")
         elseif id == 'payphone' then
-            self:open_stub("Payphone: blue box 2600Hz lock + trunk seize.  [Tier 2]")
+            self:open_modal('payphone')
         elseif id == 'ir_wall' then
             self:open_stub("IR wall: TV-B-Gone + IR-locked door.  [Tier 3]")
         elseif id == 'gravity_arena' then

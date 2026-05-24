@@ -1,0 +1,228 @@
+-- runtime/concepts/pwnglove_payphone.lua
+-- Blue Box phreaker tool. Crank-controlled frequency tuner.
+-- Lock onto 2600 Hz +/- window for 3 seconds = trunk seize.
+-- Free long-distance dialer overlay (demo only).
+--
+-- Public API:
+--   pwnglove_payphone.new(opts) -> instance
+--   instance:update(crank_change_deg)
+--   instance:input(evt)
+--   instance:draw()
+--   instance:is_done()
+--   instance:result() -> 'seized' | 'cancelled' | 'in_progress'
+
+local M = {}
+local gfx = playdate.graphics
+
+local SCREEN_W, SCREEN_H = 400, 240
+local DIALOG_Y, DIALOG_H = 178, 62
+local PORTRAIT_X, PORTRAIT_W = 348, 48
+
+local TONE_MIN, TONE_MAX = 200, 4000
+local TARGET_HZ = 2600
+local LOCK_WINDOW_HZ = 80         -- +/- 80 Hz around 2600 = trunk seize zone
+local SEIZE_HOLD_MS = 3000        -- must hold within window this long
+
+function M.new(opts)
+    opts = opts or {}
+    local self = setmetatable({}, { __index = M })
+    self.tone_hz = 800              -- starting freq
+    self.hold_in_window_ms = 0
+    self.state = 'idle'             -- 'idle' | 'tuning' | 'locked' | 'seized' | 'dialing' | 'done'
+    self.last_ms = playdate.getCurrentTimeMilliseconds()
+    self.dialog = "Bell pedestal. Old school."
+    self.dial_buffer = ''
+    self.last_seize_ms = 0
+    return self
+end
+
+function M:in_window() return math.abs(self.tone_hz - TARGET_HZ) <= LOCK_WINDOW_HZ end
+
+function M:update(crank_change_deg)
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt_ms = now - self.last_ms
+    self.last_ms = now
+
+    if self.state == 'idle' or self.state == 'tuning' then
+        -- Crank scales tone; 360deg = sweep half the range
+        if crank_change_deg and crank_change_deg ~= 0 then
+            self.tone_hz = self.tone_hz + crank_change_deg * 6
+            if self.tone_hz < TONE_MIN then self.tone_hz = TONE_MIN end
+            if self.tone_hz > TONE_MAX then self.tone_hz = TONE_MAX end
+            if self.state == 'idle' then
+                self.state = 'tuning'
+                self.dialog = "Looking for the magic number."
+            end
+        end
+        if self:in_window() then
+            if self.state == 'tuning' then
+                self.state = 'locked'
+                self.dialog = "There it is. Trunk's mine."
+                self.hold_in_window_ms = 0
+                if audio_manager and audio_manager.play_sfx then
+                    audio_manager.play_sfx("lockpick_pin_click")
+                end
+            end
+        end
+    elseif self.state == 'locked' then
+        if self:in_window() then
+            self.hold_in_window_ms = self.hold_in_window_ms + dt_ms
+            if self.hold_in_window_ms >= SEIZE_HOLD_MS then
+                self.state = 'seized'
+                self.dialog = "I'm in. Free long distance. Used to be a felony."
+                self.last_seize_ms = now
+                if audio_manager and audio_manager.play_sfx then
+                    audio_manager.play_sfx("konami_unlock")
+                end
+            end
+        else
+            self.state = 'tuning'
+            self.dialog = "Lost it. Find 2600 again."
+        end
+    elseif self.state == 'seized' then
+        if now - self.last_seize_ms > 1500 then
+            self.state = 'dialing'
+            self.dialog = "Dial any number. A confirms each digit. B abandons."
+        end
+    end
+end
+
+function M:input(evt)
+    if self.state == 'dialing' then
+        if evt == 'a' then
+            -- append a digit (cycle 0-9 by count)
+            self.dial_buffer = self.dial_buffer .. tostring((#self.dial_buffer) % 10)
+            if #self.dial_buffer >= 10 then
+                self.state = 'done'
+            end
+        elseif evt == 'b' then
+            self.state = 'done'
+        end
+        return
+    end
+    if evt == 'b' then self.state = 'done' end
+end
+
+function M:is_done() return self.state == 'done' end
+function M:result()
+    if self.state == 'seized' or self.state == 'dialing' or self.state == 'done' then
+        if self.last_seize_ms > 0 then return 'seized' end
+    end
+    return 'cancelled'
+end
+
+----------------------------------------------------------------------------
+
+function M:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Brick wall texture (sparse pattern lines)
+    for y = 8, 170, 18 do
+        for x = 0, SCREEN_W, 24 do
+            local off = (y / 18) % 2 == 0 and 0 or 12
+            gfx.drawLine(x + off, y, x + off + 22, y)
+        end
+    end
+    for y = 8, 170, 18 do
+        for x = 0, SCREEN_W, 24 do
+            local off = (y / 18) % 2 == 0 and 0 or 12
+            gfx.drawLine(x + off, y, x + off, y + 18)
+        end
+    end
+
+    -- Graffiti: "2600" tag bottom-left
+    gfx.drawText("2600", 8, 156)
+    -- Anarchist A
+    gfx.drawCircleAtPoint(30, 160, 6)
+    gfx.drawLine(26, 162, 34, 162)
+
+    -- Payphone body center
+    local px, py, pw, ph = 130, 24, 140, 150
+    gfx.fillRect(px, py, pw, ph)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+
+    -- Title placard
+    gfx.drawRect(px + 6, py + 4, pw - 12, 14)
+    gfx.drawTextAligned("BELL", px + pw / 2, py + 6, kTextAlignment.center)
+
+    -- Coin slot
+    gfx.fillRect(px + pw / 2 - 12, py + 26, 24, 4)
+
+    -- Tone meter (vertical bar with 2600 marker)
+    local mx, my, mw, mh = px + 14, py + 36, 12, 100
+    gfx.drawRect(mx, my, mw, mh)
+    -- target zone (around 2600 in TONE_MIN..TONE_MAX)
+    local target_frac = (TARGET_HZ - TONE_MIN) / (TONE_MAX - TONE_MIN)
+    local target_y_top = my + math.floor((1 - target_frac - 0.04) * mh)
+    local target_y_bot = my + math.floor((1 - target_frac + 0.04) * mh)
+    gfx.drawLine(mx - 4, target_y_top, mx + mw + 4, target_y_top)
+    gfx.drawLine(mx - 4, target_y_bot, mx + mw + 4, target_y_bot)
+    gfx.drawText("2600", mx + mw + 6, (target_y_top + target_y_bot) / 2 - 4)
+    -- current tone marker
+    local frac = (self.tone_hz - TONE_MIN) / (TONE_MAX - TONE_MIN)
+    local marker_y = my + math.floor((1 - frac) * mh)
+    gfx.fillTriangle(mx - 8, marker_y, mx - 2, marker_y - 4, mx - 2, marker_y + 4)
+
+    -- Tone numeric readout
+    gfx.drawText(string.format("%d Hz", math.floor(self.tone_hz)), mx + mw + 8, my + 4)
+
+    -- Lock progress bar
+    if self.state == 'locked' then
+        local pmx, pmy, pmw, pmh = px + 60, py + 46, 60, 8
+        gfx.drawRect(pmx, pmy, pmw, pmh)
+        local pf = self.hold_in_window_ms / SEIZE_HOLD_MS
+        gfx.fillRect(pmx + 1, pmy + 1, math.floor(pf * (pmw - 2)), pmh - 2)
+        gfx.drawText("LOCK", pmx + pmw + 4, pmy)
+    end
+
+    -- Handset/cradle (right of meter)
+    local hx, hy = px + 70, py + 64
+    gfx.drawRect(hx, hy, 50, 16)
+    gfx.fillRect(hx + 4, hy + 4, 8, 8)
+    gfx.fillRect(hx + 38, hy + 4, 8, 8)
+    -- Dial pad (3x4) below
+    for r = 0, 3 do
+        for c = 0, 2 do
+            local kx = hx + c * 16
+            local ky = hy + 24 + r * 14
+            gfx.drawRect(kx, ky, 14, 12)
+            local n
+            if r < 3 then n = tostring(r * 3 + c + 1)
+            elseif c == 0 then n = '*'
+            elseif c == 1 then n = '0'
+            else n = '#' end
+            gfx.drawTextAligned(n, kx + 7, ky + 2, kTextAlignment.center)
+        end
+    end
+
+    -- Seized overlay
+    if self.state == 'seized' or self.state == 'dialing' then
+        gfx.fillRect(80, 70, 240, 40)
+        gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
+        gfx.drawTextAligned("TRUNK SEIZED", 200, 74, kTextAlignment.center)
+        gfx.drawTextAligned("free long distance available", 200, 90, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    end
+    if self.state == 'dialing' then
+        gfx.drawText("DIAL: " .. (self.dial_buffer == '' and '_' or self.dial_buffer),
+                     100, 138)
+    end
+
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Bottom dialog bar
+    gfx.drawRect(0, DIALOG_Y, SCREEN_W, DIALOG_H)
+    gfx.drawRect(1, DIALOG_Y + 1, SCREEN_W - 2, DIALOG_H - 2)
+    gfx.fillRect(2, DIALOG_Y + 2, 60, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawText("newb", 6, DIALOG_Y + 2)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawLine(2, DIALOG_Y + 16, SCREEN_W - 2, DIALOG_Y + 16)
+    gfx.drawTextInRect(self.dialog, 6, DIALOG_Y + 20, PORTRAIT_X - 12, DIALOG_H - 22)
+    gfx.drawRect(PORTRAIT_X, DIALOG_Y + 2, PORTRAIT_W, DIALOG_H - 4)
+    local portrait = gfx.image.new("images/portraits/newb")
+    if portrait then portrait:draw(PORTRAIT_X, DIALOG_Y + 4) end
+end
+
+_G.pwnglove_payphone = M
+return M
