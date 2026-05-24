@@ -167,6 +167,19 @@ function Scene:update()
             end
         end
         return
+    elseif self.modal == 'subghz' then
+        if self.subghz then
+            local change = playdate.getCrankChange() or 0
+            self.subghz:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.subghz:is_done() then
+                if self.subghz:result() == 'captured' then
+                    self.visited['subghz_tuner'] = true
+                end
+                self.modal = nil; self.subghz = nil
+            end
+        end
+        return
     elseif self.modal == 'stub' then
         -- stub modal auto-dismiss after 1500ms
         if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
@@ -268,6 +281,8 @@ function Scene:draw()
         self.ir:draw()
     elseif self.modal == 'gravity' and self.gravity then
         self.gravity:draw()
+    elseif self.modal == 'subghz' and self.subghz then
+        self.subghz:draw()
     elseif self.modal == 'stub' and self.stub_dialog then
         gfx.fillRect(40, 80, 320, 80)
         gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
@@ -314,6 +329,11 @@ function Scene:open_modal(kind)
             self.gravity = _G.pwnglove_gravity.new({})
             if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('gravity') end
         end
+    elseif kind == 'subghz' then
+        if _G.pwnglove_subghz then
+            self.subghz = _G.pwnglove_subghz.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.subghz') end
+        end
     end
 end
 
@@ -357,7 +377,7 @@ function Scene:input(evt)
         elseif id == 'gravity_arena' then
             self:open_modal('gravity')
         elseif id == 'subghz_tuner' then
-            self:open_stub("SubGHz tuner: capture garage opener + cordless phone.  [Tier 3]")
+            self:open_modal('subghz')
         elseif id == 'portal_pedestal' then
             self:open_stub("Portal pedestal: hold B + crank to warp to visited scenes.  [Tier 3]")
         end

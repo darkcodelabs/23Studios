@@ -1,0 +1,221 @@
+-- runtime/concepts/pwnglove_subghz.lua
+-- Sub-GHz capture/replay tool. Two targets:
+--   GARAGE - 315 MHz garage opener (rolling code, scripted "homeowner press" event)
+--   CORDLESS - 49 MHz cordless phone in-progress call (transcript replay)
+-- Crank powers antenna; signal_strength_dB = clamp(rpm/10, 0, 30).
+-- Need >= 15 dB to capture during the active broadcast window.
+--
+-- Public API: standard new/update/input/draw/is_done/result
+
+local M = {}
+local gfx = playdate.graphics
+
+local SCREEN_W, SCREEN_H = 400, 240
+local DIALOG_Y, DIALOG_H = 178, 62
+local PORTRAIT_X, PORTRAIT_W = 348, 48
+
+local PHONE_TRANSCRIPT = {
+    "...so I told her, NO, I don't",
+    "want pasta on TUESDAY...",
+    "She doesn't know I'm at",
+    "Knuckleheads tonight.",
+    "Yeah. Beer's cold."
+}
+
+function M.new(opts)
+    opts = opts or {}
+    local self = setmetatable({}, { __index = M })
+    self.target = 'garage'   -- 'garage' | 'cordless'
+    self.signal_db = 0
+    self.broadcast_window = false
+    self.next_broadcast_ms = playdate.getCurrentTimeMilliseconds() + 1800
+    self.broadcast_end_ms = 0
+    self.captured = { garage = false, cordless = false }
+    self.replaying = nil    -- 'garage' | 'cordless' | nil
+    self.replay_started_ms = 0
+    self.garage_open = false
+    self.state = 'idle'
+    self.dialog = "Standard 315MHz garage opener. Common as dirt."
+    self.last_ms = playdate.getCurrentTimeMilliseconds()
+    return self
+end
+
+function M:set_dialog(t) self.dialog = t end
+
+function M:update(crank_change_deg)
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt = now - self.last_ms
+    self.last_ms = now
+
+    -- Antenna power from crank
+    local rpm = (_G.pwnglove_hud and _G.pwnglove_hud.crank_rpm) or 0
+    self.signal_db = math.max(0, math.min(30, rpm / 10))
+
+    -- Broadcast window scheduling (for capture)
+    if not self.broadcast_window and now >= self.next_broadcast_ms then
+        self.broadcast_window = true
+        self.broadcast_end_ms = now + 1500
+        if not self.captured[self.target] then
+            self:set_dialog(self.target == 'garage'
+                            and "Signal incoming! Capture window open (1.5s)."
+                            or "Cordless call on 49MHz. Window open.")
+        end
+    end
+    if self.broadcast_window and now >= self.broadcast_end_ms then
+        self.broadcast_window = false
+        self.next_broadcast_ms = now + 2200
+    end
+
+    -- Auto-capture when in window with signal >= 15
+    if self.broadcast_window and self.signal_db >= 15 and not self.captured[self.target] then
+        self.captured[self.target] = true
+        self:set_dialog(self.target == 'garage'
+                        and "Got the rolling code chunk. Lucky timing."
+                        or "Cordless on 49MHz. People still use these?")
+        if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("rfid_capture_chirp") end
+    end
+
+    -- Replay timeout
+    if self.replaying and now - self.replay_started_ms > 4000 then
+        if self.replaying == 'garage' then self.garage_open = true end
+        self.replaying = nil
+    end
+end
+
+function M:input(evt)
+    if evt == 'up' or evt == 'down' or evt == 'left' or evt == 'right' then
+        self.target = (self.target == 'garage') and 'cordless' or 'garage'
+        self:set_dialog(self.target == 'garage'
+                        and "Standard 315MHz garage opener. Common as dirt."
+                        or "Cordless on 49MHz. People still use these?")
+    elseif evt == 'a' then
+        if self.captured[self.target] and not self.replaying then
+            self.replaying = self.target
+            self.replay_started_ms = playdate.getCurrentTimeMilliseconds()
+            self:set_dialog(self.target == 'garage' and "Open sesame." or "Replaying transcript...")
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("rfid_emit_burst") end
+        end
+    elseif evt == 'b' then
+        self.state = 'done'
+    end
+end
+
+function M:is_done() return self.state == 'done' end
+function M:result()
+    if self.captured.garage or self.captured.cordless then return 'captured' end
+    return 'cancelled'
+end
+
+----------------------------------------------------------------------------
+
+function M:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Garage door right side
+    local gx, gy, gw, gh = 220, 30, 90, 130
+    gfx.drawRect(gx, gy, gw, gh)
+    -- horizontal slats
+    for i = 0, 6 do
+        gfx.drawLine(gx, gy + 10 + i * 18, gx + gw, gy + 10 + i * 18)
+    end
+    if self.garage_open then
+        gfx.fillRect(gx + 2, gy + 2, gw - 4, 30)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("OPEN", gx + gw / 2, gy + 8, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+    -- chain rail above
+    for i = 0, 4 do gfx.drawLine(gx + 10 + i * 18, gy - 4, gx + 10 + i * 18, gy) end
+
+    -- Cordless phone on workbench left
+    local px, py, pw, ph = 30, 80, 60, 100
+    gfx.drawRect(px, py, pw, ph)
+    -- handset
+    gfx.fillRect(px + 10, py + 10, 40, 14)
+    gfx.fillRect(px + 8, py + 8, 4, 6)
+    gfx.fillRect(px + 48, py + 8, 4, 6)
+    -- base + dialpad outline
+    gfx.drawRect(px + 10, py + 30, 40, 50)
+    for r = 0, 3 do
+        for c = 0, 2 do
+            gfx.drawRect(px + 14 + c * 11, py + 34 + r * 11, 8, 9)
+        end
+    end
+
+    -- PWNGLOVE arm with antenna bottom-center
+    local hx, hy = 130, 130
+    gfx.fillRect(hx, hy, 36, 22)
+    -- antenna whip up
+    gfx.drawLine(hx + 18, hy, hx + 18, hy - 30)
+    gfx.fillCircleAtPoint(hx + 18, hy - 30, 2)
+    -- pulse rings when capturing
+    if self.broadcast_window then
+        local now = playdate.getCurrentTimeMilliseconds()
+        local phase = (now % 400) / 400
+        for r = 1, 3 do
+            gfx.drawCircleAtPoint(hx + 18, hy - 30, 6 + r * 5 + math.floor(phase * 4))
+        end
+    end
+
+    -- Target indicator
+    if self.target == 'garage' then
+        gfx.drawRect(gx - 4, gy - 4, gw + 8, gh + 8)
+        gfx.drawText("[GARAGE]", gx, gy - 16)
+    else
+        gfx.drawRect(px - 4, py - 4, pw + 8, ph + 8)
+        gfx.drawText("[CORDLESS]", px, py - 16)
+    end
+
+    -- Signal strength meter
+    gfx.drawRect(8, 14, 100, 10)
+    gfx.fillRect(9, 15, math.floor((self.signal_db / 30) * 98), 8)
+    gfx.drawText(string.format("dB %d / 30 (need 15)", math.floor(self.signal_db)), 8, 26)
+    -- capture-window indicator
+    if self.broadcast_window then
+        gfx.fillRect(116, 14, 60, 10)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("BROADCAST", 146, 14, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- Captured flag indicators
+    gfx.drawText(self.captured.garage and "GARAGE: V CAPTURED" or "GARAGE: -", 200, 14)
+    gfx.drawText(self.captured.cordless and "CORDLESS: V CAPTURED" or "CORDLESS: -", 200, 26)
+
+    -- Replay transcript overlay (for cordless)
+    if self.replaying == 'cordless' then
+        local now = playdate.getCurrentTimeMilliseconds()
+        local elapsed = now - self.replay_started_ms
+        local lines_to_show = math.min(#PHONE_TRANSCRIPT, math.floor(elapsed / 800) + 1)
+        gfx.fillRect(40, 60, 320, 100)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        for i = 1, lines_to_show do
+            gfx.drawText(PHONE_TRANSCRIPT[i], 46, 66 + (i - 1) * 16)
+        end
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- Top-right status pill
+    gfx.fillRect(260, 0, 140, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    local pill = "SUBGHZ REPLAY"
+    if self.replaying then pill = "REPLAYING..." end
+    gfx.drawTextAligned(pill, 330, 0, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Bottom dialog bar
+    gfx.drawRect(0, DIALOG_Y, SCREEN_W, DIALOG_H)
+    gfx.drawRect(1, DIALOG_Y + 1, SCREEN_W - 2, DIALOG_H - 2)
+    gfx.fillRect(2, DIALOG_Y + 2, 60, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawText("newb", 6, DIALOG_Y + 2)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawLine(2, DIALOG_Y + 16, SCREEN_W - 2, DIALOG_Y + 16)
+    gfx.drawTextInRect(self.dialog, 6, DIALOG_Y + 20, PORTRAIT_X - 12, DIALOG_H - 22)
+    gfx.drawRect(PORTRAIT_X, DIALOG_Y + 2, PORTRAIT_W, DIALOG_H - 4)
+    local portrait = gfx.image.new("images/portraits/newb")
+    if portrait then portrait:draw(PORTRAIT_X, DIALOG_Y + 4) end
+end
+
+_G.pwnglove_subghz = M
+return M
