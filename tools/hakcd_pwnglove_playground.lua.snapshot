@@ -153,6 +153,20 @@ function Scene:update()
             end
         end
         return
+    elseif self.modal == 'gravity' then
+        if self.gravity then
+            local change = playdate.getCrankChange() or 0
+            self.gravity:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.gravity:is_done() then
+                local r = self.gravity:result()
+                if r == 'placed_in_ring' or r == 'placed' or r == 'thrown' then
+                    self.visited['gravity_arena'] = true
+                end
+                self.modal = nil; self.gravity = nil
+            end
+        end
+        return
     elseif self.modal == 'stub' then
         -- stub modal auto-dismiss after 1500ms
         if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
@@ -252,6 +266,8 @@ function Scene:draw()
         self.payphone:draw()
     elseif self.modal == 'ir' and self.ir then
         self.ir:draw()
+    elseif self.modal == 'gravity' and self.gravity then
+        self.gravity:draw()
     elseif self.modal == 'stub' and self.stub_dialog then
         gfx.fillRect(40, 80, 320, 80)
         gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
@@ -292,6 +308,11 @@ function Scene:open_modal(kind)
         if _G.pwnglove_ir then
             self.ir = _G.pwnglove_ir.new({})
             if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.ir_learn') end
+        end
+    elseif kind == 'gravity' then
+        if _G.pwnglove_gravity then
+            self.gravity = _G.pwnglove_gravity.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('gravity') end
         end
     end
 end
@@ -334,7 +355,7 @@ function Scene:input(evt)
         elseif id == 'ir_wall' then
             self:open_modal('ir')
         elseif id == 'gravity_arena' then
-            self:open_stub("Gravity arena: crank to lift the server rack.  [Tier 3]")
+            self:open_modal('gravity')
         elseif id == 'subghz_tuner' then
             self:open_stub("SubGHz tuner: capture garage opener + cordless phone.  [Tier 3]")
         elseif id == 'portal_pedestal' then

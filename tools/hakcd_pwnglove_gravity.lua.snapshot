@@ -1,0 +1,282 @@
+-- runtime/concepts/pwnglove_gravity.lua
+-- Gravity gun (Layer 4 PWNGLOVE power). Mass-based attach: must sustain
+-- crank RPM above object's mass threshold to lift. Attached object follows
+-- cursor (d-pad). A places. B throws (force = current RPM at release).
+-- Sustained >=200 RPM heats coil; overheat = forced drop + 3s cooldown.
+--
+-- Public API:
+--   pwnglove_gravity.new(opts) -> instance
+--   instance:update(crank_change_deg)
+--   instance:input(evt)
+--   instance:draw()
+--   instance:is_done()
+--   instance:result() -> 'placed_in_ring' | 'placed' | 'thrown' | 'overheat' | 'cancelled'
+
+local M = {}
+local gfx = playdate.graphics
+
+local SCREEN_W, SCREEN_H = 400, 240
+local DIALOG_Y, DIALOG_H = 178, 62
+local PORTRAIT_X, PORTRAIT_W = 348, 48
+
+-- Movable objects (id, label, mass-RPM-threshold, init x, y, w, h)
+local OBJECTS = {
+    { id = 'floppy',  label = 'FLOPPY',  rpm = 20,  x =  60, y = 110, w = 22, h = 14 },
+    { id = 'modem',   label = 'MODEM',   rpm = 60,  x = 110, y = 100, w = 36, h = 18 },
+    { id = 'rack',    label = 'RACK',    rpm = 200, x = 170, y = 60,  w = 50, h = 70 },
+    { id = 'fridge',  label = 'FRIDGE',  rpm = 300, x = 240, y = 30,  w = 50, h = 110 },
+}
+
+local TARGET_RING = { x = 100, y = 138, r = 30 }
+
+function M.new(opts)
+    opts = opts or {}
+    local self = setmetatable({}, { __index = M })
+    self.cursor_x = 200
+    self.cursor_y = 130
+    self.objects = {}
+    for _, o in ipairs(OBJECTS) do
+        table.insert(self.objects, {
+            id = o.id, label = o.label, rpm = o.rpm,
+            x = o.x, y = o.y, w = o.w, h = o.h,
+            attached = false, placed = false, in_ring = false
+        })
+    end
+    self.attached_id = nil
+    self.cursor_speed = 4
+    self.state = 'aiming'  -- 'aiming' | 'attached' | 'thrown' | 'overheat' | 'done'
+    self.dialog = "Coil cold. Crank to spin up."
+    self.last_ms = playdate.getCurrentTimeMilliseconds()
+    self.throw_dx, self.throw_dy = 0, 0
+    self.last_cursor_dx, self.last_cursor_dy = 0, 0
+    self.placed_in_ring_count = 0
+    return self
+end
+
+function M:set_dialog(t) self.dialog = t end
+
+function M:obj_at_cursor()
+    for _, o in ipairs(self.objects) do
+        if not o.attached
+            and self.cursor_x >= o.x and self.cursor_x <= o.x + o.w
+            and self.cursor_y >= o.y and self.cursor_y <= o.y + o.h then
+            return o
+        end
+    end
+    return nil
+end
+
+function M:update(crank_change_deg)
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt_ms = now - self.last_ms
+    self.last_ms = now
+
+    -- Cursor movement
+    local pd = playdate
+    local cdx, cdy = 0, 0
+    if pd.buttonIsPressed(pd.kButtonLeft)  then cdx = -self.cursor_speed end
+    if pd.buttonIsPressed(pd.kButtonRight) then cdx =  self.cursor_speed end
+    if pd.buttonIsPressed(pd.kButtonUp)    then cdy = -self.cursor_speed end
+    if pd.buttonIsPressed(pd.kButtonDown)  then cdy =  self.cursor_speed end
+    self.cursor_x = math.max(20, math.min(SCREEN_W - 20, self.cursor_x + cdx))
+    self.cursor_y = math.max(20, math.min(160, self.cursor_y + cdy))
+    self.last_cursor_dx, self.last_cursor_dy = cdx, cdy
+
+    -- Attached follows cursor
+    if self.state == 'attached' and self.attached_id then
+        for _, o in ipairs(self.objects) do
+            if o.id == self.attached_id then
+                o.x = self.cursor_x - o.w / 2
+                o.y = self.cursor_y - o.h / 2
+                break
+            end
+        end
+        -- check overheat (pwnglove_hud.heat is global)
+        if _G.pwnglove_hud and _G.pwnglove_hud.heat >= 100 then
+            self:set_dialog("Coil's red. Drop it.")
+            self.state = 'overheat'
+            self.attached_id = nil
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("lockpick_fail") end
+        end
+    elseif self.state == 'overheat' then
+        if _G.pwnglove_hud and _G.pwnglove_hud.cooldown_until_ms > 0 then
+            -- still cooling
+        else
+            self.state = 'aiming'
+            self:set_dialog("Coil cool. Try again.")
+        end
+    end
+end
+
+function M:input(evt)
+    if self.state == 'overheat' or self.state == 'done' then
+        if evt == 'b' then self.state = 'done' end
+        return
+    end
+
+    if evt == 'a' then
+        if self.state == 'aiming' then
+            local o = self:obj_at_cursor()
+            if o then
+                local rpm = (_G.pwnglove_hud and _G.pwnglove_hud.crank_rpm) or 0
+                if rpm >= o.rpm then
+                    o.attached = true
+                    self.attached_id = o.id
+                    self.state = 'attached'
+                    self:set_dialog((o.id == 'floppy' or o.id == 'modem') and "Light work."
+                                                                          or "This is what the EMF coil's for.")
+                    if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("lockpick_pin_click") end
+                else
+                    self:set_dialog(string.format("Too heavy. Need %d RPM (have %d).",
+                                                  o.rpm, math.floor(rpm)))
+                end
+            end
+        elseif self.state == 'attached' then
+            -- A = place
+            local o = nil
+            for _, x in ipairs(self.objects) do if x.id == self.attached_id then o = x; break end end
+            if o then
+                o.attached = false
+                o.placed = true
+                -- in-ring check
+                local dx = (o.x + o.w / 2) - TARGET_RING.x
+                local dy = (o.y + o.h / 2) - TARGET_RING.y
+                if math.sqrt(dx * dx + dy * dy) <= TARGET_RING.r then
+                    o.in_ring = true
+                    self.placed_in_ring_count = self.placed_in_ring_count + 1
+                    self:set_dialog("Placed. Cleanly.")
+                end
+            end
+            self.attached_id = nil
+            self.state = 'aiming'
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("vault_door_open") end
+        end
+    elseif evt == 'b' then
+        if self.state == 'attached' then
+            -- throw
+            local rpm = (_G.pwnglove_hud and _G.pwnglove_hud.crank_rpm) or 0
+            self.throw_dx = self.last_cursor_dx * (1 + rpm / 50)
+            self.throw_dy = self.last_cursor_dy * (1 + rpm / 50)
+            for _, o in ipairs(self.objects) do
+                if o.id == self.attached_id then
+                    o.attached = false
+                    o.placed = true
+                    o.x = math.min(SCREEN_W - o.w - 10, math.max(10, o.x + self.throw_dx * 4))
+                    o.y = math.min(160 - o.h, math.max(20, o.y + self.throw_dy * 4))
+                    break
+                end
+            end
+            self.attached_id = nil
+            self.state = 'aiming'
+            self:set_dialog("Thrown.")
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("lockpick_open") end
+        else
+            self.state = 'done'
+        end
+    end
+end
+
+function M:is_done() return self.state == 'done' end
+function M:result()
+    if self.placed_in_ring_count > 0 then return 'placed_in_ring' end
+    if self.state == 'overheat' then return 'overheat' end
+    return 'cancelled'
+end
+
+----------------------------------------------------------------------------
+
+function M:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Warehouse floor (sparse grid)
+    for y = 30, 170, 20 do gfx.drawLine(0, y, SCREEN_W, y) end
+    for x = 0, SCREEN_W, 40 do gfx.drawLine(x, 30, x, 170) end
+
+    -- Target ring (painted on concrete)
+    gfx.drawCircleAtPoint(TARGET_RING.x, TARGET_RING.y, TARGET_RING.r)
+    gfx.drawCircleAtPoint(TARGET_RING.x, TARGET_RING.y, TARGET_RING.r - 2)
+    gfx.drawTextAligned("TARGET", TARGET_RING.x, TARGET_RING.y - 4, kTextAlignment.center)
+
+    -- Objects
+    for _, o in ipairs(self.objects) do
+        gfx.drawRect(o.x, o.y, o.w, o.h)
+        gfx.drawTextAligned(o.label, o.x + o.w / 2, o.y + o.h / 2 - 4, kTextAlignment.center)
+        if o.attached then
+            -- EMF field rings (3 concentric)
+            local cx, cy = o.x + o.w / 2, o.y + o.h / 2
+            for r = 1, 3 do
+                gfx.drawCircleAtPoint(cx, cy, math.max(o.w, o.h) / 2 + r * 4)
+            end
+        end
+        if o.in_ring then
+            gfx.drawText("v", o.x + o.w + 2, o.y - 4)
+        end
+    end
+
+    -- Cursor crosshair (or attached indicator)
+    if self.state == 'aiming' then
+        local cx, cy = self.cursor_x, self.cursor_y
+        gfx.drawLine(cx - 6, cy, cx - 2, cy)
+        gfx.drawLine(cx + 2, cy, cx + 6, cy)
+        gfx.drawLine(cx, cy - 6, cx, cy - 2)
+        gfx.drawLine(cx, cy + 2, cx, cy + 6)
+    end
+
+    -- HUD: RPM + heat readout top
+    local rpm = (_G.pwnglove_hud and _G.pwnglove_hud.crank_rpm) or 0
+    local heat = (_G.pwnglove_hud and _G.pwnglove_hud.heat) or 0
+    gfx.drawText(string.format("RPM %d", math.floor(rpm)), 8, 14)
+    gfx.drawText(string.format("HEAT %d", math.floor(heat)), 8, 24)
+
+    -- Heat overlay on bottom strip (rendered by playground via pwnglove_hud.draw_strip)
+    -- but show local heat bar here too
+    if heat > 0 then
+        gfx.drawRect(60, 16, 80, 8)
+        gfx.fillRect(61, 17, math.floor((heat / 100) * 78), 6)
+    end
+
+    -- In-ring placement counter
+    if self.placed_in_ring_count > 0 then
+        gfx.fillRect(280, 14, 120, 16)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned(string.format("IN RING: %d", self.placed_in_ring_count),
+                            340, 16, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- Overheat overlay
+    if self.state == 'overheat' then
+        gfx.setDitherPattern(0.3, gfx.image.kDitherTypeBayer4x4)
+        gfx.fillRect(0, 0, SCREEN_W, DIALOG_Y)
+        gfx.setDitherPattern(0)
+        gfx.fillRect(80, 70, 240, 30)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned("COIL OVERHEAT - cooling 3s", 200, 78, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    end
+
+    -- Top-right status pill
+    gfx.fillRect(260, 0, 140, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    local pill = "GRAVITY GUN"
+    if self.state == 'attached' then pill = "HOLDING - A place / B throw" end
+    if self.state == 'overheat' then pill = "OVERHEAT" end
+    gfx.drawTextAligned(pill, 330, 0, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Bottom dialog bar
+    gfx.drawRect(0, DIALOG_Y, SCREEN_W, DIALOG_H)
+    gfx.drawRect(1, DIALOG_Y + 1, SCREEN_W - 2, DIALOG_H - 2)
+    gfx.fillRect(2, DIALOG_Y + 2, 60, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawText("newb", 6, DIALOG_Y + 2)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawLine(2, DIALOG_Y + 16, SCREEN_W - 2, DIALOG_Y + 16)
+    gfx.drawTextInRect(self.dialog, 6, DIALOG_Y + 20, PORTRAIT_X - 12, DIALOG_H - 22)
+    gfx.drawRect(PORTRAIT_X, DIALOG_Y + 2, PORTRAIT_W, DIALOG_H - 4)
+    local portrait = gfx.image.new("images/portraits/newb")
+    if portrait then portrait:draw(PORTRAIT_X, DIALOG_Y + 4) end
+end
+
+_G.pwnglove_gravity = M
+return M

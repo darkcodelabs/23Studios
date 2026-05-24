@@ -31,6 +31,7 @@ import "runtime/concepts/pwnglove_tyson"
 import "runtime/concepts/pwnglove_rfid"
 import "runtime/concepts/pwnglove_payphone"
 import "runtime/concepts/pwnglove_ir"
+import "runtime/concepts/pwnglove_gravity"
 
 -- Scenes: each module self-binds Scene_<id> to _G.
 import "scenes/title"
