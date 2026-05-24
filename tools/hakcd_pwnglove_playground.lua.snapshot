@@ -215,7 +215,7 @@ function Scene:update()
         if bbox_overlap(self.player, hs) then self.active_hotspot = hs; break end
     end
 
-    -- All-9 visited check
+    -- All-9 visited check (with achievement card animation)
     if not self.visited.master_hakcer then
         local all = true
         for _, hs in ipairs(HOTSPOTS) do
@@ -224,6 +224,9 @@ function Scene:update()
         if all then
             self.visited.master_hakcer = true
             if _G.save_state then _G.save_state.set('pwnglove_mode_complete', true) end
+            -- trigger achievement card with 4s animation
+            self.achievement_anim_until_ms = playdate.getCurrentTimeMilliseconds() + 4000
+            if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("konami_unlock") end
         end
     end
 end
@@ -270,12 +273,48 @@ function Scene:draw()
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
     end
 
-    -- Master HAKCER overlay if all visited
+    -- MASTER HAKCER achievement card (animated 4s window after unlock,
+    -- then small persistent corner badge)
+    local now = playdate.getCurrentTimeMilliseconds()
     if self.visited.master_hakcer then
-        gfx.fillRect(140, 28, 120, 14)
-        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-        gfx.drawTextAligned('MASTER HAKCER', 200, 30, kTextAlignment.center)
-        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        if self.achievement_anim_until_ms and now < self.achievement_anim_until_ms then
+            -- BIG center card with rays
+            local card_x, card_y, card_w, card_h = 40, 60, 320, 110
+            -- rays radiating from center
+            for i = 0, 11 do
+                local angle = (i / 12) * math.pi * 2
+                local r0, r1 = 60, 180
+                local cx, cy = 200, 120
+                gfx.drawLine(cx + math.cos(angle) * r0, cy + math.sin(angle) * r0,
+                             cx + math.cos(angle) * r1, cy + math.sin(angle) * r1)
+            end
+            gfx.fillRect(card_x, card_y, card_w, card_h)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            -- card frame
+            gfx.drawRect(card_x + 4, card_y + 4, card_w - 8, card_h - 8)
+            gfx.drawRect(card_x + 6, card_y + 6, card_w - 12, card_h - 12)
+            -- title
+            gfx.drawTextAligned("* ACHIEVEMENT UNLOCKED *", 200, card_y + 16, kTextAlignment.center)
+            -- big name
+            gfx.drawTextAligned("MASTER HAKCER", 200, card_y + 36, kTextAlignment.center)
+            -- subtitle
+            gfx.drawTextAligned("All 9 PWNGLOVE stations visited", 200, card_y + 60, kTextAlignment.center)
+            -- 9 station checkmarks row
+            for i = 1, 9 do
+                local cx = card_x + 40 + (i - 1) * 30
+                gfx.fillRect(cx, card_y + 82, 22, 14)
+                gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
+                gfx.drawTextAligned("V", cx + 11, card_y + 83, kTextAlignment.center)
+                gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            end
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        else
+            -- small persistent corner badge
+            gfx.fillRect(SCREEN_W - 110, 28, 108, 14)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            gfx.drawTextAligned("V MASTER HAKCER", SCREEN_W - 56, 30, kTextAlignment.center)
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        end
     end
 
     -- PWNGLOVE HUD bottom strip (only when not in a modal that draws full-screen)
