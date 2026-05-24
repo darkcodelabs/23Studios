@@ -1,0 +1,223 @@
+-- runtime/concepts/pwnglove_ir.lua
+-- IR Learn/Replay PWNGLOVE Flipper tool. Two targets:
+--   TV — TV-B-Gone effect (kills CRT)
+--   IR door — unlocks door
+-- Crank charges IR LED intensity. D-pad selects target. A emits.
+--
+-- Public API:
+--   pwnglove_ir.new(opts) -> instance
+--   instance:update(crank_change_deg)
+--   instance:input(evt)
+--   instance:draw()
+--   instance:is_done()
+--   instance:result() -> 'tv_killed' | 'door_opened' | 'cancelled'
+
+local M = {}
+local gfx = playdate.graphics
+
+local SCREEN_W, SCREEN_H = 400, 240
+local DIALOG_Y, DIALOG_H = 178, 62
+local PORTRAIT_X, PORTRAIT_W = 348, 48
+
+function M.new(opts)
+    opts = opts or {}
+    local self = setmetatable({}, { __index = M })
+    self.intensity = 0          -- 0..100
+    self.target = 'tv'          -- 'tv' | 'door'
+    self.tv_alive = true
+    self.tv_collapse_phase = 0
+    self.door_open = false
+    self.state = 'aiming'       -- 'aiming' | 'charging' | 'emitting' | 'done'
+    self.dialog = "Hate that thing."
+    self.last_ms = playdate.getCurrentTimeMilliseconds()
+    self.emit_ms = 0
+    return self
+end
+
+function M:set_dialog(t) self.dialog = t end
+
+function M:update(crank_change_deg)
+    local now = playdate.getCurrentTimeMilliseconds()
+    local dt_ms = now - self.last_ms
+    self.last_ms = now
+
+    if self.state == 'charging' then
+        local abs_change = math.abs(crank_change_deg or 0)
+        if abs_change > 0 then
+            self.intensity = math.min(100, self.intensity + abs_change * 0.7)
+        else
+            self.intensity = math.max(0, self.intensity - dt_ms * 0.05)
+        end
+    elseif self.state == 'emitting' then
+        self.emit_ms = self.emit_ms + dt_ms
+        if self.target == 'tv' then
+            self.tv_collapse_phase = math.min(1.0, self.emit_ms / 800)
+            if self.emit_ms > 800 and self.tv_alive then
+                self.tv_alive = false
+                self:set_dialog("Off. Stay off.")
+                if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("vault_door_close") end
+            end
+            if self.emit_ms > 1500 then self.state = 'aiming' end
+        else
+            if self.emit_ms > 500 then
+                self.door_open = true
+                self:set_dialog("Click.")
+                if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("vault_door_open") end
+                self.state = 'aiming'
+            end
+        end
+    end
+end
+
+function M:input(evt)
+    if self.state == 'aiming' or self.state == 'charging' then
+        if evt == 'left' or evt == 'right' or evt == 'up' or evt == 'down' then
+            self.target = (self.target == 'tv') and 'door' or 'tv'
+            self:set_dialog(self.target == 'tv' and "Hate that thing."
+                                                or "IR lock. Standard model. Probably 38kHz carrier.")
+            self.intensity = 0
+            self.state = 'aiming'
+        elseif evt == 'a' then
+            if self.state == 'aiming' then
+                self.state = 'charging'
+                self:set_dialog("Charging IR LED.")
+            elseif self.state == 'charging' then
+                if self.intensity >= 50 then
+                    self.state = 'emitting'
+                    self.emit_ms = 0
+                    self:set_dialog(self.target == 'tv' and "Burn it." or "Pulse it.")
+                    if audio_manager and audio_manager.play_sfx then audio_manager.play_sfx("lockpick_tension_warn") end
+                else
+                    self:set_dialog("Not enough charge. Keep cranking.")
+                end
+            end
+        elseif evt == 'b' then
+            self.state = 'done'
+        end
+    end
+end
+
+function M:is_done() return self.state == 'done' end
+function M:result()
+    if not self.tv_alive then return 'tv_killed' end
+    if self.door_open then return 'door_opened' end
+    return 'cancelled'
+end
+
+----------------------------------------------------------------------------
+
+function M:draw()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Shag-carpet floor strip
+    for x = 0, SCREEN_W, 6 do
+        gfx.drawLine(x, 168, x + 3, 172)
+    end
+
+    -- TV on wheeled cart left side
+    local tx, ty, tw, th = 40, 30, 130, 110
+    gfx.drawRect(tx, ty, tw, th)
+    -- CRT bezel
+    gfx.drawRect(tx + 8, ty + 8, tw - 16, th - 30)
+    if self.tv_alive then
+        -- screen content: static (random dots) when on
+        local now = playdate.getCurrentTimeMilliseconds()
+        gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)
+        gfx.fillRect(tx + 10, ty + 10, tw - 20, th - 34)
+        gfx.setDitherPattern(0)
+        gfx.drawTextAligned("WORLD NEWS", tx + tw / 2, ty + 24, kTextAlignment.center)
+    else
+        -- collapsing line + black post-die
+        gfx.fillRect(tx + 10, ty + 10, tw - 20, th - 34)
+        if self.tv_collapse_phase < 1.0 then
+            local h = math.floor((1 - self.tv_collapse_phase) * (th - 34))
+            gfx.setColor(gfx.kColorWhite)
+            gfx.fillRect(tx + 10, ty + 10 + (th - 34 - h) / 2, tw - 20, h)
+            gfx.setColor(gfx.kColorBlack)
+        end
+    end
+    -- TV stand
+    gfx.drawLine(tx + 30, ty + th, tx + 30, ty + th + 10)
+    gfx.drawLine(tx + tw - 30, ty + th, tx + tw - 30, ty + th + 10)
+    gfx.fillCircleAtPoint(tx + 30, ty + th + 12, 3)
+    gfx.fillCircleAtPoint(tx + tw - 30, ty + th + 12, 3)
+
+    -- IR-locked door right side
+    local dx, dy, dw, dh = 220, 26, 80, 130
+    gfx.drawRect(dx, dy, dw, dh)
+    if self.door_open then
+        -- ajar
+        gfx.setDitherPattern(0.3, gfx.image.kDitherTypeBayer4x4)
+        gfx.fillRect(dx, dy, 24, dh)
+        gfx.setDitherPattern(0)
+        gfx.drawText("OPEN", dx + 4, dy + dh / 2)
+    end
+    -- keypad
+    gfx.drawRect(dx + dw + 4, dy + 30, 18, 30)
+    for r = 0, 2 do
+        for c = 0, 1 do
+            gfx.drawRect(dx + dw + 6 + c * 7, dy + 32 + r * 9, 6, 7)
+        end
+    end
+    -- IR receiver dot on keypad
+    gfx.fillCircleAtPoint(dx + dw + 13, dy + 28, 2)
+
+    -- Target indicator cursor
+    if self.target == 'tv' then
+        gfx.drawRect(tx - 4, ty - 4, tw + 8, th + 8)
+        gfx.drawText("[TV]", tx, ty - 14)
+    else
+        gfx.drawRect(dx - 4, dy - 4, dw + 8, dh + 8)
+        gfx.drawText("[IR DOOR]", dx, dy - 14)
+    end
+
+    -- PWNGLOVE arm with IR LED at bottom-center
+    local gx, gy = 180, 142
+    gfx.fillRect(gx, gy, 40, 24)
+    -- IR LED dot
+    gfx.fillCircleAtPoint(gx + 40, gy + 12, 3)
+    -- emission cone when emitting
+    if self.state == 'emitting' then
+        local len = (self.target == 'tv') and (gx - tx - tw + 40) * -1 or (dx - gx - 40)
+        local tx2 = (self.target == 'tv') and (tx + tw + 4) or (dx - 4)
+        local ty2 = (self.target == 'tv') and (ty + th / 2) or (dy + 30)
+        -- dashed line
+        for i = 0, 12 do
+            local lx = gx + 40 + (tx2 - gx - 40) * (i / 12)
+            local ly = gy + 12 + (ty2 - gy - 12) * (i / 12)
+            gfx.fillCircleAtPoint(lx, ly, 1)
+        end
+    end
+
+    -- Intensity meter
+    if self.state == 'charging' or self.state == 'emitting' then
+        gfx.drawRect(8, 14, 100, 8)
+        gfx.fillRect(9, 15, math.floor(self.intensity / 100 * 98), 6)
+        gfx.drawText(string.format("IR %d", math.floor(self.intensity)), 8, 24)
+    end
+
+    -- Top-right status pill
+    gfx.fillRect(260, 0, 140, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    local pill = "IR LEARN/REPLAY"
+    if self.state == 'charging' then pill = "CHARGING - hold A" end
+    if self.state == 'emitting' then pill = "EMITTING..." end
+    gfx.drawTextAligned(pill, 330, 0, kTextAlignment.center)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Bottom dialog bar
+    gfx.drawRect(0, DIALOG_Y, SCREEN_W, DIALOG_H)
+    gfx.drawRect(1, DIALOG_Y + 1, SCREEN_W - 2, DIALOG_H - 2)
+    gfx.fillRect(2, DIALOG_Y + 2, 60, 12)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.drawText("newb", 6, DIALOG_Y + 2)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawLine(2, DIALOG_Y + 16, SCREEN_W - 2, DIALOG_Y + 16)
+    gfx.drawTextInRect(self.dialog, 6, DIALOG_Y + 20, PORTRAIT_X - 12, DIALOG_H - 22)
+    gfx.drawRect(PORTRAIT_X, DIALOG_Y + 2, PORTRAIT_W, DIALOG_H - 4)
+    local portrait = gfx.image.new("images/portraits/newb")
+    if portrait then portrait:draw(PORTRAIT_X, DIALOG_Y + 4) end
+end
+
+_G.pwnglove_ir = M
+return M

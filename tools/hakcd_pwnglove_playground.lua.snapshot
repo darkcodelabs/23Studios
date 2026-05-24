@@ -139,6 +139,20 @@ function Scene:update()
             end
         end
         return
+    elseif self.modal == 'ir' then
+        if self.ir then
+            local change = playdate.getCrankChange() or 0
+            self.ir:update(change)
+            if _G.pwnglove_hud then _G.pwnglove_hud.update(change) end
+            if self.ir:is_done() then
+                local r = self.ir:result()
+                if r == 'tv_killed' or r == 'door_opened' then
+                    self.visited['ir_wall'] = true
+                end
+                self.modal = nil; self.ir = nil
+            end
+        end
+        return
     elseif self.modal == 'stub' then
         -- stub modal auto-dismiss after 1500ms
         if playdate.getCurrentTimeMilliseconds() > self._modal_dismiss_ms then
@@ -236,6 +250,8 @@ function Scene:draw()
         self.rfid:draw()
     elseif self.modal == 'payphone' and self.payphone then
         self.payphone:draw()
+    elseif self.modal == 'ir' and self.ir then
+        self.ir:draw()
     elseif self.modal == 'stub' and self.stub_dialog then
         gfx.fillRect(40, 80, 320, 80)
         gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
@@ -271,6 +287,11 @@ function Scene:open_modal(kind)
         if _G.pwnglove_payphone then
             self.payphone = _G.pwnglove_payphone.new({})
             if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.blue_box') end
+        end
+    elseif kind == 'ir' then
+        if _G.pwnglove_ir then
+            self.ir = _G.pwnglove_ir.new({})
+            if _G.pwnglove_hud then _G.pwnglove_hud.set_active_layer('flipper.ir_learn') end
         end
     end
 end
@@ -311,7 +332,7 @@ function Scene:input(evt)
         elseif id == 'payphone' then
             self:open_modal('payphone')
         elseif id == 'ir_wall' then
-            self:open_stub("IR wall: TV-B-Gone + IR-locked door.  [Tier 3]")
+            self:open_modal('ir')
         elseif id == 'gravity_arena' then
             self:open_stub("Gravity arena: crank to lift the server rack.  [Tier 3]")
         elseif id == 'subghz_tuner' then
