@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReviewLog",
+  "oneOf": [
+    {
+      "title": "QueueEntry",
+      "type": "object",
+      "required": ["candidate_id", "pack_id", "queued_at"],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "pack_id": { "type": "string" },
+        "queued_at": { "type": "string" },
+        "image_path": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "ApprovalEntry",
+      "type": "object",
+      "required": ["candidate_id", "pack_id", "approved_by", "approved_at"],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "pack_id": { "type": "string" },
+        "approved_by": { "type": "string" },
+        "approved_at": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    {
+      "title": "RejectionEntry",
+      "type": "object",
+      "required": ["candidate_id", "pack_id", "reason", "at"],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "pack_id": { "type": "string" },
+        "reason": { "type": "string" },
+        "reviewer": { "type": "string" },
+        "at": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

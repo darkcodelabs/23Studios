@@ -1,0 +1,3 @@
+.venv-visual-pack/
+__pycache__/
+*.pyc

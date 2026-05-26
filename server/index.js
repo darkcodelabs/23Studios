@@ -65,6 +65,7 @@ const perfRouter = require('./routes/perf');
 const architectureRouter = require('./routes/architecture');
 const qualityReportsRouter = require('./routes/quality_reports');
 const buildEventsRouter = require('./routes/build_events');
+const visualPackRouter = require('./routes/visual_pack');
 const chatWs = require('./routes/chat');
 const { seedDefaults } = require('./services/seed');
 
@@ -264,6 +265,10 @@ app.use('/api/projects', perfRouter);
 app.use('/api/projects', architectureRouter);
 // SSE: GET /api/projects/:id/build/events — Building screen push feed.
 app.use('/api/projects', buildEventsRouter);
+
+// Visual Pack Factory — V4–V8 art pipeline. Mounted at /api/projects so
+// every route lives under /api/projects/:id/visual-pack/...
+app.use('/api/projects', visualPackRouter);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(PUBLIC_DIR)) {

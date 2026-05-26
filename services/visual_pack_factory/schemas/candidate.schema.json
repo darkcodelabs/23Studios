@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Candidate",
+  "type": "object",
+  "required": [
+    "candidate_id", "pack_id", "asset_type", "version", "variant",
+    "status", "art_status", "human_reviewed", "approved",
+    "target_dimensions", "source_usage", "created_at"
+  ],
+  "properties": {
+    "candidate_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+    "pack_id": { "type": "string" },
+    "asset_type": {
+      "type": "string",
+      "enum": [
+        "character_pack", "room_pack", "prop_pack", "ui_pack",
+        "animation_pack", "tile_pack"
+      ]
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "variant": { "type": "string", "pattern": "^[a-z]$" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "generated", "queued_for_review", "approved_for_iteration",
+        "approved_final", "rejected", "needs_correction",
+        "exported", "hardware_reviewed"
+      ]
+    },
+    "art_status": { "type": "string" },
+    "human_reviewed": { "type": "boolean" },
+    "approved": { "type": "boolean" },
+    "target_dimensions": {
+      "type": "array",
+      "items": { "type": "array", "items": { "type": "integer" } }
+    },
+    "playdate_ready": { "type": "boolean" },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_usage": { "type": "string", "enum": ["inspiration_only"] },
+    "copy_risk_reviewed": { "type": "boolean" },
+    "correction_notes": { "type": "array" },
+    "style_score": { "type": ["number", "null"] },
+    "readability_score": { "type": ["number", "null"] },
+    "silhouette_score": { "type": ["number", "null"] },
+    "hardware_reviewed": { "type": "boolean" },
+    "hardware_reviews": { "type": "array" },
+    "exported_to": { "type": ["string", "null"] },
+    "exported_at": { "type": "string" },
+    "approved_by": { "type": "string" },
+    "approved_at": { "type": "string" },
+    "rejection_log": { "type": "array" },
+    "approval_notes": { "type": "array" },
+    "provider": { "type": "string" },
+    "prompt_hash": { "type": ["string", "null"] },
+    "image_path": { "type": "string" },
+    "queued_at": { "type": "string" },
+    "created_at": { "type": "string" }
+  },
+  "additionalProperties": true
+}

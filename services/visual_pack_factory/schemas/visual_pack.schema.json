@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VisualPackConfig",
+  "type": "object",
+  "required": ["pack_id", "project_id", "type", "target_dimensions", "schema_version"],
+  "properties": {
+    "pack_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+    "project_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "character_pack", "room_pack", "prop_pack", "ui_pack",
+        "animation_pack", "tile_pack"
+      ]
+    },
+    "description": { "type": "string" },
+    "target_dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "integer", "minimum": 1, "maximum": 1024 }
+      }
+    },
+    "export_target": { "type": "string", "default": "source/images" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "schema_version": { "type": "integer", "const": 1 }
+  },
+  "additionalProperties": true
+}
