@@ -43,6 +43,7 @@ from pack_config import (  # noqa: E402
 )
 from tools._common import emit, fail, run  # noqa: E402
 from tools import build_contact_sheet, generate_pack, queue_review  # noqa: E402
+from tools._image_integrity import validate as integrity_validate  # noqa: E402
 
 from providers.base_provider import GenerationRequest, ProviderError  # noqa: E402
 from providers.provider_registry import get_provider, list_providers  # noqa: E402
@@ -75,6 +76,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dither", choices=["none", "bayer4"], default="none",
                    help="threshold mode for postprocess (default: none = hard "
                         "threshold @ 128, preserves silhouette)")
+    p.add_argument("--strict-integrity", action="store_true",
+                   help="hard-fail if integrity check flags tile-repeat / "
+                        "low entropy / dim mismatch (default: soft-warn, "
+                        "still ingests but flags in candidate metadata)")
     p.add_argument("--packs-root", default=None)
     return p
 
@@ -198,6 +203,8 @@ def main(args: argparse.Namespace) -> None:
     target_w, target_h = int(target_dims[0]), int(target_dims[1])
 
     created: list[dict] = []
+    rejected: list[dict] = []
+    integrity_reports: list[dict] = []
     with tempfile.TemporaryDirectory(prefix="vpf_gen_") as td:
         td_path = Path(td)
         for i, gi in enumerate(images):
@@ -207,6 +214,18 @@ def main(args: argparse.Namespace) -> None:
             if not args.no_postprocess:
                 png_bytes = postprocess_to_1bit(png_bytes, target_w, target_h,
                                                  dither=args.dither)
+            # Integrity check: catch tile-repeat / decode failure / dim
+            # mismatch before the candidate enters the review queue.
+            report = integrity_validate(
+                png_bytes, expected_size=(target_w, target_h))
+            verdict = ("fatal" if report.get("fatal")
+                       else ("warn" if report.get("warn") else "ok"))
+            integrity_reports.append({"variant": variant, "verdict": verdict,
+                                      "fatal": report.get("fatal"),
+                                      "warn": report.get("warn")})
+            if report.get("fatal") or (args.strict_integrity and report.get("warn")):
+                rejected.append({"variant": variant, "report": report})
+                continue
             tmp_png.write_bytes(png_bytes)
 
             ingest_args = argparse.Namespace(
@@ -240,11 +259,20 @@ def main(args: argparse.Namespace) -> None:
             saved["provider_metadata"] = gi.metadata
             saved["source_references"] = [str(p) for p in references]
             saved["correction_lineage"] = []
+            saved["integrity_report"] = {
+                "verdict": verdict,
+                "entropy_bits": report.get("entropy_bits"),
+                "black_fraction": report.get("black_fraction"),
+                "tile_repeat": report.get("tile_repeat"),
+                "warn": report.get("warn"),
+            }
             dump_json(mp, saved)
             created.append(saved)
 
     out: dict = {
         "candidates": created,
+        "rejected": rejected,
+        "integrity_reports": integrity_reports,
         "provider": args.provider,
         "count": len(created),
         "references_used": len(references),
