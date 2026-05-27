@@ -1,0 +1,36 @@
+{
+  "projects": [
+    {
+      "id": "hakcd",
+      "name": "HAKCD",
+      "description": "1998 phreaker coming-of-age. Teen war-dials into a BBS run by a dead hacker whose autonomous program has been waiting two years for someone curious enough to pick up where he left off.",
+      "repo": "",
+      "local_path": "/home/hakcer/projects/personal/hakcd",
+      "platform": "playdate",
+      "publisher": "23 Studios",
+      "developer": "Cory Kennedy",
+      "build_command": "",
+      "preflight_command": "",
+      "captures_dir": "",
+      "created_at": "2026-05-22",
+      "status": "active",
+      "game_type": "sdk"
+    },
+    {
+      "id": "haxheadroom",
+      "name": "HaxHeadroom",
+      "description": "Pirate broadcast pulls Newb into the Powerglove Arcade Hub. Single-room vertical-slice showcase built on the 23Studios visual_pack_factory v3.1 pipeline. Sibling to HAKCD.",
+      "repo": "",
+      "local_path": "/home/hakcer/projects/haxheadroom",
+      "platform": "playdate",
+      "publisher": "23 Studios",
+      "developer": "Cory Kennedy",
+      "build_command": "make",
+      "preflight_command": "",
+      "captures_dir": "",
+      "created_at": "2026-05-26",
+      "status": "active",
+      "game_type": "sdk"
+    }
+  ]
+}
