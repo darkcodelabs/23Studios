@@ -48,18 +48,82 @@ COPYRIGHT_FIREWALL = (
     "characters, scenes, logos, or trademarks. Borrow silhouette, "
     "composition, contrast, density, atmosphere only."
 )
+
+# v3 Playdate Asset Generation Standard — the factory produces GAME ASSETS,
+# not concept art / posters / splash screens / marketing illustration.
 PLAYDATE_VISUAL_RULES = (
-    "Playdate-native 1-bit visual rules:\n"
-    "- Only pure black (#000000) and pure white (#FFFFFF). No grey, no "
-    "anti-aliasing, no Floyd-Steinberg dither ramp.\n"
-    "- Large readable silhouettes. Chunky shapes. Strong black mass "
-    "discipline.\n"
-    "- Negative space is composition, not empty floor.\n"
-    "- Layered density: foreground reads first, midground supports, "
-    "background recedes.\n"
-    "- Focal point hierarchy: one hero element per frame.\n"
-    "- No noisy detail spam. No anti-aliased sludge. No object soup."
+    "Playdate Asset Generation Standard:\n"
+    "- Strict 1-bit pixel art for the Playdate console. Black and white "
+    "ONLY. No grayscale. No anti-aliasing. No color. No painterly "
+    "rendering. No smooth gradients. No soft shadows. No cinematic blur.\n"
+    "- High contrast only. Use extensive dithering patterns (Bayer / "
+    "hatching / clustered dots) for shading, depth, texture, and "
+    "material differentiation. Dithering is the only allowed shading.\n"
+    "- Strong silhouettes. Chunky shapes. Pixel clusters. Readable "
+    "outlines. Black mass discipline.\n"
+    "- Output must read at 32x32 minimum. Silhouette must survive "
+    "downscale.\n"
+    "- This is a GAME ASSET. Not an illustration. Not concept art. Not "
+    "poster art. Not splash art. Not marketing artwork.\n"
+    "- Hardware is 400x240, 1-bit reflective LCD. Outdoor / fluorescent "
+    "lighting eats fine detail; design for distance readability."
 )
+
+# Per-pack-type opening line — sets the model's mental frame to "production
+# asset" not "concept piece". Prepended to every prompt.
+PACK_TYPE_OPENERS = {
+    "character_pack": (
+        "Produce a SPRITE SHEET in strict 1-bit pixel art style, designed "
+        "for the Playdate console. Neatly organised for game development. "
+        "Include front view, back view, left view, and right view. "
+        "Animations: idle, walk, run, interact, use item, reaction. "
+        "Each pose has a strong silhouette and reads at 32x32. "
+        "Production-ready, not concept art."
+    ),
+    "room_pack": (
+        "Produce a ROOM DEVELOPMENT KIT in strict 1-bit pixel art style, "
+        "designed for the Playdate console. This is NOT a hero illustration "
+        "or a poster. Output the room as a playable gameplay space: "
+        "navigation flow, interaction density, readable floor / wall / "
+        "ceiling boundaries, isolated interactable stations. No giant "
+        "central illustration. No splash composition. Production-ready "
+        "gameplay layout."
+    ),
+    "tile_pack": (
+        "Produce a TILESET in strict 1-bit pixel art style, designed for "
+        "the Playdate console. Modular, grid-aligned, edge-matched tiles "
+        "for walls / floors / trim / doors / vents / cables / workbenches "
+        "/ storage / terminals. Use dithering to differentiate materials. "
+        "Developer-ready, drops straight into a tilemap."
+    ),
+    "ui_pack": (
+        "Produce a UI COLLECTION in strict 1-bit pixel art style for the "
+        "Playdate console. Icons and buttons for inventory, map, settings, "
+        "dialogue, health, upgrades, interaction prompts, menu buttons. "
+        "Clean lines, dithered fills for readability on hardware. "
+        "Production-ready interface assets."
+    ),
+    "prop_pack": (
+        "Produce isolated GAME PROPS in strict 1-bit pixel art style for "
+        "the Playdate console. Each prop on a neutral / empty background, "
+        "ready to composite into a scene. Strong silhouette, chunky "
+        "shapes, dithering for material. Not concept sketches — "
+        "production sprites."
+    ),
+    "animation_pack": (
+        "Produce an ANIMATION SHEET in strict 1-bit pixel art style for "
+        "the Playdate console. Frame-by-frame poses laid out in a grid, "
+        "consistent silhouette across frames, anti-pop transitions. "
+        "Production-ready animation strip."
+    ),
+    "portrait_pack": (
+        "Produce a DIALOGUE PORTRAIT SHEET in strict 1-bit pixel art style "
+        "for the Playdate console. Expressions: neutral, happy, confused, "
+        "nervous, excited, angry. Each portrait reads at small sizes. "
+        "Dithering for depth and facial detail. Production-ready dialogue "
+        "assets."
+    ),
+}
 
 
 class OpenRouterProvider(BaseProvider):
@@ -117,7 +181,14 @@ class OpenRouterProvider(BaseProvider):
 
     # ----- internals -----------------------------------------------------
     def _compose_prompt(self, req: GenerationRequest, w: int, h: int) -> str:
+        opener = PACK_TYPE_OPENERS.get(
+            req.pack_type,
+            "Produce a GAME ASSET in strict 1-bit pixel art style for the "
+            "Playdate console. Production-ready, not concept art.",
+        )
         parts: List[str] = [
+            opener,
+            "",
             f"Pack: {req.pack_id} ({req.pack_type}).",
             f"Target dimensions: {w}x{h} pixels — 1-bit Playdate-ready PNG.",
             "",

@@ -1,133 +1,127 @@
-# Powerglove Arcade Hub — Composition Spec
+# Powerglove Arcade Hub — Room Kit Spec (v3)
 
 Pack: `powerglove_arcade_room_pack`
-Type: `room_pack`
-Target dimensions: 400×240 (Playdate full screen)
+Type: `room_pack` (room KIT, not hero illustration)
+Target dimensions: 400×240 (Playdate full screen) for the room layout;
+per-asset dimensions specified per station below.
 Project: HAKCD vertical slice
+Reference: `/home/hakcer/projects/pnwglove.png` (PWNGLOVE master) — borrow
+silhouette language, industrial cable routing, button cluster motifs,
+mini-display geometry. Inspiration only, no copy.
+
+## What this pack outputs
+
+A ROOM DEVELOPMENT KIT for the Powerglove Arcade Hub. The factory does
+NOT generate a poster, a splash screen, or a marketing illustration of
+the room. It generates:
+
+1. The room as a navigable gameplay layout (background plate + floor +
+   ceiling + walls, with interactable slots reserved but empty).
+2. Each interactable station as an isolated asset on neutral background,
+   ready to composite into the room at runtime.
+
+The room background plate and the station sprites composite together
+in-engine. They are produced separately so the same stations can be
+re-used in other rooms.
 
 ## Vibe
 
-Late-night underground arcade workshop. DEF CON hacker carnival meets retro
-RF laboratory meets cyberpunk science fair. Not generic cyberpunk. Not "AI
-gen cyberpunk junk." Authored, staged, cinematic. Every pixel earns its
-place.
+DEF CON village + retro RF laboratory + underground hacker maker-space.
+Late-night maker bench. Strong industrial language. Not generic
+cyberpunk. Not splash art.
 
-## Composition
+## Room layout (background plate)
 
-The 400×240 frame is divided into three readable bands and a hero focal:
+Asset id: `powerglove_arcade_room_bg`
+Dimensions: 400×240
+Contents:
+- Ceiling rig (cable bundles, monitor mount points — NO monitors yet)
+- Wall (dark, dithered, with mounting points for instruments)
+- Floor (grated panel, perspective-correct from player viewing angle)
+- Interaction-slot footprints (empty rectangles where stations go)
+- Light cone from ceiling onto the centre slot (the Powerglove
+  testing-station slot)
 
-```
-+---------------------- 400px -----------------------+
-|   ceiling rig: cable bundles + monitor banks        |  ~50px
-+----------------------------------------------------+
-|                                                    |
-|   [RF Bench]   ★ [POWERGLOVE STATION] ★   [CRT BBS] |  ~140px (play area)
-|                                                    |
-|                  [Calibration Pod]                  |
-+----------------------------------------------------+
-|     floor: grated panels, cable runs, shadow      |  ~50px
-+----------------------------------------------------+
-```
+Composition rules:
+- Negative space dominates. Stations slot in later.
+- Floor grating uses dithering for depth, NOT to fill space.
+- One hero light cone — centre. Nowhere else.
+- Black mass 30–40% on the plate (stations will add another 15–25% on
+  top at composite time).
 
-### Primary focal: Powerglove Testing Station
+## Stations (isolated game assets)
 
-- Roughly centred horizontally, raised platform, ~80–100px tall
-- Massive silhouette: glove on rig + monitor stack + cable bundle
-- Reads first from 24-inch viewing distance
-- Highest black-mass density of any object in the room
-- This is the hero. Every other element supports it via contrast and
-  negative space.
+Each station ships on a neutral / empty background, ready to composite.
+Each must read at 32×32 (silhouette test). All stations carry
+PWNGLOVE-derived industrial language: cable spirals, button clusters,
+mini-display rectangles, stipple-shaded chrome.
 
-### Secondary stations (three, distinct silhouettes)
+### 1. Powerglove Testing Bench
+Asset id: `powerglove_testing_bench`
+Dimensions: 96×96
+Components: glove armature on rig, monitor stack, cable bundle, base
+platform. Hero element of the room. Highest black-mass density.
 
-1. **RF Analysis Bench** — left side
-   - Spectrum waterfall display, antenna fan, oscilloscope, knobs
-   - Tall vertical silhouette, dominant black mass at top (instruments)
-   - Animation: spectrum waterfall scrolls 4 frames
+### 2. Powerglove Calibration Station
+Asset id: `powerglove_calibration_station`
+Dimensions: 64×64
+Components: enclosed pod with internal glow (dithered hatching), control
+panel on the front, status LED row.
 
-2. **CRT BBS Terminal** — right side
-   - Hulking CRT monitor, mechanical keyboard, dot-matrix printer
-   - Horizontal lower-heavy silhouette
-   - Animation: scanline jitter, blinking cursor
+### 3. Powerglove Charging Dock
+Asset id: `powerglove_charging_dock`
+Dimensions: 48×48
+Components: wall-mounted bracket with hanging cables, indicator LED,
+glove cradle.
 
-3. **Powerglove Calibration Pod** — front-centre (between RF and CRT)
-   - Smaller, closer to camera, glowing inside
-   - Compact dense silhouette
-   - Animation: pulse light cycle 6 frames
+### 4. Powerglove Repair Table
+Asset id: `powerglove_repair_table`
+Dimensions: 64×48
+Components: workbench surface, scattered tools (vice, soldering iron,
+spool of wire), open glove with exposed circuits.
 
-## Visual rules
+### 5. Powerglove Display Pedestal
+Asset id: `powerglove_display_pedestal`
+Dimensions: 48×64
+Components: glass case on plinth (case rendered as outline + dither),
+glove inside, descriptive plaque on the front.
 
-### Black-mass discipline
+### 6. RF Scanner
+Asset id: `powerglove_rf_scanner`
+Dimensions: 64×64
+Components: spectrum waterfall display, antenna fan array, oscilloscope
+screen, knob row.
 
-Each station has a clear silhouette test: render at 1-bit pure black on
-white, occlude everything else, must still read as "RF bench" vs "CRT" vs
-"calibration pod." If silhouette ambiguous, reject.
+### 7. CRT Workstation
+Asset id: `powerglove_crt_workstation`
+Dimensions: 64×64
+Components: hulking CRT monitor (scanline texture via dithering),
+mechanical keyboard, mug.
 
-### Negative space
+### 8. Hacker Workbench
+Asset id: `powerglove_hacker_workbench`
+Dimensions: 80×48
+Components: cluttered bench surface, open laptop, soldering station,
+dev board with LEDs, coffee mug.
 
-The space *between* stations is composition, not empty floor. Use it for:
-- shadows pooling under the Powerglove platform
-- a single light cone from the ceiling onto the focal
-- bare floor reading as silence around the hero
+## Anti-patterns (auto-reject)
 
-### Layered density
+- A single big hero illustration filling 400×240.
+- Poster composition. Splash composition. Marketing composition.
+- Centre-weighted concept art.
+- Excessive texture noise without dithering structure.
+- Solid grey fills instead of dithering.
+- Anti-aliased edges. Smooth gradients. Painterly rendering.
+- Photoreal CRT or RF gear.
+- Lens flares, bloom, atmospheric blur.
 
-- Foreground: floor cables, debris, prop scatter near base of each station
-- Midground: the stations themselves
-- Background: monitor banks, cable bundles, vent grates
-- Foreground/midground/background must have distinguishable black-mass density
+## Approve criteria
 
-### Lighting hierarchy
-
-- Hero light: cone on Powerglove station (highest contrast)
-- Station lights: monitor glow on each secondary station
-- Ambient: ceiling rig has a few warm dots (CRT power LEDs)
-- Floor: shadow gradients in pure 1-bit (dither hatching OK, no greys)
-
-### Focal point hierarchy
-
-One hero per frame. Eye traces:
-1. Powerglove station (centred, brightest, biggest)
-2. CRT BBS (right, blinking cursor draws eye)
-3. RF bench (left, scrolling waterfall)
-4. Calibration pod (front-centre, pulse light)
-5. Floor / ceiling detail
-
-## Forbidden
-
-- Procedurally scattered props ("object soup")
-- Repeated/tiled carpet floor
-- Generic cyberpunk neon signs
-- Anti-aliased gradients or grey ramps
-- Lens flares, bloom, atmospheric blur
-- Off-the-shelf AI cyberpunk assets
-- Anything that reads "tilemap test"
-
-## Animation slots
-
-| ID | Where | Frames | Tempo |
-|---|---|---|---|
-| `powerglove_glow_cycle` | Powerglove station | 6 | 200ms |
-| `crt_scanline_jitter` | CRT BBS | 4 | 120ms |
-| `rf_waterfall_scroll` | RF Analysis Bench | 4 | 80ms |
-| `calibration_pod_pulse` | Calibration Pod | 6 | 180ms |
-| `ceiling_led_blink` | Ceiling rig | 2 | 500ms (out of phase) |
-
-## Audio slots
-
-| ID | Source | Loop |
-|---|---|---|
-| `crt_hum_loop` | CRT BBS | yes |
-| `rf_chatter_loop` | RF Analysis Bench | yes (low gain) |
-| `modem_noise_burst` | RF Analysis Bench | one-shot, random 8–20s |
-| `arcade_ambience` | room bed | yes (very low gain) |
-| `powerglove_synth_loop` | Powerglove station | yes |
-| `machine_click_random` | room scatter | one-shot, random 4–12s |
-
-## Hardware-review criteria
-
-- Powerglove station readable from 24 inches under fluorescent light
-- Each secondary station's silhouette identifiable independently
-- No grey-ramp / anti-aliased pixels (1-bit colour check)
-- Total black-mass density 38–48% of frame (eyeball + histogram)
-- Eye traces the focal hierarchy in <1.5s on first view
+- Room background plate reads as a navigable space without stations
+  composited in.
+- Each station reads independently at 32×32 silhouette.
+- Stations slot into the room plate at intended positions without
+  visual collision.
+- Total composited frame: 38–48% black mass, single hero light cone,
+  3-band reading (ceiling / play area / floor).
+- Hardware-readable at 24in under fluorescent.

@@ -4,7 +4,7 @@
   "asset_type": "room_pack",
   "version": 8,
   "variant": "b",
-  "status": "generated",
+  "status": "queued_for_review",
   "art_status": "generated",
   "human_reviewed": false,
   "approved": false,
@@ -41,5 +41,6 @@
     "parent_candidate_id": null
   },
   "source_references": [],
-  "correction_lineage": []
+  "correction_lineage": [],
+  "queued_at": "2026-05-27T01:13:03+00:00"
 }

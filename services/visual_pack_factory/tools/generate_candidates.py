@@ -146,13 +146,39 @@ def load_authoring_prompt(args, pr: Path, pack_cfg: dict) -> str:
     return "\n".join(parts)
 
 
-def gather_references(pr: Path) -> list[Path]:
-    """Return active image-type sources as Paths (capped at 8)."""
+_AUTO_REFERENCES: dict[str, list[str]] = {
+    # Any pack whose pack_id contains one of these substrings auto-attaches
+    # the listed reference image paths. Keeps sprint-defined master refs
+    # always in scope without requiring add_source plumbing first.
+    "powerglove": ["/home/hakcer/projects/pnwglove.png"],
+    "pwnglove":   ["/home/hakcer/projects/pnwglove.png"],
+    "newb":       ["/home/hakcer/projects/pnwglove.png"],  # PWNGLOVE on Newb's arm
+}
+
+
+def auto_references_for(pack_id: str) -> list[Path]:
+    out: list[Path] = []
+    for needle, refs in _AUTO_REFERENCES.items():
+        if needle in pack_id.lower():
+            for r in refs:
+                p = Path(r)
+                if p.exists() and p not in out:
+                    out.append(p)
+    return out
+
+
+def gather_references(pr: Path, pack_id: str = "") -> list[Path]:
+    """Return active image-type sources as Paths (capped at 8).
+
+    Auto-attached master references (e.g. pnwglove.png for Powerglove packs)
+    are prepended so they always reach the provider even if the pack's
+    source_registry is empty.
+    """
     registry = pr / "sources" / "source_registry.yaml"
     data = load_yaml(registry) or []
+    out: list[Path] = list(auto_references_for(pack_id))
     if not isinstance(data, list):
-        return []
-    out: list[Path] = []
+        return out[:8]
     for entry in data:
         if entry.get("status") != "active":
             continue
@@ -162,11 +188,11 @@ def gather_references(pr: Path) -> list[Path]:
         if not p:
             continue
         path = Path(p)
-        if path.exists():
+        if path.exists() and path not in out:
             out.append(path)
         if len(out) >= 8:
             break
-    return out
+    return out[:8]
 
 
 def main(args: argparse.Namespace) -> None:
@@ -183,7 +209,7 @@ def main(args: argparse.Namespace) -> None:
         })
 
     authoring_prompt = load_authoring_prompt(args, pr, pack_cfg)
-    references = gather_references(pr)
+    references = gather_references(pr, args.pack)
 
     req = GenerationRequest(
         pack_id=args.pack,

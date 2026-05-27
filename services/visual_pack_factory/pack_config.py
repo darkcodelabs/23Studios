@@ -44,6 +44,7 @@ PACK_TYPES = {
     "ui_pack",
     "animation_pack",
     "tile_pack",
+    "portrait_pack",
 }
 
 ALLOWED_STATES = {

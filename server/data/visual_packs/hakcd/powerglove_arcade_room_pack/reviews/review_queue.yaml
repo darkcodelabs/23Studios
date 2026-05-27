@@ -22,3 +22,19 @@
   pack_id: powerglove_arcade_room_pack
   queued_at: '2026-05-26T22:20:13+00:00'
   image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/candidates/powerglove_arcade_room_pack_v006_a.png
+- candidate_id: powerglove_arcade_room_pack_v007_a
+  pack_id: powerglove_arcade_room_pack
+  queued_at: '2026-05-27T01:13:03+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/candidates/powerglove_arcade_room_pack_v007_a.png
+- candidate_id: powerglove_arcade_room_pack_v008_b
+  pack_id: powerglove_arcade_room_pack
+  queued_at: '2026-05-27T01:13:03+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/candidates/powerglove_arcade_room_pack_v008_b.png
+- candidate_id: powerglove_arcade_room_pack_v009_a
+  pack_id: powerglove_arcade_room_pack
+  queued_at: '2026-05-27T01:13:03+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/candidates/powerglove_arcade_room_pack_v009_a.png
+- candidate_id: powerglove_arcade_room_pack_v010_b
+  pack_id: powerglove_arcade_room_pack
+  queued_at: '2026-05-27T01:13:03+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/candidates/powerglove_arcade_room_pack_v010_b.png

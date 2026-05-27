@@ -1,58 +1,117 @@
-# Newb v2 — Character Spec
+# Newb v2 — Character Sprite Sheet Spec (v3)
 
 Pack: `newb_v2_character_pack`
 Type: `character_pack`
-Target dimensions: 64×64 (bumped from 32 / 48 — readable on hardware)
+Target dimensions: 64×64 per pose (sheet laid out in a grid; each cell
+treated as one sprite)
 Project: HAKCD vertical slice
 
-## Why v2
+## Why v2 was rejected (Newb v1 + the early v2 candidates)
 
-Newb v1 (32×32 imagetable) lost its silhouette on hardware. Hands and feet
-disappeared under fluorescent light. v2 trades resolution for readability:
-chunkier proportions, fewer tiny details, stronger black mass.
+- Blob silhouette. No identifiable profile.
+- Placeholder quality. Reads as "generic round figure" not "Newb."
+- No visible face. No hands. No feet. No torso definition.
+- No personality. Could be any character in any 1-bit game.
+- No animation readability — same blob in every pose.
 
-## Anatomy rules
+## What v3 must deliver
 
-- **Head:** ~16px tall, ~14px wide. Round-ish, with a single clear feature
-  (cowlick hair lock or hat brim). No eyes/mouth at static rest — those
-  appear only in expression frames.
-- **Torso:** ~22px tall, ~18px wide. Chunky, no waist taper. Hoodie
-  silhouette reads from the back.
-- **Arms:** ~20px long, ~6px wide. Read as mitten-stumps in 1-bit, fingers
-  only in held-pose frames.
-- **Legs:** ~22px tall, ~9px wide each. Sturdy. Feet read as wedges, not
-  points.
-- **Total black mass:** ~55–65% of the 64×64 frame in idle pose.
+A SPRITE SHEET, not a portrait. Production-ready for direct import into
+the Playdate game. Organised grid, one pose per cell.
 
-## Pose set (v2 minimum)
+### Required views (cardinal-only, Playdate dpad is 4-way)
 
-| Pose | Use | Frames |
+| View | Why |
+|---|---|
+| front | default standing / interacting toward camera |
+| back | walking away / inspecting a station |
+| left | walk cycle (mirror for right) |
+| right | walk cycle (or flip left in code) |
+
+### Required animations
+
+| Animation | Frame count | Tempo |
 |---|---|---|
-| `idle_front` | default standing, breathing micro-loop | 4 |
-| `idle_back` | inspecting station, used when interacting with focal | 4 |
-| `walk_left` | flip horizontally for walk_right | 4 |
-| `walk_back` | up-screen walk cycle | 4 |
-| `walk_front` | down-screen walk cycle | 4 |
-| `interact` | hands raised, two-handed prop-grab | 3 |
-| `surprise` | eyes-open, shoulders up, ❗-ready | 1 |
+| idle | 4 | 200ms (slow breathing micro-loop) |
+| walk | 4 | 120ms |
+| run | 4 | 80ms (Newb sprinting between stations) |
+| interact | 3 | 140ms (two-handed prop grab) |
+| use item | 3 | 160ms (raising glove / holding tool) |
+| reaction | 2 | 220ms (surprise: shoulders up, head back) |
 
-## Silhouette test
+Sheet layout: one row per animation, columns are frames. 4 views ×
+6 animations × ~4 frames average = roughly 6 rows × 16 columns of
+64×64 cells. Provider can ship as a single sheet or per-view sheets.
 
-Render filled pure black, place on pure white 400×240 background, view from
-24 inches. Pose must be identifiable without internal detail.
+## Character identity
 
-## Forbidden
+Newb is:
+- a hacker
+- curious
+- scrappy
+- inventive
+- memorable from silhouette alone
 
-- Eyes/mouth in idle frames (only expression poses)
-- Fingers in non-interact poses (mitten silhouette only)
-- Anti-aliased outlines / grey ramps
-- Pointy feet that lose to fluorescent glare
-- Three-quarter "turnaround" poses (Playdate dpad is cardinal-only)
+Visual hooks that MUST be readable in the silhouette:
+- Hoodie with one cowlick / hair lock sticking up through the hood
+- Mismatched chunky sneakers
+- One hand wearing the PWNGLOVE (early-game stand-in, becomes the real
+  PWNGLOVE later)
+- Tool slot on belt (screwdriver / multi-tool silhouette)
 
-## Hardware-review criteria
+## Anatomy (64×64)
 
-- Silhouette identifiable from 24in under fluorescent
-- Hands legible in `interact` frame
-- Feet legible in all walk cycles
-- Pose reads instantly (no "what is the character doing" confusion)
-- 1-bit colour check passes
+- Head: ~18px tall, with visible face features (eyes + mouth in
+  expression frames; eyes only in static idle).
+- Torso: ~22px tall, hoodie silhouette, dithered fabric texture.
+- Arms: ~20px long, visible fingers in interact / use-item frames;
+  mitten-stumps in walk frames is acceptable but the PWNGLOVE arm
+  must have a discernible glove shape.
+- Legs: ~22px tall, sturdy. Feet read as wedges with visible sneaker
+  outline.
+- Total black mass per pose: ~50–60% of the 64×64 cell.
+
+## Personality through pose
+
+- `idle` cycle: subtle weight shift, head tilts, one hand fiddles with
+  a wire on the belt every 4th cycle.
+- `walk` cycle: confident, slightly forward-leaning gait.
+- `run` cycle: full sprint, arms pumping, scarf / hoodie tail trailing.
+- `interact`: leans in, both hands engaged with target.
+- `use item`: raises the PWNGLOVE arm, other hand braces it.
+- `reaction`: shoulders up, eyes wide, mouth open in a small "o".
+
+## Dithering discipline
+
+- Hoodie fabric: 4×4 Bayer dither for grey-tone fabric.
+- Hair: solid black mass, no internal dither.
+- Sneakers: tight crosshatch for sole tread; solid black uppers.
+- PWNGLOVE: stipple-clustered dither (mirror the master reference).
+
+## Reference
+
+PWNGLOVE master: `/home/hakcer/projects/pnwglove.png`. Borrow:
+- stipple shading language
+- cable routing
+- button cluster motif
+- mini-display rectangle
+
+Do NOT copy the glove illustration verbatim. Reduce + simplify for 64×64
+sprite scale.
+
+## Anti-patterns (auto-reject)
+
+- Blob silhouette / no anatomy.
+- Single portrait / no animation.
+- Concept art / hero render.
+- Greyscale fabric instead of dithered.
+- Anti-aliased outlines.
+- Same pose repeated across animation rows.
+
+## Approve criteria
+
+- Sheet identifiable as Newb (cowlick + PWNGLOVE arm) at 32×32 cell.
+- Each animation row reads as that animation (eyeball test).
+- Silhouette test passes per view.
+- Production-ready: drops into the Playdate engine as an imagetable
+  without retouching.
