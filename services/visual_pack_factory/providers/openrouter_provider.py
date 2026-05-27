@@ -49,24 +49,45 @@ COPYRIGHT_FIREWALL = (
     "composition, contrast, density, atmosphere only."
 )
 
-# v3 Playdate Asset Generation Standard — the factory produces GAME ASSETS,
-# not concept art / posters / splash screens / marketing illustration.
+# v3.1 Playdate Asset Generation Standard — aggressively constrained
+# directive framing. Pushes the model to behave like vintage 1998 hardware
+# instead of a modern smoothing engine.
+#
+# Note on the "pure white background" rule below: it applies to isolated
+# asset sheets (character / prop / UI / portrait / animation). Room and
+# tile packs include their own background imagery — see PACK_TYPE_OPENERS
+# for the per-type background contract. The opener overrides the global
+# default for those types.
 PLAYDATE_VISUAL_RULES = (
-    "Playdate Asset Generation Standard:\n"
-    "- Strict 1-bit pixel art for the Playdate console. Black and white "
-    "ONLY. No grayscale. No anti-aliasing. No color. No painterly "
-    "rendering. No smooth gradients. No soft shadows. No cinematic blur.\n"
-    "- High contrast only. Use extensive dithering patterns (Bayer / "
-    "hatching / clustered dots) for shading, depth, texture, and "
-    "material differentiation. Dithering is the only allowed shading.\n"
-    "- Strong silhouettes. Chunky shapes. Pixel clusters. Readable "
-    "outlines. Black mass discipline.\n"
-    "- Output must read at 32x32 minimum. Silhouette must survive "
-    "downscale.\n"
-    "- This is a GAME ASSET. Not an illustration. Not concept art. Not "
-    "poster art. Not splash art. Not marketing artwork.\n"
-    "- Hardware is 400x240, 1-bit reflective LCD. Outdoor / fluorescent "
-    "lighting eats fine detail; design for distance readability."
+    "CRITICAL SYSTEM DIRECTIVE: You are an image generation engine "
+    "hardwired to a 1-bit memory LCD display matrix. You must strictly "
+    "adhere to the following visual constraints:\n"
+    "\n"
+    "1. STRICT MONOCHROME: Output must be 100 percent pure black and "
+    "white only. Absolutely no grayscale, no anti-aliasing, and no "
+    "color.\n"
+    "\n"
+    "2. SHADING PROTOCOL: You are forbidden from using smooth gradients. "
+    "All shading, depth, and texture must be simulated using heavy, "
+    "localized pixel dithering (checkerboard / Bayer / clustered-dot "
+    "patterns).\n"
+    "\n"
+    "3. STRUCTURAL CLARITY: Maintain stark, high contrast outlines. "
+    "Visual elements must remain highly readable when scaled down to a "
+    "32x32 pixel constraint.\n"
+    "\n"
+    "4. ASSET FORMATTING: Render the request as a flat, structural game "
+    "developer asset sheet on a pure white background — UNLESS the "
+    "per-pack-type opener above specifies a room layout or tileset, in "
+    "which case the background imagery is part of the asset and the "
+    "opener's framing wins. Do not add environmental lighting or "
+    "perspective skew that contradicts the opener.\n"
+    "\n"
+    "5. CONSEQUENCE: Output that contains greyscale, anti-aliased edges, "
+    "smooth gradients, or smoothing artefacts will be rejected at the "
+    "factory ingest gate by `_image_integrity.validate()` and "
+    "`validate_pack.py::_check_1bit`. Rejected candidates do not enter "
+    "the review queue."
 )
 
 # Per-pack-type opening line — sets the model's mental frame to "production

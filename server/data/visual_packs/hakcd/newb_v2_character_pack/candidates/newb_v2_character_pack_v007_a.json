@@ -1,0 +1,59 @@
+{
+  "candidate_id": "newb_v2_character_pack_v007_a",
+  "pack_id": "newb_v2_character_pack",
+  "asset_type": "character_pack",
+  "version": 7,
+  "variant": "a",
+  "status": "generated",
+  "art_status": "generated",
+  "human_reviewed": false,
+  "approved": false,
+  "target_dimensions": [
+    [
+      64,
+      64
+    ]
+  ],
+  "playdate_ready": false,
+  "source_ids": [],
+  "source_usage": "inspiration_only",
+  "copy_risk_reviewed": false,
+  "correction_notes": [],
+  "style_score": null,
+  "readability_score": null,
+  "silhouette_score": null,
+  "hardware_reviewed": false,
+  "exported_to": null,
+  "provider": "openrouter:google/gemini-2.5-flash-image",
+  "prompt_hash": null,
+  "image_path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/newb_v2_character_pack/candidates/newb_v2_character_pack_v007_a.png",
+  "created_at": "2026-05-27T01:49:54+00:00",
+  "provider_prompt": "Produce a SPRITE SHEET in strict 1-bit pixel art style, designed for the Playdate console. Neatly organised for game development. Include front view, back view, left view, and right view. Animations: idle, walk, run, interact, use item, reaction. Each pose has a strong silhouette and reads at 32x32. Production-ready, not concept art.\n\nPack: newb_v2_character_pack (character_pack).\nTarget dimensions: 64x64 pixels \u2014 1-bit Playdate-ready PNG.\n\nCRITICAL SYSTEM DIRECTIVE: You are an image generation engine hardwired to a 1-bit memory LCD display matrix. You must strictly adhere to the following visual constraints:\n\n1. STRICT MONOCHROME: Output must be 100 percent pure black and white only. Absolutely no grayscale, no anti-aliasing, and no color.\n\n2. SHADING PROTOCOL: You are forbidden from using smooth gradients. All shading, depth, and texture must be simulated using heavy, localized pixel dithering (checkerboard / Bayer / clustered-dot patterns).\n\n3. STRUCTURAL CLARITY: Maintain stark, high contrast outlines. Visual elements must remain highly readable when scaled down to a 32x32 pixel constraint.\n\n4. ASSET FORMATTING: Render the request as a flat, structural game developer asset sheet on a pure white background \u2014 UNLESS the per-pack-type opener above specifies a room layout or tileset, in which case the background imagery is part of the asset and the opener's framing wins. Do not add environmental lighting or perspective skew that contradicts the opener.\n\n5. CONSEQUENCE: Output that contains greyscale, anti-aliased edges, smooth gradients, or smoothing artefacts will be rejected at the factory ingest gate by `_image_integrity.validate()` and `validate_pack.py::_check_1bit`. Rejected candidates do not enter the review queue.\n\nReferences are inspiration-only. Do not reproduce copyrighted characters, scenes, logos, or trademarks. Borrow silhouette, composition, contrast, density, atmosphere only.\n\n## Authoring intent\n# Newb v2 \u2014 Character Sprite Sheet Spec (v3)\n\nPack: `newb_v2_character_pack`\nType: `character_pack`\nTarget dimensions: 64\u00d764 per pose (sheet laid out in a grid; each cell\ntreated as one sprite)\nProject: HAKCD vertical slice\n\n## Why v2 was rejected (Newb v1 + the early v2 candidates)\n\n- Blob silhouette. No identifiable profile.\n- Placeholder quality. Reads as \"generic round figure\" not \"Newb.\"\n- No visible face. No hands. No feet. No torso definition.\n- No personality. Could be any character in any 1-bit game.\n- No animation readability \u2014 same blob in every pose.\n\n## What v3 must deliver\n\nA SPRITE SHEET, not a portrait. Production-ready for direct import into\nthe Playdate game. Organised grid, one pose per cell.\n\n### Required views (cardinal-only, Playdate dpad is 4-way)\n\n| View | Why |\n|---|---|\n| front | default standing / interacting toward camera |\n| back | walking away / inspecting a station |\n| left | walk cycle (mirror for right) |\n| right | walk cycle (or flip left in code) |\n\n### Required animations\n\n| Animation | Frame count | Tempo |\n|---|---|---|\n| idle | 4 | 200ms (slow breathing micro-loop) |\n| walk | 4 | 120ms |\n| run | 4 | 80ms (Newb sprinting between stations) |\n| interact | 3 | 140ms (two-handed prop grab) |\n| use item | 3 | 160ms (raising glove / holding tool) |\n| reaction | 2 | 220ms (surprise: shoulders up, head back) |\n\nSheet layout: one row per animation, columns are frames. 4 views \u00d7\n6 animations \u00d7 ~4 frames average = roughly 6 rows \u00d7 16 columns of\n64\u00d764 cells. Provider can ship as a single sheet or per-view sheets.\n\n## Character identity\n\nNewb is:\n- a hacker\n- curious\n- scrappy\n- inventive\n- memorable from silhouette alone\n\nVisual hooks that MUST be readable in the silhouette:\n- Hoodie with one cowlick / hair lock sticking up through the hood\n- Mismatched chunky sneakers\n- One hand wearing the PWNGLOVE (early-game stand-in, becomes the real\n  PWNGLOVE later)\n- Tool slot on belt (screwdriver / multi-tool silhouette)\n\n## Anatomy (64\u00d764)\n\n- Head: ~18px tall, with visible face features (eyes + mouth in\n  expression frames; eyes only in static idle).\n- Torso: ~22px tall, hoodie silhouette, dithered fabric texture.\n- Arms: ~20px long, visible fingers in interact / use-item frames;\n  mitten-stumps in walk frames is acceptable but the PWNGLOVE arm\n  must have a discernible glove shape.\n- Legs: ~22px tall, sturdy. Feet read as wedges with visible sneaker\n  outline.\n- Total black mass per pose: ~50\u201360% of the 64\u00d764 cell.\n\n## Personality through pose\n\n- `idle` cycle: subtle weight shift, head tilts, one hand fiddles with\n  a wire on the belt every 4th cycle.\n- `walk` cycle: confident, slightly forward-leaning gait.\n- `run` cycle: full sprint, arms pumping, scarf / hoodie tail trailing.\n- `interact`: leans in, both hands engaged with target.\n- `use item`: raises the PWNGLOVE arm, other hand braces it.\n- `reaction`: shoulders up, eyes wide, mouth open in a small \"o\".\n\n## Dithering discipline\n\n- Hoodie fabric: 4\u00d74 Bayer dither for grey-tone fabric.\n- Hair: solid black mass, no internal dither.\n- Sneakers: tight crosshatch for sole tread; solid black uppers.\n- PWNGLOVE: stipple-clustered dither (mirror the master reference).\n\n## Reference\n\nPWNGLOVE master: `/home/hakcer/projects/pnwglove.png`. Borrow:\n- stipple shading language\n- cable routing\n- button cluster motif\n- mini-display rectangle\n\nDo NOT copy the glove illustration verbatim. Reduce + simplify for 64\u00d764\nsprite scale.\n\n## Anti-patterns (auto-reject)\n\n- Blob silhouette / no anatomy.\n- Single portrait / no animation.\n- Concept art / hero render.\n- Greyscale fabric instead of dithered.\n- Anti-aliased outlines.\n- Same pose repeated across animation rows.\n\n## Approve criteria\n\n- Sheet identifiable as Newb (cowlick + PWNGLOVE arm) at 32\u00d732 cell.\n- Each animation row reads as that animation (eyeball test).\n- Silhouette test passes per view.\n- Production-ready: drops into the Playdate engine as an imagetable\n  without retouching.\n\n\n## Pack style guide\n# Newb v2 \u2014 Character Sprite Sheet Spec (v3)\n\nPack: `newb_v2_character_pack`\nType: `character_pack`\nTarget dimensions: 64\u00d764 per pose (sheet laid out in a grid; each cell\ntreated as one sprite)\nProject: HAKCD vertical slice\n\n## Why v2 was rejected (Newb v1 + the early v2 candidates)\n\n- Blob silhouette. No identifiable profile.\n- Placeholder quality. Reads as \"generic round figure\" not \"Newb.\"\n- No visible face. No hands. No feet. No torso definition.\n- No personality. Could be any character in any 1-bit game.\n- No animation readability \u2014 same blob in every pose.\n\n## What v3 must deliver\n\nA SPRITE SHEET, not a portrait. Production-ready for direct import into\nthe Playdate game. Organised grid, one pose per cell.\n\n### Required views (cardinal-only, Playdate dpad is 4-way)\n\n| View | Why |\n|---|---|\n| front | default standing / interacting toward camera |\n| back | walking away / inspecting a station |\n| left | walk cycle (mirror for right) |\n| right | walk cycle (or flip left in code) |\n\n### Required animations\n\n| Animation | Frame count | Tempo |\n|---|---|---|\n| idle | 4 | 200ms (slow breathing micro-loop) |\n| walk | 4 | 120ms |\n| run | 4 | 80ms (Newb sprinting between stations) |\n| interact | 3 | 140ms (two-handed prop grab) |\n| use item | 3 | 160ms (raising glove / holding tool) |\n| reaction | 2 | 220ms (surprise: shoulders up, head back) |\n\nSheet layout: one row per animation, columns are frames. 4 views \u00d7\n6 animations \u00d7 ~4 frames average = roughly 6 rows \u00d7 16 columns of\n64\u00d764 cells. Provider can ship as a single sheet or per-view sheets.\n\n## Character identity\n\nNewb is:\n- a hacker\n- curious\n- scrappy\n- inventive\n- memorable from silhouette alone\n\nVisual hooks that MUST be readable in the silhouette:\n- Hoodie with one cowlick / hair lock sticking up through the hood\n- Mismatched chunky sneakers\n- One hand wearing the PWNGLOVE (early-game stand-in, becomes the real\n  PWNGLOVE later)\n- Tool slot on belt (screwdriver / multi-tool silhouette)\n\n## Anatomy (64\u00d764)\n\n- Head: ~18px tall, with visible face features (eyes + mouth in\n  expression frames; eyes only in static idle).\n- Torso: ~22px tall, hoodie silhouette, dithered fabric texture.\n- Arms: ~20px long, visible fingers in interact / use-item frames;\n  mitten-stumps in walk frames is acceptable but the PWNGLOVE arm\n  must have a discernible glove shape.\n- Legs: ~22px tall, sturdy. Feet read as wedges with visible sneaker\n  outline.\n- Total black mass per pose: ~50\u201360% of the 64\u00d764 cell.\n\n## Personality through pose\n\n- `idle` cycle: subtle weight shift, head tilts, one hand fiddles with\n  a wire on the belt every 4th cycle.\n- `walk` cycle: confident, slightly forward-leaning gait.\n- `run` cycle: full sprint, arms pumping, scarf / hoodie tail trailing.\n- `interact`: leans in, both hands engaged with target.\n- `use item`: raises the PWNGLOVE arm, other hand braces it.\n- `reaction`: shoulders up, eyes wide, mouth open in a small \"o\".\n\n## Dithering discipline\n\n- Hoodie fabric: 4\u00d74 Bayer dither for grey-tone fabric.\n- Hair: solid black mass, no internal dither.\n- Sneakers: tight crosshatch for sole tread; solid black uppers.\n- PWNGLOVE: stipple-clustered dither (mirror the master reference).\n\n## Reference\n\nPWNGLOVE master: `/home/hakcer/projects/pnwglove.png`. Borrow:\n- stipple shading language\n- cable routing\n- button cluster motif\n- mini-display rectangle\n\nDo NOT copy the glove illustration verbatim. Reduce + simplify for 64\u00d764\nsprite scale.\n\n## Anti-patterns (auto-reject)\n\n- Blob silhouette / no anatomy.\n- Single portrait / no animation.\n- Concept art / hero render.\n- Greyscale fabric instead of dithered.\n- Anti-aliased outlines.\n- Same pose repeated across animation rows.\n\n## Approve criteria\n\n- Sheet identifiable as Newb (cowlick + PWNGLOVE arm) at 32\u00d732 cell.\n- Each animation row reads as that animation (eyeball test).\n- Silhouette test passes per view.\n- Production-ready: drops into the Playdate engine as an imagetable\n  without retouching.",
+  "provider_metadata": {
+    "openrouter_model": "google/gemini-2.5-flash-image",
+    "index": 0,
+    "target_dims": [
+      64,
+      64
+    ],
+    "references": [
+      "/home/hakcer/projects/pnwglove.png"
+    ],
+    "correction_notes_attached": false,
+    "parent_candidate_id": null
+  },
+  "source_references": [
+    "/home/hakcer/projects/pnwglove.png"
+  ],
+  "correction_lineage": [],
+  "integrity_report": {
+    "verdict": "ok",
+    "entropy_bits": 0.6258560634619426,
+    "black_fraction": 0.156494140625,
+    "tile_repeat": {
+      "best_period": 3,
+      "best_match_fraction": 0.04918032786885246
+    },
+    "warn": []
+  }
+}
