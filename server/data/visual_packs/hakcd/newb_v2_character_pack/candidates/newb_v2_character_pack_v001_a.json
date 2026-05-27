@@ -1,0 +1,46 @@
+{
+  "candidate_id": "newb_v2_character_pack_v001_a",
+  "pack_id": "newb_v2_character_pack",
+  "asset_type": "character_pack",
+  "version": 1,
+  "variant": "a",
+  "status": "queued_for_review",
+  "art_status": "generated",
+  "human_reviewed": false,
+  "approved": false,
+  "target_dimensions": [
+    [
+      64,
+      64
+    ]
+  ],
+  "playdate_ready": false,
+  "source_ids": [],
+  "source_usage": "inspiration_only",
+  "copy_risk_reviewed": false,
+  "correction_notes": [],
+  "style_score": null,
+  "readability_score": null,
+  "silhouette_score": null,
+  "hardware_reviewed": false,
+  "exported_to": null,
+  "provider": "openrouter:google/gemini-2.5-flash-image",
+  "prompt_hash": null,
+  "image_path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/newb_v2_character_pack/candidates/newb_v2_character_pack_v001_a.png",
+  "created_at": "2026-05-26T22:25:57+00:00",
+  "provider_prompt": "Pack: newb_v2_character_pack (character_pack).\nTarget dimensions: 64x64 pixels \u2014 1-bit Playdate-ready PNG.\n\nPlaydate-native 1-bit visual rules:\n- Only pure black (#000000) and pure white (#FFFFFF). No grey, no anti-aliasing, no Floyd-Steinberg dither ramp.\n- Large readable silhouettes. Chunky shapes. Strong black mass discipline.\n- Negative space is composition, not empty floor.\n- Layered density: foreground reads first, midground supports, background recedes.\n- Focal point hierarchy: one hero element per frame.\n- No noisy detail spam. No anti-aliased sludge. No object soup.\n\nReferences are inspiration-only. Do not reproduce copyrighted characters, scenes, logos, or trademarks. Borrow silhouette, composition, contrast, density, atmosphere only.\n\n## Authoring intent\n# Newb v2 \u2014 Character Spec\n\nPack: `newb_v2_character_pack`\nType: `character_pack`\nTarget dimensions: 64\u00d764 (bumped from 32 / 48 \u2014 readable on hardware)\nProject: HAKCD vertical slice\n\n## Why v2\n\nNewb v1 (32\u00d732 imagetable) lost its silhouette on hardware. Hands and feet\ndisappeared under fluorescent light. v2 trades resolution for readability:\nchunkier proportions, fewer tiny details, stronger black mass.\n\n## Anatomy rules\n\n- **Head:** ~16px tall, ~14px wide. Round-ish, with a single clear feature\n  (cowlick hair lock or hat brim). No eyes/mouth at static rest \u2014 those\n  appear only in expression frames.\n- **Torso:** ~22px tall, ~18px wide. Chunky, no waist taper. Hoodie\n  silhouette reads from the back.\n- **Arms:** ~20px long, ~6px wide. Read as mitten-stumps in 1-bit, fingers\n  only in held-pose frames.\n- **Legs:** ~22px tall, ~9px wide each. Sturdy. Feet read as wedges, not\n  points.\n- **Total black mass:** ~55\u201365% of the 64\u00d764 frame in idle pose.\n\n## Pose set (v2 minimum)\n\n| Pose | Use | Frames |\n|---|---|---|\n| `idle_front` | default standing, breathing micro-loop | 4 |\n| `idle_back` | inspecting station, used when interacting with focal | 4 |\n| `walk_left` | flip horizontally for walk_right | 4 |\n| `walk_back` | up-screen walk cycle | 4 |\n| `walk_front` | down-screen walk cycle | 4 |\n| `interact` | hands raised, two-handed prop-grab | 3 |\n| `surprise` | eyes-open, shoulders up, \u2757-ready | 1 |\n\n## Silhouette test\n\nRender filled pure black, place on pure white 400\u00d7240 background, view from\n24 inches. Pose must be identifiable without internal detail.\n\n## Forbidden\n\n- Eyes/mouth in idle frames (only expression poses)\n- Fingers in non-interact poses (mitten silhouette only)\n- Anti-aliased outlines / grey ramps\n- Pointy feet that lose to fluorescent glare\n- Three-quarter \"turnaround\" poses (Playdate dpad is cardinal-only)\n\n## Hardware-review criteria\n\n- Silhouette identifiable from 24in under fluorescent\n- Hands legible in `interact` frame\n- Feet legible in all walk cycles\n- Pose reads instantly (no \"what is the character doing\" confusion)\n- 1-bit colour check passes\n\n\n## Pack style guide\n# Newb v2 \u2014 Character Spec\n\nPack: `newb_v2_character_pack`\nType: `character_pack`\nTarget dimensions: 64\u00d764 (bumped from 32 / 48 \u2014 readable on hardware)\nProject: HAKCD vertical slice\n\n## Why v2\n\nNewb v1 (32\u00d732 imagetable) lost its silhouette on hardware. Hands and feet\ndisappeared under fluorescent light. v2 trades resolution for readability:\nchunkier proportions, fewer tiny details, stronger black mass.\n\n## Anatomy rules\n\n- **Head:** ~16px tall, ~14px wide. Round-ish, with a single clear feature\n  (cowlick hair lock or hat brim). No eyes/mouth at static rest \u2014 those\n  appear only in expression frames.\n- **Torso:** ~22px tall, ~18px wide. Chunky, no waist taper. Hoodie\n  silhouette reads from the back.\n- **Arms:** ~20px long, ~6px wide. Read as mitten-stumps in 1-bit, fingers\n  only in held-pose frames.\n- **Legs:** ~22px tall, ~9px wide each. Sturdy. Feet read as wedges, not\n  points.\n- **Total black mass:** ~55\u201365% of the 64\u00d764 frame in idle pose.\n\n## Pose set (v2 minimum)\n\n| Pose | Use | Frames |\n|---|---|---|\n| `idle_front` | default standing, breathing micro-loop | 4 |\n| `idle_back` | inspecting station, used when interacting with focal | 4 |\n| `walk_left` | flip horizontally for walk_right | 4 |\n| `walk_back` | up-screen walk cycle | 4 |\n| `walk_front` | down-screen walk cycle | 4 |\n| `interact` | hands raised, two-handed prop-grab | 3 |\n| `surprise` | eyes-open, shoulders up, \u2757-ready | 1 |\n\n## Silhouette test\n\nRender filled pure black, place on pure white 400\u00d7240 background, view from\n24 inches. Pose must be identifiable without internal detail.\n\n## Forbidden\n\n- Eyes/mouth in idle frames (only expression poses)\n- Fingers in non-interact poses (mitten silhouette only)\n- Anti-aliased outlines / grey ramps\n- Pointy feet that lose to fluorescent glare\n- Three-quarter \"turnaround\" poses (Playdate dpad is cardinal-only)\n\n## Hardware-review criteria\n\n- Silhouette identifiable from 24in under fluorescent\n- Hands legible in `interact` frame\n- Feet legible in all walk cycles\n- Pose reads instantly (no \"what is the character doing\" confusion)\n- 1-bit colour check passes",
+  "provider_metadata": {
+    "openrouter_model": "google/gemini-2.5-flash-image",
+    "index": 0,
+    "target_dims": [
+      64,
+      64
+    ],
+    "references": [],
+    "correction_notes_attached": false,
+    "parent_candidate_id": null
+  },
+  "source_references": [],
+  "correction_lineage": [],
+  "queued_at": "2026-05-26T22:25:57+00:00"
+}

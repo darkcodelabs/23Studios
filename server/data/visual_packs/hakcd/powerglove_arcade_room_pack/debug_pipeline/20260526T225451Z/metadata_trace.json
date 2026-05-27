@@ -1,0 +1,72 @@
+{
+  "pack_id": "powerglove_arcade_room_pack",
+  "provider": "openrouter:google/gemini-2.5-flash-image",
+  "target_dims": [
+    400,
+    240
+  ],
+  "references_attached": [],
+  "stages": [
+    {
+      "step": 0,
+      "name": "raw_decoded",
+      "path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/debug_pipeline/20260526T225451Z/step_00_raw_decoded.png",
+      "size_bytes": 1051234,
+      "image_dims": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "sha256_16": "f0088174b39499cc"
+    },
+    {
+      "step": 1,
+      "name": "grayscale",
+      "path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/debug_pipeline/20260526T225451Z/step_01_grayscale.png",
+      "size_bytes": 348770,
+      "image_dims": [
+        1024,
+        1024
+      ],
+      "mode": "L",
+      "sha256_16": "1e9947691078700a"
+    },
+    {
+      "step": 2,
+      "name": "resized",
+      "path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/debug_pipeline/20260526T225451Z/step_02_resized.png",
+      "size_bytes": 44755,
+      "image_dims": [
+        400,
+        240
+      ],
+      "mode": "L",
+      "sha256_16": "9b0a2317632f9127"
+    },
+    {
+      "step": 3,
+      "name": "threshold",
+      "path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/debug_pipeline/20260526T225451Z/step_03_threshold.png",
+      "size_bytes": 5926,
+      "image_dims": [
+        400,
+        240
+      ],
+      "mode": "1",
+      "sha256_16": "27d46a417dfaa126"
+    },
+    {
+      "step": 99,
+      "name": "final_export",
+      "path": "/home/hakcer/projects/23studios/server/data/visual_packs/hakcd/powerglove_arcade_room_pack/debug_pipeline/20260526T225451Z/step_99_final_export.png",
+      "size_bytes": 7643,
+      "image_dims": [
+        400,
+        240
+      ],
+      "mode": "RGB",
+      "sha256_16": "86952058f78ce372"
+    }
+  ],
+  "integrity_verdict": "ok"
+}

@@ -1,0 +1,17 @@
+{
+  "provider_name": "openrouter:google/gemini-2.5-flash-image",
+  "prompt_length": 5581,
+  "metadata": {
+    "openrouter_model": "google/gemini-2.5-flash-image",
+    "index": 0,
+    "target_dims": [
+      400,
+      240
+    ],
+    "references": [],
+    "correction_notes_attached": false,
+    "parent_candidate_id": null
+  },
+  "raw_bytes": 1051234,
+  "head_hex": "89504e470d0a1a0a0000000d49484452"
+}

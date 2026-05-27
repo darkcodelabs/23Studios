@@ -1,0 +1,11 @@
+pack_id: powerglove_arcade_room_pack
+project_id: hakcd
+type: room_pack
+description: "Powerglove Arcade Hub \u2014 atmospheric vertical-slice benchmark room."
+target_dimensions:
+- - 400
+  - 240
+export_target: source/images
+asset_type: image
+created_at: '2026-05-26T22:08:56+00:00'
+schema_version: 2

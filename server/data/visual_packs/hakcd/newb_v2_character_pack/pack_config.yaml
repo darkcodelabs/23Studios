@@ -1,0 +1,11 @@
+pack_id: newb_v2_character_pack
+project_id: hakcd
+type: character_pack
+description: 'Newb v2: larger silhouette, chunkier proportions, readable hands/feet.'
+target_dimensions:
+- - 64
+  - 64
+export_target: source/images
+asset_type: image
+created_at: '2026-05-26T22:08:56+00:00'
+schema_version: 2

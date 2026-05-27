@@ -1,0 +1,12 @@
+- candidate_id: newb_v2_character_pack_v001_a
+  pack_id: newb_v2_character_pack
+  queued_at: '2026-05-26T22:25:57+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/newb_v2_character_pack/candidates/newb_v2_character_pack_v001_a.png
+- candidate_id: newb_v2_character_pack_v002_b
+  pack_id: newb_v2_character_pack
+  queued_at: '2026-05-26T22:25:57+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/newb_v2_character_pack/candidates/newb_v2_character_pack_v002_b.png
+- candidate_id: newb_v2_character_pack_v003_c
+  pack_id: newb_v2_character_pack
+  queued_at: '2026-05-26T22:25:57+00:00'
+  image_path: /home/hakcer/projects/23studios/server/data/visual_packs/hakcd/newb_v2_character_pack/candidates/newb_v2_character_pack_v003_c.png

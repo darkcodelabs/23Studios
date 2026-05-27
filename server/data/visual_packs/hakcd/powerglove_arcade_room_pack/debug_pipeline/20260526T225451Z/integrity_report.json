@@ -1,0 +1,32 @@
+{
+  "magic": {
+    "code": "png_magic",
+    "ok": true,
+    "head_hex": "89504e470d0a1a0a0000000d49484452"
+  },
+  "ihdr": {
+    "width": 400,
+    "height": 240,
+    "bit_depth": 8,
+    "color_type": 2
+  },
+  "decode": {
+    "code": "decodable",
+    "ok": true,
+    "mode": "RGB",
+    "size": [
+      400,
+      240
+    ],
+    "format": "PNG"
+  },
+  "entropy_bits": 0.7099999307560245,
+  "black_fraction": 0.8058854166666667,
+  "tile_repeat": {
+    "best_period": 2,
+    "best_match_fraction": 0.08403361344537816
+  },
+  "ok": true,
+  "fatal": [],
+  "warn": []
+}
