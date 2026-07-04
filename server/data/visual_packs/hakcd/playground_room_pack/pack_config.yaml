@@ -1,0 +1,11 @@
+pack_id: playground_room_pack
+project_id: hakcd
+type: room_pack
+description: Playground scene background (V7 rebuild).
+target_dimensions:
+- - 400
+  - 240
+export_target: source/images
+asset_type: image
+created_at: '2026-05-26T22:08:56+00:00'
+schema_version: 2

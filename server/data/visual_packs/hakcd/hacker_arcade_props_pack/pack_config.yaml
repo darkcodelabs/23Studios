@@ -1,0 +1,11 @@
+pack_id: hacker_arcade_props_pack
+project_id: hakcd
+type: prop_pack
+description: Arcade-era prop sprites (terminals, cassettes, CRTs).
+target_dimensions:
+- - 32
+  - 32
+export_target: source/images
+asset_type: image
+created_at: '2026-05-26T22:08:56+00:00'
+schema_version: 2

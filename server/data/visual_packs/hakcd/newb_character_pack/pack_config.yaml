@@ -1,0 +1,11 @@
+pack_id: newb_character_pack
+project_id: hakcd
+type: character_pack
+description: Newb protagonist sprite (V4 replacement).
+target_dimensions:
+- - 48
+  - 48
+export_target: source/images
+asset_type: image
+created_at: '2026-05-26T22:08:56+00:00'
+schema_version: 2

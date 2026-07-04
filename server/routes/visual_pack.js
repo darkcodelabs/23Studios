@@ -26,6 +26,7 @@ const path = require('path');
 const fs = require('fs');
 
 const visualPack = require('../services/visual_pack');
+const asepritePipeline = require('../services/aseprite_pipeline');
 const { validateId } = require('../services/validation');
 
 const router = express.Router();
@@ -130,6 +131,30 @@ router.post('/projects/:id/visual-pack/packs/:packId/candidates',
     try {
       const out = await visualPack.ingestCandidate(req.params.id, req.params.packId,
         req.body || {}, req.file || null);
+      res.status(201).json(out);
+    } catch (e) { sendErr(res, e); }
+  });
+
+// prompt→Aseprite generation: LLM writes a Lua script, aseprite -b executes
+// it in a jail, artifacts are validated and ingested as candidates. Body:
+// { prompt, spec: { name, kind, frameW, frameH, frames }, model? }
+router.post('/projects/:id/visual-pack/packs/:packId/generate',
+  express.json({ limit: '64kb' }),
+  async (req, res) => {
+    if (!checkProject(req, res)) return;
+    try {
+      const { prompt, spec, model } = req.body || {};
+      if (typeof prompt !== 'string' || !prompt.trim()) {
+        return res.status(400).json({ error: 'bad_request', detail: 'prompt required' });
+      }
+      if (!spec || !Number.isInteger(spec.frameW) || !Number.isInteger(spec.frameH)) {
+        return res.status(400).json({ error: 'bad_request', detail: 'spec.frameW/frameH required' });
+      }
+      const out = await asepritePipeline.generateCandidate({
+        projectId: req.params.id,
+        packId: req.params.packId,
+        prompt, spec, model,
+      });
       res.status(201).json(out);
     } catch (e) { sendErr(res, e); }
   });
