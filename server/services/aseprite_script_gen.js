@@ -11,6 +11,9 @@
 //   returned alongside the artifacts — the script IS the canonical source
 //   and must be stored with the candidate.
 
+const { spawn } = require('child_process');
+const os = require('os');
+
 const { streamChat } = require('./openrouter');
 const runner = require('./aseprite_runner');
 const { validateArtifact } = require('./aseprite_validate');
@@ -18,6 +21,36 @@ const driftDetect = require('./drift_detect');
 
 const DEFAULT_MODEL = process.env.ASEPRITE_SCRIPT_MODEL || 'anthropic/claude-sonnet-4.5';
 const MAX_ATTEMPTS = Number(process.env.ASEPRITE_GEN_MAX_ATTEMPTS || 3);
+const CLAUDE_BIN = process.env.CLAUDE_CODE_BIN || 'claude';
+
+// Stateless one-shot Claude Code CLI call. Deliberately NOT claude.js's
+// sendMessage: that keeps a per-project --continue session and writes project
+// chat history — wrong surface for internal pipeline calls. Used when
+// model === 'claude-code' or as automatic fallback when OpenRouter has no
+// credits (402).
+function claudeOneShot(text, { timeoutMs = 180_000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(CLAUDE_BIN, ['-p'], {
+      cwd: os.tmpdir(),
+      env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', CI: '1' },
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let out = '';
+    let errBuf = '';
+    const killer = setTimeout(() => proc.kill('SIGKILL'), timeoutMs);
+    proc.stdout.on('data', (d) => { out += d; });
+    proc.stderr.on('data', (d) => { errBuf += d; });
+    proc.on('error', (e) => { clearTimeout(killer); reject(e); });
+    proc.on('close', (code) => {
+      clearTimeout(killer);
+      if (code === 0) resolve(out);
+      else reject(new Error(`claude exited ${code}: ${errBuf.slice(0, 300)}`));
+    });
+    proc.stdin.write(text);
+    proc.stdin.end();
+  });
+}
 
 // Curated API surface the model is allowed to lean on. Small on purpose:
 // everything needed to author 1-bit sprites, nothing that touches the
@@ -122,14 +155,31 @@ async function generateScript({ prompt, spec, styleGuide, model, projectId, prio
     }
   }
 
-  const reply = await streamChat({
-    model: model || DEFAULT_MODEL,
-    messages,
-    projectId,
-    stage: 'aseprite_script',
-    onDelta: () => {},
-    signal,
-  });
+  const chosen = model || DEFAULT_MODEL;
+  let reply;
+  if (chosen === 'claude-code') {
+    reply = await claudeOneShot(messages.map((m) => `[${m.role}]\n${m.content}`).join('\n\n'));
+  } else {
+    try {
+      reply = await streamChat({
+        model: chosen,
+        messages,
+        projectId,
+        stage: 'aseprite_script',
+        onDelta: () => {},
+        signal,
+      });
+    } catch (err) {
+      // OpenRouter out of credits → emergency Claude Code CLI fallback,
+      // same posture as the STRIKE planner/synth fallback.
+      const status = err && (err.status || err.statusCode);
+      if (status === 402 || /402/.test(String(err && err.message))) {
+        reply = await claudeOneShot(messages.map((m) => `[${m.role}]\n${m.content}`).join('\n\n'));
+      } else {
+        throw err;
+      }
+    }
+  }
 
   const lua = extractLua(reply);
   if (!lua) {
