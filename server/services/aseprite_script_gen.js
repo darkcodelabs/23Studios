@@ -28,7 +28,7 @@ const CLAUDE_BIN = process.env.CLAUDE_CODE_BIN || 'claude';
 // chat history — wrong surface for internal pipeline calls. Used when
 // model === 'claude-code' or as automatic fallback when OpenRouter has no
 // credits (402).
-function claudeOneShot(text, { timeoutMs = 180_000 } = {}) {
+function claudeOneShot(text, { timeoutMs = Number(process.env.ASEPRITE_CLAUDE_TIMEOUT_MS || 600_000) } = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(CLAUDE_BIN, ['-p'], {
       cwd: os.tmpdir(),
