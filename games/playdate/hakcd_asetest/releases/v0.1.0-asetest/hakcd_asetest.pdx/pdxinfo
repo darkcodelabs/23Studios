@@ -1,0 +1,9 @@
+name=HAKCD AseTest
+author=Cory Kennedy
+description=PWNGLOVE playground test build - every asset authored by the prompt-to-Aseprite pipeline
+bundleID=ai.darkcode.hakcd.asetest
+version=0.1.0
+buildNumber=1
+imagePath=launcher
+pdxversion=30005
+buildtime=836530056
