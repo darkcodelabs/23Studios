@@ -5,3 +5,5 @@ bundleID=ai.darkcode.hakcd.asetest
 version=0.2.0
 buildNumber=2
 imagePath=launcher
+pdxversion=30005
+buildtime=836579214
