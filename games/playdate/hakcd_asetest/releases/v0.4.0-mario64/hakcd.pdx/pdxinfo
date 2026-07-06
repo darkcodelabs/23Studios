@@ -1,0 +1,9 @@
+name=HAKCD
+author=Cory Kennedy
+description=Act 1 slice, Mario-64 style in 1-bit. Volumetric dither-shaded rooms, big blob-shadowed hero, portrait dialogue, Power Stars, 4 crank minigames. Every pixel authored by the prompt-to-Aseprite pipeline.
+bundleID=ai.darkcode.hakcd.asetest
+version=0.4.0
+buildNumber=4
+imagePath=launcher
+pdxversion=30005
+buildtime=836613989

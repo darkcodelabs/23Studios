@@ -1,6 +1,5 @@
--- HAKCD phreaker-noir: suburban backyard, 2am — Bell telco pedestal scene
--- 400x240, 1-bit indexed (0 transparent, 1 black, 2 white), Bayer dithering
-
+-- scene_pedestal: MARIO-64-style 2am backyard, 1-bit dither, 400x240
+local out = os.getenv("ASE_OUT_DIR")
 local W, H = 400, 240
 local spr = Sprite(W, H, ColorMode.INDEXED)
 spr.transparentColor = 0
@@ -12,307 +11,298 @@ pal:setColor(2, Color{r=255, g=255, b=255, a=255})
 spr:setPalette(pal)
 
 local cel = spr.cels[1]
+if not cel then cel = spr:newCel(spr.layers[1], 1) end
 local img = cel.image
 
 -- ---------- helpers ----------
+local B = {{0,8,2,10},{12,4,14,6},{3,11,1,9},{15,7,13,5}} -- Bayer 4x4
+local floor, sqrt, abs, sin, pi = math.floor, math.sqrt, math.abs, math.sin, math.pi
+
 local function px(x, y, c)
-  if x >= 0 and x < W and y >= 0 and y < H then
-    img:putPixel(x, y, c)
+  if x >= 0 and x < W and y >= 0 and y < H then img:putPixel(x, y, c) end
+end
+
+-- lv: 0=black .. 16=white, dithered
+local function dpx(x, y, lv)
+  if lv <= 0 then px(x, y, 1)
+  elseif lv >= 16 then px(x, y, 2)
+  elseif B[(y % 4) + 1][(x % 4) + 1] < lv then px(x, y, 2)
+  else px(x, y, 1) end
+end
+
+local function ditherEllipse(cx, cy, rx, ry, lv)
+  for y = cy - ry, cy + ry do
+    for x = cx - rx, cx + rx do
+      local dx, dy = (x - cx) / rx, (y - cy) / ry
+      if dx * dx + dy * dy <= 1 then dpx(x, y, lv) end
+    end
   end
 end
 
--- 4x4 Bayer matrix
-local B = {
-  {0, 8, 2, 10},
-  {12, 4, 14, 6},
-  {3, 11, 1, 9},
-  {15, 7, 13, 5},
-}
-
--- dithered pixel: white if under threshold, else black (opaque)
-local function dpx(x, y, lvl)
-  if B[(y % 4) + 1][(x % 4) + 1] < lvl then px(x, y, 2) else px(x, y, 1) end
-end
-
--- additive white dots only (glow over black)
-local function glow(x, y, lvl)
-  if B[(y % 4) + 1][(x % 4) + 1] < lvl then px(x, y, 2) end
-end
-
--- additive black dots only (shade over white/dither)
-local function dark(x, y, lvl)
-  if B[(y % 4) + 1][(x % 4) + 1] < lvl then px(x, y, 1) end
-end
-
-local function frect(x0, y0, x1, y1, c)
-  for y = y0, y1 do
-    for x = x0, x1 do px(x, y, c) end
-  end
-end
-
--- deterministic scatter hash -> 0..999
-local function hash(x, y)
-  local n = x * 374761 + y * 668265 + 12345
-  n = (n * 1103515245 + 12345) % 2147483648
-  return n % 1000
-end
+local HORIZON = 146
 
 -- ---------- 1. night sky ----------
-frect(0, 0, W - 1, 121, 1)
+for y = 0, HORIZON - 1 do
+  for x = 0, W - 1 do px(x, y, 1) end
+end
 
--- ---------- 2. stars (skip near moon) ----------
-local MX, MY, MR = 72, 52, 34
-for y = 0, 104 do
+-- stars (skip moon zone + house zone)
+for i = 1, 90 do
+  local sx = (i * 137 + 53) % W
+  local sy = (i * 97 + 31) % (HORIZON - 40)
+  local dmx, dmy = sx - 72, sy - 52
+  if (dmx * dmx + dmy * dmy) > 3600 and not (sx > 226 and sy > 60) then
+    px(sx, sy, 2)
+    if i % 7 == 0 then
+      px(sx + 1, sy, 2); px(sx - 1, sy, 2); px(sx, sy + 1, 2); px(sx, sy - 1, 2)
+    end
+  end
+end
+
+-- ---------- 2. moon upper-left (key light) + glow halo ----------
+local mx, my, mr = 72, 52, 34
+for y = my - mr - 15, my + mr + 15 do
+  for x = mx - mr - 15, mx + mr + 15 do
+    local dx, dy = x - mx, y - my
+    local d = sqrt(dx * dx + dy * dy)
+    if d <= mr then
+      -- round body: bright upper-left, dithered falloff to lower-right rim
+      local t = (dx + dy) / (2 * mr)          -- -1 (UL) .. 1 (LR)
+      dpx(x, y, 16 - floor((t + 1) * 5))
+    elseif d <= mr + 5 then dpx(x, y, 5)      -- inner glow
+    elseif d <= mr + 10 then dpx(x, y, 2)     -- mid glow
+    elseif d <= mr + 15 then dpx(x, y, 1)     -- fade to sky
+    end
+  end
+end
+-- craters (soft dither pits)
+ditherEllipse(80, 58, 6, 6, 9)
+ditherEllipse(64, 66, 4, 4, 10)
+ditherEllipse(86, 42, 3, 3, 10)
+ditherEllipse(58, 44, 4, 4, 11)
+
+-- ---------- 3. rounded dark house behind ----------
+-- domed roof
+for y = 68, 97 do
+  local dy = (y - 98) / 30
+  local hw = floor(66 * sqrt(math.max(0, 1 - dy * dy)))
+  for x = 302 - hw, 302 + hw do px(x, y, 1) end
+  for x = 302 - hw, 302 - hw + 2 do dpx(x, y, 6) end -- moonlit rim, upper-left
+end
+-- body
+for y = 98, HORIZON - 1 do
+  for x = 236, 368 do px(x, y, 1) end
+end
+for y = 100, HORIZON - 4 do
+  dpx(236, y, 5); dpx(237, y, 4) -- left rim light
+end
+
+-- glowing window + halo
+local wx0, wy0, wx1, wy1 = 298, 106, 322, 128
+for y = wy0 - 9, wy1 + 9 do
+  for x = wx0 - 9, wx1 + 9 do
+    local dx = math.max(wx0 - x, 0, x - wx1)
+    local dy = math.max(wy0 - y, 0, y - wy1)
+    local d = sqrt(dx * dx + dy * dy)
+    if d > 0 then
+      if d <= 3 then dpx(x, y, 6)
+      elseif d <= 6 then dpx(x, y, 3)
+      elseif d <= 9 then dpx(x, y, 1) end
+    end
+  end
+end
+for y = wy0, wy1 do
+  for x = wx0, wx1 do px(x, y, 2) end
+end
+-- rounded window corners + 2px cross mullion
+px(wx0, wy0, 1); px(wx1, wy0, 1); px(wx0, wy1, 1); px(wx1, wy1, 1)
+for y = wy0, wy1 do px(309, y, 1); px(310, y, 1) end
+for x = wx0, wx1 do px(x, 116, 1); px(x, 117, 1) end
+
+-- ---------- 4. moonlit grass, dither gradient (bright near moon side) ----------
+for y = HORIZON, H - 1 do
   for x = 0, W - 1 do
-    local dx, dy = x - MX, y - MY
-    if dx * dx + dy * dy > 52 * 52 then
-      local h = hash(x, y)
-      if h == 17 then
-        px(x, y, 2)
-      elseif h == 18 then
-        px(x, y, 2); px(x - 1, y, 2); px(x + 1, y, 2)
-        px(x, y - 1, 2); px(x, y + 1, 2)
+    local lv = 8 - floor((y - HORIZON) / 22) - floor(x / 190)
+    if lv < 2 then lv = 2 end
+    dpx(x, y, lv)
+  end
+end
+for x = 0, W - 1 do px(x, HORIZON, 1); px(x, HORIZON + 1, 1) end -- ground line
+-- grass tufts
+for i = 1, 240 do
+  local tx = (i * 89 + 17) % W
+  local ty = HORIZON + 8 + ((i * 61) % (H - HORIZON - 14))
+  px(tx, ty, 1); px(tx, ty - 1, 1)
+  if i % 2 == 0 then px(tx + 1, ty, 1) end
+end
+
+-- ---------- 5. puffy round bushes ----------
+local function bush(cx, cy, r)
+  ditherEllipse(cx + 5, cy + r - 1, r + 7, 4, 2) -- cast shadow, lower-right
+  for y = cy - r, cy + r do
+    for x = cx - r, cx + r do
+      local dx, dy = x - cx, y - cy
+      local d2 = dx * dx + dy * dy
+      if d2 <= r * r then
+        local d = sqrt(d2)
+        if d > r - 2 then px(x, y, 1) -- 2px contour
+        else
+          local t = (dx + dy) / (2 * r)
+          local lv = 9 - floor((t + 1) * 5) -- UL highlight -> dark LR
+          if lv < 1 then lv = 1 end
+          dpx(x, y, lv)
+        end
       end
     end
   end
 end
+bush(34, 140, 26)
+bush(70, 146, 20)
+bush(232, 148, 18)
+bush(378, 150, 22)
 
--- ---------- 3. moon: halo, disc, terminator shade, craters ----------
-for y = MY - 46, MY + 46 do
-  for x = MX - 46, MX + 46 do
-    local dx, dy = x - MX, y - MY
-    local d = math.sqrt(dx * dx + dy * dy)
-    if d > MR and d <= MR + 10 then
-      local lvl = 5 - math.floor((d - MR) / 2)
-      if lvl > 0 then glow(x, y, lvl) end
+-- ---------- 6. rounded concrete pad ----------
+local pcx, pcy, prx, pry = 200, 206, 72, 24
+for y = pcy - pry, pcy + pry do
+  for x = pcx - prx, pcx + prx do
+    local nx, ny = abs(x - pcx) / prx, abs(y - pcy) / pry
+    local v = nx * nx * nx * nx + ny * ny * ny * ny -- superellipse = rounded slab
+    if v <= 1 then
+      if v > 0.82 then px(x, y, 1) -- bold outline
+      else
+        local lv = 12 - floor((x - 128) / 72)
+        if y < 200 then lv = lv + 2 end -- lit top face
+        dpx(x, y, lv)
+      end
     end
   end
 end
-for y = MY - MR, MY + MR do
-  for x = MX - MR, MX + MR do
-    local dx, dy = x - MX, y - MY
-    if dx * dx + dy * dy <= MR * MR then px(x, y, 2) end
-  end
-end
--- crescent shading on lower-right rim
-for y = MY - MR, MY + MR do
-  for x = MX - MR, MX + MR do
-    local dx, dy = x - MX, y - MY
-    if dx * dx + dy * dy <= MR * MR then
-      local sx, sy = x - (MX - 9), y - (MY - 9)
-      if sx * sx + sy * sy > MR * MR then dark(x, y, 6) end
-    end
-  end
-end
--- craters
-local craters = {{60,46,6},{82,62,7},{72,68,4},{84,42,4},{66,58,3}}
-for _, c in ipairs(craters) do
-  for y = c[2] - c[3], c[2] + c[3] do
-    for x = c[1] - c[3], c[1] + c[3] do
-      local dx, dy = x - c[1], y - c[2]
-      if dx * dx + dy * dy <= c[3] * c[3] then dark(x, y, 7) end
-    end
+for i = 0, 10 do px(150 + i, 216 + (i % 3), 1) end -- crack
+
+-- ---------- 7. soft blob shadow (offset lower-right of moon) ----------
+for y = 190, 214 do
+  for x = 162, 258 do
+    local dx, dy = (x - 210) / 48, (y - 202) / 12
+    local e = dx * dx + dy * dy
+    if e <= 0.55 then dpx(x, y, 1)
+    elseif e <= 1 then dpx(x, y, 4) end
   end
 end
 
--- ---------- 4. house silhouette + lit window ----------
-frect(228, 80, 384, 121, 1)                 -- body
-for i = 0, 24 do                            -- gable roof, peak at x=306
-  local hw = math.floor(6 + i * 3.9)
-  frect(306 - hw, 56 + i, 306 + hw, 56 + i, 1)
-end
-frect(352, 44, 364, 70, 1)                  -- chimney
--- lit window
-frect(258, 92, 284, 114, 2)
-frect(270, 92, 271, 114, 1)                 -- vertical mullion
-frect(258, 102, 284, 103, 1)                -- horizontal mullion
--- window glow bleeding onto wall
-for y = 84, 121 do
-  for x = 248, 294 do
-    local dx = 0
-    if x < 258 then dx = 258 - x elseif x > 284 then dx = x - 284 end
-    local dy = 0
-    if y < 92 then dy = 92 - y elseif y > 114 then dy = y - 114 end
-    local d = math.max(dx, dy)
-    if d > 0 then
-      local lvl = 5 - math.floor(d / 2)
-      if lvl > 0 then glow(x, y, lvl) end
-    end
-  end
+-- ---------- 8. fat rounded telco pedestal ----------
+local cx = 200
+local function bodyLv(u, y)
+  local lv
+  if u < -0.88 then lv = 7        -- left edge turn-away
+  elseif u < -0.15 then lv = 14   -- key highlight band
+  elseif u < 0.3 then lv = 10
+  elseif u < 0.62 then lv = 6
+  elseif u < 0.86 then lv = 3
+  else lv = 1 end
+  if y > 172 then lv = lv - 1 end -- ground AO
+  if y > 186 then lv = lv - 2 end
+  if lv < 1 then lv = 1 end
+  return lv
 end
 
--- ---------- 5. moonlit grass (dither gradient + moonlight pool) ----------
-for y = 122, 239 do
-  for x = 0, W - 1 do
-    local lvl = 2 + math.floor((y - 122) / 40)
-    local ex = (x - 180) / 170
-    local ey = (y - 190) / 85
-    if ex * ex + ey * ey < 1 then lvl = lvl + 2 end
-    dpx(x, y, lvl)
-  end
-end
-
--- ---------- 6. bushes ----------
-local function bush(cx, cy, r)
-  for y = cy - r, cy + r do
-    for x = cx - r, cx + r do
-      local dx, dy = x - cx, y - cy
-      if dx * dx + dy * dy <= r * r then px(x, y, 1) end
-    end
-  end
-  -- moonlit rim, upper-left
-  local inner = (r - 5) * (r - 5)
-  for y = cy - r, cy do
-    for x = cx - r, cx do
-      local dx, dy = x - cx, y - cy
-      local d2 = dx * dx + dy * dy
-      if d2 <= r * r and d2 >= inner then glow(x, y, 4) end
-    end
-  end
-end
-bush(26, 120, 20)
-bush(56, 126, 15)
-bush(6, 128, 17)
-bush(396, 124, 18)
-bush(372, 130, 13)
-bush(122, 128, 11)
-
--- ---------- 7. mid-ground grass tufts ----------
-for gy = 128, 236, 7 do
-  for gx = 3, 396, 9 do
-    local h = hash(gx, gy)
-    if h % 10 < 4 then
-      local x = gx + h % 5
-      local y = gy + h % 3
-      px(x, y - 1, 1); px(x - 1, y, 1); px(x + 1, y, 1)
-    end
-  end
-end
-
--- ---------- 8. concrete pad ----------
-frect(148, 196, 252, 197, 1)                -- top stroke
-for y = 198, 207 do                         -- pad top surface
-  for x = 150, 250 do dpx(x, y, 9) end
-end
-for y = 208, 212 do                         -- front face, darker
-  for x = 150, 250 do dpx(x, y, 4) end
-end
-frect(148, 213, 252, 214, 1)                -- bottom stroke
-frect(148, 196, 149, 214, 1)                -- left stroke
-frect(251, 196, 252, 214, 1)                -- right stroke
-frect(154, 200, 155, 201, 1)                -- anchor bolts
-frect(245, 200, 246, 201, 1)
-
--- ---------- 9. pedestal body (rounded metal box) ----------
-local function metal(x, y)
-  local lvl = 11 - math.floor((x - 164) / 26) * 2
-  if y < 108 then lvl = lvl + 2 end         -- cap catches moonlight
-  if y > 168 then lvl = lvl - 1 end
-  dpx(x, y, lvl)
-end
-
-for y = 90, 200 do
-  local x0, x1
-  if y <= 91 then x0, x1 = 176, 224
-  elseif y <= 93 then x0, x1 = 170, 230
-  elseif y <= 95 then x0, x1 = 166, 234
-  else x0, x1 = 164, 236 end
-  if y <= 91 or y >= 199 then
-    for x = x0, x1 do px(x, y, 1) end
+-- dome lid (98..111)
+for y = 98, 111 do
+  local dy = (y - 112) / 14
+  local hw = floor(34 * sqrt(math.max(0, 1 - dy * dy)))
+  if hw < 2 then
+    for x = cx - hw - 2, cx + hw + 2 do px(x, y, 1) end
   else
-    local bl
-    if y <= 93 then bl = 8 elseif y <= 95 then bl = 6 else bl = 2 end
-    for x = x0, x1 do
-      if x < x0 + bl or x > x1 - bl then px(x, y, 1) else metal(x, y) end
+    for x = cx - hw, cx + hw do
+      local u = (x - cx) / hw
+      dpx(x, y, 16 - floor((u + 1) * 4) - floor((112 - y) / 8))
     end
+    for k = 0, 1 do px(cx - hw + k, y, 1); px(cx + hw - k, y, 1) end
   end
 end
+-- lid seam
+for x = cx - 34, cx + 34 do dpx(x, 112, 4); dpx(x, 113, 4) end
+px(cx - 34, 112, 1); px(cx + 34, 112, 1); px(cx - 34, 113, 1); px(cx + 34, 113, 1)
 
--- cap seam + lip highlight
-frect(166, 108, 234, 109, 1)
-for x = 167, 233 do dpx(x, 110, 14) end
+-- bulbous body (114..196), sides swell outward mid-height
+for y = 114, 196 do
+  local hw = 34 + floor(6 * sin(pi * (y - 112) / 84))
+  for x = cx - hw, cx + hw do
+    dpx(x, y, bodyLv((x - cx) / hw, y))
+  end
+  for k = 0, 1 do px(cx - hw + k, y, 1); px(cx + hw - k, y, 1) end
+end
+-- base skirt / ground contact
+for x = cx - 34, cx + 34 do px(x, 195, 1); px(x, 196, 1) end
+for y = 197, 199 do
+  for x = cx - 30, cx + 30 do px(x, y, 1) end
+end
 
--- vent slits, lower-left of body
-frect(171, 116, 177, 117, 1)
-frect(171, 120, 177, 121, 1)
-
--- Bell emblem on cap: ring + bell glyph
-for dy = -7, 7 do
-  for dx = -7, 7 do
-    local d2 = dx * dx + dy * dy
-    if d2 >= 25 and d2 <= 40 then px(200 + dx, 99 + dy, 1) end
+-- Bell label plate above door
+for y = 117, 125 do
+  for x = 188, 212 do
+    if x == 188 or x == 212 or y == 117 or y == 125 then px(x, y, 1)
+    else dpx(x, y, 15) end
   end
 end
-local bell = {
-  {0,-3},{-1,-2},{0,-2},{1,-2},{-1,-1},{0,-1},{1,-1},
-  {-2,0},{-1,0},{0,0},{1,0},{2,0},
-  {-3,1},{-2,1},{-1,1},{0,1},{1,1},{2,1},{3,1},{0,3}
-}
-for _, p in ipairs(bell) do px(200 + p[1], 99 + p[2], 1) end
+for x = 192, 196 do px(x, 121, 1) end
+for x = 200, 208 do px(x, 121, 1) end
 
--- ---------- 10. hinged door (kept clean for lock overlay) ----------
-for y = 126, 186 do
-  for x = 180, 224 do
-    if y <= 127 or y >= 185 or x <= 181 or x >= 223 then
-      px(x, y, 1)
+-- hinged door, beveled panel
+for y = 130, 186 do
+  for x = 177, 223 do
+    if x < 179 or x > 221 or y < 132 or y > 184 then px(x, y, 1)
     else
-      dpx(x, y, 13)
+      local u = (x - cx) / 34
+      local lv
+      if u < -0.15 then lv = 11 elseif u < 0.3 then lv = 8 else lv = 5 end
+      if y > 168 then lv = lv - 1 end
+      if x <= 181 or y <= 134 then lv = lv + 4 end -- lit bevel top/left
+      if x >= 219 or y >= 182 then lv = 2 end       -- shaded bevel bottom/right
+      if lv < 1 then lv = 1 elseif lv > 16 then lv = 16 end
+      dpx(x, y, lv)
     end
   end
 end
--- hinge tabs, left side
-frect(175, 134, 181, 142, 1)
-frect(175, 170, 181, 178, 1)
--- hex lock: black bezel, white face, black hex recess
-local LX, LY = 212, 156
-for dy = -7, 7 do
-  for dx = -7, 7 do
-    if dx * dx + dy * dy <= 49 then px(LX + dx, LY + dy, 1) end
+-- hinges (left edge, two barrels)
+for _, hy in ipairs({138, 168}) do
+  for y = hy, hy + 5 do
+    for x = 172, 177 do px(x, y, 1) end
+  end
+  px(173, hy + 1, 2)
+end
+-- hex lock (right of door center)
+local hR, hS = 6, 5.2
+for y = 152, 164 do
+  for x = 204, 220 do
+    local dx, dy = abs(x - 212), abs(y - 158)
+    if dy <= hS and dx * hS + dy * (hR / 2) <= hR * hS then px(x, y, 1) end
   end
 end
-for dy = -4, 4 do
-  for dx = -4, 4 do
-    if dx * dx + dy * dy <= 16 then px(LX + dx, LY + dy, 2) end
+for y = 155, 161 do
+  for x = 209, 215 do
+    local dx, dy = abs(x - 212), abs(y - 158)
+    if dy <= 3.4 and dx * 3.4 + dy * 2 <= 4 * 3.4 then dpx(x, y, 9) end
   end
 end
-local hexw = {[-2]=1, [-1]=2, [0]=2, [1]=2, [2]=1}
-for dy = -2, 2 do
-  for dx = -hexw[dy], hexw[dy] do px(LX + dx, LY + dy, 1) end
+px(211, 158, 1); px(212, 158, 1); px(211, 159, 1); px(212, 159, 1) -- keyway
+px(209, 155, 2) -- glint
+
+-- vent slits, moonlit edges near base
+for _, vy in ipairs({190, 193}) do
+  for x = 185, 193 do dpx(x, vy, 12) end
+  for x = 197, 205 do dpx(x, vy, 12) end
+  for x = 209, 215 do dpx(x, vy, 12) end
 end
 
--- ---------- 11. moon shadow cast to lower-right ----------
-for y = 202, 220 do
-  local sx = 250 + (y - 202) * 2
-  local len = 70 - (y - 202) * 3
-  if len > 0 then
-    for x = sx, sx + len do dark(x, y, 8) end
-  end
+-- ---------- 9. foreground grass blades framing bottom ----------
+local blades = {{18,10},{34,7},{58,9},{120,6},{290,6},{330,8},{352,11},{382,7}}
+for _, b in ipairs(blades) do
+  local bx, bl = b[1], b[2]
+  for k = 0, bl do px(bx, 239 - k, 1); px(bx + 1, 239 - k, 1) end
 end
 
--- ---------- 12. foreground grass blades along bottom edge ----------
-for x = 0, 397, 3 do
-  local h = hash(x, 777)
-  if h % 10 < 6 then
-    local extra = ((x < 70 or x > 330) and 10 or 0)
-    local ht = 6 + h % 16 + extra
-    local top = 239 - ht
-    local c = (h % 13 == 0) and 2 or 1
-    for y = top, 239 do
-      px(x, y, c); px(x + 1, y, c)
-    end
-    px(x + ((h % 2 == 0) and -1 or 2), top + 1, c)  -- bent tip
-  end
-end
-
--- ---------- save + export ----------
-local out = os.getenv("ASE_OUT_DIR")
+-- ---------- save ----------
+spr:flatten()
 spr:saveAs(app.fs.joinPath(out, "scene_pedestal.aseprite"))
-app.command.ExportSpriteSheet{
-  ui = false,
-  askOverwrite = false,
-  type = SpriteSheetType.HORIZONTAL,
-  textureFilename = app.fs.joinPath(out, "scene_pedestal-table-400-240.png"),
-  dataFilename = ""
-}
-
+spr:saveAs(app.fs.joinPath(out, "scene_pedestal.png"))
 print("ASE_GEN_OK")

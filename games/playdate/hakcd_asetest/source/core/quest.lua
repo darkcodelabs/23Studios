@@ -26,9 +26,14 @@ function Q.complete(id)
     local raw = save_state.raw()
     raw.quests.step = math.min(#STEPS, Q.index() + 1)
     save_state.save()
-    audio.chime()
+    if _G.fx then fx.star() else audio.chime() end   -- Mario-64 STAR GET!
     return true
 end
+
+-- collectathon HUD: how many objectives cleared out of the star-worthy total
+-- (every step except the terminal "done").
+function Q.stars() return math.min(Q.index() - 1, #STEPS - 1) end
+function Q.starTotal() return #STEPS - 1 end
 
 function Q.reset()
     local raw = save_state.raw(); raw.quests.step = 1; save_state.save()

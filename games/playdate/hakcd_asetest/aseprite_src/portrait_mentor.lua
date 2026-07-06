@@ -1,191 +1,175 @@
--- portrait_mentor.png — 64x64 dialogue portrait, HAKCD phreaker-noir
--- THE MENTOR: weary bearded hacker, 40s, glasses + headset, half-smile
--- Strict 1-bit: 0=transparent, 1=black, 2=white. Shading = dither only.
+-- portrait_mentor: MARIO-64 style 1-bit dialogue portrait, 64x64
+-- weary bearded 40s hacker mentor — big round head, glasses, knowing half-smile
+-- key light upper-left, Bayer-dither gradient ramps for volume, 3px silhouette
 
-local W, H = 64, 64
-local sprite = Sprite(W, H, ColorMode.INDEXED)
-sprite.transparentColor = 0
+local floor, sqrt, max = math.floor, math.sqrt, math.max
 
+local spr = Sprite(64, 64, ColorMode.INDEXED)
+spr.transparentColor = 0
 local pal = Palette(3)
-pal:setColor(0, Color{ r = 0,   g = 0,   b = 0,   a = 0   })
-pal:setColor(1, Color{ r = 0,   g = 0,   b = 0,   a = 255 })
-pal:setColor(2, Color{ r = 255, g = 255, b = 255, a = 255 })
-sprite:setPalette(pal)
+pal:setColor(0, Color{r = 0, g = 0, b = 0, a = 0})
+pal:setColor(1, Color{r = 0, g = 0, b = 0, a = 255})
+pal:setColor(2, Color{r = 255, g = 255, b = 255, a = 255})
+spr:setPalette(pal)
 
-local cel = sprite.cels[1]
-if cel == nil then cel = sprite:newCel(sprite.layers[1], 1) end
-local img = cel.image
+local img = spr.cels[1].image
 
--- ---------- helpers ----------
-local function px(x, y, c)
-  if x >= 0 and x < W and y >= 0 and y < H then img:putPixel(x, y, c) end
+-- 4x4 Bayer matrix: lv in [0,1] -> black(1) or white(2)
+local B = {
+  {0, 8, 2, 10},
+  {12, 4, 14, 6},
+  {3, 11, 1, 9},
+  {15, 7, 13, 5},
+}
+local function sh(x, y, lv)
+  if lv >= 1 then return 2 end
+  if lv <= 0 then return 1 end
+  return lv > (B[y % 4 + 1][x % 4 + 1] + 0.5) / 16 and 2 or 1
 end
 
-local function hline(x0, x1, y, c)
-  for x = x0, x1 do px(x, y, c) end
+-- head ellipse: big rounded N64 noggin
+local CX, CY, RX, RY = 32, 27, 18, 20
+
+-- messy hairline, deterministic jitter
+local function hairY(x)
+  return 13 + ((x * 5 + 2) % 7) * 0.5
 end
 
-local function rectf(x0, y0, x1, y1, c)
-  for y = y0, y1 do hline(x0, x1, y, c) end
-end
+-- ============ base pass: full canvas, edge to edge ============
+for y = 0, 63 do
+  for x = 0, 63 do
+    local dx = x - CX
+    local adx = dx < 0 and -dx or dx
+    local nx, ny = dx / RX, (y - CY) / RY
+    local rr = nx * nx + ny * ny
+    local lv
 
-local function ellipsef(cx, cy, rx, ry, c, pred)
-  for y = cy - ry, cy + ry do
-    for x = cx - rx, cx + rx do
-      local dx, dy = (x - cx) / rx, (y - cy) / ry
-      if dx * dx + dy * dy <= 1.0 then
-        if pred == nil or pred(x, y) then px(x, y, c) end
+    if rr <= 1 then
+      -- HEAD
+      local ix, iy = dx / (RX - 3), (y - CY) / (RY - 3)
+      if ix * ix + iy * iy > 1 then
+        lv = 0 -- 3px black contour ring on silhouette
+      elseif y < hairY(x) or (adx >= 15 and y <= 30) then
+        -- messy dark hair + side hair, upper-left sheen band
+        lv = 0.12
+        local hx, hy = (x - 25) / 9, (y - 11) / 5
+        if hx * hx + hy * hy <= 1 then lv = 0.55 end
+        if (x * 3 + y) % 7 == 0 then lv = lv + 0.18 end
+      elseif (y >= 36 or (y >= 31 and adx >= 11))
+          and not (y >= 39 and y <= 42 and adx <= 5) then
+        -- full beard + mustache (mouth patch cut out), salt-and-pepper
+        lv = 0.42 - 0.25 * nx - 0.12 * (y - 34) / 12
+        if (x * 2 + y) % 5 == 0 then lv = lv - 0.15 end
+        if (x * 7 + y * 3) % 11 == 0 then lv = lv + 0.35 end
+      else
+        -- SKIN: lambert-ish ramp from upper-left + AO ring at rim
+        lv = 0.92 - 0.38 * nx - 0.28 * ny - max(0, rr - 0.55) * 0.9
+        -- tired under-eye bags
+        local ex = (x - 24) / 3.5
+        local ey = (y - 33) / 2.0
+        if ex * ex + ey * ey <= 1 then lv = lv - 0.3 end
+        ex = (x - 40) / 3.5
+        if ex * ex + ey * ey <= 1 then lv = lv - 0.3 end
+        -- lens interiors catch light
+        local ld = (x - 24) ^ 2 + (y - 29) ^ 2
+        if ld <= 21 then lv = lv + 0.12 end
+        ld = (x - 40) ^ 2 + (y - 29) ^ 2
+        if ld <= 21 then lv = lv + 0.12 end
+      end
+    else
+      local t = 49 + dx * dx / 56 -- rounded shoulder top curve
+      if y >= 44 and y <= 52 and adx <= 5 then
+        lv = 0.12 -- neck sunk in chin shadow
+      elseif y >= t then
+        if y < t + 3 then
+          lv = 0 -- 3px shoulder contour
+        else
+          -- hoodie: lit from upper-left, gentle vertical falloff
+          lv = 0.62 - 0.5 * x / 64 - 0.015 * (y - 50)
+          if adx < 16 and y < t + 6 then lv = 0.15 end -- collar band
+          local sx, sy = dx / 12, (y - 52) / 5
+          if sx * sx + sy * sy <= 1 then lv = lv * 0.3 end -- head cast shadow
+        end
+      else
+        -- background: soft dither halo glow around the head, black corners
+        local d = sqrt(dx * dx + (y - 26) * (y - 26))
+        lv = max(0, 0.9 - d / 30)
       end
     end
+    img:putPixel(x, y, sh(x, y, lv))
   end
 end
 
-local function checker(x0, y0, x1, y1, c, mod, phase)
-  for y = y0, y1 do
-    for x = x0, x1 do
-      if (x + y) % mod == phase then px(x, y, c) end
+-- ============ detail overlays ============
+local function pp(x, y, c) img:putPixel(x, y, c) end
+
+-- forehead worry lines (dashed, subtle)
+for x = 27, 37, 2 do pp(x, 18, 1) end
+for x = 25, 39, 2 do pp(x, 21, 1) end
+
+-- round glasses rims, 2px thick
+for i = 0, 1 do
+  local lcx = i == 0 and 24 or 40
+  for yy = 22, 36 do
+    for xx = lcx - 7, lcx + 7 do
+      local d = (xx - lcx) ^ 2 + (yy - 29) ^ 2
+      if d >= 21.16 and d <= 43.56 then pp(xx, yy, 1) end
     end
   end
 end
+-- bridge + temple arms
+for xx = 29, 35 do pp(xx, 27, 1); pp(xx, 28, 1) end
+for xx = 15, 18 do pp(xx, 28, 1); pp(xx, 29, 1) end
+for xx = 46, 49 do pp(xx, 28, 1); pp(xx, 29, 1) end
+-- lens glints, upper-left
+pp(21, 26, 2); pp(22, 26, 2); pp(21, 27, 2)
+pp(37, 26, 2); pp(38, 26, 2); pp(37, 27, 2)
 
--- ---------- 1. backdrop: white with sparse Bayer dot-grid ----------
-rectf(0, 0, 63, 63, 2)
-for y = 0, 60, 4 do
-  for x = 0, 60, 4 do
-    px(x, y, 1)
-    px(x + 2, y + 2, 1)
-  end
+-- weary-kind brows: inner ends raised
+for i = 0, 8 do
+  local by = 24 - floor(i / 4)
+  pp(19 + i, by, 1); pp(19 + i, by + 1, 1)
+  pp(45 - i, by, 1); pp(45 - i, by + 1, 1)
 end
 
--- ---------- 2. torso: black hoodie with white rim halo ----------
-local rimHW = { [44] = 11, [45] = 15, [46] = 19, [47] = 23 }
-for y = 44, 63 do
-  local hw = rimHW[y] or 28
-  hline(32 - hw, 32 + hw, y, 2)
+-- tired half-lidded eyes: droopy lid line, pupils peeking under
+for xx = 21, 27 do pp(xx, 29, 1) end
+for xx = 37, 43 do pp(xx, 29, 1) end
+pp(24, 30, 1); pp(25, 30, 1); pp(24, 31, 1); pp(25, 31, 1)
+pp(39, 30, 1); pp(40, 30, 1); pp(39, 31, 1); pp(40, 31, 1)
+-- kind spark in each pupil (upper-left catchlight)
+pp(24, 30, 2); pp(39, 30, 2)
+-- under-eye bag dashes
+pp(22, 33, 1); pp(24, 33, 1); pp(26, 33, 1)
+pp(38, 33, 1); pp(40, 33, 1); pp(42, 33, 1)
+
+-- nose: ridge shadow on dark side, nostrils
+pp(34, 30, 1); pp(34, 32, 1); pp(34, 34, 1)
+pp(29, 35, 1); pp(30, 35, 1); pp(34, 35, 1); pp(35, 35, 1)
+
+-- knowing half-smile: rises to the right, corner curl
+for xx = 28, 36 do
+  pp(xx, 41 - floor((xx - 28) / 4), 1)
 end
-local bodHW = { [45] = 9, [46] = 13, [47] = 17, [48] = 21, [49] = 24 }
-for y = 45, 63 do
-  local hw = bodHW[y] or 26
-  hline(32 - hw, 32 + hw, y, 1)
-end
--- collar V + zipper (white on black)
-px(29, 46, 2); px(30, 47, 2); px(31, 48, 2)
-px(35, 46, 2); px(34, 47, 2); px(33, 48, 2)
-for y = 49, 61 do px(32, y, 2) end
--- shoulder sheen: sparse white dots on the black mass
-for y = 49, 55, 2 do
-  for x = 10, 20, 2 do px(x, y, 2) end
-  for x = 44, 54, 2 do px(x, y, 2) end
+pp(37, 39, 1); pp(37, 40, 1)
+-- lower lip sheen
+pp(29, 42, 2); pp(30, 42, 2); pp(31, 42, 2)
+
+-- hoodie drawstrings
+for yy = 56, 63 do
+  pp(27, yy, 1); pp(28, yy, 1)
+  pp(36, yy, 1); pp(37, yy, 1)
 end
 
--- ---------- 3. head: 2px black outline ring, white skin ----------
-ellipsef(32, 25, 15, 17, 1)              -- outline mass
-ellipsef(32, 25, 13, 15, 2)              -- skin fill
-
--- ---------- 4. hair: heavy black cap, receding, gray flecks ----------
-ellipsef(32, 25, 13, 15, 1, function(x, y) return y <= 15 end)
--- messy fringe jags
-for _, x in ipairs({ 22, 23, 26, 29, 35, 38, 41, 42 }) do px(x, 16, 1) end
-px(23, 17, 1); px(41, 17, 1)
--- widow's peak
-px(31, 16, 1); px(32, 16, 1); px(33, 16, 1); px(32, 17, 1)
--- receding temples (skin notches carved into hair)
-rectf(25, 14, 26, 15, 2)
-rectf(38, 14, 39, 15, 2)
--- gray-hair flecks (white dots in black hair)
-px(26, 13, 2); px(29, 12, 2); px(35, 12, 2)
-px(38, 13, 2); px(24, 14, 2); px(40, 14, 2)
--- sideburns flowing down toward the beard
-rectf(19, 16, 20, 32, 1)
-rectf(44, 16, 45, 32, 1)
-
--- ---------- 5. forehead creases (weary) ----------
-hline(27, 29, 18, 1)
-hline(34, 36, 18, 1)
-
--- ---------- 6. heavy tired brows ----------
-rectf(23, 20, 29, 21, 1)
-rectf(35, 20, 41, 21, 1)
-px(22, 21, 1); px(42, 21, 1)             -- drooping outer ends
-
--- ---------- 7. glasses ----------
-hline(20, 44, 22, 1)                     -- top bar spans both lenses
-hline(31, 33, 23, 1)                     -- thick bridge
-hline(17, 20, 23, 1)                     -- left temple arm
-hline(44, 46, 23, 1)                     -- right temple arm
--- lens boxes
-hline(21, 29, 28, 1); hline(35, 43, 28, 1)
-for y = 22, 28 do
-  px(21, y, 1); px(29, y, 1)
-  px(35, y, 1); px(43, y, 1)
+-- collectathon sparkles in the backdrop
+local function spark(sx, sy)
+  pp(sx, sy, 2); pp(sx - 1, sy, 2); pp(sx + 1, sy, 2)
+  pp(sx, sy - 1, 2); pp(sx, sy + 1, 2)
 end
--- clear lens interiors
-rectf(22, 23, 28, 27, 2)
-rectf(36, 23, 42, 27, 2)
--- glass sheen: checker dither on lower lens halves
-checker(22, 26, 28, 27, 1, 2, 0)
-checker(36, 26, 42, 27, 1, 2, 0)
+spark(9, 10); spark(54, 13); spark(6, 40)
 
--- ---------- 8. tired kind eyes: half-lidded, slight off-gaze ----------
-hline(23, 27, 24, 1)                     -- left heavy lid
-hline(37, 41, 24, 1)                     -- right heavy lid
-rectf(25, 25, 26, 26, 1)                 -- left pupil
-rectf(38, 25, 39, 26, 1)                 -- right pupil (a hair inward)
--- eye bags under the frames
-hline(24, 26, 30, 1)
-hline(38, 40, 30, 1)
-
--- ---------- 9. nose ----------
-px(31, 28, 1); px(31, 29, 1); px(31, 30, 1); px(31, 31, 1)
-px(30, 32, 1); px(31, 32, 1); px(34, 32, 1)
-px(33, 30, 1)                            -- side shade dot
--- left-cheek form dither (light source on viewer right)
-checker(21, 27, 23, 31, 1, 3, 0)
-
--- ---------- 10. beard: heavy black mass, salt-and-pepper dither ----------
-ellipsef(32, 37, 12, 8, 1, function(x, y) return y >= 33 end)
-px(21, 33, 1); px(43, 33, 1)             -- close gaps to sideburns
-px(22, 32, 1); px(42, 32, 1)             -- jagged cheek line
--- gray flecks low in the beard
-ellipsef(32, 37, 12, 8, 2, function(x, y)
-  return y >= 39 and (x + y) % 3 == 0
-end)
--- knowing half-smile: white line, right corner kicked up
-hline(27, 33, 36, 2)
-px(34, 35, 2); px(35, 35, 2); px(36, 34, 2)
-
--- ---------- 11. left ear ----------
-rectf(15, 23, 16, 29, 1)                 -- outer black backing
-rectf(17, 24, 18, 28, 2)                 -- ear skin
-px(17, 26, 1)                            -- inner fold
-
--- ---------- 12. headset: right ear cup, band glint, mic boom ----------
-rectf(44, 22, 49, 31, 1)                 -- ear cup mass
-for y = 23, 30 do px(50, y, 2) end       -- white rim vs backdrop
-px(46, 24, 2); px(47, 24, 2); px(46, 25, 2)  -- cup highlight
-px(47, 28, 2)
--- band glint: white arc riding over the black hair
-local band = { {44,18},{43,16},{42,14},{41,12},{39,11},{37,10},{35,9},{33,9} }
-for _, p in ipairs(band) do px(p[1], p[2], 2) end
--- mic boom: 2px black arm from cup down across the jaw
-local boom = { {46,31},{45,32},{44,33},{43,34},{42,35},{41,36},{40,37} }
-for _, p in ipairs(boom) do
-  px(p[1], p[2], 1)
-  px(p[1] - 1, p[2], 1)
-end
--- mic capsule: black core with white ring so it reads inside the beard
-rectf(37, 36, 41, 40, 2)
-rectf(38, 37, 40, 39, 1)
-
--- ---------- 13. heavy 2px black portrait rim, edge to edge ----------
-rectf(0, 0, 63, 1, 1)
-rectf(0, 62, 63, 63, 1)
-rectf(0, 0, 1, 63, 1)
-rectf(62, 0, 63, 63, 1)
-
--- ---------- save ----------
-sprite:flatten()
+-- ============ save ============
 local out = os.getenv("ASE_OUT_DIR")
-sprite:saveAs(app.fs.joinPath(out, "portrait_mentor.aseprite"))
-sprite:saveAs(app.fs.joinPath(out, "portrait_mentor.png"))
+spr:saveAs(app.fs.joinPath(out, "portrait_mentor.aseprite"))
+spr:saveAs(app.fs.joinPath(out, "portrait_mentor.png"))
 print("ASE_GEN_OK")

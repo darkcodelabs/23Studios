@@ -1,8 +1,5 @@
--- scene_bbs: head-on CRT monitor, 400x240, 1-bit HAKCD phreaker-noir
--- palette: 0=transparent, 1=black, 2=white
-
-local W, H = 400, 240
-local spr = Sprite(W, H, ColorMode.INDEXED)
+-- scene_bbs: bulbous MARIO-64-style CRT monitor, head-on, 400x240 1-bit
+local spr = Sprite(400, 240, ColorMode.INDEXED)
 spr.transparentColor = 0
 
 local pal = Palette(3)
@@ -11,180 +8,159 @@ pal:setColor(1, Color{r=0,   g=0,   b=0,   a=255})
 pal:setColor(2, Color{r=255, g=255, b=255, a=255})
 spr:setPalette(pal)
 
-local cel = spr.cels[1]
-if cel == nil then cel = spr:newCel(spr.layers[1], 1) end
+local cel = spr.cels[1] or spr:newCel(spr.layers[1], 1)
 local img = cel.image
 
-local function P(x, y, c)
-  if x >= 0 and x < W and y >= 0 and y < H then
-    img:putPixel(x, y, c)
-  end
-end
-
-local function rectFill(x0, y0, x1, y1, c)
-  for y = y0, y1 do
-    for x = x0, x1 do P(x, y, c) end
-  end
-end
-
--- inner screen frame (glass mass), chamfered corners
-local FX0, FY0, FX1, FY1, FC = 33, 23, 366, 216, 8
-
-local function inFrame(x, y)
-  if x < FX0 or x > FX1 or y < FY0 or y > FY1 then return false end
-  local dl, dr = x - FX0, FX1 - x
-  local dt, db = y - FY0, FY1 - y
-  if dl + dt < FC or dr + dt < FC or dl + db < FC or dr + db < FC then
-    return false
-  end
-  return true
-end
-
-------------------------------------------------------------------
--- PASS 1: full-canvas base — bezel, shading, frame, case outline
-------------------------------------------------------------------
-for y = 0, H - 1 do
-  for x = 0, W - 1 do
-    local dl, dr, dt, db = x, (W - 1) - x, y, (H - 1) - y
-    local c = 2 -- beige bezel base = white
-
-    -- bezel stipple texture (sparse dot grid = beige plastic)
-    if (x % 6 == 0 and y % 6 == 0) or (x % 6 == 3 and y % 6 == 3) then
-      c = 1
-    end
-
-    -- form shadow: 50% checker on right edge and lower bezel
-    if dr >= 3 and dr <= 12 and (x + y) % 2 == 0 then c = 1 end
-    if db >= 3 and db <= 8  and (x + y) % 2 == 0 then c = 1 end
-
-    -- recess shadow ring hugging the screen frame
-    if x >= FX0 - 4 and x <= FX1 + 4 and y >= FY0 - 4 and y <= FY1 + 4
-       and (x + y) % 2 == 0 then
-      c = 1
-    end
-
-    -- screen frame + dark glass mass
-    if inFrame(x, y) then c = 1 end
-
-    -- heavy outer case outline with rounded (chamfered) corners
-    if dl < 3 or dr < 3 or dt < 3 or db < 3
-       or dl + dt < 12 or dr + dt < 12 or dl + db < 12 or dr + db < 12 then
-      c = 1
-    end
-
-    img:putPixel(x, y, c)
-  end
-end
-
-------------------------------------------------------------------
--- PASS 2: glass edge highlight (top/left solid, bottom/right dotted)
-------------------------------------------------------------------
-local gx0, gy0, gx1, gy1 = FX0 + 2, FY0 + 2, FX1 - 2, FY1 - 2
-for x = gx0, gx1 do
-  if inFrame(x, gy0) then P(x, gy0, 2) end
-end
-for y = gy0, gy1 do
-  if inFrame(gx0, y) then P(gx0, y, 2) end
-end
-for x = gx0, gx1, 2 do
-  if inFrame(x, gy1) then P(x, gy1, 2) end
-end
-for y = gy0, gy1, 2 do
-  if inFrame(gx1, y) then P(gx1, y, 2) end
-end
-
-------------------------------------------------------------------
--- PASS 3: faint horizontal scanlines across the dark screen
--- staggered sparse dots; screen stays mostly empty for terminal text
-------------------------------------------------------------------
-for y = 29, 211 do
-  if y % 4 == 1 then
-    local off = (math.floor(y / 4) * 3) % 6
-    for x = 40, 360 do
-      if (x + off) % 6 == 0 then P(x, y, 2) end
-    end
-  end
-end
-
-------------------------------------------------------------------
--- PASS 4: prompt hint upper-left: ">" chevron + block cursor
-------------------------------------------------------------------
-local chev = {
-  {1,0,0},
-  {0,1,0},
-  {0,0,1},
-  {0,1,0},
-  {1,0,0},
+-- Bayer 4x4 dither matrix
+local B = {
+  {0, 8, 2, 10},
+  {12, 4, 14, 6},
+  {3, 11, 1, 9},
+  {15, 7, 13, 5},
 }
-for ry = 1, 5 do
-  for rx = 1, 3 do
-    if chev[ry][rx] == 1 then
-      local px, py = 46 + (rx - 1) * 2, 37 + (ry - 1) * 2
-      rectFill(px, py, px + 1, py + 1, 2)
+
+local abs, sqrt, floor = math.abs, math.sqrt, math.floor
+
+-- Outer body: superellipse (squircle) centered (200,120), radii 198x118, exp 4.
+-- Inner (shrunk) superellipse defines the 2-3px black contour band.
+-- Screen glass: rounded rect x40-360, y30-210, corner radius 14 (SDF).
+local fxo, fxi, dxs = {}, {}, {}
+for x = 0, 399 do
+  local d = abs(x - 200)
+  local o = d / 198; fxo[x] = o * o * o * o
+  local i = d / 195; fxi[x] = i * i * i * i
+  dxs[x] = d - 146 -- halfW 160 - radius 14
+end
+
+for y = 0, 239 do
+  local brow = B[y % 4 + 1]
+  local dy  = abs(y - 120)
+  local o = dy / 118; local fyo = o * o * o * o
+  local i = dy / 115; local fyi = i * i * i * i
+  local dysv = dy - 76 -- halfH 90 - radius 14
+  local ldy  = (120 - y) / 120
+  local scan = (y % 3 == 2)
+  local soff = (floor(y / 3) * 2) % 6
+  for x = 0, 399 do
+    local idx = 1
+    local f = fxo[x] + fyo
+    if f > 1 then
+      -- background corners behind monitor: sparse dark dither for depth
+      if 1.6 > brow[x % 4 + 1] + 0.5 then idx = 2 end
+    elseif fxi[x] + fyi > 1 then
+      idx = 1 -- bold outer silhouette contour
+    else
+      -- signed distance to screen rounded rect
+      local dxv = dxs[x]
+      local ax = dxv > 0 and dxv or 0
+      local ay = dysv > 0 and dysv or 0
+      local m = dxv > dysv and dxv or dysv
+      if m > 0 then m = 0 end
+      local sd = sqrt(ax * ax + ay * ay) + m - 14
+      if sd < 0 then
+        -- inner screen: dark glass, faint diagonal-shifted scanline dots
+        if sd < -6 and scan and (x + soff) % 6 == 0 then idx = 2 end
+      elseif sd < 3 then
+        idx = 1 -- black groove where glass seats into bezel
+      else
+        -- bezel plastic: dither gradient volume, key light upper-left
+        local ld = ((200 - x) / 200 + ldy) * 0.5
+        local v = 0.56 + 0.36 * ld
+        local din = sd - 3
+        if din < 7 then v = v - (7 - din) * 0.05 end -- AO around screen recess
+        local ridge = 1 - abs(f - 0.55) * 5          -- rounded ridge highlight
+        if ridge > 0 and ld > 0 then v = v + 0.14 * ridge * ld end
+        if f > 0.62 then                              -- curvature rolloff to edge
+          v = v - (f - 0.62) * 1.6 * (0.55 - 0.45 * ld)
+        end
+        if v < 0.03 then v = 0.03 elseif v > 0.97 then v = 0.97 end
+        if v * 16 > brow[x % 4 + 1] + 0.5 then idx = 2 end
+      end
     end
+    img:putPixel(x, y, idx)
   end
 end
-rectFill(56, 36, 63, 47, 2) -- block cursor
 
-------------------------------------------------------------------
--- PASS 5: bezel hardware details
-------------------------------------------------------------------
--- corner screws: 3x3 black with white slot
-local screws = {{14,13},{385,13},{14,224},{385,224}}
-for i = 1, #screws do
-  local sx, sy = screws[i][1], screws[i][2]
-  rectFill(sx - 1, sy - 1, sx + 1, sy + 1, 1)
-  P(sx - 1, sy, 2); P(sx, sy, 2); P(sx + 1, sy, 2)
+-- glass glints: two short checker diagonals, top-right corner of screen
+for i = 0, 9 do
+  local gx, gy = 336 + i, 38 + i
+  for w = 0, 2 do
+    if (gx + w + gy) % 2 == 0 then img:putPixel(gx + w, gy, 2) end
+  end
+end
+for i = 0, 5 do
+  local gx, gy = 350 + i, 36 + i
+  for w = 0, 1 do
+    if (gx + w + gy) % 2 == 0 then img:putPixel(gx + w, gy, 2) end
+  end
 end
 
--- vent slots, bottom-left bezel (2px strokes)
-for i = 0, 3 do
-  local vx = 20 + i * 5
-  rectFill(vx, 221, vx + 1, 230, 1)
+-- blinking cursor block, upper-left of terminal area
+for yy = 40, 53 do
+  for xx = 52, 61 do img:putPixel(xx, yy, 2) end
 end
 
--- degauss indicator dots, top-right bezel
-rectFill(372, 11, 373, 12, 1)
-rectFill(378, 11, 379, 12, 1)
+-- vent slots, bottom-left bezel (white emboss edge + black slot)
+for i = 0, 2 do
+  local x0 = 62 + i * 10
+  for yy = 218, 226 do
+    img:putPixel(x0 - 1, yy, 2)
+    img:putPixel(x0, yy, 1)
+    img:putPixel(x0 + 1, yy, 1)
+  end
+end
 
--- power button with power-symbol glyph
-rectFill(340, 218, 360, 231, 1)
-rectFill(342, 220, 358, 229, 2)
-rectFill(349, 221, 350, 225, 1)
-local arc = {{346,223},{345,225},{346,227},{348,228},
-             {352,228},{354,227},{355,225},{354,223}}
-for i = 1, #arc do P(arc[i][1], arc[i][2], 1) end
+-- recessed brand plate, bottom center
+for xx = 178, 222 do
+  img:putPixel(xx, 219, 1)
+  img:putPixel(xx, 227, 1)
+end
+for yy = 219, 227 do
+  img:putPixel(178, yy, 1)
+  img:putPixel(222, yy, 1)
+end
+for yy = 220, 226 do
+  for xx = 179, 221 do
+    if (xx + yy * 2) % 4 == 0 then img:putPixel(xx, yy, 2)
+    else img:putPixel(xx, yy, 1) end
+  end
+end
+for xx = 186, 214, 4 do -- tiny logo glint row
+  img:putPixel(xx, 223, 2)
+  img:putPixel(xx + 1, 223, 2)
+end
 
--- power LED, lit (solid white core in black well)
-rectFill(366, 220, 377, 229, 1)
-rectFill(368, 222, 375, 227, 2)
-
--- brand plate "HAKCD", 3x5 font at 2x, bottom-center bezel
-local font = {
-  H = {"101","101","111","101","101"},
-  A = {"010","101","111","101","101"},
-  K = {"101","110","100","110","101"},
-  C = {"011","100","100","100","011"},
-  D = {"110","101","101","101","110"},
-}
-local label, tx, ty = "HAKCD", 181, 222
-for ci = 1, #label do
-  local glyph = font[string.sub(label, ci, ci)]
-  for ry = 1, 5 do
-    local row = glyph[ry]
-    for rx = 1, 3 do
-      if string.sub(row, rx, rx) == "1" then
-        local px = tx + (ci - 1) * 8 + (rx - 1) * 2
-        local py = ty + (ry - 1) * 2
-        rectFill(px, py, px + 1, py + 1, 1)
+-- chunky domed power button, bottom-right bezel
+for dyv = -5, 5 do
+  for dxv = -5, 5 do
+    local d2 = dxv * dxv + dyv * dyv
+    if d2 <= 25 then
+      local xx, yy = 340 + dxv, 222 + dyv
+      if d2 >= 17 then
+        img:putPixel(xx, yy, 1)
+      else
+        local v = 0.85 - 0.07 * (dxv + dyv) - d2 * 0.008
+        if v * 16 > B[yy % 4 + 1][xx % 4 + 1] + 0.5 then
+          img:putPixel(xx, yy, 2)
+        else
+          img:putPixel(xx, yy, 1)
+        end
       end
     end
   end
 end
 
-------------------------------------------------------------------
--- flatten + save (image asset: PNG + .aseprite source, no sheet)
-------------------------------------------------------------------
+-- power LED: black ring, white core
+for dyv = -2, 2 do
+  for dxv = -2, 2 do
+    if dxv * dxv + dyv * dyv <= 5 then img:putPixel(318 + dxv, 222 + dyv, 1) end
+  end
+end
+img:putPixel(317, 221, 2)
+img:putPixel(318, 221, 2)
+img:putPixel(317, 222, 2)
+img:putPixel(318, 222, 2)
+
 spr:flatten()
 local out = os.getenv("ASE_OUT_DIR")
 spr:saveAs(app.fs.joinPath(out, "scene_bbs.aseprite"))

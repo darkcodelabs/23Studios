@@ -21,7 +21,7 @@ function IR.new(cfg)
 
     function room:enter()
         self.bg = gfx.image.new("images/" .. cfg.bg)
-        self.sheet = gfx.imagetable.new("images/newb_iso")
+        self.sheet = gfx.imagetable.new("images/newb_hero")
         if cfg.mood then audio.music(cfg.mood) end
         if cfg.onEnter then cfg.onEnter(self) end
     end
@@ -73,9 +73,13 @@ function IR.new(cfg)
 
     function room:drawPlayer()
         local p = self.p
+        -- Mario-64 style blob shadow grounds the big cartoon sprite
+        gfx.setColor(gfx.kColorBlack)
+        gfx.fillEllipseInRect(p.x - 18, p.y - 5, 36, 12)
+        -- 48x64 hero: feet anchored at p.y, centered on p.x
         local idx = (p.dir - 1) * 4 + p.frame
         local imgobj = self.sheet:getImage(idx) or self.sheet:getImage(1)
-        if imgobj then imgobj:draw(p.x - 12, p.y - 28) end
+        if imgobj then imgobj:draw(p.x - 24, p.y - 58) end
     end
 
     function room:draw()
@@ -102,7 +106,7 @@ function IR.new(cfg)
 
         self:drawPlayer()
 
-        -- objective HUD
+        -- objective HUD + Mario-64 star count
         local q = quest.current()
         if q and cfg.showHud ~= false then
             local line = "> " .. q.line
@@ -110,6 +114,13 @@ function IR.new(cfg)
             gfx.setColor(gfx.kColorBlack); gfx.fillRect(0, 0, w + 12, 16)
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
             gfx.drawText(line, 6, 2)
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+            local star = "*" .. quest.stars() .. "/" .. quest.starTotal()
+            local sw = gfx.getTextSize(star)
+            gfx.setColor(gfx.kColorBlack); gfx.fillRect(400 - sw - 12, 0, sw + 12, 16)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            gfx.drawText(star, 400 - sw - 6, 2)
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
         end
 

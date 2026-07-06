@@ -67,7 +67,7 @@ function D.update()
             if c.onPick then c.onPick() end
             if c.done then finish()
             elseif c.jump then advanceTo(c.jump)
-            else advanceTo(state.i + 1) end
+            else local n = state.i + 1; if n > #state.nodes then finish() else advanceTo(n) end end
         end
         return
     end
@@ -77,7 +77,7 @@ function D.update()
         else
             if nd.done then finish()
             elseif nd.jump then advanceTo(nd.jump)
-            else advanceTo(state.i + 1) end
+            else local n = state.i + 1; if n > #state.nodes then finish() else advanceTo(n) end end
         end
     end
 end
@@ -85,6 +85,7 @@ end
 function D.draw()
     if not state then return end
     local nd = node()
+    if not nd then return end   -- advanced past the last node this frame; finish() lands next update
     -- box
     gfx.setColor(gfx.kColorBlack); gfx.fillRoundRect(6, BOX_Y, 388, BOX_H, 5)
     gfx.setColor(gfx.kColorWhite); gfx.drawRoundRect(6, BOX_Y, 388, BOX_H, 5)

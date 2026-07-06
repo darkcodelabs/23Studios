@@ -15,6 +15,7 @@ import "CoreLibs/crank"
 
 -- core systems (order matters)
 import "core/audio"
+import "core/fx"
 import "core/save_state"
 import "core/inventory"
 import "core/quest"
@@ -49,5 +50,7 @@ function playdate.update()
     playdate.timer.updateTimers()
     gfx.clear(gfx.kColorBlack)
     scene_manager.update()
+    fx.update()
+    fx.draw()
     playdate.drawFPS(4, 224)
 end
