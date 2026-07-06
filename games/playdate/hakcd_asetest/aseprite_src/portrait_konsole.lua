@@ -1,162 +1,190 @@
--- portrait_konsole: MARIO-64 style 1-bit dialogue portrait, 64x64
--- k0nsole: hooded operative, half face in dither shadow, one sharp eye
-
+-- k0nsole — 64x64 1-bit dialogue portrait, HAKCD house style
+-- hooded operative, half face in Bayer shadow, one sharp eye
+local OUT = os.getenv("ASE_OUT_DIR")
 local W, H = 64, 64
-local sprite = Sprite(W, H, ColorMode.INDEXED)
-sprite.transparentColor = 0
 
+local spr = Sprite(W, H, ColorMode.INDEXED)
+spr.transparentColor = 0
 local pal = Palette(3)
 pal:setColor(0, Color{r=0, g=0, b=0, a=0})
 pal:setColor(1, Color{r=0, g=0, b=0, a=255})
 pal:setColor(2, Color{r=255, g=255, b=255, a=255})
-sprite:setPalette(pal)
+spr:setPalette(pal)
 
-local layer = sprite.layers[1]
-local cel = layer:cel(1)
-if not cel then cel = sprite:newCel(layer, 1) end
+local cel = spr:newCel(spr.layers[1], 1)
 local img = cel.image
+local B, Wt = 1, 2
 
--- Bayer 4x4 dither: lv 0 = solid black .. 16 = solid white
-local B = {
+local function px(x, y, c)
+  if x >= 0 and x < W and y >= 0 and y < H then img:putPixel(x, y, c) end
+end
+
+-- 4x4 ordered Bayer matrix: lvl 0 = solid black .. 16 = solid white
+local bayer = {
   {0, 8, 2, 10},
   {12, 4, 14, 6},
   {3, 11, 1, 9},
   {15, 7, 13, 5},
 }
-local function dith(x, y, lv)
-  if lv <= 0 then return 1 end
-  if lv >= 16 then return 2 end
-  if B[(y % 4) + 1][(x % 4) + 1] < lv then return 2 else return 1 end
+local function dpx(x, y, lvl)
+  if bayer[(y % 4) + 1][(x % 4) + 1] < lvl then px(x, y, Wt) else px(x, y, B) end
 end
 
--- silhouette: big rounded hood dome + widening cloak shoulders to bottom edge
-local function hoodE(x, y)
-  local dx, dy = (x - 32) / 25, (y - 30) / 27
-  return dx * dx + dy * dy
-end
-local function inHood(x, y) return hoodE(x, y) <= 1.0 end
-local function inShoulders(x, y)
-  if y < 46 then return false end
-  local hw = 13 + (y - 46) * 1.5
-  if hw > 29 then hw = 29 end
-  return math.abs(x - 32) <= hw
-end
-local function inSil(x, y)
-  return inHood(x, y) or inShoulders(x, y)
-end
--- bottom edge treated as inside so bust crops open at canvas bottom
-local function inSilExt(x, y)
-  if y > 63 then y = 63 end
-  if x < 0 or x > 63 or y < 0 then return false end
-  return inSil(x, y)
+local function clamp(v, a, b)
+  if v < a then return a elseif v > b then return b else return v end
 end
 
-local offs = {{3,0},{-3,0},{0,3},{0,-3},{2,2},{2,-2},{-2,2},{-2,-2}}
-local function isOutline(x, y)
-  if not inSil(x, y) then return false end
-  for i = 1, #offs do
-    if not inSilExt(x + offs[i][1], y + offs[i][2]) then return true end
+local function seg(x0, y0, x1, y1, c)
+  local n = math.max(math.abs(x1 - x0), math.abs(y1 - y0))
+  if n == 0 then px(x0, y0, c) return end
+  for i = 0, n do
+    px(math.floor(x0 + (x1 - x0) * i / n + 0.5),
+       math.floor(y0 + (y1 - y0) * i / n + 0.5), c)
   end
-  return false
 end
 
--- face opening ellipse inside hood
-local function faceE(x, y)
-  local dx, dy = (x - 31) / 12, (y - 36) / 13
+local function segd(x0, y0, x1, y1, lvl)
+  local n = math.max(math.abs(x1 - x0), math.abs(y1 - y0))
+  if n == 0 then dpx(x0, y0, lvl) return end
+  for i = 0, n do
+    dpx(math.floor(x0 + (x1 - x0) * i / n + 0.5),
+        math.floor(y0 + (y1 - y0) * i / n + 0.5), lvl)
+  end
+end
+
+-- hood silhouette half-width per row: domed peak -> wide hood -> shoulders to edges
+local function hoodHW(y)
+  if y < 4 then return -1 end
+  if y <= 40 then return 3 + math.floor(21 * math.sqrt((y - 4) / 36) + 0.5) end
+  if y <= 50 then return 24 + math.floor((y - 40) / 8) end
+  return 25 + math.floor((y - 50) * 2.3)
+end
+
+-- hood opening ellipse (face window), offset right for 3/4 view
+local function eface(x, y)
+  local dx = (x - 33) / 12
+  local dy = (y - 36) / 15
   return dx * dx + dy * dy
 end
 
--- face shading: lit left half, hard dither terminator, hood-overhang AO on top,
--- curvature falloff at left edge + chin, AO ring at face rim
-local function faceLv(x, y, fe)
-  local fx, fy = x - 31, y - 36
-  local lv = 16
-  local t = fx + fy * 0.25
-  if t > 1 then lv = 16 - (t - 1) * 2.4 end
-  if fx < -7 then lv = lv - (-7 - fx) * 1.5 end
-  if fy < -7 then lv = lv - (-7 - fy) * 2.0 end
-  if fy > 8 then lv = lv - (fy - 8) * 1.3 end
-  if fe > 0.70 then lv = lv - (fe - 0.70) * 12 end
-  return math.floor(lv)
-end
-
-for y = 0, 63 do
-  for x = 0, 63 do
-    local idx
-    if not inSil(x, y) then
-      -- background: radial glow halo behind head, dark vignette corners
-      local dx, dy = x - 32, y - 28
-      local d = math.sqrt(dx * dx + dy * dy)
-      idx = dith(x, y, math.floor(10 - d * 0.18))
-    elseif isOutline(x, y) then
-      idx = 1 -- 3px contour
+-- ================= full-canvas region render =================
+for y = 0, H - 1 do
+  local hwv = hoodHW(y)
+  local sbv = 31 + math.floor((y - 27) / 6) -- light/shadow terminator across face
+  for x = 0, W - 1 do
+    if hwv < 0 or math.abs(x - 32) > hwv then
+      -- background: radial glow behind silhouette + CRT scanlines + code-rain dashes
+      local g = math.sqrt((x - 32) ^ 2 + (y - 30) ^ 2)
+      local lvl = 10 - g / 5.5
+      if y % 2 == 0 then lvl = lvl - 1 end
+      if x % 9 == 4 and ((y + x * 3) % 13) < 3 then lvl = lvl + 6 end
+      dpx(x, y, clamp(math.floor(lvl + 0.5), 0, 16))
+    elseif math.abs(x - 32) >= hwv - 1 or y <= 5 then
+      px(x, y, B) -- 2px silhouette stroke
     else
-      local fe = faceE(x, y)
-      if fe <= 1.0 and y <= 49 then
-        idx = dith(x, y, faceLv(x, y, fe))
-      elseif fe <= 1.12 and y <= 50 then
-        idx = 1 -- crisp inner line separating face from hood rim
-      elseif fe <= 1.40 and y <= 51 then
-        -- rounded hood rim: lit upper-left, dark lower-right
-        local fx, fy = x - 31, y - 36
-        idx = dith(x, y, math.floor(5 - fx * 0.35 - fy * 0.35))
-      elseif inHood(x, y) then
-        -- sphere-shaded hood dome, key light upper-left
-        local nx, ny = (x - 32) / 25, (y - 30) / 27
-        local lam = (1 - (nx + ny) * 0.707) / 2
-        local lv = math.floor(2 + lam * 13)
-        -- bright rim light band just inside the upper-left outline
-        if hoodE(x, y) > 0.70 and (nx + ny) < -0.55 then lv = 15 end
-        idx = dith(x, y, lv)
+      local e = eface(x, y)
+      local covered = y < 27 + ((x - 33) ^ 2) / 45 -- hood brow overhang
+      if e <= 1.0 and not covered then
+        if y >= 49 then
+          dpx(x, y, 1) -- neck drops into shadow
+        elseif x >= sbv then
+          -- lit half of face: stepped dither ramp toward the rim
+          local lvl = 12
+          if e > 0.5 then lvl = 10 end
+          if e > 0.72 then lvl = 8 end
+          if e > 0.88 then lvl = 6 end
+          if y <= 30 then lvl = lvl - 5 end                          -- under-brow
+          if y >= 44 then lvl = lvl - 2 end                          -- jaw turn
+          if y >= 38 and y <= 42 and x >= 41 then lvl = lvl - 2 end  -- cheek hollow
+          dpx(x, y, clamp(lvl, 0, 16))
+        else
+          -- shadow half: near-black with soft dither terminator
+          local lvl = 2
+          if x >= sbv - 2 then lvl = 5 elseif x >= sbv - 4 then lvl = 3 end
+          if e > 0.8 then lvl = 0 end
+          if y <= 31 then lvl = 0 end
+          dpx(x, y, lvl)
+        end
+      elseif e <= 1.0 then
+        -- hood interior above the brow: pit black, faint bounce on lit edge
+        local lvl = 0
+        if x >= 33 and e > 0.8 then lvl = 2 end
+        dpx(x, y, lvl)
+      elseif e <= 1.35 then
+        -- opening rim: hot highlight on lit side, dead dark on shadow side
+        local lvl
+        if x >= 33 then
+          if e <= 1.15 then lvl = 15 else lvl = 11 end
+          if y < 24 then lvl = lvl - 4 end
+          if y > 46 then lvl = lvl - 5 end
+        else
+          if e <= 1.15 then lvl = 5 else lvl = 3 end
+          if y > 46 then lvl = 1 end
+        end
+        dpx(x, y, clamp(lvl, 0, 16))
       else
-        -- cloak shoulders: lateral light gradient
-        idx = dith(x, y, math.floor(9 - (x - 32) * 0.22 - (y - 52) * 0.18))
+        -- hood / cloak fabric, key light top-right, weave noise
+        local d = math.sqrt((x - 50) ^ 2 + (y - 10) ^ 2)
+        local lvl
+        if y >= 50 then lvl = 11 - d / 5 else lvl = 13 - d / 4 end
+        if (x + y) % 7 == 0 then lvl = lvl + 1 end
+        dpx(x, y, clamp(math.floor(lvl + 0.5), 0, 12))
       end
     end
-    img:putPixel(x, y, idx)
   end
 end
 
--- sharp angular brow slash over lit eye (2px thick)
-local brow = {{21,33},{22,32},{23,32},{24,32},{25,32},{26,33},{27,33},{28,34}}
-for i = 1, #brow do
-  img:putPixel(brow[i][1], brow[i][2], 1)
-  img:putPixel(brow[i][1], brow[i][2] + 1, 1)
+-- ================= fabric folds =================
+seg(29, 7, 25, 14, B) seg(25, 14, 22, 24, B) seg(22, 24, 20, 34, B)
+seg(35, 7, 41, 14, B) seg(41, 14, 45, 24, B) seg(45, 24, 47, 34, B)
+segd(36, 8, 42, 15, 9) segd(42, 15, 46, 24, 9)
+seg(31, 7, 33, 14, B) seg(33, 14, 34, 19, B)
+segd(15, 36, 13, 46, 5) segd(13, 46, 12, 54, 5)
+seg(49, 36, 51, 44, B) seg(51, 44, 53, 50, B)
+segd(50, 36, 52, 44, 9)
+
+-- shoulder rim catch-light (right) and faint left edge lift
+for y = 50, 56 do
+  local hwv = hoodHW(y)
+  local xr = 32 + hwv - 3
+  if xr < W then dpx(xr, y, 11) dpx(xr - 1, y, 8) end
+  local xl = 32 - hwv + 3
+  if xl >= 0 then dpx(xl, y, 3) end
 end
 
--- the one visible eye: black almond, white glint upper-left
-for x = 23, 27 do img:putPixel(x, 36, 1) end
-for x = 22, 28 do img:putPixel(x, 37, 1) end
-for x = 23, 27 do img:putPixel(x, 38, 1) end
-img:putPixel(23, 36, 2)
-img:putPixel(24, 37, 2)
+-- collar V crease with stitched highlight
+seg(24, 53, 31, 59, B) seg(42, 53, 33, 59, B)
+segd(24, 52, 31, 58, 7) segd(42, 52, 34, 58, 7)
 
--- nose shadow on the terminator
-img:putPixel(31, 40, 1)
-img:putPixel(31, 41, 1)
-img:putPixel(32, 42, 1)
+-- hood drawstrings
+seg(29, 50, 28, 55, Wt) seg(28, 55, 29, 60, Wt) px(29, 61, B)
+seg(37, 50, 38, 55, Wt) seg(38, 55, 37, 59, Wt) px(37, 60, B)
 
--- flat stoic mouth, fading into shadow side
-for x = 26, 30 do img:putPixel(x, 46, 1) end
-img:putPixel(31, 47, 1)
+-- ================= the sharp eye (lit side) =================
+seg(35, 30, 43, 30, B) px(44, 31, B)            -- brow
+seg(36, 32, 43, 32, B)                          -- upper lid
+for x = 37, 42 do px(x, 33, Wt) end             -- sclera
+for x = 37, 41 do px(x, 34, Wt) end
+px(39, 33, B) px(40, 33, B) px(39, 34, B) px(40, 34, B) -- pupil
+px(40, 33, Wt)                                  -- hard glint
+px(36, 33, B) px(43, 33, B)                     -- corners
+px(37, 35, B) px(39, 35, B) px(41, 35, B)       -- lower lash
 
--- cloak fold creases
-for y = 50, 63 do
-  local x1 = math.floor(22 - (y - 50) * 0.2 + 0.5)
-  local x2 = math.floor(41 + (y - 50) * 0.3 + 0.5)
-  if inSil(x1, y) and not isOutline(x1, y) then img:putPixel(x1, y, 1) end
-  if inSil(x2, y) and not isOutline(x2, y) then img:putPixel(x2, y, 1) end
-end
+-- ghost glint in the shadow half — the other eye barely exists
+px(26, 33, B) px(28, 33, B) px(27, 33, Wt)
 
--- tiny chest clasp gem: black plus with white sparkle center
-img:putPixel(32, 54, 1)
-img:putPixel(31, 55, 1)
-img:putPixel(33, 55, 1)
-img:putPixel(32, 56, 1)
-img:putPixel(32, 55, 2)
+-- ================= nose / mouth / chin =================
+seg(34, 36, 34, 40, B)                          -- bridge shadow at terminator
+px(35, 41, B) px(36, 41, B)                     -- nostril
+px(35, 37, Wt) px(35, 38, Wt) px(36, 39, Wt)    -- bridge highlight
+for x = 35, 38 do dpx(x, 42, 4) end             -- under-nose shade
+seg(34, 45, 40, 45, B)                          -- mouth, neutral
+for x = 35, 39 do dpx(x, 46, 9) end             -- lower lip catch
+px(35, 47, B) px(37, 47, B) px(39, 47, B)       -- lip shadow dashes
+for x = 34, 39 do dpx(x, 48, 5) end             -- chin turn
 
-sprite:flatten()
-local out = os.getenv("ASE_OUT_DIR")
-sprite:saveAs(app.fs.joinPath(out, "portrait_konsole.aseprite"))
-sprite:saveAs(app.fs.joinPath(out, "portrait_konsole.png"))
+-- ================= export =================
+spr:flatten()
+spr:saveAs(app.fs.joinPath(OUT, "portrait_konsole.aseprite"))
+spr:saveAs(app.fs.joinPath(OUT, "portrait_konsole.png"))
 print("ASE_GEN_OK")

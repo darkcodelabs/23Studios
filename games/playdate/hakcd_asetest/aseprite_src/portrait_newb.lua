@@ -1,215 +1,245 @@
--- portrait_newb.png — 64x64 MARIO-64-style 1-bit dialogue portrait
--- scrawny cocky teen: big round head, backwards cap, headphones on neck, hoodie
-local out = os.getenv("ASE_OUT_DIR")
+-- portrait_newb — 64x64 1-bit dialogue portrait, HAKCD house style
+-- scrawny 17yo hacker, hood up, headphones round neck, wary smirk
 
-local spr = Sprite(64, 64, ColorMode.INDEXED)
+local W, H = 64, 64
+local BLACK, WHITE = 1, 2
+
+local spr = Sprite(W, H, ColorMode.INDEXED)
 spr.transparentColor = 0
+
 local pal = Palette(3)
-pal:setColor(0, Color{r=0, g=0, b=0, a=0})
-pal:setColor(1, Color{r=0, g=0, b=0, a=255})
+pal:setColor(0, Color{r=0,   g=0,   b=0,   a=0})
+pal:setColor(1, Color{r=0,   g=0,   b=0,   a=255})
 pal:setColor(2, Color{r=255, g=255, b=255, a=255})
 spr:setPalette(pal)
 
-local cel = spr.layers[1]:cel(1)
-if not cel then cel = spr:newCel(spr.layers[1], 1) end
+-- frame 1 cel (fallback if the fresh sprite already owns one)
+local ok, cel = pcall(function() return spr:newCel(spr.layers[1], 1) end)
+if not ok or cel == nil then cel = spr.cels[1] end
 local img = cel.image
 
--- ---------- dither engine (Bayer 4x4, levels 0=black .. 16=white) ----------
-local BAYER = {
-  {0, 8, 2, 10},
-  {12, 4, 14, 6},
-  {3, 11, 1, 9},
-  {15, 7, 13, 5},
+-- 8x8 Bayer matrix: the shading engine. b in [0,1] -> white dot density.
+local B8 = {
+  { 0,32, 8,40, 2,34,10,42},
+  {48,16,56,24,50,18,58,26},
+  {12,44, 4,36,14,46, 6,38},
+  {60,28,52,20,62,30,54,22},
+  { 3,35,11,43, 1,33, 9,41},
+  {51,19,59,27,49,17,57,25},
+  {15,47, 7,39,13,45, 5,37},
+  {63,31,55,23,61,29,53,21},
 }
-local function clamp(v, a, b)
-  if v < a then return a elseif v > b then return b else return v end
-end
-local function sh(x, y, lv)
-  if lv <= 0 then return 1 end
-  if lv >= 16 then return 2 end
-  if BAYER[(y % 4) + 1][(x % 4) + 1] < lv then return 2 else return 1 end
-end
-local function px(x, y, c)
-  if x >= 0 and x <= 63 and y >= 0 and y <= 63 then img:putPixel(x, y, c) end
-end
-local function dpx(x, y, lv) px(x, y, sh(x, y, lv)) end
-local function rect(x0, y0, x1, y1, c)
-  for y = y0, y1 do for x = x0, x1 do px(x, y, c) end end
-end
-local function drect(x0, y0, x1, y1, lv)
-  for y = y0, y1 do for x = x0, x1 do dpx(x, y, lv) end end
+
+local function P(x, y, c)
+  x = math.floor(x); y = math.floor(y)
+  if x >= 0 and x < W and y >= 0 and y < H then img:putPixel(x, y, c) end
 end
 
--- volumetric sphere: key light upper-left, black rim outline where d >= edge
-local function ball(cx, cy, rx, ry, lo, hi, edge, ymin, ymax)
-  ymin = ymin or math.floor(cy - ry)
-  ymax = ymax or math.ceil(cy + ry)
-  for y = math.max(0, math.floor(cy - ry)), math.min(63, math.ceil(cy + ry)) do
-    if y >= ymin and y <= ymax then
-      for x = math.max(0, math.floor(cx - rx)), math.min(63, math.ceil(cx + rx)) do
-        local nx, ny = (x - cx) / rx, (y - cy) / ry
-        local d = nx * nx + ny * ny
-        if d <= 1 then
-          if edge > 0 and d >= edge then
-            px(x, y, 1)
-          else
-            local nz = math.sqrt(1 - d)
-            local lum = clamp((-nx * 0.5 - ny * 0.5 + nz * 0.72 + 0.28) / 1.28, 0, 1)
-            dpx(x, y, lo + (hi - lo) * lum)
-          end
-        end
-      end
-    end
+local function D(x, y, b)
+  if b < 0 then b = 0 elseif b > 1 then b = 1 end
+  local xi, yi = math.floor(x), math.floor(y)
+  if b * 63.9 > B8[(yi % 8) + 1][(xi % 8) + 1] then P(xi, yi, WHITE)
+  else P(xi, yi, BLACK) end
+end
+
+-- dashed quadratic bezier, for fold creases and seams
+local function q(x0, y0, x1, y1, x2, y2, col, m)
+  for i = 0, 28 do
+    local t = i / 28
+    local u = 1 - t
+    local px = u*u*x0 + 2*u*t*x1 + t*t*x2
+    local py = u*u*y0 + 2*u*t*y1 + t*t*y2
+    if m == 0 or i % m ~= 0 then P(px, py, col) end
   end
 end
 
--- ---------- 1) background: radial glow + 12-ray starburst ----------
-for y = 0, 63 do
-  for x = 0, 63 do
-    local dx, dy = x - 27, y - 22
-    local dist = math.sqrt(dx * dx + dy * dy)
-    local lv = 11 - dist * 0.22
-    local ray = math.floor((math.atan(dy, dx) + math.pi) / (math.pi / 6))
-    if ray % 2 == 0 then lv = lv + 2 end
-    dpx(x, y, clamp(math.floor(lv), 1, 12))
-  end
-end
-
--- ---------- 2) backwards cap brim (behind head, pointing viewer-left) ----------
-for y = 14, 21 do
-  for x = 3, 17 do
-    local inside = true
-    local edge = (y <= 15) or (y >= 20)
-    if x < 7 then
-      local ex, ey = (7 - x) / 4, (y - 17.5) / 3.75
-      local d = ex * ex + ey * ey
-      inside = d <= 1
-      if d >= 0.55 then edge = true end
+------------------------------------------------------------------
+-- PASS 1: full-canvas per-pixel regions (edge to edge, no index 0)
+------------------------------------------------------------------
+for y = 0, H - 1 do
+  for x = 0, W - 1 do
+    local b
+    local fx, fy = (x - 32) / 6.5, (y - 25) / 9.5     -- face oval
+    local face   = fx*fx + fy*fy <= 1
+    local ox, oy = (x - 32) / 8.5, (y - 25) / 10.5    -- hood opening
+    local open   = ox*ox + oy*oy <= 1
+    local ddx, ddy = x - 32, y - 21                   -- hood dome
+    local dome   = ddx*ddx + ddy*ddy <= 289
+    local hw = -1
+    if y >= 36 then
+      hw = 9 + (y - 36) * 1.05
+      if hw > 27 then hw = 27 end
     end
-    if inside then
-      if edge then px(x, y, 1)
-      else dpx(x, y, clamp(10 - (y - 15) * 3, 1, 16)) end
-    end
-  end
-end
+    local body = hw >= 0 and math.abs(x - 32) <= hw   -- draped shoulders
+    local neck = y >= 35 and y <= 43 and x >= 29 and x <= 35
 
--- ---------- 3) hoodie: shoulders edge-to-edge, dither wrap, top outline ----------
-for x = 0, 63 do
-  local t = (x - 31) / 31
-  local sl = 46 + math.floor(t * t * 11 + 0.5)
-  for y = sl, 63 do
-    if y <= sl + 1 then px(x, y, 1)
+    if face then
+      -- skin volume: sphere falloff, lit from viewer-left
+      b = 0.95
+      if x > 34 then b = b - (x - 34) * 0.16 end        -- core shadow right
+      b = b - (fx*fx + fy*fy) * 0.22                    -- edge falloff
+      if y < 20 then b = b - (20 - y) * 0.10 end        -- hood casts on brow
+      if y > 32 then b = b - (y - 32) * 0.10 end        -- jaw shadow
+      local c1 = (x-29)*(x-29) + (y-29)*(y-29)          -- gaunt cheek hollows
+      local c2 = (x-36)*(x-36) + (y-29)*(y-29)
+      if c1 <= 3 then b = b - 0.20 end
+      if c2 <= 3 then b = b - 0.24 end
+      if b < 0.08 then b = 0.08 end
+      D(x, y, b)
+    elseif neck then
+      -- scrawny 7px neck, heavy shadow under chin
+      if y <= 37 then b = 0.16 elseif y <= 39 then b = 0.38 else b = 0.55 end
+      if x >= 34 then b = b - 0.18 end
+      if x == 29 or x == 35 then b = b - 0.22 end       -- rounded sides
+      if x == 32 and y == 39 then b = b - 0.30 end      -- adam's apple
+      if b < 0.03 then b = 0.03 end
+      D(x, y, b)
+    elseif open then
+      -- hood interior: near-solid shadow ring around the face
+      b = 0.03
+      if x < 25 then b = 0.10 end
+      D(x, y, b)
+    elseif dome then
+      -- hood fabric: lambert dither, light upper-left
+      local nx, ny = ddx / 17, ddy / 17
+      local l = -nx * 0.55 - ny * 0.83
+      if l < 0 then l = 0 end
+      D(x, y, 0.04 + 0.26 * l)
+    elseif body then
+      -- hoodie chest/shoulders, lit left, near-black right
+      b = 0.15 - (y - 40) * 0.004
+      if x > 32 then b = b - (x - 32) * 0.006
+      else b = b + (32 - x) * 0.002 end
+      if b < 0.02 then b = 0.02 end
+      if b > 0.30 then b = 0.30 end
+      D(x, y, b)
     else
-      local lv = 13 - math.floor((x / 63) * 5) - math.floor((y - sl) / 6)
-      dpx(x, y, clamp(lv, 2, 13))
+      -- background: CRT glow halo behind the head, scanline flicker
+      local gx, gy = x - 32, y - 18
+      local d = math.sqrt(gx*gx + gy*gy)
+      b = 0.75 - d * 0.020
+      if y % 2 == 0 then b = b * 1.15 else b = b * 0.85 end
+      if b < 0.03 then b = 0.03 end
+      D(x, y, b)
     end
   end
 end
--- fold creases at collar bone
-for i = 0, 5 do
-  px(23 - i, 49 + i, 1); px(24 - i, 49 + i, 1)
-  px(39 + i, 49 + i, 1); px(40 + i, 49 + i, 1)
+
+------------------------------------------------------------------
+-- PASS 2: hood structure
+------------------------------------------------------------------
+-- apex bump
+P(30,3,BLACK) P(31,3,BLACK) P(32,3,BLACK) P(33,3,BLACK)
+P(31,2,BLACK) P(32,2,BLACK) P(30,2,WHITE)
+
+-- 2px rim light along upper-left dome edge, tapering near apex
+for t = 3.35, 5.0, 0.02 do
+  local c, s = math.cos(t), math.sin(t)
+  P(32 + 16.7*c, 21 + 16.7*s, WHITE)
+  if t < 4.6 then P(32 + 15.7*c, 21 + 15.7*s, WHITE) end
 end
 
--- ---------- 4) scrawny neck (AO under chin) ----------
-for y = 39, 50 do
-  px(27, y, 1); px(36, y, 1)
-  for x = 28, 35 do
-    local lv = (x < 32) and 10 or 7
-    if y <= 42 then lv = lv - 5 end
-    if y >= 48 then lv = lv - 2 end
-    dpx(x, y, clamp(lv, 1, 16))
-  end
+-- lit fabric edge of the hood opening (left/top)
+for t = 2.75, 4.85, 0.02 do
+  local c, s = math.cos(t), math.sin(t)
+  P(32 + 8.9*c, 25 + 10.9*s, WHITE)
+  if t > 3.1 and t < 4.5 then P(32 + 9.7*c, 25 + 11.7*s, WHITE) end
 end
 
--- ---------- 5) headphones resting around neck: U-band + cups ----------
-for y = 44, 53 do
-  for x = 15, 47 do
-    local nx, ny = (x - 31) / 16, (y - 43) / 10
-    local d = nx * nx + ny * ny
-    if d <= 1 and d >= 0.42 then
-      if d >= 0.8 or d <= 0.52 then px(x, y, 1)
-      else dpx(x, y, 11 - math.floor((x - 15) / 11)) end
+-- fold creases: dashed highlights over the fabric dither
+q(26, 7, 19, 14, 17, 26, WHITE, 3)   -- big left fold
+q(38, 7, 45, 14, 46, 27, WHITE, 2)   -- shadow-side fold, sparser
+q(24, 14, 22, 22, 24, 31, WHITE, 3)  -- inner fold echoing the opening
+q(32, 3, 34, 8, 33, 13, WHITE, 2)    -- apex seam
+q(19, 40, 14, 50, 12, 60, WHITE, 3)  -- left chest drape
+q(45, 40, 50, 50, 52, 60, WHITE, 2)  -- right chest drape
+q(13, 47, 10, 54, 9, 63, WHITE, 2)   -- left arm seam
+q(51, 47, 54, 54, 55, 63, WHITE, 2)  -- right arm seam
+
+-- shoulder rim light along silhouette
+for yy = 37, 54 do
+  local hw = 9 + (yy - 36) * 1.05
+  if hw > 27 then hw = 27 end
+  P(32 - hw, yy, WHITE)
+  if yy % 2 == 0 then P(32 - hw + 1, yy, WHITE) end
+  if yy % 2 == 1 then P(32 + hw, yy, WHITE) end
+end
+
+------------------------------------------------------------------
+-- PASS 3: face features
+------------------------------------------------------------------
+-- stray hair wisps under the hood rim
+P(30,16,BLACK) P(30,17,BLACK) P(29,18,BLACK) P(29,19,BLACK)
+P(32,16,BLACK) P(32,17,BLACK) P(33,18,BLACK)
+P(34,16,BLACK) P(34,17,BLACK) P(35,18,BLACK) P(35,19,BLACK)
+
+-- brows: left flat, right raised (skeptical)
+P(27,21,BLACK) P(28,21,BLACK) P(29,21,BLACK) P(30,21,BLACK)
+P(34,21,BLACK) P(35,20,BLACK) P(36,20,BLACK) P(37,20,BLACK)
+P(34,18,BLACK) P(36,18,BLACK)                 -- forehead crease over raised brow
+
+-- half-lidded eyes, pupils flicked sideways = wary side-glance
+P(27,23,BLACK) P(28,23,BLACK) P(29,23,BLACK) P(29,24,BLACK)
+P(35,23,BLACK) P(36,23,BLACK) P(37,23,BLACK) P(37,24,BLACK)
+P(28,25,BLACK) P(36,25,BLACK)                 -- tired under-eye bags
+
+-- nose shadow
+P(33,26,BLACK) P(33,27,BLACK) P(32,28,BLACK)
+
+-- faint smirk: line rides up on the right
+P(29,32,BLACK) P(30,32,BLACK) P(31,32,BLACK) P(32,32,BLACK) P(33,32,BLACK)
+P(34,31,BLACK) P(35,31,BLACK) P(36,30,BLACK)
+P(31,33,BLACK) P(33,33,BLACK)                 -- under-lip shading
+
+------------------------------------------------------------------
+-- PASS 4: headphones slung round the neck
+------------------------------------------------------------------
+-- band curves across the throat base, white-edged so it reads on black
+for x = 20, 44 do
+  local yb = 41 + 0.045 * (x - 32) * (x - 32)
+  P(x, yb - 1, WHITE)
+  P(x, yb,     BLACK)
+  P(x, yb + 1, BLACK)
+  P(x, yb + 2, BLACK)
+  if x % 2 == 0 then P(x, yb + 3, WHITE) end
+end
+
+-- ear cups over the band ends
+local function cup(cx)
+  for yy = -5, 5 do
+    for xx = -4, 4 do
+      local ex, ey = xx / 3.4, yy / 4.3
+      if ex*ex + ey*ey <= 1 then P(cx + xx, 48 + yy, BLACK) end
     end
   end
-end
-ball(16, 47, 4, 5, 3, 13, 0.55)
-ball(47, 47, 4, 5, 3, 13, 0.55)
-
--- drawstrings + aglets on chest
-for y = 53, 60 do
-  px(26, y, 1); dpx(27, y, 15); px(28, y, 1)
-  px(35, y, 1); dpx(36, y, 15); px(37, y, 1)
-end
-rect(26, 61, 28, 63, 1)
-rect(35, 61, 37, 63, 1)
-
--- ---------- 6) big round head (3px rim) + ears ----------
-ball(31, 27, 17, 16, 6, 17, 0.74)
-ball(12, 30, 3, 4, 5, 14, 0.55)
-ball(51, 30, 3, 4, 5, 14, 0.55)
-px(12, 31, 1); px(51, 31, 1) -- ear canals
-
--- ---------- 7) face ----------
--- AO shadow line under cap edge
-for x = 19, 44 do dpx(x, 23, 5) end
--- sideburns
-px(16, 23, 1); px(16, 24, 1); px(17, 25, 1)
-px(46, 23, 1); px(46, 24, 1); px(45, 25, 1)
--- cocked brows: viewer-left arched high, right pressed low
-for x = 20, 27 do
-  local yy = 23 + math.floor(math.abs(x - 23.5) / 2.5)
-  px(x, yy, 1); px(x, yy + 1, 1)
-end
-for x = 35, 42 do
-  local yy = 26 - math.floor((x - 35) / 6)
-  px(x, yy, 1); px(x, yy + 1, 1)
-end
--- eyes: left wide open, right smug squint, pupils glancing right
-local function eye(cx, cy, rx, ry)
-  for y = math.floor(cy - ry), math.ceil(cy + ry) do
-    for x = math.floor(cx - rx), math.ceil(cx + rx) do
-      local nx, ny = (x - cx) / rx, (y - cy) / ry
-      local d = nx * nx + ny * ny
-      if d <= 1 then
-        if d >= 0.55 then px(x, y, 1) else px(x, y, 2) end
-      end
-    end
+  for t = 0, 6.3, 0.09 do
+    P(cx + 3.4 * math.cos(t), 48 + 4.3 * math.sin(t), WHITE)
   end
+  P(cx - 2, 45, WHITE) P(cx - 1, 45, WHITE) P(cx - 2, 46, WHITE) -- glint
+  for xx = -2, 2 do if xx % 2 == 0 then P(cx + xx, 48, WHITE) end end -- seam
 end
-eye(24, 29, 4, 3.2)
-eye(39, 29, 3.5, 2.4)
-rect(25, 28, 26, 30, 1)
-rect(39, 28, 40, 29, 1)
--- small hooked nose
-px(32, 31, 1); px(33, 32, 1); px(33, 33, 1); px(32, 34, 1); px(31, 34, 1)
--- cocky smirk: rises to the right, corner tick + crease shading
-local mouth = {
-  {24,39},{25,39},{26,39},{27,38},{28,38},{29,38},{30,38},
-  {31,37},{32,37},{33,37},{34,36},{35,36},{36,35},{37,35},{38,34},
-}
-for _, p in ipairs(mouth) do px(p[1], p[2], 1); px(p[1], p[2] + 1, 1) end
-px(39, 34, 1); px(39, 33, 1)
-dpx(37, 37, 5); dpx(38, 36, 5)
+cup(21)
+cup(43)
 
--- ---------- 8) backwards cap dome over the head ----------
-ball(31, 21, 18, 14, 2, 12, 0.76, 6, 22)
-rect(14, 20, 48, 22, 1) -- thick cap band / brow-line outline
--- panel seams radiating from button
-for y = 10, 19 do
-  local off = 3 + math.floor((y - 10) * 0.7)
-  px(31 - off, y, 1); px(31 + off, y, 1)
+------------------------------------------------------------------
+-- PASS 5: hoodie drawstrings, uneven lengths
+------------------------------------------------------------------
+for yy = 45, 57 do
+  P(29 - ((yy >= 53) and 1 or 0), yy, WHITE)
 end
-for y = 8, 19 do px(31, y, 1) end
--- top button with glint
-rect(30, 6, 32, 8, 1)
-px(30, 6, 2)
--- size-strap opening over forehead: dark hole, strap across, hair specks
-rect(27, 16, 36, 22, 1)
-drect(28, 18, 35, 19, 7)
-for x = 28, 35 do if x % 3 == 1 then px(x, 21, 2) end end
+for yy = 45, 54 do
+  P(35 + ((yy >= 51) and 1 or 0), yy, WHITE)
+end
+P(28,58,WHITE) P(29,58,WHITE) P(28,59,WHITE) P(29,59,WHITE)
+P(28,60,WHITE) P(29,60,WHITE)                                  -- left aglet
+P(36,55,WHITE) P(37,55,WHITE) P(36,56,WHITE) P(37,56,WHITE)
+P(36,57,WHITE)                                                 -- right aglet
 
--- ---------- save ----------
+------------------------------------------------------------------
+-- flatten + save (single flat image, no sheet export)
+------------------------------------------------------------------
+spr:flatten()
+local out = os.getenv("ASE_OUT_DIR")
 spr:saveAs(app.fs.joinPath(out, "portrait_newb.aseprite"))
 spr:saveAs(app.fs.joinPath(out, "portrait_newb.png"))
 print("ASE_GEN_OK")

@@ -103,6 +103,18 @@ const ASSETS = [
     prompt: 'A detailed collectible star token, 24x24, 4-frame spin: a chunky 5-point star with dither-shaded 3D ' +
       'facets and a sweeping glint, rotating frame to frame. 2px outline, white body. Export exactly star-table-24-24.png.' },
 
+  { out: LAUNCHER, spec: { name: 'card', kind: 'image', frameW: 350, frameH: 155 },
+    prompt: 'A detailed Playdate launcher card 350x155 for HAKCD. "HAKCD" in bold pixel letters over a dense, ' +
+      'dither-shaded 1998 hacker collage: a CRT terminal glow, a phone handset, scattered floppies, a skull ' +
+      'motif, wires. Heavy Floyd dithering, film-noir contrast. The game name must be clearly legible (the art ' +
+      'IS the label). Draw letters as solid rectangles. ' + IMG('card', 350, 155) },
+
+  { out: IMAGES, spec: { name: 'title_card', kind: 'image', frameW: 400, frameH: 240 },
+    prompt: 'A detailed 400x240 title screen: "HAKCD" in bold pixel letters over a dithered nighttime suburban ' +
+      'skyline with telephone wires and a lone lit bedroom window. Subtitle "a phreaker noir". Heavy dither for ' +
+      'the sky gradient and glow, high contrast, moody. Leave y=196-216 quiet for a runtime PRESS A. Draw letters ' +
+      'as solid rectangles. ' + IMG('title_card') },
+
   { out: IMAGES, spec: { name: 'coin', kind: 'imagetable', frameW: 16, frameH: 16, frames: 4 },
     prompt: 'A detailed quarter coin, 16x16, 4-frame spin: dither-shaded round faces spinning to edge-on and back, ' +
       'a glint sweep. 2px outline. Export exactly coin-table-16-16.png.' },

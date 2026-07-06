@@ -1,314 +1,474 @@
--- map_suburbia.lua — MARIO-64 style suburban hub map, 1-bit Playdate, 400x240
--- Dither-gradient volumetric shading, key light upper-left.
-
+-- map_suburbia: 1998 suburban night, top-down, 1-bit dithered, 400x240
 local W, H = 400, 240
+local spr = Sprite(W, H, ColorMode.INDEXED)
+spr.transparentColor = 0
 
-local sp = Sprite(W, H, ColorMode.INDEXED)
-sp.transparentColor = 0
 local pal = Palette(3)
-pal:setColor(0, Color{r=0,   g=0,   b=0,   a=0})
-pal:setColor(1, Color{r=0,   g=0,   b=0,   a=255})
+pal:setColor(0, Color{r=0, g=0, b=0, a=0})
+pal:setColor(1, Color{r=0, g=0, b=0, a=255})
 pal:setColor(2, Color{r=255, g=255, b=255, a=255})
-sp:setPalette(pal)
+spr:setPalette(pal)
 
-local cel = sp.cels[1]
-if cel == nil then cel = sp:newCel(sp.layers[1], 1) end
-local img = cel.image
+local img
+local ok, cel = pcall(function() return spr:newCel(spr.layers[1], 1) end)
+if ok and cel then img = cel.image else img = spr.cels[1].image end
 
--- ---------------------------------------------------------------- primitives
-local BAYER = {
-  {0, 8, 2, 10},
-  {12, 4, 14, 6},
-  {3, 11, 1, 9},
-  {15, 7, 13, 5},
-}
-
-local function px(x, y, c)
+-- ---------- helpers ----------
+local function pset(x, y, c)
   x = math.floor(x); y = math.floor(y)
   if x >= 0 and x < W and y >= 0 and y < H then img:putPixel(x, y, c) end
 end
 
--- level 0 = pure white .. 16 = pure black, ordered-dithered
-local function dpx(x, y, level)
-  if level <= 0 then px(x, y, 2) return end
-  if level >= 16 then px(x, y, 1) return end
-  local xi, yi = math.floor(x), math.floor(y)
-  if BAYER[(yi % 4) + 1][(xi % 4) + 1] < level then px(xi, yi, 1) else px(xi, yi, 2) end
-end
-
-local function rect(x0, y0, x1, y1, c)
-  for y = y0, y1 do for x = x0, x1 do px(x, y, c) end end
-end
-
-local function drect(x0, y0, x1, y1, level)
-  for y = y0, y1 do for x = x0, x1 do dpx(x, y, level) end end
-end
-
-local function disc(cx, cy, r, mode) -- mode 1=black, 2=road dither
-  for y = math.floor(cy - r), math.ceil(cy + r) do
-    for x = math.floor(cx - r), math.ceil(cx + r) do
-      local dx, dy = x - cx, y - cy
-      if dx*dx + dy*dy <= r*r then
-        if mode == 1 then px(x, y, 1) else dpx(x, y, 1) end
-      end
-    end
-  end
-end
-
--- volumetric shaded ellipse "ball": light upper-left, dark lower-right rim
-local function ball(cx, cy, rx, ry, lo, hi, outline)
-  for y = math.floor(cy - ry - 3), math.ceil(cy + ry + 3) do
-    for x = math.floor(cx - rx - 3), math.ceil(cx + rx + 3) do
-      local dx, dy = (x - cx) / rx, (y - cy) / ry
-      local d = dx*dx + dy*dy
-      if d <= 1 then
-        local t = (dx + dy) * 0.45 + d * 0.45 + 0.32
-        if t < 0 then t = 0 elseif t > 1 then t = 1 end
-        dpx(x, y, math.floor(lo + (hi - lo) * t + 0.5))
-      elseif outline then
-        local ox, oy = (x - cx) / (rx + 2.4), (y - cy) / (ry + 2.4)
-        if ox*ox + oy*oy <= 1 then px(x, y, 1) end
-      end
-    end
-  end
-end
-
--- rounded rect, 2px black outline, diagonal dither gradient (UL light)
-local function rrect(x0, y0, x1, y1, r, lo, hi)
-  local function inside(x, y, ins)
-    local a, b, c, d = x0 + ins, y0 + ins, x1 - ins, y1 - ins
-    if x < a or x > c or y < b or y > d then return false end
-    local rr = r - ins; if rr < 0 then rr = 0 end
-    local qx = x; if x < a + rr then qx = a + rr elseif x > c - rr then qx = c - rr end
-    local qy = y; if y < b + rr then qy = b + rr elseif y > d - rr then qy = d - rr end
-    local ddx, ddy = x - qx, y - qy
-    return ddx*ddx + ddy*ddy <= rr*rr
-  end
-  for y = y0, y1 do
-    for x = x0, x1 do
-      if inside(x, y, 0) then
-        if inside(x, y, 2) then
-          local t = ((x - x0) / (x1 - x0) + (y - y0) / (y1 - y0)) * 0.5
-          dpx(x, y, math.floor(lo + (hi - lo) * t + 0.5))
-        else
-          px(x, y, 1)
-        end
-      end
-    end
-  end
-end
-
-local function shadowBlob(cx, cy, rx, ry, level)
-  for y = math.floor(cy - ry), math.ceil(cy + ry) do
-    for x = math.floor(cx - rx), math.ceil(cx + rx) do
-      local dx, dy = (x - cx) / rx, (y - cy) / ry
-      local d = dx*dx + dy*dy
-      if d <= 1 then dpx(x, y, math.floor(level - d * 4)) end
-    end
-  end
-end
-
--- tiny 3x5 pixel font
-local GLY = {
-  B = {"##.", "#.#", "##.", "#.#", "##."},
-  U = {"#.#", "#.#", "#.#", "#.#", "###"},
-  S = {".##", "#..", ".#.", "..#", "##."},
-  T = {"###", ".#.", ".#.", ".#.", ".#."},
-  E = {"###", "#..", "##.", "#..", "###"},
-  L = {"#..", "#..", "#..", "#..", "###"},
+local BAY = {
+  {0, 8, 2, 10},
+  {12, 4, 14, 6},
+  {3, 11, 1, 9},
+  {15, 7, 13, 5}
 }
-local function text(s, x, y, sc)
-  for i = 1, #s do
-    local g = GLY[s:sub(i, i)]
-    for r = 1, 5 do
-      local row = g[r]
-      for c = 1, 3 do
-        if row:sub(c, c) == "#" then
-          rect(x + (c - 1) * sc, y + (r - 1) * sc, x + c * sc - 1, y + r * sc - 1, 1)
-        end
-      end
+local function dith(x, y, d)
+  x = math.floor(x); y = math.floor(y)
+  return BAY[(y % 4) + 1][(x % 4) + 1] < d
+end
+local function dput(x, y, d)            -- overwrite: white or black by pattern
+  pset(x, y, dith(x, y, d) and 2 or 1)
+end
+local function dwhite(x, y, d)          -- additive light: white only
+  if dith(x, y, d) then pset(x, y, 2) end
+end
+local function rect(x0, y0, x1, y1, c)
+  for y = y0, y1 do for x = x0, x1 do pset(x, y, c) end end
+end
+local function drect(x0, y0, x1, y1, d)
+  for y = y0, y1 do for x = x0, x1 do dput(x, y, d) end end
+end
+local function hsh(x, y)
+  x = math.floor(x); y = math.floor(y)
+  return (x * 374761 + y * 668265 + ((x * y) % 1013) * 971) % 65536
+end
+local function blit(p, x, y)
+  for r = 1, #p do
+    local row = p[r]
+    for i = 1, #row do
+      if row:sub(i, i) == "X" then pset(x + i - 1, y + r - 1, 2) end
     end
-    x = x + 4 * sc
   end
 end
-
--- ---------------------------------------------------- 1. floating island + space
--- superellipse island: rounder corners than plain ellipse (n=4)
-local CX, CY, RX, RY = 200, 126, 184, 100
-local function islandD(x, y)
-  local dx, dy = (x - CX) / RX, (y - CY) / RY
-  local dx2, dy2 = dx * dx, dy * dy
-  return dx2 * dx2 + dy2 * dy2, dy, dx
+-- road spine: winding horizontal center line
+local function RC(x)
+  return math.floor(138 + 12 * math.sin((x - 40) / 70) + 0.5)
 end
 
+-- ---------- 1. lawn base, full bleed ----------
 for y = 0, H - 1 do
   for x = 0, W - 1 do
-    local d, dy, dx = islandD(x, y)
-    if d <= 1 then
-      -- grass top: gentle UL-lit gradient + dark under-rim AO (heavier at bottom = round underside)
-      local lvl = 2.2 + dy * 1.6 + dx * 0.8
-      if d > 0.5 then
-        local rim = (d - 0.5) * 2
-        lvl = lvl + rim * rim * ((dy > 0) and 13 or 3)
+    local h = hsh(x, y)
+    local m = 24 + ((math.floor(x / 40) + math.floor(y / 40)) % 3) * 5
+    pset(x, y, (h % m == 0) and 2 or 1)
+  end
+end
+-- grass tufts
+for y = 0, H - 1, 2 do
+  for x = 0, W - 1, 2 do
+    if hsh(x, y) % 251 == 0 then pset(x, y, 2); pset(x + 1, y, 2); pset(x, y - 1, 2) end
+  end
+end
+
+-- ---------- 2. roads ----------
+-- vertical road, top (to depot side)
+for x = 196, 222 do
+  local yc = RC(x)
+  for y = 0, yc - 16 do
+    if x <= 197 or x >= 221 then pset(x, y, 2) else dput(x, y, 4) end
+  end
+end
+-- vertical road, bottom
+for x = 66, 90 do
+  local yc = RC(x)
+  for y = yc + 16, H - 1 do
+    if x <= 67 or x >= 89 then pset(x, y, 2) else dput(x, y, 4) end
+  end
+end
+-- winding main road
+for x = 0, W - 1 do
+  local yc = RC(x)
+  for y = yc - 15, yc + 15 do
+    if y <= yc - 14 or y >= yc + 14 then pset(x, y, 2) else dput(x, y, 4) end
+  end
+end
+-- open the junction curbs
+for x = 198, 220 do
+  local yc = RC(x)
+  dput(x, yc - 15, 4); dput(x, yc - 14, 4)
+end
+for x = 68, 88 do
+  local yc = RC(x)
+  dput(x, yc + 14, 4); dput(x, yc + 15, 4)
+end
+-- dashed center lines
+for x = 0, W - 1 do
+  if x % 14 < 7 then local yc = RC(x); pset(x, yc, 2); pset(x, yc - 1, 2) end
+end
+for y = 0, RC(208) - 22 do
+  if y % 14 < 7 then pset(208, y, 2); pset(209, y, 2) end
+end
+for y = RC(78) + 22, H - 1 do
+  if y % 14 < 7 then pset(77, y, 2); pset(78, y, 2) end
+end
+
+-- ---------- 3. walkway, driveway, gate path ----------
+for y = 96, RC(66) - 16 do
+  for x = 62, 70 do
+    if (y - 96) % 8 == 0 then pset(x, y, 1) else dput(x, y, 6) end
+  end
+  pset(61, y, 1); pset(71, y, 1)
+end
+for y = 96, RC(109) - 16 do
+  for x = 96, 122 do dput(x, y, 3) end
+  pset(95, y, 1); pset(123, y, 1)
+end
+for y = 162, 167 do for x = 202, 210 do dput(x, y, 5) end end
+
+-- ---------- 4. travel-node clearings (3) ----------
+local function clearing(cx, cy, rx, ry)
+  for dy = -ry, ry do
+    for dx = -rx, rx do
+      local e = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry)
+      if e <= 1 then
+        if e >= 0.72 then dwhite(cx + dx, cy + dy, 8)
+        else dput(cx + dx, cy + dy, 4) end
       end
-      dpx(x, y, math.floor(math.max(0, math.min(16, lvl)) + 0.5))
+    end
+  end
+  pset(cx - 3, cy + 1, 2); pset(cx - 2, cy + 1, 2); pset(cx - 1, cy + 2, 1)
+  pset(cx + 2, cy - 2, 2); pset(cx + 3, cy - 2, 2); pset(cx + 4, cy - 1, 1)
+  pset(cx + 4, cy + 2, 2); pset(cx + 5, cy + 2, 1)
+end
+clearing(40, 108, 13, 8)
+clearing(285, 176, 13, 8)
+clearing(350, 155, 12, 8)
+
+-- ---------- 5. hedges ----------
+local function blob(cx, cy, r)
+  for dy = -r, r do
+    for dx = -r, r do
+      local d2 = dx * dx + dy * dy
+      if d2 <= r * r then
+        local dist = math.sqrt(d2)
+        if dist > r - 1.2 then
+          pset(cx + dx, cy + dy, 1)
+          if dy < 0 and dith(cx + dx, cy + dy, 6) then pset(cx + dx, cy + dy, 2) end
+        else
+          local d = 7 - (d2 / (r * r)) * 5 - dy * 0.5
+          if d < 1 then d = 1 end
+          dput(cx + dx, cy + dy, d)
+        end
+      end
+    end
+  end
+end
+for cx = 140, 186, 11 do blob(cx, 11, 7) end       -- hedgerow, top west
+for cx = 232, 284, 13 do blob(cx, 11, 7) end       -- hedgerow, top east
+for cy = 24, 86, 10 do blob(12, cy, 5) end         -- hedge along house west
+for cy = 44, 100, 12 do blob(394, cy, 6) end       -- hedge, east map edge
+
+-- ---------- 6. fenced yard, lower-center ----------
+for y = 169, 227 do
+  for x = 151, 261 do dput(x, y, 1 + (math.floor(x / 8) % 2)) end  -- mow stripes
+end
+for x = 150, 262 do                                  -- rails, dashed pickets
+  if x < 200 or x > 212 then
+    if x % 3 ~= 0 then pset(x, 168, 2); pset(x, 228, 2) end
+    if (x - 150) % 8 == 0 then
+      rect(x, 167, x + 1, 169, 2); rect(x, 227, x + 1, 229, 2)
+    end
+  else
+    if x % 3 ~= 0 then pset(x, 228, 2) end
+    if (x - 150) % 8 == 0 then rect(x, 227, x + 1, 229, 2) end
+  end
+end
+for y = 168, 228 do
+  if y % 3 ~= 0 then pset(150, y, 2); pset(262, y, 2) end
+  if (y - 168) % 8 == 0 then
+    rect(150, y, 151, y + 1, 2); rect(261, y, 262, y + 1, 2)
+  end
+end
+rect(198, 166, 199, 170, 2); rect(212, 166, 213, 170, 2)   -- gate posts
+-- doghouse
+rect(163, 179, 181, 197, 1)
+for y = 180, 187 do for x = 164, 180 do dput(x, y, 6) end end
+for x = 164, 180 do pset(x, 183, 2) end
+for y = 188, 196 do for x = 164, 180 do dput(x, y, 2) end end
+rect(169, 189, 175, 196, 1)
+for x = 170, 174 do pset(x, 188, 2) end
+for x = 164, 180 do pset(x, 179, 2); pset(x, 196, 2) end
+for y = 179, 196 do pset(164, y, 2); pset(180, y, 2) end
+-- yard tree
+blob(238, 206, 12)
+pset(238, 206, 1); pset(239, 206, 1); pset(238, 207, 1)
+
+-- ---------- 7. two-story house, upper-left ----------
+rect(21, 17, 121, 99, 1)                             -- drop shadow
+for y = 14, 37 do                                    -- moonlit north slope
+  for x = 18, 118 do
+    local d = 7 - (y - 14) * 0.18
+    if (y - 14) % 4 == 3 and (x + math.floor((y - 14) / 4) * 3) % 9 < 5 then
+      pset(x, y, 1)
     else
-      local ox, oy = (x - CX) / (RX + 3), (y - CY) / (RY + 3)
-      local o2x, o2y = ox * ox, oy * oy
-      if o2x * o2x + o2y * o2y <= 1 then
-        px(x, y, 1)                        -- bold island contour
-      else
-        -- soft dither space: white halo hugging island, dots thicken outward
-        local lvl = math.min(6, (d - 1) * 4)
-        dpx(x, y, math.floor(math.max(0, lvl)))
+      dput(x, y, d)
+    end
+  end
+end
+for y = 40, 65 do                                    -- dark south slope
+  for x = 18, 118 do
+    if (y - 40) % 4 == 2 and (x + math.floor((y - 40) / 4) * 3) % 9 < 4 then
+      pset(x, y, 2)
+    else
+      dput(x, y, 3)
+    end
+  end
+end
+rect(18, 38, 118, 39, 2)                             -- ridge
+rect(18, 14, 118, 15, 2); rect(18, 64, 118, 65, 2)   -- roof outline 2px
+rect(18, 14, 19, 65, 2); rect(117, 14, 118, 65, 2)
+rect(18, 66, 118, 67, 1)                             -- eave shadow
+for y = 68, 96 do                                    -- siding wall
+  for x = 22, 114 do dput(x, y, ((y - 68) % 3 == 0) and 3 or 1) end
+  pset(21, y, 2); pset(22, y, 2); pset(114, y, 2); pset(115, y, 2)
+end
+local function litwin(x0, y0, x1, y1)
+  rect(x0, y0, x1, y1, 2)
+  for x = x0, x1 do pset(x, y0, 1); pset(x, y1, 1) end
+  for y = y0, y1 do pset(x0, y, 1); pset(x1, y, 1) end
+  local mx = math.floor((x0 + x1) / 2)
+  local my = math.floor((y0 + y1) / 2)
+  for y = y0, y1 do pset(mx, y, 1) end
+  for x = x0, x1 do pset(x, my, 1) end
+end
+litwin(30, 70, 41, 77); litwin(50, 70, 61, 77); litwin(88, 70, 99, 77)
+litwin(30, 82, 41, 90); litwin(88, 82, 99, 90)
+rect(62, 78, 74, 95, 1)                              -- front door
+for x = 62, 74 do pset(x, 78, 2); pset(x, 95, 2) end
+for y = 78, 95 do pset(62, y, 2); pset(74, y, 2) end
+rect(65, 80, 71, 82, 2); pset(72, 88, 2)
+-- chimney + smoke
+rect(98, 18, 108, 30, 2); drect(100, 20, 106, 28, 5); rect(101, 21, 105, 25, 1)
+pset(107, 15, 2); pset(110, 12, 2); pset(114, 10, 2)
+-- window glow spilling on lawn
+local glows = {{30, 41}, {50, 61}, {88, 99}}
+for _, g in ipairs(glows) do
+  for gy = 97, 107 do
+    local d = 8 - (gy - 96) * 0.8
+    local s = math.floor((gy - 96) / 2)
+    for gx = g[1] - s, g[2] + s do dwhite(gx, gy, d) end
+  end
+end
+
+-- ---------- 8. Greyhound depot, right ----------
+rect(295, 39, 395, 111, 1)                           -- drop shadow
+for y = 36, 94 do                                    -- gravel flat roof
+  for x = 292, 392 do
+    local h = hsh(x, y)
+    if h % 17 == 0 then pset(x, y, 2)
+    elseif h % 19 == 0 then pset(x, y, 1)
+    else dput(x, y, 4) end
+  end
+end
+rect(292, 36, 392, 37, 2); rect(292, 93, 392, 94, 2) -- parapet 2px
+rect(292, 36, 293, 94, 2); rect(391, 36, 392, 94, 2)
+for x = 297, 387 do pset(x, 41, 1); pset(x, 89, 1) end
+for y = 41, 89 do pset(297, y, 1); pset(387, y, 1) end
+rect(302, 46, 318, 60, 2); drect(304, 48, 316, 58, 6)  -- rooftop AC
+for dy = -3, 3 do for dx = -3, 3 do
+  if dx * dx + dy * dy <= 9 then pset(310 + dx, 53 + dy, 1) end
+end end
+pset(310, 53, 2); pset(307, 53, 2); pset(313, 53, 2); pset(310, 50, 2); pset(310, 56, 2)
+-- roof sign: leaping hound + BUS
+rect(297, 62, 357, 81, 1)
+blit({
+".....XXXXXXXX...XX",
+"...XXXXXXXXXXXXXX.",
+".XX.XXXXXXXXXX....",
+"XX...XX....XX.....",
+".....X......X.....",
+"....X........X....",
+"...X..........X..."
+}, 300, 68)
+local FONT = {
+  B = {"XX.", "X.X", "XX.", "X.X", "XX."},
+  U = {"X.X", "X.X", "X.X", "X.X", "XXX"},
+  S = {"XXX", "X..", "XXX", "..X", "XXX"}
+}
+local tx = 322
+for ch in ("BUS"):gmatch(".") do
+  local g = FONT[ch]
+  for r = 1, 5 do
+    for i = 1, 3 do
+      if g[r]:sub(i, i) == "X" then
+        rect(tx + (i - 1) * 3, 64 + (r - 1) * 3, tx + (i - 1) * 3 + 2, 64 + (r - 1) * 3 + 2, 2)
       end
     end
   end
+  tx = tx + 12
 end
-
--- sparkle stars floating in space
-local STARS = {{18,14},{44,24},{10,64},{382,18},{394,52},{368,34},{12,196},{28,220},
-               {386,208},{372,226},{204,6},{120,8},{298,8},{56,232},{344,230}}
-for _, s in ipairs(STARS) do
-  local x, y = s[1], s[2]
-  rect(x - 2, y, x + 2, y, 1)
-  rect(x, y - 2, x, y + 2, 1)
+-- depot street wall
+for y = 96, 108 do
+  for x = 296, 388 do dput(x, y, (y == 100) and 0 or 2) end
 end
+litwin(302, 99, 313, 106); litwin(322, 99, 333, 106); litwin(342, 99, 353, 106)
+rect(362, 97, 376, 108, 1)
+for x = 362, 376 do pset(x, 97, 2); pset(x, 108, 2) end
+for y = 97, 108 do pset(362, y, 2); pset(376, y, 2) end
+pset(364, 103, 2)
+local dglow = {{302, 313}, {322, 333}, {342, 353}, {362, 376}}
+for _, g in ipairs(dglow) do
+  for gy = 109, 117 do
+    local d = 9 - (gy - 108)
+    local s = math.floor((gy - 108) / 2)
+    for gx = g[1] - s, g[2] + s do dwhite(gx, gy, d) end
+  end
+end
+-- payphone kiosk + sign
+rect(272, 102, 280, 112, 2); drect(274, 104, 278, 110, 5); pset(276, 107, 1)
+for y = 90, 101 do pset(276, y, 2) end
+rect(268, 78, 285, 90, 1)
+for x = 268, 285 do pset(x, 78, 2); pset(x, 90, 2) end
+for y = 78, 90 do pset(268, y, 2); pset(285, y, 2) end
+blit({
+"..XXXXXXXXX..",
+".XXXXXXXXXXX.",
+"XXXX.....XXXX",
+"XXX.......XXX",
+"XXX.......XXX"
+}, 270, 81)
 
--- grass tufts (deterministic scatter, only on flat inner grass)
-for gy = 36, 214, 13 do
-  for gx = 24, 384, 17 do
-    local x = gx + (gx * 7 + gy * 13) % 9
-    local y = gy + (gx * 5 + gy * 3) % 7
-    local d = islandD(x, y)
-    if d < 0.42 then
-      px(x, y, 1); px(x + 1, y, 1); px(x + 2, y - 1, 1)
+-- ---------- 9. parked cars ----------
+local function carH(x, y)
+  rect(x + 1, y + 1, x + 20, y + 11, 1)
+  for ix = x + 2, x + 17 do pset(ix, y, 2); pset(ix, y + 10, 2) end
+  for iy = y + 2, y + 8 do pset(x, iy, 2); pset(x + 19, iy, 2) end
+  pset(x + 1, y + 1, 2); pset(x + 18, y + 1, 2); pset(x + 1, y + 9, 2); pset(x + 18, y + 9, 2)
+  for iy = y + 1, y + 9 do
+    for ix = x + 1, x + 18 do
+      local r = ix - x
+      if r >= 6 and r <= 7 then pset(ix, iy, 1)
+      elseif r >= 13 and r <= 14 then pset(ix, iy, 1)
+      elseif r >= 8 and r <= 12 then dput(ix, iy, 8)
+      else dput(ix, iy, 6) end
     end
   end
+  pset(x + 6, y - 1, 2); pset(x + 6, y + 11, 2)
 end
-
--- ------------------------------------------------------------- 2. grassy mounds
-ball(145, 98, 38, 20, 0, 8, true)
-ball(258, 90, 30, 16, 0, 8, true)
-ball(75, 182, 26, 14, 0, 9, true)
-ball(300, 198, 32, 15, 0, 9, true)
-
--- ------------------------------------------------------- 3. fat winding road
-local RP = {{148,222},{165,196},{195,172},{230,156},{268,146},{305,143},{338,149}}
-local pts = {}
-for i = 1, #RP - 1 do
-  local a, b = RP[i], RP[i + 1]
-  for s = 0, 23 do
-    local t = s / 24
-    pts[#pts + 1] = {a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t}
+local function carV(x, y)
+  rect(x + 1, y + 1, x + 11, y + 20, 1)
+  for iy = y + 2, y + 17 do pset(x, iy, 2); pset(x + 10, iy, 2) end
+  for ix = x + 2, x + 8 do pset(ix, y, 2); pset(ix, y + 19, 2) end
+  pset(x + 1, y + 1, 2); pset(x + 9, y + 1, 2); pset(x + 1, y + 18, 2); pset(x + 9, y + 18, 2)
+  for iy = y + 1, y + 18 do
+    for ix = x + 1, x + 9 do
+      local r = iy - y
+      if r >= 6 and r <= 7 then pset(ix, iy, 1)
+      elseif r >= 13 and r <= 14 then pset(ix, iy, 1)
+      elseif r >= 8 and r <= 12 then dput(ix, iy, 8)
+      else dput(ix, iy, 6) end
+    end
   end
+  pset(x - 1, y + 6, 2); pset(x + 11, y + 6, 2)
 end
-for _, p in ipairs(pts) do disc(p[1], p[2], 15, 1) end   -- 3px black edging
-for _, p in ipairs(pts) do disc(p[1], p[2], 12, 2) end   -- pale asphalt fill
-for i, p in ipairs(pts) do                               -- dashed centerline
-  if i % 16 < 7 then
-    rect(math.floor(p[1]) - 1, math.floor(p[2]) - 1, math.floor(p[1]) + 1, math.floor(p[2]) + 1, 1)
+carV(102, 100)                    -- driveway
+carH(238, RC(248) - 13)           -- north lane
+carH(316, RC(326) + 3)            -- south lane, by depot
+
+-- ---------- 10. street furniture on asphalt ----------
+for dy = -3, 3 do for dx = -3, 3 do          -- manhole mid-junction
+  local d2 = dx * dx + dy * dy
+  if d2 <= 9 then
+    if d2 >= 7 and (dx + dy) % 2 == 0 then pset(209 + dx, RC(209) + dy, 2)
+    else pset(209 + dx, RC(209) + dy, 1) end
   end
+end end
+for x = 170, 182 do                          -- storm drain at north curb
+  pset(x, RC(x) - 13, 1)
+  pset(x, RC(x) - 12, (x % 3 == 0) and 2 or 1)
+end
+for t = 0, 24 do                             -- skid marks
+  local sx = 214 + t
+  local sy = RC(sx) + 5 - math.floor(t * t / 100)
+  pset(sx, sy, 1); pset(sx, sy + 1, 1)
+  pset(sx, sy + 5, 1); pset(sx, sy + 6, 1)
 end
 
--- ------------------------------------------------- 4. glowing travel node pads
-local function node(cx, cy)
-  for y = cy - 17, cy + 17 do
-    for x = cx - 17, cx + 17 do
-      local dx, dy = x - cx, y - cy
-      local r = math.sqrt(dx * dx + dy * dy)
-      if r <= 16 then
-        if r > 13 then dpx(x, y, math.floor((16 - r) * 1.6))  -- energy fizz fading out
-        elseif r > 11 then px(x, y, 2)                        -- bright halo
-        elseif r > 9 then px(x, y, 1)                         -- bold ring
-        elseif r > 7 then px(x, y, 2)
-        elseif r > 5 then dpx(x, y, 5)                        -- inner shimmer
-        else px(x, y, 2) end
+-- ---------- 11. streetlamps with dithered pools ----------
+local function lamp(x, y)
+  for dy = -16, 16 do
+    for dx = -16, 16 do
+      local d2 = dx * dx + dy * dy
+      if d2 <= 256 then
+        local d = 10 - math.sqrt(d2) * 0.65
+        if d > 0 then dwhite(x + dx, y + dy, d) end
       end
     end
   end
-  for a = -3, 3 do                                            -- center diamond
-    local w = 3 - math.abs(a)
-    rect(cx - w, cy + a, cx + w, cy + a, 1)
+  rect(x - 2, y - 2, x + 2, y + 2, 1)
+  rect(x - 1, y - 1, x + 1, y + 1, 2)
+end
+lamp(46, RC(46) - 19)
+lamp(150, RC(150) - 19)
+lamp(258, RC(258) + 19)
+lamp(352, RC(352) + 19)
+lamp(226, 60)
+lamp(94, 200)
+
+-- ---------- 12. telephone poles + sagging wires ----------
+local function wire(x1, y1, x2, y2, sag, dash)
+  local steps = math.max(math.abs(x2 - x1), math.abs(y2 - y1))
+  for t = 0, steps do
+    local u = t / steps
+    if (not dash) or t % 2 == 0 then
+      pset(x1 + (x2 - x1) * u, y1 + (y2 - y1) * u + sag * math.sin(3.14159 * u), 2)
+    end
   end
 end
-node(168, 194)
-node(240, 153)
-node(322, 146)
-
--- ---------------------------------------------- 5. bulbous two-story house (UL)
-shadowBlob(84, 130, 52, 7, 8)
--- stepping stones from door toward road
-ball(100, 136, 5, 3, 0, 2, true)
-ball(113, 150, 5, 3, 0, 2, true)
-ball(126, 164, 5, 3, 0, 2, true)
-ball(138, 178, 5, 3, 0, 2, true)
-rrect(96, 24, 108, 44, 3, 2, 7)          -- chimney (pokes above roof)
-ball(82, 52, 42, 17, 1, 10, true)        -- big mushroom-cap dome roof
-rrect(48, 56, 114, 92, 10, 0, 6)         -- upper story
-rrect(40, 86, 124, 128, 10, 0, 7)        -- fatter lower story
-local function windowSq(x, y)
-  rrect(x, y, x + 14, y + 14, 3, 0, 1)
-  rect(x + 7, y + 2, x + 8, y + 12, 1)
-  rect(x + 2, y + 7, x + 12, y + 8, 1)
+local poles = {}
+for _, pxx in ipairs({30, 130, 230, 330, 385}) do
+  poles[#poles + 1] = {pxx, RC(pxx) + 22}
 end
-windowSq(58, 62); windowSq(88, 62)       -- upper windows
-windowSq(46, 94); windowSq(100, 94)      -- lower windows
-rrect(72, 102, 92, 128, 8, 9, 13)        -- rounded dark doorway
-rect(87, 114, 88, 115, 2)                -- knob
-
--- --------------------------------------- 6. Greyhound depot + payphone (right)
-shadowBlob(326, 152, 54, 7, 8)
-ball(326, 94, 50, 13, 2, 10, true)       -- rounded awning dome
-rrect(280, 96, 372, 150, 12, 0, 6)       -- depot body
-rrect(302, 114, 342, 150, 10, 11, 14)    -- dark bus bay opening
-ball(291, 105, 5, 4, 0, 2, true)         -- porthole windows
-ball(361, 105, 5, 4, 0, 2, true)
-rect(312, 78, 315, 96, 1)                -- sign posts
-rect(337, 78, 340, 96, 1)
-rrect(302, 60, 350, 82, 11, 0, 1)        -- BUS capsule sign
-text("BUS", 315, 66, 2)
--- payphone sign out front
-rect(352, 146, 355, 178, 1)              -- pole
-shadowBlob(354, 179, 8, 3, 9)
-rrect(340, 120, 368, 146, 6, 0, 1)       -- sign board
-rect(348, 128, 361, 131, 1)              -- handset bar
-disc(348, 132, 3, 1)
-disc(361, 132, 3, 1)
-text("TEL", 349, 137, 1)
-
--- ----------------------------------------------------------- 7. puffy trees
-local function tree(cx, cy)
-  shadowBlob(cx + 3, cy + 3, 15, 5, 9)
-  rect(cx - 2, cy - 12, cx + 1, cy, 1)             -- trunk
-  ball(cx + 7, cy - 19, 9, 8, 3, 11, true)         -- back puff (darker)
-  ball(cx - 1, cy - 23, 14, 12, 1, 9, true)        -- main puff
-  ball(cx - 6, cy - 27, 6, 5, 0, 2, false)         -- UL highlight puff
+for i = 1, #poles - 1 do
+  local a, b = poles[i], poles[i + 1]
+  wire(a[1], a[2] - 4, b[1], b[2] - 4, 3, false)
+  wire(a[1], a[2] + 4, b[1], b[2] + 4, 3, false)
 end
-tree(152, 96)      -- on mound A
-tree(262, 84)      -- on mound B
-tree(52, 155)
-tree(215, 210)
-tree(296, 196)     -- on mound D
-
--- ----------------------------------------------------------- 8. stubby cars
-local function car(cx, cy)
-  shadowBlob(cx + 2, cy + 10, 17, 4, 9)
-  rrect(cx - 8, cy - 12, cx + 7, cy - 1, 5, 0, 4)  -- cabin
-  drect(cx - 5, cy - 9, cx + 3, cy - 5, 9)         -- glass
-  rrect(cx - 14, cy - 4, cx + 14, cy + 7, 5, 0, 7) -- rounded body
-  rect(cx + 11, cy - 1, cx + 12, cy, 2)            -- headlight
-  disc(cx - 8, cy + 7, 3.4, 1)
-  disc(cx + 8, cy + 7, 3.4, 1)
-  px(cx - 8, cy + 6, 2)                            -- hub glints
-  px(cx + 8, cy + 6, 2)
+wire(130, RC(130) + 18, 114, 92, 2, true)     -- service drop to house
+wire(330, RC(330) + 18, 350, 96, 2, true)     -- service drop to depot
+for _, p in ipairs(poles) do
+  local x, y = p[1], p[2]
+  pset(x + 1, y + 1, 1)
+  for yy = y - 4, y + 4 do pset(x, yy, 2) end
+  pset(x - 1, y, 2); pset(x + 1, y, 2)
 end
-car(206, 165)
-car(287, 143)
 
--- ------------------------------------------------------------------- export
-sp:flatten()
+-- ---------- 13. mailboxes + trash can ----------
+local function mailbox(x, y)
+  for yy = y + 2, y + 6 do pset(x, yy, 2) end
+  rect(x - 2, y - 2, x + 3, y + 1, 1)
+  for xx = x - 2, x + 3 do pset(xx, y - 2, 2); pset(xx, y + 1, 2) end
+  for yy = y - 2, y + 1 do pset(x - 2, yy, 2); pset(x + 3, yy, 2) end
+  pset(x + 4, y - 3, 2); pset(x + 4, y - 2, 2)
+end
+mailbox(54, 118)
+mailbox(214, 160)
+mailbox(126, 114)
+for dy = -3, 3 do for dx = -3, 3 do
+  local d2 = dx * dx + dy * dy
+  if d2 <= 9 then
+    if d2 >= 7 then pset(126 + dx, 126 + dy, ((dx + dy) % 2 == 0) and 2 or 1)
+    else dput(126 + dx, 126 + dy, 6) end
+  end
+end end
+pset(126, 126, 2)
+
+-- ---------- save ----------
+spr:flatten()
 local out = os.getenv("ASE_OUT_DIR")
-sp:saveAs(app.fs.joinPath(out, "map_suburbia.aseprite"))
-sp:saveAs(app.fs.joinPath(out, "map_suburbia.png"))
+spr:saveAs(app.fs.joinPath(out, "map_suburbia.aseprite"))
+spr:saveAs(app.fs.joinPath(out, "map_suburbia.png"))
 print("ASE_GEN_OK")

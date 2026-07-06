@@ -1,5 +1,7 @@
--- floppy: 16x16 3.5" disk pickup, 4-frame gleam sweep across label
--- palette: 0=transparent, 1=black, 2=white (HAKCD 1-bit canon)
+-- floppy: 16x16 4-frame gleam loop, HAKCD 1-bit house style
+-- palette: 0 transparent, 1 black, 2 white (hard rule)
+
+local outDir = os.getenv("ASE_OUT_DIR")
 
 local spr = Sprite(16, 16, ColorMode.INDEXED)
 spr.transparentColor = 0
@@ -10,74 +12,99 @@ pal:setColor(1, Color{ r = 0,   g = 0,   b = 0,   a = 255 })
 pal:setColor(2, Color{ r = 255, g = 255, b = 255, a = 255 })
 spr:setPalette(pal)
 
--- base plate, drawn as char map:
--- . transparent | B black | w white body | m metal shutter (checker dither)
--- l label white | t label text ink
+-- Base plate, hand-authored per pixel.
+-- '.' transparent  '#' outline black (gleam never touches)
+-- 'w' white plastic/label  'b' black detail (label lines, shutter slot,
+-- write-protect holes)  'm' shutter metal = checkerboard dither
+-- Silhouette: clipped insertion corner top-right, metal shutter y2..y6
+-- with read-window slot, big white label y8..y14 with print lines,
+-- two HD write-protect holes on the bottom rail.
 local rows = {
-  "..BBBBBBBBBBBB..",  -- y0  rounded top silhouette
-  ".BBBBBBBBBBBBBB.",  -- y1
-  ".BBwBBBBBBBBwBB.",  -- y2  shutter top edge
-  ".BBwBmmBBmmBwBB.",  -- y3  metal dither + slot hole
-  ".BBwBmmBBmmBwBB.",  -- y4
-  ".BBwBmmmmmmBwBB.",  -- y5
-  ".BBwBBBBBBBBwBB.",  -- y6  shutter bottom edge
-  ".BBwwwwwwwwwwBB.",  -- y7  body gap
-  ".BBBBBBBBBBBBBB.",  -- y8  label top rule
-  ".BBBlttlttllBBB.",  -- y9  label text line 1
-  ".BBBllllllllBBB.",  -- y10
-  ".BBBltttlttlBBB.",  -- y11 label text line 2
-  ".BBBBBBBBBBBBBB.",  -- y12 label bottom rule
-  ".BBwwwwwwwwwwBB.",  -- y13
-  ".BBBBBBBBBBBBBB.",  -- y14
-  "..BBBBBBBBBBBB..",  -- y15 rounded bottom silhouette
+  ".############...",
+  ".#wwwwwwwwwww#..",
+  ".#ww########ww#.",
+  ".#ww#mbbmmm#ww#.",
+  ".#ww#mbbmmm#ww#.",
+  ".#ww#mbbmmm#ww#.",
+  ".#ww########ww#.",
+  ".#wwwwwwwwwwww#.",
+  ".#w##########w#.",
+  ".#w#wwwwwwww#w#.",
+  ".#w#bbbbbbbw#w#.",
+  ".#w#wwwwwwww#w#.",
+  ".#w#bbbbbwww#w#.",
+  ".#b#wwwwwwww#b#.",
+  ".#w##########w#.",
+  ".##############.",
 }
 
+local function baseChar(x, y)
+  return rows[y + 1]:sub(x + 1, x + 1)
+end
+
 local function basePixel(x, y)
-  local ch = rows[y + 1]:sub(x + 1, x + 1)
-  if ch == "." then return 0 end
-  if ch == "w" or ch == "l" then return 2 end
-  if ch == "m" then
-    -- 50% checker dither = brushed metal on 1-bit
-    if (x + y) % 2 == 0 then return 2 else return 1 end
-  end
-  return 1 -- B and t
+  local c = baseChar(x, y)
+  if c == "." then return 0 end
+  if c == "#" or c == "b" then return 1 end
+  if c == "w" then return 2 end
+  -- metal: 50% checkerboard dither
+  if ((x + y) % 2) == 0 then return 1 else return 2 end
 end
 
--- diagonal shine band sweeps left->right across label zone (x3..12, y8..12).
--- core 2px: ink goes white. 1px edges: checker dither for soft falloff.
--- outer 2px silhouette border sits outside the zone, stays intact.
-local function gleamPixel(x, y, f, base)
-  if base == 0 then return 0 end
-  if x < 3 or x > 12 or y < 8 or y > 12 then return base end
-  local d = (x - 3) - (y - 8)
-  local c = (f - 1) * 3
-  if d == c or d == c + 1 then
-    return 2
-  elseif d == c - 1 or d == c + 2 then
-    if (x + y) % 2 == 0 then return 2 end
+-- Gleam: diagonal band (d = x - y, 3px wide) sweeping lower-left ->
+-- upper-right across label then shutter, 5px step per frame.
+-- Band core: checker-dither sheen on white, full glint on black detail,
+-- parity-flip shimmer on metal. Band edges: sparse Bayer-ish dust so the
+-- streak has soft shoulders instead of hard rails. Outline immune.
+local function framePixel(x, y, f)
+  local c = baseChar(x, y)
+  local base = basePixel(x, y)
+  if c == "." or c == "#" then return base end
+
+  local p = -9 + (f - 1) * 5
+  local o = (x - y) - p
+  if o < 0 or o > 2 then return base end
+
+  if o == 1 then -- band core
+    if c == "w" then
+      if ((x + y) % 2) == 0 then return 1 else return 2 end
+    elseif c == "b" then
+      return 2 -- glint wipes the printed line
+    else -- metal: flip dither parity = moving shimmer
+      if ((x + y) % 2) == 0 then return 2 else return 1 end
+    end
+  else -- band shoulders, lighter touch
+    if c == "w" then
+      if ((x + y) % 4) == 0 then return 1 else return 2 end
+    elseif c == "b" then
+      if ((x + y) % 2) == 0 then return 2 else return 1 end
+    else
+      return base
+    end
   end
-  return base
 end
 
-for _ = 2, 4 do
-  spr:newEmptyFrame()
-end
+-- frames 2..4
+spr:newEmptyFrame()
+spr:newEmptyFrame()
+spr:newEmptyFrame()
 
 local layer = spr.layers[1]
-local function getCel(f)
-  local ok, cel = pcall(function() return spr:newCel(layer, f) end)
+
+local function celFor(frame)
+  local ok, cel = pcall(function() return spr:newCel(layer, frame) end)
   if ok and cel then return cel end
-  return layer:cel(f)
+  -- frame 1 of a fresh sprite already owns a cel; reuse it
+  for _, c in ipairs(spr.cels) do
+    if c.frameNumber == frame then return c end
+  end
 end
 
 for f = 1, 4 do
-  local img = getCel(f).image
+  local img = celFor(f).image
   for y = 0, 15 do
     for x = 0, 15 do
-      local p = gleamPixel(x, y, f, basePixel(x, y))
-      if p ~= 0 then
-        img:putPixel(x, y, p)
-      end
+      img:putPixel(x, y, framePixel(x, y, f))
     end
   end
 end
@@ -85,8 +112,8 @@ end
 local tag = spr:newTag(1, 4)
 tag.name = "gleam"
 
-local outDir = os.getenv("ASE_OUT_DIR")
 spr:saveAs(app.fs.joinPath(outDir, "floppy.aseprite"))
+
 app.command.ExportSpriteSheet{
   ui = false,
   askOverwrite = false,

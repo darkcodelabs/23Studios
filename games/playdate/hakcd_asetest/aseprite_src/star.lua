@@ -1,176 +1,188 @@
-local OUT = os.getenv("ASE_OUT_DIR")
-local W, H, N = 24, 24, 4
-local CX, CY = 11.5, 12.0
-local R, RIN = 10.9, 5.6
--- fake Y-axis spin: horizontal squash per frame
-local SX = {1.0, 0.64, 0.32, 0.64}
--- diagonal glint band sweeps left-to-right across the loop
-local GLINT = {-7.0, -2.5, 2.0, 6.5}
--- twinkle sparkles: {x, y, radius}, travel with the spin
-local SPARK = {
-  {{4, 3, 1}}, {{3, 6, 2}}, {{19, 4, 2}}, {{20, 8, 1}},
-}
-local BAYER = {
-  {0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5},
-}
+-- HAKCD pack: "star" collectible token, 24x24, 4-frame spin
+-- 1-bit Playdate style: black outline, white faceted body, Bayer-dithered
+-- shading, sweeping diagonal glint. Palette: 0=transparent 1=black 2=white.
 
-local spr = Sprite(W, H, ColorMode.INDEXED)
+local spr = Sprite(24, 24, ColorMode.INDEXED)
 spr.transparentColor = 0
+
 local pal = Palette(3)
-pal:setColor(0, Color{r = 0, g = 0, b = 0, a = 0})
-pal:setColor(1, Color{r = 0, g = 0, b = 0, a = 255})
-pal:setColor(2, Color{r = 255, g = 255, b = 255, a = 255})
+pal:setColor(0, Color{r=0,   g=0,   b=0,   a=0  })
+pal:setColor(1, Color{r=0,   g=0,   b=0,   a=255})
+pal:setColor(2, Color{r=255, g=255, b=255, a=255})
 spr:setPalette(pal)
 
-for _ = 2, N do spr:newEmptyFrame() end
+-- frame 1 exists; add 3 more empty frames, then collect one image per frame
+spr:newEmptyFrame()
+spr:newEmptyFrame()
+spr:newEmptyFrame()
+
 local layer = spr.layers[1]
+local imgs = {}
+imgs[1] = spr.cels[1].image
+for f = 2, 4 do
+  local cel = spr:newCel(layer, f)
+  imgs[f] = cel.image
+end
 
-local function frameImage(f)
-  for _, c in ipairs(spr.cels) do
-    if c.frameNumber == f then return c.image end
+-- ---------------------------------------------------------------- constants
+local TWO_PI = math.pi * 2
+local STEP   = math.pi / 5          -- 36 deg between star vertices
+local CX, CY = 11.5, 11.5
+local ROUT   = 11.2                 -- outer point radius
+local RIN    = 5.2                  -- inner (valley) radius
+local LIGHT  = -3 * math.pi / 4     -- key light from upper-left
+
+-- clustered 4x4 Bayer matrix: the shading engine (no grays, ever)
+local BAYER = {
+  { 0,  8,  2, 10},
+  {12,  4, 14,  6},
+  { 3, 11,  1,  9},
+  {15,  7, 13,  5},
+}
+
+-- neighborhood offsets (Euclidean radius 3) used for edge-distance scan
+local OFFS = {}
+for dy = -3, 3 do
+  for dx = -3, 3 do
+    local d2 = dx * dx + dy * dy
+    if d2 > 0 and d2 <= 9 then
+      OFFS[#OFFS + 1] = {dx, dy, d2}
+    end
   end
-  return spr:newCel(layer, f).image
 end
 
-local STEP = math.pi * 2 / 5
--- polar-interpolated 5-point star: linear polar blend bulges the arm
--- edges outward, which is what makes it read chunky/rounded
-local function inStar(lx, ly)
-  local rr = math.sqrt(lx * lx + ly * ly)
-  if rr > R then return false end
-  if rr <= RIN then return true end
-  local a = math.atan(ly, lx)
-  local rel = (a + math.pi / 2) % STEP
-  local d = math.min(rel, STEP - rel) / (STEP / 2)
-  return rr <= R + (RIN - R) * (d ^ 1.15)
+local function wrapAngle(a)
+  return (a + math.pi) % TWO_PI - math.pi
 end
 
-for f = 1, N do
-  local sx = SX[f]
-  local img = frameImage(f)
+local function pointInPoly(px, py, poly)
+  local inside = false
+  local n = #poly
+  local j = n
+  for i = 1, n do
+    local xi, yi = poly[i][1], poly[i][2]
+    local xj, yj = poly[j][1], poly[j][2]
+    if ((yi > py) ~= (yj > py))
+       and (px < (xj - xi) * (py - yi) / (yj - yi) + xi) then
+      inside = not inside
+    end
+    j = i
+  end
+  return inside
+end
 
-  -- coverage mask, 2x2 supersampled so squashed frames keep soft tips
-  local mask = {}
-  for y = 0, H - 1 do
-    mask[y] = {}
-    for x = 0, W - 1 do
-      local hits = 0
-      for _, oy in ipairs({0.25, 0.75}) do
-        for _, ox in ipairs({0.25, 0.75}) do
-          if inStar((x + ox - CX) / sx, y + oy - CY) then hits = hits + 1 end
-        end
-      end
-      mask[y][x] = hits >= 2
+-- ------------------------------------------------------------- frame render
+for f = 0, 3 do
+  local img  = imgs[f + 1]
+  -- 18 deg per frame; star has 72 deg symmetry so 4 frames loop seamlessly
+  local rot  = f * (TWO_PI / 20)
+  local base = -math.pi / 2 + rot   -- first outer point angle (starts up)
+
+  -- 10-vertex star polygon (alternating outer / inner radii)
+  local poly = {}
+  for i = 0, 9 do
+    local ang = base + i * STEP
+    local rad = (i % 2 == 0) and ROUT or RIN
+    poly[#poly + 1] = {CX + rad * math.cos(ang), CY + rad * math.sin(ang)}
+  end
+
+  -- rasterize fill mask at pixel centers
+  local inside = {}
+  for y = 0, 23 do
+    inside[y] = {}
+    for x = 0, 23 do
+      inside[y][x] = pointInPoly(x + 0.5, y + 0.5, poly)
     end
   end
 
-  local function m(x, y)
-    if x < 0 or y < 0 or x >= W or y >= H then return false end
-    return mask[y][x]
-  end
+  -- diagonal glint band sweeps upper-left -> lower-right over the 4 frames
+  local glintC = 23 + (f - 1.5) * 9
 
-  -- two erosion rings = 2px black silhouette stroke
-  local ring1, ring2 = {}, {}
-  for y = 0, H - 1 do
-    ring1[y] = {}
-    for x = 0, W - 1 do
-      if mask[y][x] then
-        local edge = false
-        for dy = -1, 1 do
-          for dx = -1, 1 do
-            if not m(x + dx, y + dy) then edge = true end
+  for y = 0, 23 do
+    for x = 0, 23 do
+      if inside[y][x] then
+        -- squared distance to nearest outside pixel (capped at 9)
+        local d2min = 99
+        for k = 1, #OFFS do
+          local o = OFFS[k]
+          local nx, ny = x + o[1], y + o[2]
+          local isOut = true
+          if nx >= 0 and nx <= 23 and ny >= 0 and ny <= 23 then
+            isOut = not inside[ny][nx]
           end
+          if isOut and o[3] < d2min then d2min = o[3] end
         end
-        ring1[y][x] = edge
-      end
-    end
-  end
-  for y = 0, H - 1 do
-    ring2[y] = {}
-    for x = 0, W - 1 do
-      if mask[y][x] and not ring1[y][x] then
-        local edge = false
-        for dy = -1, 1 do
-          for dx = -1, 1 do
-            local nx, ny = x + dx, y + dy
-            if nx >= 0 and ny >= 0 and nx < W and ny < H and ring1[ny][nx] then
-              edge = true
+
+        if d2min <= 4 then
+          img:putPixel(x, y, 1)               -- 2px black silhouette stroke
+        else
+          local px, py = x + 0.5, y + 0.5
+          local dx, dy = px - CX, py - CY
+          local dist = math.sqrt(dx * dx + dy * dy)
+          local ang  = math.atan(dy, dx)
+
+          -- facet = angular slice between consecutive vertices; its
+          -- mid-angle acts as the facet pseudo-normal for lighting
+          local rel = (ang - base) % TWO_PI
+          local s   = math.floor(rel / STEP) % 10
+          local mid = base + (s + 0.5) * STEP
+          local b   = 0.55 + 0.45 * math.cos(mid - LIGHT)
+
+          if d2min <= 9 then b = b * 0.7 end  -- dithered rim just inside line
+
+          local g = math.abs((px + py) - glintC)
+          if g <= 3.0 then b = b + 0.45 end   -- soft glint halo
+
+          if b < 0.10 then b = 0.10 end
+          if b > 1.0  then b = 1.0  end
+
+          local t = (BAYER[(y % 4) + 1][(x % 4) + 1] + 0.5) / 16
+          local idx = (t <= b) and 2 or 1
+
+          -- crease + ridge lines sell the chunky 3D facets
+          if dist > 2.2 then
+            local bestOdd, bestEven, evA = 99, 99, 0
+            for i = 0, 9 do
+              local va = base + i * STEP
+              local ad = math.abs(wrapAngle(ang - va))
+              if i % 2 == 1 then
+                if ad < bestOdd then bestOdd = ad end
+              else
+                if ad < bestEven then bestEven = ad; evA = va end
+              end
+            end
+            if dist * math.sin(bestOdd) < 0.6 then
+              idx = 1                          -- valley crease: shadow line
+            elseif dist * math.sin(bestEven) < 0.6 then
+              if math.cos(evA - LIGHT) > 0.1 then
+                idx = 2                        -- lit point ridge: highlight
+              else
+                idx = 1                        -- far-side ridge: dark crease
+              end
             end
           end
-        end
-        ring2[y][x] = edge
-      end
-    end
-  end
 
-  for y = 0, H - 1 do
-    for x = 0, W - 1 do
-      if mask[y][x] then
-        if ring1[y][x] or ring2[y][x] then
-          img:putPixel(x, y, 1)
-        else
-          -- fake sphere normal + key light upper-left, Bayer-thresholded:
-          -- bright hotspot top-left, dither ramp through the middle,
-          -- near-solid black ambient occlusion hugging the lower-right rim
-          local xs, ys = x + 0.5 - CX, y + 0.5 - CY
-          local ux, uy = (xs / sx) / R, ys / R
-          local r2 = math.min(1, ux * ux + uy * uy)
-          local nz = math.sqrt(math.max(0, 1 - 0.85 * r2))
-          local b = 0.2 + 0.85 * (-0.5 * ux - 0.5 * uy + 0.72 * nz)
-          local gd = math.abs((xs - 0.45 * ys) - GLINT[f])
-          if gd < 1.6 then
-            b = 1
-          elseif gd < 2.6 then
-            b = b + 0.35
-          end
-          if b < 0 then b = 0 elseif b > 1 then b = 1 end
-          local t = (BAYER[y % 4 + 1][x % 4 + 1] + 0.5) / 16
-          img:putPixel(x, y, b > t and 2 or 1)
+          if g <= 1.3 then idx = 2 end        -- hard glint core sweeps on top
+
+          img:putPixel(x, y, idx)
         end
       end
-    end
-  end
-
-  -- happy face; eye columns narrow with the squash, hidden edge-on
-  if f ~= 3 then
-    local cols
-    if sx > 0.8 then cols = {8, 9, 14, 15} else cols = {9, 14} end
-    for _, ex in ipairs(cols) do
-      for ey = 9, 12 do img:putPixel(ex, ey, 1) end
-    end
-    for _, p in ipairs({{10, 15}, {13, 15}, {11, 16}, {12, 16}}) do
-      img:putPixel(p[1], p[2], 1)
-    end
-  end
-
-  -- twinkle drawn only on transparent background so it never cuts the body
-  local function plot(x, y)
-    if x >= 0 and y >= 0 and x < W and y < H and not mask[y][x] then
-      img:putPixel(x, y, 1)
-    end
-  end
-  for _, s in ipairs(SPARK[f]) do
-    local px, py, r = s[1], s[2], s[3]
-    for i = -r, r do
-      plot(px + i, py)
-      plot(px, py + i)
-    end
-    if r >= 2 then
-      plot(px - 1, py - 1); plot(px + 1, py - 1)
-      plot(px - 1, py + 1); plot(px + 1, py + 1)
     end
   end
 end
 
-local tag = spr:newTag(1, N)
+local tag = spr:newTag(1, 4)
 tag.name = "spin"
 
-spr:saveAs(app.fs.joinPath(OUT, "star.aseprite"))
+-- ------------------------------------------------------------------- export
+local outDir = os.getenv("ASE_OUT_DIR")
+spr:saveAs(app.fs.joinPath(outDir, "star.aseprite"))
 app.command.ExportSpriteSheet{
   ui = false,
   askOverwrite = false,
   type = SpriteSheetType.HORIZONTAL,
-  textureFilename = app.fs.joinPath(OUT, "star-table-24-24.png"),
+  textureFilename = app.fs.joinPath(outDir, "star-table-24-24.png"),
   dataFilename = "",
 }
+
 print("ASE_GEN_OK")

@@ -1,229 +1,306 @@
--- portrait_mom.png — MARIO-64 style 1-bit dialogue portrait, 64x64
--- Warm-but-tired suburban mom, permed hair, cordless phone, mid-yell.
+-- portrait_mom.png — 64x64 1-bit dialogue portrait, HAKCD house style
+-- Tired-but-warm mid-40s suburban mom, 90s perm, cordless phone, exasperated.
 
 local W, H = 64, 64
-local sprite = Sprite(W, H, ColorMode.INDEXED)
-sprite.transparentColor = 0
 
+local spr = Sprite(W, H, ColorMode.INDEXED)
+spr.transparentColor = 0
 local pal = Palette(3)
-pal:setColor(0, Color{r=0, g=0, b=0, a=0})       -- 0 transparent
-pal:setColor(1, Color{r=0, g=0, b=0, a=255})     -- 1 black
-pal:setColor(2, Color{r=255, g=255, b=255, a=255}) -- 2 white
-sprite:setPalette(pal)
+pal:setColor(0, Color{r=0, g=0, b=0, a=0})
+pal:setColor(1, Color{r=0, g=0, b=0, a=255})
+pal:setColor(2, Color{r=255, g=255, b=255, a=255})
+spr:setPalette(pal)
 
-local cel = sprite.cels[1]
-if cel == nil then cel = sprite:newCel(sprite.layers[1], 1) end
+local cel = spr.cels[1]
+if not cel then cel = spr:newCel(spr.layers[1], 1) end
 local img = cel.image
 
 -- ---------- helpers ----------
+local B = {
+  {0, 8, 2, 10},
+  {12, 4, 14, 6},
+  {3, 11, 1, 9},
+  {15, 7, 13, 5},
+}
+
 local function px(x, y, c)
   if x >= 0 and x < W and y >= 0 and y < H then img:putPixel(x, y, c) end
 end
 
-local function rectf(x0, y0, x1, y1, c)
+local function bay(x, y) return B[(y % 4) + 1][(x % 4) + 1] end
+
+local function dget(x, y, lv) if bay(x, y) < lv then return 2 else return 1 end end
+
+local function frect(x0, y0, x1, y1, c)
   for y = y0, y1 do for x = x0, x1 do px(x, y, c) end end
 end
 
-local function fillEllipse(cx, cy, rx, ry, c)
-  for y = -ry, ry do
-    local t = 1 - (y * y) / (ry * ry)
-    if t >= 0 then
-      local w = math.floor(rx * math.sqrt(t) + 0.5)
-      for x = -w, w do px(cx + x, cy + y, c) end
-    end
-  end
+local function hline(x0, x1, y, c) for x = x0, x1 do px(x, y, c) end end
+local function vline(x, y0, y1, c) for y = y0, y1 do px(x, y, c) end end
+
+-- dither black onto whatever is there (form shadow)
+local function shade(x0, y0, x1, y1, lv)
+  for y = y0, y1 do for x = x0, x1 do
+    if bay(x, y) < lv then px(x, y, 1) end
+  end end
 end
 
-local function fillCircle(cx, cy, r, c) fillEllipse(cx, cy, r, r, c) end
+local function hh(x, y) return (x * 73856093 + y * 19349663) % 101 end
 
-local function ring(cx, cy, r, c, thick, dyMin)
-  thick = thick or 1.5
-  dyMin = dyMin or -99
-  for y = -r, r do
-    for x = -r, r do
-      local d = math.sqrt(x * x + y * y)
-      if d <= r + 0.25 and d >= r - thick and y >= dyMin then
-        px(cx + x, cy + y, c)
+-- hair mask so texture passes only touch hair pixels
+local mask = {}
+local function hdisc(cx, cy, r)
+  for dy = -r, r do for dx = -r, r do
+    if dx * dx + dy * dy <= r * r then
+      local x, y = cx + dx, cy + dy
+      px(x, y, 1)
+      if x >= 0 and x < W and y >= 0 and y < H then mask[y * W + x] = true end
+    end
+  end end
+end
+
+-- white quarter-ring highlight on a curl (top-left lit)
+local function curl(cx, cy, r)
+  for dy = -r, 1 do for dx = -r, 1 do
+    local d = dx * dx + dy * dy
+    if d <= r * r and d > (r - 1) * (r - 1) and (dx < 0 or dy < 0) then
+      local x, y = cx + dx, cy + dy
+      if x >= 0 and x < W and y >= 0 and y < H and mask[y * W + x] then
+        px(x, y, 2)
       end
     end
+  end end
+end
+
+-- ---------- 1. background: lit kitchen wall, diagonal falloff + halo ----------
+for y = 0, H - 1 do
+  for x = 0, W - 1 do
+    local lv = 12 - math.floor((x + 2 * y) / 16)
+    if x % 8 == 6 then lv = lv - 3 end        -- faint wallpaper stripe
+    local dx, dy = x - 31, y - 26
+    local d2 = dx * dx + dy * dy
+    if d2 < 121 then lv = lv + 4
+    elseif d2 < 400 then lv = lv + 2 end
+    if lv < 1 then lv = 1 end
+    if lv > 14 then lv = 14 end
+    px(x, y, dget(x, y, lv))
   end
 end
 
-local function lineT(x0, y0, x1, y1, c, th)
-  th = th or 2
-  local steps = math.max(math.abs(x1 - x0), math.abs(y1 - y0), 1)
-  for i = 0, steps do
-    local x = math.floor(x0 + (x1 - x0) * i / steps + 0.5)
-    local y = math.floor(y0 + (y1 - y0) * i / steps + 0.5)
-    for a = 0, th - 1 do px(x, y + a, c) end
-  end
+-- picture frame on the wall, top-left (dense suburban detail)
+hline(3, 12, 5, 1) hline(3, 12, 14, 1)
+vline(3, 5, 14, 1) vline(12, 5, 14, 1)
+for y = 6, 13 do for x = 4, 11 do px(x, y, dget(x, y, 5)) end end
+frect(6, 8, 9, 11, 1)
+
+-- ---------- 2. body / blouse ----------
+local function blousepx(x, y, lv)
+  local c = 1
+  if bay(x, y) < lv then c = 2 end
+  if (x % 9 == 2 or x % 9 == 3) and y % 9 == 6 then c = 2 end   -- floral dot print
+  px(x, y, c)
 end
 
--- Bayer-ish dither levels: 1 sparse -> 3 checker -> 4 dense
-local function dith(x, y, level)
-  if level >= 4 then return not (x % 2 == 0 and y % 2 == 0)
-  elseif level == 3 then return (x + y) % 2 == 0
-  elseif level == 2 then return x % 2 == 0 and y % 2 == 0
-  elseif level == 1 then return x % 4 == 0 and y % 4 == 2
-  end
-  return false
+-- left shoulder, rim-lit from upper left
+for x = 1, 31 do
+  local yt = 56 - math.floor((x - 1) * 9 / 20)
+  if x % 3 ~= 0 then px(x, yt, 2) else px(x, yt, 1) end
+  px(x, yt + 1, 1) px(x, yt + 2, 1)
+  for y = yt + 3, H - 1 do blousepx(x, y, 4) end
 end
 
--- ---------- 1. background: soft diagonal dither vignette, edge to edge ----------
-rectf(0, 0, 63, 63, 2)
-for y = 0, 63 do
-  for x = 0, 63 do
-    local s = x + y
-    local lv = 0
-    if s >= 88 then lv = 3 elseif s >= 68 then lv = 2 elseif s >= 48 then lv = 1 end
-    if lv > 0 and dith(x, y, lv) then px(x, y, 1) end
-  end
+-- right shoulder / chest, darker side
+for x = 32, 63 do
+  local yt = 43 + math.floor((x - 32) / 3)
+  px(x, yt, 1) px(x, yt + 1, 1)
+  for y = yt + 2, H - 1 do blousepx(x, y, 3) end
 end
 
--- ---------- 2. permed hair: union of round curl-blobs ----------
-local HAIR = {
-  {30,13,11},{22, 9, 8},{38, 9, 8},{17,17, 9},{43,17, 9},
-  {10,27, 8},{50,27, 8},{ 8,37, 7},{52,37, 7},{12,46, 7},{48,46, 7},
-}
-local function inHair(x, y, shrink)
-  for i = 1, #HAIR do
-    local c = HAIR[i]
-    local dx, dy = x - c[1], y - c[2]
-    local r = c[3] - shrink
-    if r > 0 and dx * dx + dy * dy <= r * r then return true end
-  end
-  return false
-end
-
-for i = 1, #HAIR do fillCircle(HAIR[i][1], HAIR[i][2], HAIR[i][3], 1) end     -- 3px union outline
-for i = 1, #HAIR do fillCircle(HAIR[i][1], HAIR[i][2], HAIR[i][3] - 3, 2) end -- white body
-
--- hair volume ramp: light upper-left -> dark lower-right
-for y = 0, 63 do
-  for x = 0, 63 do
-    if inHair(x, y, 3) then
-      local s = x + y
-      local lv = 0
-      if s > 78 then lv = 3 elseif s > 64 then lv = 2 elseif s > 50 then lv = 1 end
-      if lv > 0 and dith(x, y, lv) then px(x, y, 1) end
-    end
+-- raised forearm sleeve along right edge, fold streaks
+for y = 38, H - 1 do
+  local xl = 51 + math.floor((y - 38) / 4)
+  px(xl, y, 1) px(xl + 1, y, 1)
+  for x = xl + 2, 63 do
+    local c = 1
+    if bay(x, y) < 6 then c = 2 end
+    if (x + y) % 11 == 0 then c = 2 end
+    px(x, y, c)
   end
 end
-
--- curl detail rings inside the perm
-local CURLS = {{30,10,4},{23,7,3},{37,7,3},{18,16,3},{42,16,3},{10,27,3},{50,27,3},{12,45,3},{48,45,3}}
-for i = 1, #CURLS do
-  local c = CURLS[i]
-  for y = -c[3], c[3] do
-    for x = -c[3], c[3] do
-      local d = math.sqrt(x * x + y * y)
-      if d <= c[3] + 0.25 and d >= c[3] - 1.5 and inHair(c[1] + x, c[2] + y, 4) then
-        px(c[1] + x, c[2] + y, 1)
-      end
-    end
-  end
-end
+-- cuff at the wrist
+frect(53, 42, 60, 44, 2)
+hline(53, 60, 45, 1)
+vline(61, 42, 44, 1)
 
 -- ---------- 3. neck ----------
-rectf(24, 46, 38, 58, 1)
-rectf(27, 46, 35, 58, 2)
+frect(27, 39, 35, 47, 2)
+vline(26, 40, 46, 1)
+vline(36, 40, 46, 1)
 
--- ---------- 4. shoulders / robe ----------
-local SCX, SCY, SRX, SRY = 31, 86, 40, 32
-fillEllipse(SCX, SCY, SRX, SRY, 1)
-fillEllipse(SCX, SCY, SRX - 3, SRY - 3, 2)
-for y = 54, 63 do
-  for x = 0, 63 do
-    local nx, ny = (x - SCX) / (SRX - 3), (y - SCY) / (SRY - 3)
-    if nx * nx + ny * ny <= 1 then
-      -- rounded-shoulder shading, dark to the right
-      local lv = 0
-      if x > 50 then lv = 3 elseif x > 42 then lv = 2 end
-      if lv > 0 and dith(x, y, lv) then px(x, y, 1) end
-      -- mom-robe polka dots
-      if lv == 0 and y % 4 == 2 and (x + (math.floor(y / 4) % 2) * 3) % 6 == 1 then
-        px(x, y, 1)
+-- ---------- 4. permed hair mass (big soft cloud of discs) ----------
+hdisc(31, 12, 10)
+hdisc(23, 15, 7)  hdisc(39, 15, 7)
+hdisc(18, 24, 7)  hdisc(44, 24, 7)
+hdisc(17, 33, 6)  hdisc(45, 33, 6)
+hdisc(20, 41, 5)  hdisc(43, 40, 5)
+hdisc(31, 20, 9)
+
+-- ---------- 5. face oval (rx=9, ry=11 at 31,29) ----------
+for y = 18, 40 do
+  for x = 22, 40 do
+    local dx, dy = x - 31, y - 29
+    if dx * dx * 121 + dy * dy * 81 <= 9801 then
+      px(x, y, 2)
+      mask[y * W + x] = nil
+    end
+  end
+end
+-- jaw / chin contour line
+for y = 34, 40 do
+  for x = 22, 40 do
+    local dx, dy = x - 31, y - 29
+    local e = dx * dx * 121 + dy * dy * 81
+    if e <= 9801 and e >= 8800 and dy >= 6 then px(x, y, 1) end
+  end
+end
+
+-- ---------- 6. permed bangs over the forehead ----------
+hdisc(24, 16, 4) hdisc(30, 14, 4) hdisc(36, 16, 4)
+hdisc(27, 14, 3) hdisc(33, 14, 3)
+
+-- ---------- 7. face form shadow (right side + under jaw), Bayer ramp ----------
+for y = 18, 40 do
+  for x = 22, 40 do
+    local dx, dy = x - 31, y - 29
+    local e = dx * dx * 121 + dy * dy * 81
+    if e <= 9801 then
+      if dx >= 3 then
+        local lv = (dx - 2) * 2
+        if e >= 7200 then lv = lv + 3 end
+        if bay(x, y) < lv then px(x, y, 1) end
+      elseif e >= 8200 and dx < -5 then
+        if bay(x, y) < 3 then px(x, y, 1) end
       end
+      if dy >= 8 and bay(x, y) < (dy - 7) * 3 then px(x, y, 1) end
     end
   end
 end
--- collar V
-lineT(27, 57, 31, 62, 1, 2)
-lineT(35, 57, 31, 62, 1, 2)
+-- shadow under the chin, onto the neck
+shade(28, 41, 34, 43, 10)
+shade(28, 44, 34, 45, 4)
+-- soft cheek texture, lit side
+shade(24, 31, 27, 33, 2)
 
--- ---------- 5. chunky volumetric head ----------
-local FCX, FCY, FRX, FRY = 30, 35, 14, 16
-fillEllipse(FCX, FCY, FRX, FRY, 1)                  -- 3px contour
-fillEllipse(FCX, FCY, FRX - 3, FRY - 3, 2)          -- face
-for y = FCY - FRY, FCY + FRY do
-  for x = FCX - FRX, FCX + FRX do
-    local nx, ny = (x - FCX) / (FRX - 3), (y - FCY) / (FRY - 3)
-    if nx * nx + ny * ny <= 1 then
-      -- curved cheek falloff, key light upper-left
-      if nx > 0.55 and dith(x, y, 2) then px(x, y, 1)
-      elseif nx > 0.25 and dith(x, y, 1) then px(x, y, 1) end
-    end
+-- ---------- 8. features: tired, exasperated, mid-"ugh" ----------
+-- eye whites
+frect(25, 26, 29, 28, 2)
+frect(33, 26, 37, 28, 2)
+-- heavy upper lids
+hline(25, 29, 25, 1)
+hline(33, 37, 25, 1)
+-- pupils rolled up under the lids (classic exasperation)
+px(27, 26, 1) px(28, 26, 1)
+px(34, 26, 1) px(35, 26, 1)
+-- eye bags
+px(26, 29, 1) px(28, 29, 1)
+px(34, 29, 1) px(36, 29, 1)
+-- brows: left knit down, right arched up
+px(24, 22, 1) px(25, 22, 1)
+px(24, 23, 1) px(25, 23, 1) px(26, 23, 1)
+px(27, 24, 1) px(28, 24, 1) px(29, 25, 1)
+px(33, 22, 1) px(34, 21, 1) px(35, 21, 1) px(36, 21, 1) px(37, 22, 1)
+px(34, 22, 1) px(35, 22, 1) px(36, 22, 1)
+-- worry-line dashes on the forehead
+px(29, 22, 1) px(31, 22, 1)
+-- nose: bridge shadow right of center, nostril dots
+px(32, 28, 1) px(32, 29, 1) px(32, 30, 1) px(33, 31, 1)
+px(29, 32, 1) px(33, 32, 1)
+-- nasolabial folds
+px(27, 32, 1) px(26, 33, 1)
+px(35, 32, 1) px(36, 33, 1)
+-- open, downturned mouth with teeth glints
+hline(29, 33, 34, 1)
+hline(28, 34, 35, 1)
+px(30, 35, 2) px(32, 35, 2)
+hline(30, 32, 36, 1)
+px(30, 38, 1) px(32, 38, 1)
+-- chin crease
+px(30, 39, 1) px(32, 39, 1)
+
+-- ---------- 9. hair texture: curl highlights + lit-side speckle ----------
+curl(26, 8, 3)  curl(34, 7, 3)  curl(20, 12, 3) curl(40, 11, 3)
+curl(15, 22, 3) curl(46, 21, 2) curl(14, 31, 2) curl(46, 30, 2)
+curl(17, 39, 2) curl(44, 38, 2) curl(22, 20, 2) curl(40, 20, 2)
+curl(13, 26, 2) curl(48, 26, 2) curl(19, 35, 2) curl(45, 34, 2)
+curl(29, 10, 2) curl(23, 11, 2) curl(38, 9, 2)
+curl(24, 15, 2) curl(30, 12, 2) curl(36, 15, 2)
+for k in pairs(mask) do
+  local y = math.floor(k / W)
+  local x = k % W
+  local h = hh(x, y)
+  if (x * 2 + y) < 96 then
+    if h < 6 then px(x, y, 2) end
+  elseif h < 2 then
+    px(x, y, 2)
   end
 end
 
--- ---------- 6. bang curls over the forehead ----------
-fillCircle(22, 22, 4, 1); fillCircle(30, 20, 4, 1); fillCircle(38, 22, 4, 1)
-fillCircle(22, 22, 2, 2); fillCircle(30, 20, 2, 2); fillCircle(38, 22, 2, 2)
--- AO shadow cast by bangs onto forehead
-for x = 20, 40 do
-  for y = 25, 26 do
-    local nx, ny = (x - FCX) / (FRX - 3), (y - FCY) / (FRY - 3)
-    if nx * nx + ny * ny <= 1 and (x + y) % 2 == 0 then px(x, y, 1) end
-  end
+-- ---------- 10. cordless phone (big chunky 1998 handset) ----------
+-- antenna with white rims so it reads over the hair
+frect(46, 3, 49, 5, 1)
+vline(46, 6, 19, 2) vline(49, 6, 19, 2)
+vline(47, 6, 19, 1) vline(48, 6, 19, 1)
+-- rounded body
+frect(42, 20, 49, 42, 2)
+hline(43, 48, 19, 1) hline(43, 48, 43, 1)
+vline(41, 21, 41, 1) vline(50, 21, 41, 1)
+px(42, 20, 1) px(49, 20, 1) px(42, 42, 1) px(49, 42, 1)
+-- left-edge shade dashes
+for y = 21, 41 do if y % 2 == 1 then px(42, y, 1) end end
+-- earpiece grille
+for yy = 21, 23 do for xx = 43, 48 do
+  if (xx + yy) % 2 == 0 then px(xx, yy, 1) end
+end end
+-- tiny LCD
+frect(43, 26, 48, 28, 1)
+px(44, 27, 2) px(46, 27, 2)
+-- top keypad row peeking above the grip
+px(43, 30, 1) px(44, 30, 1) px(46, 30, 1) px(47, 30, 1)
+
+-- ---------- 11. hand gripping the phone ----------
+for y = 32, 43 do
+  local x0, x1 = 43, 53
+  if y == 32 or y == 43 then x0, x1 = 44, 52 end
+  hline(x0, x1, y, 2)
+end
+hline(44, 52, 31, 1)
+hline(44, 52, 44, 1)
+vline(54, 33, 42, 1)
+px(53, 32, 1) px(53, 43, 1)
+-- finger seams wrapping the handset
+hline(43, 53, 34, 1)
+hline(43, 53, 37, 1)
+hline(43, 53, 40, 1)
+px(43, 33, 1) px(43, 36, 1) px(43, 39, 1) px(43, 42, 1)
+-- knuckle-side shading
+for y = 32, 43 do for x = 50, 53 do
+  if bay(x, y) < 5 then px(x, y, 1) end
+end end
+
+-- ---------- 12. white collar V over the blouse ----------
+for i = 0, 5 do
+  px(25 + i, 45 + i, 2) px(26 + i, 45 + i, 2)
+  px(37 - i, 45 + i, 2) px(36 - i, 45 + i, 2)
 end
 
--- ---------- 7. cordless phone pressed to ear ----------
-rectf(51, 8, 52, 21, 1)          -- antenna
-fillCircle(52, 6, 2, 1)          -- antenna nub
-rectf(43, 22, 55, 46, 1)         -- body outline block
-px(43, 22, 2); px(55, 22, 2); px(43, 46, 2); px(55, 46, 2) -- rounded corners
-rectf(46, 25, 52, 43, 2)         -- plastic face
-rectf(47, 27, 51, 28, 1)         -- speaker slit
-for yy = 32, 41, 3 do            -- keypad dots
-  for xx = 47, 51, 2 do px(xx, yy, 1) end
-end
-for y = 25, 43 do                -- curved-plastic shading
-  for x = 50, 52 do if dith(x, y, 2) then px(x, y, 1) end end
-end
--- chunky gripping hand: three knuckle bumps
-fillCircle(45, 48, 4, 1); fillCircle(49, 49, 4, 1); fillCircle(53, 48, 4, 1)
-fillCircle(45, 48, 2, 2); fillCircle(49, 49, 2, 2); fillCircle(53, 48, 2, 2)
-
--- ---------- 8. exasperated mid-yell face ----------
-lineT(18, 27, 26, 31, 1, 2)      -- angry brow L (slams inward-down)
-lineT(34, 31, 42, 27, 1, 2)      -- angry brow R
-ring(22, 31, 4, 1, 2, 2)         -- squeezed-shut eye L (down arc)
-ring(38, 31, 4, 1, 2, 2)         -- squeezed-shut eye R
-lineT(18, 37, 23, 38, 1, 1)      -- tired eye bag L
-lineT(37, 38, 42, 37, 1, 1)      -- tired eye bag R
-ring(30, 34, 3, 1, 1.8, 1)       -- round little nose
-lineT(19, 41, 21, 45, 1, 2)      -- yell crease by mouth
-
--- big open yelling mouth
-fillEllipse(29, 45, 8, 5, 1)
-rectf(25, 41, 33, 42, 2)         -- top teeth
-px(28, 41, 1); px(28, 42, 1); px(31, 41, 1); px(31, 42, 1) -- tooth gaps
-for y = 47, 49 do                -- dithered tongue glint
-  for x = 22, 36 do
-    local dx, dy = (x - 29) / 8, (y - 45) / 5
-    if dx * dx + dy * dy <= 0.85 and (x + y) % 2 == 0 then px(x, y, 2) end
-  end
-end
-
--- ---------- 9. exasperation sweat drop ----------
-px(57, 9, 1)
-rectf(56, 10, 58, 12, 1)
-fillCircle(57, 14, 3, 1)
-px(56, 13, 2); px(57, 13, 2); px(56, 14, 2)
+-- ---------- 13. portrait border ----------
+hline(0, 63, 0, 1) hline(0, 63, 63, 1)
+vline(0, 0, 63, 1) vline(63, 0, 63, 1)
 
 -- ---------- save ----------
 local out = os.getenv("ASE_OUT_DIR")
-sprite:saveAs(app.fs.joinPath(out, "portrait_mom.aseprite"))
-sprite:saveAs(app.fs.joinPath(out, "portrait_mom.png"))
+spr:saveAs(app.fs.joinPath(out, "portrait_mom.aseprite"))
+spr:flatten()
+spr:saveAs(app.fs.joinPath(out, "portrait_mom.png"))
 
 print("ASE_GEN_OK")

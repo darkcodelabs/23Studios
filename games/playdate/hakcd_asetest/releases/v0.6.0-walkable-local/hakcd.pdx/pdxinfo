@@ -1,0 +1,9 @@
+name=HAKCD
+author=Cory Kennedy
+description=A phreaker noir. Walk a 1998 hacker kid through detailed 1-bit rooms; crank minigames; every pixel authored by the local Aseprite pipeline.
+bundleID=ai.darkcode.hakcd.asetest
+version=0.6.0
+buildNumber=6
+imagePath=launcher
+pdxversion=30005
+buildtime=836628763
