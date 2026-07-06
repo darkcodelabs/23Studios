@@ -10,7 +10,7 @@ function S:resume() audio.music("calm") end
 function S:update()
     self.tick += 1
     if self.tick % 22 == 0 then self.blink = not self.blink end
-    if playdate.buttonJustPressed(playdate.kButtonA) then audio.ok(); scene_manager.replace(arena.new(1)) end
+    if playdate.buttonJustPressed(playdate.kButtonA) then audio.ok(); scene_manager.replace(scene_lab) end
     self:draw()
 end
 function S:draw()
@@ -19,7 +19,7 @@ function S:draw()
         local big = gfx.getSystemFont(gfx.font.kVariantBold); if big then gfx.setFont(big) end
         gfx.drawTextAligned("H A K C D", 200, 78, kTextAlignment.center)
         gfx.setFont(gfx.getSystemFont())
-        gfx.drawTextAligned("jack in. clear the wire.", 200, 106, kTextAlignment.center)
+        gfx.drawTextAligned("jack in. own the room.", 200, 106, kTextAlignment.center)
         gfx.setColor(gfx.kColorWhite); gfx.drawRect(70, 58, 260, 84)
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
     end
