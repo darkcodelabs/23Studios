@@ -14,12 +14,11 @@
 const { spawn } = require('child_process');
 const os = require('os');
 
-const { streamChat } = require('./openrouter');
 const runner = require('./aseprite_runner');
 const { validateArtifact } = require('./aseprite_validate');
-const driftDetect = require('./drift_detect');
 
-const DEFAULT_MODEL = process.env.ASEPRITE_SCRIPT_MODEL || 'anthropic/claude-sonnet-4.5';
+// claude-code (this logged-in CLI session) is the ONLY model backend.
+const DEFAULT_MODEL = 'claude-code';
 const MAX_ATTEMPTS = Number(process.env.ASEPRITE_GEN_MAX_ATTEMPTS || 3);
 const CLAUDE_BIN = process.env.CLAUDE_CODE_BIN || 'claude';
 
@@ -123,63 +122,10 @@ async function generateScript({ prompt, spec, styleGuide, model, projectId, prio
     messages.push({ role: 'user', content: prompt });
   }
 
-  // Same pre-send drift contract as the old raster path (Phase 6 C3):
-  // forbidden-token sweep always, canon vocabulary when project known.
-  const driftMode = String(process.env.STUDIO_DRIFT_DETECT || 'block').toLowerCase();
-  if (driftMode !== 'off') {
-    const drift = await driftDetect.checkPromptDrift({
-      projectId: projectId || null,
-      prompt_body: messages.map((m) => m.content).join('\n'),
-    });
-    if (!drift.passes) {
-      if (projectId) {
-        try {
-          await driftDetect.appendDriftFlag(projectId, {
-            kind: 'pre_send',
-            stage: 'aseprite_script',
-            required_missing: drift.required_missing,
-            forbidden_present: drift.forbidden_present,
-            anchor_missing: drift.anchor_missing,
-            drift_score: drift.drift_score,
-            mode: driftMode,
-          });
-        } catch (_e) { /* never let logging fail the call */ }
-      }
-      if (driftMode !== 'log') {
-        const e = new Error('drift_blocked');
-        e.code = 'drift_blocked';
-        e.status = 409;
-        e.detail = drift;
-        throw e;
-      }
-    }
-  }
-
-  const chosen = model || DEFAULT_MODEL;
-  let reply;
-  if (chosen === 'claude-code') {
-    reply = await claudeOneShot(messages.map((m) => `[${m.role}]\n${m.content}`).join('\n\n'));
-  } else {
-    try {
-      reply = await streamChat({
-        model: chosen,
-        messages,
-        projectId,
-        stage: 'aseprite_script',
-        onDelta: () => {},
-        signal,
-      });
-    } catch (err) {
-      // OpenRouter out of credits → emergency Claude Code CLI fallback,
-      // same posture as the STRIKE planner/synth fallback.
-      const status = err && (err.status || err.statusCode);
-      if (status === 402 || /402/.test(String(err && err.message))) {
-        reply = await claudeOneShot(messages.map((m) => `[${m.role}]\n${m.content}`).join('\n\n'));
-      } else {
-        throw err;
-      }
-    }
-  }
+  // Model backend is the logged-in Claude Code CLI, always. No external API
+  // (OpenRouter/OpenAI) — those are ripped out of this pipeline. Every asset's
+  // Lua is authored by this session's `claude` one-shot.
+  const reply = await claudeOneShot(messages.map((m) => `[${m.role}]\n${m.content}`).join('\n\n'));
 
   const lua = extractLua(reply);
   if (!lua) {

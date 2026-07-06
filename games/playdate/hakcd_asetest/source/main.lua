@@ -24,7 +24,6 @@ import "core/quest"
 import "core/dialogue"
 import "core/hud"
 import "core/scene_manager"
-import "core/scene_static"
 import "core/isoroom"
 
 -- minigames

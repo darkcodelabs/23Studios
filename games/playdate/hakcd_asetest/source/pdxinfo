@@ -1,7 +1,7 @@
 name=HAKCD
 author=Cory Kennedy
-description=Reference-aesthetic slice. Detailed 1-bit illustrated scenes, dialogue bar with portraits, monospace HUD. Bedroom hub + DEADLINE BBS.
+description=A phreaker noir. Walk a 1998 hacker kid through detailed 1-bit rooms; crank minigames; every pixel authored by the local Aseprite pipeline.
 bundleID=ai.darkcode.hakcd.asetest
-version=0.5.0
-buildNumber=5
+version=0.6.0
+buildNumber=6
 imagePath=launcher
