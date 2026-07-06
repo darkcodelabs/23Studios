@@ -1,11 +1,13 @@
--- HAKCD -- Act 1 vertical slice (v0.3.0).
--- Every PNG in images/ was authored by the prompt->Aseprite pipeline: an LLM
--- wrote an Aseprite Lua script, aseprite -b ran it headless in a bwrap jail,
--- machine validators enforced 1-bit + dims. Sources live in ../aseprite_src/.
+-- HAKCD -- reference-aesthetic slice (v0.5.0).
+-- Visual model matches design_handoff: full-screen 1-bit illustrated frames
+-- (bedroom, DEADLINE BBS) with a persistent dialogue bar (name + mono text +
+-- framed portrait) and monospace HUD chrome. Scene art here is processed from
+-- the handoff references to strict 1-bit 400x240 (INTERIM); final scenes will
+-- be raster-generated in the same style once an image API is available.
 --
 -- Architecture (23studios canon): every module is imported ONCE here in
--- dependency order and self-binds to a _G.<name>. Scenes/minigames access
--- siblings via those globals -- never `local x = import`.
+-- dependency order and self-binds to a _G.<name>. Scenes access siblings via
+-- those globals -- never `local x = import`.
 
 import "CoreLibs/object"
 import "CoreLibs/graphics"
@@ -20,7 +22,9 @@ import "core/save_state"
 import "core/inventory"
 import "core/quest"
 import "core/dialogue"
+import "core/hud"
 import "core/scene_manager"
+import "core/scene_static"
 import "core/isoroom"
 
 -- minigames

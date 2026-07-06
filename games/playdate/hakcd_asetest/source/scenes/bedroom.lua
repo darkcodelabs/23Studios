@@ -1,55 +1,52 @@
--- scenes/bedroom — the recurring hub (SC01). Isometric room. The computer
--- launches the BBS then the war dialer; the door leads to the overworld once
--- the player has a reason to leave. Self-binds _G.scene_bedroom.
+-- scenes/bedroom — the hub (SC01), now a STATIC illustrated frame matching the
+-- design_handoff. The kid lives in the art; the player cursors between
+-- hotspots (COMPUTER, PHONE, POSTER) and interacts. Self-binds _G.scene_bedroom.
 local S = {}
 
-local function computer(room)
+local function computer(sc)
     if quest.is("read_bbs") then
         scene_manager.push(scene_bbs)
     elseif quest.is("wardial") then
         scene_manager.push(mg_wardialer.new())
+    elseif quest.index() >= 3 then
+        dialogue.start({
+            { who = "THE MENTOR", port = "portrait_mentor", text = "Good hunt. PhoenixDown's carrier is logged." },
+            { who = "THE MENTOR", port = "portrait_mentor", text = "That's the end of this slice, kid. More boards come online soon." },
+        })
     else
         dialogue.start({
-            { who = "NEWB", port = "portrait_newb", text = "The modem's quiet. Nothing to dial right now." },
+            { who = "newb", port = "portrait_newb", text = "Modem's cooling off. Nothing to dial right now." },
         })
     end
 end
 
-local function door(room)
-    if quest.index() >= 3 and not quest.is("done") then
-        scene_manager.push(scene_overworld)
-    else
-        dialogue.start({
-            { who = "NEWB", port = "portrait_newb", text = "No reason to leave the house yet. It's a school night." },
-        })
-    end
-end
-
-local function bed(room)
+local function poster(sc)
     dialogue.start({
-        { who = "MOM", port = "portrait_mom", text = "Are you STILL on that computer?! It's almost midnight!" },
-        { who = "NEWB", port = "portrait_newb", text = "Five more minutes, Mom. Homework." },
-        { who = "NEWB", port = "portrait_newb", text = "(Progress saved. The line goes quiet for a while.)", onEnter = nil },
+        { who = "newb", port = "portrait_newb", text = "HACKERS. 'Their crime is curiosity.' Damn right." },
+    })
+end
+
+local function phone(sc)
+    dialogue.start({
+        { who = "MOM", port = "portrait_newb", text = "(from down the hall) Off the phone! I'm expecting a call!" },
+        { who = "newb", port = "portrait_newb", text = "It's the modem, Mom. Five more minutes." },
     })
     save_state.save()
 end
 
-S.room = nil
 function S:enter()
-    self.room = isoroom.new({
+    self.sc = scene_static.new({
         bg = "room_bedroom", mood = "calm", title = "YOUR ROOM -- 11:47 PM",
-        floor = { x1 = 60, y1 = 150, x2 = 340, y2 = 214 },
-        spawn = { x = 200, y = 190 },
         hotspots = {
-            { x = 96,  y = 150, r = 46, label = "COMPUTER", onInteract = computer },
-            { x = 300, y = 150, r = 44, label = "BED",      onInteract = bed },
-            { x = 344, y = 196, r = 40, label = "DOOR",     onInteract = door },
+            { x = 250, y = 110, label = "COMPUTER", onInteract = computer },
+            { x = 92,  y = 70,  label = "POSTER",   onInteract = poster },
+            { x = 330, y = 150, label = "PHONE",    onInteract = phone },
         },
     })
-    self.room:enter()
+    self.sc:enter()
 end
-function S:resume() self.room:resume() end
-function S:update() self.room:update() end
+function S:resume(r) self.sc:resume(r) end
+function S:update() self.sc:update() end
 
 _G.scene_bedroom = S
 return S

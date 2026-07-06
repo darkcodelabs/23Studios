@@ -1,23 +1,41 @@
--- core/dialogue — portrait dialogue with typewriter text + branching choices.
--- Modeled on the reference: name label, text bottom-left, portrait box
--- bottom-right. Self-binds _G.dialogue. Draws as a modal overlay; the calling
--- scene keeps drawing the world behind it.
+-- core/dialogue — reference-matched dialogue bar. Modeled 1:1 on the
+-- design_handoff scenes: a full-width bar pinned to the bottom, thin white
+-- rounded border, speaker NAME in bold top-left, monospace body text, and a
+-- framed portrait headshot on the right. Typewriter reveal + branching choices.
+-- Draws as a modal overlay; the calling scene keeps drawing behind it.
+-- Self-binds _G.dialogue.
 --
 -- Usage:
 --   dialogue.start({
---     { who="MENTOR", port="portrait_mentor", text="You made it." },
---     { who="MENTOR", port="portrait_mentor", text="Choose.", choices={
---         { label="Ask who", jump=4 },
---         { label="Say nothing", done=true } } },
---     ... }, onDone)
+--     { who="THE MENTOR", port="portrait_mentor",
+--       text="Everything you need is in the textfiles." },
+--     { who="newb", port="portrait_newb", text="Choose.", choices={
+--         { label="Read more", jump=4 },
+--         { label="Log off", done=true } } },
+--   }, onDone)
 local gfx <const> = playdate.graphics
 local D = {}
 
-local BOX_Y, BOX_H = 168, 72
-local CHARS_PER = 2          -- typewriter chars per tick
-local portraits = {}         -- cache
+-- bar geometry (matches handoff: bottom ~27% of a 240px screen)
+local BAR_X, BAR_Y, BAR_W, BAR_H = 4, 176, 392, 60
+local PORT = 52                       -- framed portrait side
+local PORT_X = BAR_X + BAR_W - PORT - 6
+local PORT_Y = BAR_Y + (BAR_H - PORT) // 2
+local TEXT_X = BAR_X + 12
+local TEXT_W = PORT_X - TEXT_X - 10
+local CHARS_PER = 2
+
+local portraits = {}
+local nameFont, bodyFont
 
 local state = nil
+
+local function fonts()
+    if not bodyFont then
+        bodyFont = gfx.getSystemFont()
+        nameFont = gfx.getSystemFont(gfx.font.kVariantBold) or bodyFont
+    end
+end
 
 local function loadPort(name)
     if not name then return nil end
@@ -30,15 +48,12 @@ end
 function D.active() return state ~= nil end
 
 function D.start(nodes, onDone)
+    fonts()
     state = { nodes = nodes, i = 1, shown = 0, sel = 1, onDone = onDone }
 end
 
 local function node() return state.nodes[state.i] end
-
-local function advanceTo(n)
-    state.i = n; state.shown = 0; state.sel = 1
-end
-
+local function advanceTo(n) state.i = n; state.shown = 0; state.sel = 1 end
 local function finish()
     local cb = state.onDone; state = nil
     if cb then cb() end
@@ -56,8 +71,7 @@ function D.update()
         if state.shown % 3 == 0 then audio.blip(720) end
     end
 
-    local hasChoices = nd.choices and not typing
-    if hasChoices then
+    if nd.choices and not typing then
         if playdate.buttonJustPressed(playdate.kButtonDown) then
             state.sel = (state.sel % #nd.choices) + 1; audio.tick()
         elseif playdate.buttonJustPressed(playdate.kButtonUp) then
@@ -85,42 +99,46 @@ end
 function D.draw()
     if not state then return end
     local nd = node()
-    if not nd then return end   -- advanced past the last node this frame; finish() lands next update
-    -- box
-    gfx.setColor(gfx.kColorBlack); gfx.fillRoundRect(6, BOX_Y, 388, BOX_H, 5)
-    gfx.setColor(gfx.kColorWhite); gfx.drawRoundRect(6, BOX_Y, 388, BOX_H, 5)
+    if not nd then return end
 
-    -- portrait right
+    -- bar: solid black with thin white rounded border (handoff look)
+    gfx.setColor(gfx.kColorBlack); gfx.fillRoundRect(BAR_X, BAR_Y, BAR_W, BAR_H, 4)
+    gfx.setColor(gfx.kColorWhite); gfx.setLineWidth(1); gfx.drawRoundRect(BAR_X, BAR_Y, BAR_W, BAR_H, 4)
+
+    -- framed portrait, right
     local port = loadPort(nd.port)
-    local textRight = 320
     if port then
-        gfx.setColor(gfx.kColorWhite); gfx.drawRect(320, BOX_Y - 52, 68, 68)
-        port:draw(322, BOX_Y - 50)
+        gfx.setColor(gfx.kColorWhite); gfx.drawRect(PORT_X - 1, PORT_Y - 1, PORT + 2, PORT + 2)
+        port:drawScaled(PORT_X, PORT_Y, PORT / 64)   -- 64x64 portrait scaled into the 52 frame
     end
 
-    -- name tab
-    if nd.who then
-        gfx.setColor(gfx.kColorWhite); gfx.fillRect(14, BOX_Y - 14, gfx.getTextSize(nd.who) + 12, 16)
-        gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        gfx.drawText(nd.who, 20, BOX_Y - 13)
-    end
-
-    -- text (typed)
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    -- speaker name (bold)
+    if nd.who then
+        gfx.setFont(nameFont)
+        gfx.drawText(nd.who, TEXT_X, BAR_Y + 5)
+    end
+    -- body text (typewriter), wrapped
+    gfx.setFont(bodyFont)
     local shown = string.sub(nd.text or "", 1, state.shown)
-    gfx.drawTextInRect(shown, 16, BOX_Y + 8, 300, 56)
+    gfx.drawTextInRect(shown, TEXT_X, BAR_Y + 22, TEXT_W, BAR_H - 24)
 
-    -- choices or prompt
+    -- choices replace body once fully typed
     if nd.choices and state.shown >= #(nd.text or "") then
         for i, c in ipairs(nd.choices) do
-            local y = BOX_Y + 8 + (i - 1) * 15
-            local pre = (i == state.sel) and "> " or "  "
-            gfx.drawText(pre .. c.label, 20, y)
+            local y = BAR_Y + 22 + (i - 1) * 14
+            gfx.drawText((i == state.sel and "> " or "  ") .. c.label, TEXT_X, y)
         end
-    else
-        gfx.drawText("A", 372, BOX_Y + BOX_H - 16)
+    elseif not typing then
+        -- blinking advance caret bottom-right of text area
+        if (playdate.getCurrentTimeMilliseconds() // 300) % 2 == 0 then
+            gfx.fillTriangle(TEXT_X + TEXT_W - 8, BAR_Y + BAR_H - 12,
+                             TEXT_X + TEXT_W - 2, BAR_Y + BAR_H - 12,
+                             TEXT_X + TEXT_W - 5, BAR_Y + BAR_H - 7)
+        end
     end
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.setFont(bodyFont)
 end
 
 _G.dialogue = D
