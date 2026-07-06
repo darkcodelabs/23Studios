@@ -1,8 +1,9 @@
--- core/isoroom — reusable isometric room. A scene supplies a background image,
--- a walkable polygon (as an axis-aligned floor rect for simplicity), and a set
--- of hotspots {x,y,r,label,onInteract}. The player sprite (newb_iso, 4 rows =
+-- core/isoroom — walkable room. Background image + axis-aligned walkable floor
+-- rect + hotspots {x,y,r,label,onInteract}. The 48x64 hero (newb_hero, 4 rows =
 -- down/up/left/right) walks with the d-pad; A interacts with the nearest hotspot.
--- Self-binds _G.isoroom as a constructor: isoroom.new(cfg) -> scene table.
+-- UI is deliberately minimal (Under-the-Tree restraint): the ONLY chrome is a
+-- quiet chevron over the nearest interactable + a single label at screen top.
+-- No objective bar, no counters, no per-object markers. Self-binds _G.isoroom.
 local gfx <const> = playdate.graphics
 local IR = {}
 
@@ -10,12 +11,10 @@ local DIR_DOWN, DIR_UP, DIR_LEFT, DIR_RIGHT = 1, 2, 3, 4
 
 function IR.new(cfg)
     local room = {}
-    -- cfg: bg (imageName), floor={x1,y1,x2,y2}, spawn={x,y}, hotspots={}, mood,
-    --      onEnter(fn), title
     room.cfg = cfg
     room.bg = nil
     room.sheet = nil
-    room.p = { x = cfg.spawn.x, y = cfg.spawn.y, dir = DIR_DOWN, frame = 1, moving = false, anim = 0, step = 0 }
+    room.p = { x = cfg.spawn.x, y = cfg.spawn.y, dir = DIR_DOWN, frame = 1, moving = false, step = 0 }
     room.near = nil
     room.tick = 0
 
@@ -34,7 +33,6 @@ function IR.new(cfg)
 
     function room:update()
         self.tick += 1
-
         if dialogue.active() then dialogue.update(); self:draw(); return end
 
         local p = self.p
@@ -73,65 +71,35 @@ function IR.new(cfg)
 
     function room:drawPlayer()
         local p = self.p
-        -- Mario-64 style blob shadow grounds the big cartoon sprite
         gfx.setColor(gfx.kColorBlack)
-        gfx.fillEllipseInRect(p.x - 18, p.y - 5, 36, 12)
-        -- 48x64 hero: feet anchored at p.y, centered on p.x
+        gfx.fillEllipseInRect(p.x - 16, p.y - 5, 32, 11)   -- soft grounding shadow
         local idx = (p.dir - 1) * 4 + p.frame
         local imgobj = self.sheet:getImage(idx) or self.sheet:getImage(1)
-        if imgobj then imgobj:draw(p.x - 24, p.y - 58) end
+        if imgobj then imgobj:draw(p.x - 24, p.y - 58) end  -- feet at p.y, centered on p.x
+    end
+
+    -- the one and only piece of chrome: point at what you can touch, name it up top
+    function room:drawPrompt()
+        local h = self.near
+        if not h then return end
+        local bob = (self.tick // 10) % 2
+        local my = h.y - 30 - bob
+        -- bobbing chevron over the object (white, black-edged so it reads on any bg)
+        gfx.setColor(gfx.kColorBlack); gfx.fillTriangle(h.x - 7, my - 1, h.x + 7, my - 1, h.x, my + 9)
+        gfx.setColor(gfx.kColorWhite); gfx.fillTriangle(h.x - 5, my + 1, h.x + 5, my + 1, h.x, my + 6)
+        -- clean label at the top of the screen
+        local w = gfx.getTextSize(h.label)
+        gfx.setColor(gfx.kColorBlack); gfx.fillRoundRect(200 - w/2 - 12, 4, w + 24, 18, 3)
+        gfx.setColor(gfx.kColorWhite); gfx.setLineWidth(1); gfx.drawRoundRect(200 - w/2 - 12, 4, w + 24, 18, 3)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawTextAligned(h.label, 200, 7, kTextAlignment.center)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
     end
 
     function room:draw()
         if self.bg then self.bg:draw(0, 0) else gfx.clear(gfx.kColorBlack) end
-
-        -- hotspot markers + prompt
-        for _, h in ipairs(cfg.hotspots) do
-            if not h.hidden then
-                gfx.setColor(gfx.kColorWhite)
-                if self.near == h then
-                    -- pulsing ring + label
-                    local r = 8 + (self.tick // 4 % 3)
-                    gfx.drawCircleAtPoint(h.x, h.y, r)
-                    local w = gfx.getTextSize(h.label)
-                    gfx.setColor(gfx.kColorBlack); gfx.fillRect(h.x - w/2 - 4, h.y - 34, w + 8, 16)
-                    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-                    gfx.drawTextAligned(h.label .. "  A", h.x, h.y - 33, kTextAlignment.center)
-                    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-                else
-                    gfx.fillRect(h.x - 1, h.y - 1, 3, 3)
-                end
-            end
-        end
-
         self:drawPlayer()
-
-        -- objective HUD + Mario-64 star count
-        local q = quest.current()
-        if q and cfg.showHud ~= false then
-            local line = "> " .. q.line
-            local w = gfx.getTextSize(line)
-            gfx.setColor(gfx.kColorBlack); gfx.fillRect(0, 0, w + 12, 16)
-            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-            gfx.drawText(line, 6, 2)
-            gfx.setImageDrawMode(gfx.kDrawModeCopy)
-
-            local star = "*" .. quest.stars() .. "/" .. quest.starTotal()
-            local sw = gfx.getTextSize(star)
-            gfx.setColor(gfx.kColorBlack); gfx.fillRect(400 - sw - 12, 0, sw + 12, 16)
-            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-            gfx.drawText(star, 400 - sw - 6, 2)
-            gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        end
-
-        if cfg.title and self.tick < 90 then
-            local w = gfx.getTextSize(cfg.title)
-            gfx.setColor(gfx.kColorBlack); gfx.fillRect(200 - w/2 - 6, 110, w + 12, 20)
-            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-            gfx.drawTextAligned(cfg.title, 200, 113, kTextAlignment.center)
-            gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        end
-
+        if not dialogue.active() then self:drawPrompt() end
         if dialogue.active() then dialogue.draw() end
     end
 

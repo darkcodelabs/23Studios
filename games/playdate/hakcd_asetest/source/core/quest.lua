@@ -26,7 +26,7 @@ function Q.complete(id)
     local raw = save_state.raw()
     raw.quests.step = math.min(#STEPS, Q.index() + 1)
     save_state.save()
-    if _G.fx then fx.star() else audio.chime() end   -- Mario-64 STAR GET!
+    audio.chime()   -- quiet progression cue
     return true
 end
 

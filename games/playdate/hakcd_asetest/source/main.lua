@@ -53,7 +53,4 @@ function playdate.update()
     playdate.timer.updateTimers()
     gfx.clear(gfx.kColorBlack)
     scene_manager.update()
-    fx.update()
-    fx.draw()
-    playdate.drawFPS(4, 224)
 end
