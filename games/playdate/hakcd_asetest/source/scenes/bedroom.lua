@@ -4,25 +4,14 @@
 local S = {}
 
 local function computer(room)
-    if quest.is("read_bbs") then
-        scene_manager.push(scene_bbs)
-    elseif quest.is("wardial") then
-        scene_manager.push(mg_wardialer.new())
-    else
-        dialogue.start({
-            { who = "NEWB", port = "portrait_newb", text = "The modem's quiet. Nothing to dial right now." },
-        })
-    end
+    -- the rig: opens the war dialer / dive hub (the core loop)
+    scene_manager.push(scene_dialer)
 end
 
 local function door(room)
-    if quest.index() >= 3 and not quest.is("done") then
-        scene_manager.push(scene_overworld)
-    else
-        dialogue.start({
-            { who = "NEWB", port = "portrait_newb", text = "No reason to leave the house yet. It's a school night." },
-        })
-    end
+    dialogue.start({
+        { who = "newb", port = "portrait_newb", text = "Nowhere to be tonight. The action's on the wire." },
+    })
 end
 
 local function bed(room)
