@@ -26,6 +26,7 @@ import "core/targets"
 import "core/dialogue"
 import "core/hud"
 import "core/scene_manager"
+import "core/arena"
 import "core/isoroom"
 
 -- minigames
@@ -42,6 +43,7 @@ import "scenes/bedroom"
 import "scenes/overworld"
 import "scenes/payphone"
 import "scenes/pedestal"
+import "scenes/win"
 import "scenes/title"
 
 local gfx <const> = playdate.graphics
